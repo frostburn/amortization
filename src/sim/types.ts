@@ -10,16 +10,30 @@ export interface Rect extends Vec {
 }
 export interface Solid extends Rect {
   id: string;
-  kind: 'wall' | 'tram' | 'crate' | 'building' | 'van';
+  kind: 'wall' | 'tram' | 'crate' | 'building' | 'van' | 'shelves';
   height: number;
 }
-export type ObjectKind = 'disguise' | 'gate' | 'relay' | 'evidence' | 'engineer' | 'extract';
+export type ObjectKind =
+  'disguise' | 'gate' | 'relay' | 'evidence' | 'engineer' | 'extract' | 'override' | 'breach';
 export interface Landmark extends Vec {
   id: ObjectKind;
+  tag: string;
   label: string;
   detail: string;
 }
 export interface Mission {
+  id: 'depot' | 'archive';
+  number: string;
+  title: string;
+  location: string;
+  objective: 'escort' | 'ledger';
+  description: string;
+  briefing: { lead: string; body: string; routes: { title: string; body: string }[] };
+  intro: string;
+  evidenceName: string;
+  gateOutside: Vec;
+  response: { spawns: Vec[]; patrol: Vec[] };
+  archive?: { door: Rect; inside: Vec };
   width: number;
   height: number;
   solids: Solid[];
@@ -94,10 +108,13 @@ export interface World {
   mission: Mission;
   agents: Operative[];
   guards: Guard[];
-  engineer: Engineer;
+  engineer: Engineer | null;
   time: number;
   status: 'playing' | 'won' | 'lost';
   gateOpen: boolean;
+  shutterOpen: boolean;
+  shutterBreached: boolean;
+  overrideBy: string | null;
   relayOff: boolean;
   disguiseTaken: boolean;
   evidence: 'available' | 'carried' | 'extracted';
@@ -117,3 +134,8 @@ export const distance = (a: Vec, b: Vec) => Math.hypot(a.x - b.x, a.y - b.y);
 export const inside = (p: Vec, r: Rect) =>
   p.x >= r.x && p.y >= r.y && p.x <= r.x + r.w && p.y <= r.y + r.h;
 export const living = (p: Person) => p.hp > 0;
+export const people = (w: World): Person[] => [
+  ...w.agents,
+  ...w.guards,
+  ...(w.engineer ? [w.engineer] : []),
+];

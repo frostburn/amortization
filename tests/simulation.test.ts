@@ -139,14 +139,14 @@ describe('mission lifecycle', () => {
       expect(w.agents.some(living)).toBe(true);
     }
     interact(w, ids, 'engineer');
-    until(w, () => w.engineer.recruited);
+    until(w, () => w.engineer!.recruited);
     moveAgents(w, ids, { x: 5.5, y: 22.2 });
     until(
       w,
       () => w.agents.filter(living).every((a) => distance(a, { x: 4.5, y: 22.5 }) < 3.8),
       45,
     );
-    until(w, () => distance(w.engineer, { x: 4.5, y: 22.5 }) < 3.5);
+    until(w, () => distance(w.engineer!, { x: 4.5, y: 22.5 }) < 3.5);
     interact(w, ids, 'extract');
     until(w, () => w.status === 'won');
     expect(w.shots).toBeGreaterThan(0);
@@ -157,7 +157,7 @@ describe('mission lifecycle', () => {
     completeInteraction(w, w.agents[0], 'extract');
     expect(w.status).toBe('playing');
     completeInteraction(w, w.agents[0], 'engineer');
-    Object.assign(w.engineer, { x: 4.5, y: 22.5 });
+    Object.assign(w.engineer!, { x: 4.5, y: 22.5 });
     w.agents[3].x = 20;
     completeInteraction(w, w.agents[0], 'extract');
     expect(w.status).toBe('playing');
@@ -175,7 +175,7 @@ describe('mission lifecycle', () => {
     step(w);
     expect(w.evidence).toBe('available');
     expect(a.carrying).toBe(false);
-    expect(w.engineer.leader).not.toBe(a.id);
+    expect(w.engineer!.leader).not.toBe(a.id);
   });
   it('a carrier cannot draw a gun or attack before setting down evidence', () => {
     const w = createWorld(),
@@ -194,10 +194,10 @@ describe('mission lifecycle', () => {
     interact(w, [a.id], 'relay');
     until(w, () => w.relayOff);
     interact(w, [a.id], 'engineer');
-    until(w, () => w.engineer.recruited);
+    until(w, () => w.engineer!.recruited);
     moveAgents(w, [a.id], { x: 4.8, y: 21.6 });
     until(w, () => distance(a, { x: 4.8, y: 21.6 }) < 0.6);
-    until(w, () => distance(w.engineer, { x: 4.5, y: 22.5 }) < 3.5);
+    until(w, () => distance(w.engineer!, { x: 4.5, y: 22.5 }) < 3.5);
     interact(w, [a.id], 'extract');
     until(w, () => w.status === 'won');
     expect(w.alarm).toBe(false);

@@ -1,9 +1,15 @@
 import { distance, living, EXTRACTION_RADIUS } from '../sim/types';
-import type { World } from '../sim/types';
+import type { Mission, World } from '../sim/types';
 import { suspicionRate } from '../sim/awareness';
-import { landmark } from '../sim/orders';
+import { interactionDuration, landmark } from '../sim/orders';
+import { missions, nextMission } from '../content/missions';
+import { missionRecord } from './storage';
+import type { Records } from './storage';
 
 export type Action =
+  | 'operations'
+  | 'next'
+  | `mission:${Mission['id']}`
   | 'pause'
   | 'sound'
   | 'briefing'
@@ -51,31 +57,31 @@ export class Hud {
   private app: HTMLElement;
   private lastMessage = '';
   private endShown = false;
-  private briefingHtml = '';
+  private mission: Mission = missions[0];
   private fields = new Map<string, HTMLElement>();
   constructor(onAction: (action: Action) => void, onSelect: (index: number, add: boolean) => void) {
     this.app = document.querySelector('#app')!;
     this.app.innerHTML = `
-      <header class="topbar"><h1>AMORTIZATION</h1><span class="operation">01 / THE RELEASE CLAUSE</span><div class="top-actions"><button data-action="briefing" title="Mission briefing and controls">Briefing</button><button data-action="pause" id="pause-button">${icon('play')}<span id="pause-label">Resume</span></button><button data-action="sound" id="sound-button">Sound off</button></div></header>
+      <header class="topbar"><h1>AMORTIZATION</h1><span class="operation" id="operation-title"></span><div class="top-actions"><button data-action="operations">Operations</button><button data-action="briefing" title="Mission briefing and controls">Briefing</button><button data-action="pause" id="pause-button">${icon('play')}<span id="pause-label">Resume</span></button><button data-action="sound" id="sound-button">Sound off</button></div></header>
       <main class="game-layout">
         <section class="map-column" aria-label="Operation map and crew">
-          <div class="stage" id="stage"><div class="map-top"><span id="time-mode">PLANNING / ORDERS ACTIVE</span><span id="clock">00:00</span></div><div class="map-controls"><button data-action="zoom-out" aria-label="Zoom out">−</button><button data-action="home">Fit map</button><button data-action="zoom-in" aria-label="Zoom in">+</button></div><div class="map-caption"><span>TRAM DEPOT 06</span><small>Municipal assets division</small></div><div class="selection-box" id="selection-box"></div></div>
+          <div class="stage" id="stage"><div class="map-top"><span id="time-mode">PLANNING / ORDERS ACTIVE</span><span id="clock">00:00</span></div><div class="map-controls"><button data-action="zoom-out" aria-label="Zoom out">−</button><button data-action="home">Fit map</button><button data-action="zoom-in" aria-label="Zoom in">+</button></div><div class="map-caption"><span id="map-location"></span><small>Municipal assets division</small></div><div class="selection-box" id="selection-box"></div></div>
           <div class="dispatch"><span>COMMS</span><p id="message" role="status">Preparing the operation…</p></div>
           <div class="squad" aria-label="Squad selection">${['Morrow', 'Vale', 'Rook', 'Sable'].map((name, i) => `<button class="agent-card" data-agent="${i}" aria-label="Select ${name}" aria-pressed="true"><span class="portrait portrait-${i}" aria-hidden="true"></span><span class="agent-copy"><span class="agent-heading"><b>${i + 1}</b> ${name}</span><span class="agent-condition" id="condition-${i}">Ready</span><span class="health-track"><span id="health-${i}"></span></span></span></button>`).join('')}</div>
           <footer class="controls-hint"><span><kbd>1–4</kbd> operative <kbd>Q</kbd> squad <kbd>RMB</kbd> order <kbd>Space</kbd> pause <kbd>Tab</kbd> slow</span><button data-action="restart" title="Restart operation (Shift+R)">Restart</button></footer>
         </section>
         <aside class="sidebar">
-          <section class="mission-section"><p class="section-label">MISSION</p><h2>The release clause</h2><p class="description">Retrieve engineer Iona Voss.</p><div class="objectives"><p id="objective-voss">○ Locate Voss</p><p id="objective-extract">○ Extract at the van</p><p class="optional" id="objective-evidence">◇ Diagnostic unit <span>optional</span></p></div></section>
-          <section class="alert-section"><p class="section-label">ALERT STATUS</p><p class="alert" id="alert">● Site quiet</p><p class="fine" id="radio-status">Radio network online</p></section>
-          <section class="selection-section"><p class="section-label">SELECTED OPERATIVE<span id="selected-count">4 / 4</span></p><div class="selected-info"><span id="selected-portrait" class="portrait portrait-0" aria-hidden="true"></span><div><h3 id="selected-name">Full crew</h3><p id="selected-role">Four operatives</p><p id="selected-cover">Weapons concealed</p></div></div><p class="assessment" id="assessment">Move together. Split when it matters.</p></section>
+          <section class="mission-section"><p class="section-label">MISSION</p><h2 id="mission-title"></h2><p class="description" id="mission-description"></p><div class="objectives"><p id="objective-primary">○ Locate Voss</p><p id="objective-extract">○ Extract at the van</p><p class="optional" id="objective-evidence">◇ Diagnostic unit <span>optional</span></p></div></section>
+          <section class="alert-section"><p class="section-label">ALERT STATUS</p><p class="alert" id="alert">● Site quiet</p><p class="fine" id="radio-status">Radio network online</p><p class="fine" id="archive-status" hidden></p></section>
+          <section class="selection-section"><p class="section-label">SELECTED OPERATIVE<span id="selected-count">4 / 4</span></p><div class="selected-info"><span id="selected-portrait" class="portrait portrait-0" aria-hidden="true"></span><div><h3 id="selected-name">Full crew</h3><p id="selected-role">Four operatives</p><p id="selected-cover">Weapons concealed</p></div></div><p class="assessment" id="assessment">Move together. Split when it matters.</p><div id="work-status" hidden><p class="fine" id="work-label"></p><progress id="work-progress" value="0" max="1" aria-label="Interaction progress"></progress></div></section>
           <section class="orders-section"><p class="section-label">ORDERS</p><div class="orders">${(['regroup', 'hold', 'weapons', 'interact'] as const).map((id, i) => `<button data-action="${id}" title="${['Regroup at the lead selected operative (G)', 'Hold position (S)', 'Draw or conceal weapons (F)', 'Interact with nearest object (E)'][i]}">${icon(id)}<span id="${id}-label">${['Regroup', 'Hold', 'Draw weapons', 'Interact'][i]}</span><kbd>${['G', 'S', 'F', 'E'][i]}</kbd></button>`).join('')}</div><div class="utility"><button data-action="all">Select all <kbd>Q</kbd></button><button data-action="heal">Field dressing <kbd>H</kbd></button><button data-action="drop" id="drop-button" hidden>Set unit down <kbd>X</kbd></button></div></section>
           <section class="intel-section"><p class="section-label">FIELD NOTES</p><p id="intel">A maintenance kit was left outside the west entrance. One person can enter under cover.</p><button data-action="vision" id="vision-button" aria-pressed="true">Sight cones: on</button><p class="best" id="best"></p></section>
         </aside>
       </main>
-      <dialog id="mission-dialog" aria-labelledby="dialog-title"><div class="dialog-number">01 / DEPOT 06</div><h2 id="dialog-title">The release clause</h2><p class="dialog-lead">Voss wants out.<br>The company disagrees.</p><p class="dialog-body">Enter the tram depot, find engineer Iona Voss in the secure office, and bring her back to your van. Taking the diagnostic unit earns a cleaner exit from her contract.</p><div class="briefing-routes"><div><b>A borrowed identity</b><p>The kit by the west entrance holds one maintenance uniform. Conceal your weapon. The workshop is permitted; the office is not.</p></div><div><b>A prepared escape</b><p>Open the loading gate from inside for your crew. Disable the radio relay to stop reinforcements. A blown disguise need not end the job.</p></div></div><p class="briefing-controls"><kbd>1–4</kbd> select one · <kbd>Q</kbd> select all<br><kbd>RMB</kbd> move / interact / attack · <kbd>Space</kbd> pause<br><kbd>F</kbd> draw / conceal weapons · <kbd>H</kbd> heal<br>Drag to select · Wheel to zoom · Arrows / middle-drag to pan</p><button class="primary" data-action="begin">Begin operation <span>→</span></button><p class="dialog-foot">Orders remain active while paused. Your crew starts with weapons concealed.</p></dialog>`;
+      <dialog id="mission-dialog" aria-labelledby="dialog-title"></dialog>`;
     this.stage = this.app.querySelector('#stage')!;
     this.modal = this.app.querySelector('#mission-dialog')!;
-    this.briefingHtml = this.modal.innerHTML;
+    this.reset(this.mission);
     this.app.addEventListener('click', (e) => {
       const el = (e.target as HTMLElement).closest<HTMLElement>('[data-action], [data-agent]');
       if (!el) return;
@@ -100,23 +106,47 @@ export class Hud {
     const e = this.field(id);
     if (e.textContent !== value) e.textContent = value;
   }
+  private briefing() {
+    const m = this.mission;
+    return `<div class="dialog-number">${m.number} / ${m.location}</div><h2 id="dialog-title">${m.title}</h2><p class="dialog-lead">${m.briefing.lead}</p><p class="dialog-body">${m.briefing.body}</p><div class="briefing-routes">${m.briefing.routes.map((route) => `<div><b>${route.title}</b><p>${route.body}</p></div>`).join('')}</div><p class="briefing-controls"><kbd>1–4</kbd> select one · <kbd>Q</kbd> select all<br><kbd>RMB</kbd> move / interact / attack · <kbd>Space</kbd> pause<br><kbd>F</kbd> draw / conceal · <kbd>S</kbd> hold / release shunt<br>Drag to select · Wheel to zoom · Arrows / middle-drag to pan</p><button class="primary" data-action="begin">Begin operation <span>→</span></button><button class="dialog-secondary" data-action="operations">Choose operation</button><p class="dialog-foot">Orders remain active while paused. Selection changes preserve orders.</p>`;
+  }
   showBriefing() {
-    this.modal.showModal();
+    this.modal.innerHTML = this.briefing();
+    if (!this.modal.open) this.modal.showModal();
+  }
+  showOperations(records: Records) {
+    this.modal.innerHTML = `<div class="dialog-number">CONTRACT DESK</div><h2 id="dialog-title">Operations</h2><p class="dialog-body">Choose a contract. Starting an operation resets the current attempt. Both contracts are available for replay.</p><div class="operation-list">${missions
+      .map((m) => {
+        const record = missionRecord(records, m.id);
+        return `<button data-action="mission:${m.id}" class="operation-card"><span class="section-label">${m.number} / ${m.location}</span><strong>${m.title}</strong><span>${m.description}</span><small>${record.best === null ? 'No completed extraction' : `Best ${time(record.best)} · ${record.completions} completed`}</small></button>`;
+      })
+      .join(
+        '',
+      )}</div><button class="dialog-secondary" data-action="briefing">Back to briefing</button>`;
+    if (!this.modal.open) this.modal.showModal();
   }
   close() {
     this.modal.close();
   }
-  reset() {
+  reset(mission: Mission = this.mission) {
+    this.mission = mission;
     this.endShown = false;
     this.lastMessage = '';
-    this.modal.innerHTML = this.briefingHtml;
+    this.modal.innerHTML = this.briefing();
+    this.set('operation-title', `${mission.number} / ${mission.title}`);
+    this.set('map-location', mission.location);
+    this.set('mission-title', mission.title);
+    this.set('mission-description', mission.description);
+    this.set('intel', mission.intro);
+    this.field('objective-evidence').classList.toggle('optional', mission.objective === 'escort');
+    this.field('archive-status').hidden = !mission.archive;
   }
-  showEnd(world: World, best: number | null) {
-    if (this.endShown) return;
+  showEnd(world: World, best: number | null, force = false) {
+    if (this.endShown && !force) return;
     this.endShown = true;
     const won = world.status === 'won',
       alive = world.agents.filter(living).length;
-    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? 'Voss is free.' : 'The crew is down.'}</p><p class="dialog-body">${won ? 'The van crosses the district line before anyone agrees who should pay for this.' : 'The depot still belongs to the company. You can try another approach.'}</p><dl class="results"><div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div><div><dt>Evidence</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div></dl>${best !== null ? `<p class="fine">Best extraction: ${time(best)}</p>` : ''}<button class="primary" data-action="restart">Run it again <span>→</span></button>`;
+    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? (world.mission.objective === 'escort' ? 'Voss is free.' : 'The original is in our hands.') : 'The crew is down.'}</p><p class="dialog-body">${won ? 'The van crosses the district line before anyone agrees who should pay for this.' : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results"><div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div><div><dt>Evidence</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div></dl>${best !== null ? `<p class="fine">Best extraction: ${time(best)}</p>` : ''}<button class="primary" data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Run it again'} <span>→</span></button><button class="dialog-secondary" data-action="operations">Operations</button>`;
     if (!this.modal.open) this.modal.showModal();
   }
   update(world: World, state: HudState) {
@@ -136,20 +166,31 @@ export class Hud {
       this.lastMessage = world.message;
     }
     this.set(
-      'objective-voss',
-      world.engineer.recruited ? '✓ Voss following escort' : '○ Locate Voss',
+      'objective-primary',
+      world.mission.archive
+        ? world.shutterBreached
+          ? '✓ Archive shutter forced'
+          : world.shutterOpen
+            ? '✓ Archive shutter open'
+            : '○ Open archive shutter'
+        : world.engineer?.recruited
+          ? '✓ Voss following escort'
+          : '○ Locate Voss',
     );
     this.set(
       'objective-extract',
       world.status === 'won' ? '✓ Extracted at the van' : '○ Extract at the van',
     );
-    this.field('objective-voss').classList.toggle('complete', world.engineer.recruited);
+    this.field('objective-primary').classList.toggle(
+      'complete',
+      world.mission.archive ? world.shutterOpen : !!world.engineer?.recruited,
+    );
     this.set(
       'objective-evidence',
       world.evidence === 'available'
-        ? '◇ Diagnostic unit · optional'
+        ? `${world.mission.objective === 'escort' ? '◇' : '○'} ${world.mission.evidenceName}${world.mission.objective === 'escort' ? ' · optional' : ' · required'}`
         : world.evidence === 'carried'
-          ? '✓ Diagnostic unit carried'
+          ? `✓ ${world.mission.evidenceName} carried`
           : '✓ Evidence secured',
     );
     const local = world.guards.some((g) => living(g) && g.mode === 'combat');
@@ -195,23 +236,66 @@ export class Hud {
         ? 'Select an operative to issue orders.'
         : all
           ? 'Selection changes never cancel existing orders.'
-          : a.exposed
-            ? 'Identity compromised. Break sight and prepare an exit.'
-            : a.carrying
-              ? 'Both hands occupied. Set the unit down to fire.'
-              : a.weapon
-                ? 'Visible weapon. Guards will challenge you.'
-                : suspicionRate(world, a) > 0
-                  ? 'Restricted area. Stay out of sight.'
-                  : a.disguised
-                    ? 'Maintenance access. Keep your weapon concealed.'
-                    : 'Civilian access. The depot is restricted.',
+          : world.overrideBy === a.id
+            ? 'Holding the shutter open. Select a teammate; moving or Hold releases the shunt.'
+            : a.exposed
+              ? 'Identity compromised. Break sight and prepare an exit.'
+              : a.carrying
+                ? world.mission.objective === 'ledger'
+                  ? 'The ledger attracts suspicion even in uniform. Both hands occupied; X sets it down.'
+                  : 'Both hands occupied. Set the unit down to fire.'
+                : a.weapon
+                  ? 'Visible weapon. Guards will challenge you.'
+                  : suspicionRate(world, a) > 0
+                    ? 'Restricted area. Stay out of sight.'
+                    : a.disguised
+                      ? 'Maintenance access. Keep your weapon concealed.'
+                      : 'Civilian access. The compound is restricted.',
     );
     this.set(
       'weapons-label',
       selected.some((a) => !a.weapon && !a.carrying) ? 'Draw weapons' : 'Conceal weapons',
     );
     this.field('drop-button').hidden = !selected.some((a) => a.carrying);
+    this.set(
+      'drop-button',
+      `Set ${world.mission.objective === 'ledger' ? 'ledger' : 'unit'} down · X`,
+    );
+    const worker = selected.find((p) => p.order.kind === 'interact' && p.interaction > 0);
+    const work = worker?.order.kind === 'interact' ? worker.order.target : null;
+    this.field('work-status').hidden = !worker;
+    if (worker && work) {
+      const duration = interactionDuration(world, worker, work);
+      this.set(
+        'work-label',
+        world.overrideBy === worker.id
+          ? `${worker.name}: holding SHUNT · S releases`
+          : `${worker.name}: ${landmark(world, work).tag} · ${Math.min(worker.interaction, duration).toFixed(1)} / ${duration}s`,
+      );
+      (this.field('work-progress') as HTMLProgressElement).value = Math.min(
+        1,
+        worker.interaction / duration,
+      );
+    }
+    if (world.mission.archive) {
+      const operator = world.agents.find((p) => p.id === world.overrideBy);
+      this.set(
+        'archive-status',
+        world.shutterBreached
+          ? 'Shutter: lock cut'
+          : operator
+            ? `SHUNT held by ${operator.name}`
+            : world.shutterOpen
+              ? 'Shutter: doorway occupied'
+              : 'Shutter: locked',
+      );
+      this.set(
+        'intel',
+        world.evidence === 'carried'
+          ? 'The ledger is conspicuous. Clear a path to the east gate, release the shunt operator, and bring everyone to VAN.'
+          : 'One operative holds SHUNT; another enters the archive. CUT is the noisy alternative. Prepare the east gate before lifting the ledger.',
+      );
+    }
     for (const p of world.agents) {
       const card = this.app.querySelector<HTMLElement>(`[data-agent="${p.index}"]`)!;
       card.setAttribute('aria-pressed', String(state.selected.includes(p.id)));
@@ -221,26 +305,31 @@ export class Hud {
         `condition-${p.index}`,
         !living(p)
           ? 'Down'
-          : p.carrying
-            ? 'Carrying unit'
-            : p.exposed
-              ? 'Compromised'
-              : p.disguised
-                ? 'Maintenance'
-                : p.weapon
-                  ? 'Weapon drawn'
-                  : p.path.length
-                    ? 'Moving'
-                    : 'Concealed',
+          : world.overrideBy === p.id
+            ? 'Holding shunt'
+            : p.carrying
+              ? world.mission.objective === 'ledger'
+                ? 'Carrying ledger'
+                : 'Carrying unit'
+              : p.exposed
+                ? 'Compromised'
+                : p.disguised
+                  ? 'Maintenance'
+                  : p.weapon
+                    ? 'Weapon drawn'
+                    : p.path.length
+                      ? 'Moving'
+                      : 'Concealed',
       );
     }
-    if (world.engineer.recruited) {
+    const engineer = world.engineer;
+    if (engineer?.recruited) {
       const near = world.agents.filter(
         (p) => living(p) && distance(p, landmark(world, 'extract')) <= EXTRACTION_RADIUS,
       ).length;
       this.set(
         'intel',
-        `Voss follows ${world.agents.find((a) => a.id === world.engineer.leader)?.name || 'the crew'}. ${near} operatives at the van. Right-click VAN to extract.`,
+        `Voss follows ${world.agents.find((a) => a.id === engineer.leader)?.name || 'the crew'}. ${near} operatives at the van. Right-click VAN to extract.`,
       );
     }
     this.set('best', state.best === null ? '' : `Best extraction ${time(state.best)}`);

@@ -70,7 +70,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
         .map((a) => a.id);
       target.select(add ? [...new Set([...target.selection(), ...ids])] : ids);
     } else if (!drag && button !== 1) {
-      const hit = scene.hit(p.x, p.y);
+      const hit = scene.hit(p.x, p.y, button === 2 || pointerType === 'touch');
       if (button === 0 && hit.kind === 'agent')
         target.select(
           add

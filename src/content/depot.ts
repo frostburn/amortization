@@ -11,6 +11,37 @@ const wall = (id: string, x: number, y: number, w: number, h: number): Solid => 
 });
 
 export const depot: Mission = {
+  id: 'depot',
+  number: '01',
+  title: 'The release clause',
+  location: 'Tram depot 06',
+  objective: 'escort',
+  description: 'Retrieve engineer Iona Voss.',
+  evidenceName: 'Diagnostic unit',
+  intro:
+    'The maintenance kit is outside the west entrance. One disguise, four operatives. Choose your approach.',
+  briefing: {
+    lead: 'Voss wants out. The company disagrees.',
+    body: 'Enter the tram depot, find engineer Iona Voss in the secure office, and bring her back to your van. Taking the diagnostic unit earns a cleaner exit from her contract.',
+    routes: [
+      {
+        title: 'A borrowed identity',
+        body: 'The kit by the west entrance holds one maintenance uniform. Conceal your weapon. The workshop is permitted; the office is not.',
+      },
+      {
+        title: 'A prepared escape',
+        body: 'Open the loading gate from inside for your crew. Disable the radio relay to stop reinforcements. A blown disguise need not end the job.',
+      },
+    ],
+  },
+  gateOutside: { x: 23, y: 21.25 },
+  response: {
+    spawns: Array.from({ length: 3 }, (_, i) => ({ x: 29.5 + i * 0.65, y: 21.8 })),
+    patrol: [
+      { x: 23, y: 18 },
+      { x: 11, y: 12 },
+    ],
+  },
   width: 32,
   height: 26,
   restricted: { x: 9, y: 4, w: 19, h: 16 },
@@ -37,6 +68,7 @@ export const depot: Mission = {
   landmarks: [
     {
       id: 'disguise',
+      tag: 'KIT',
       x: 5,
       y: 16,
       label: 'Maintenance kit',
@@ -44,6 +76,7 @@ export const depot: Mission = {
     },
     {
       id: 'gate',
+      tag: 'GATE',
       x: 23.6,
       y: 18.4,
       label: 'Loading gate',
@@ -51,6 +84,7 @@ export const depot: Mission = {
     },
     {
       id: 'relay',
+      tag: 'RADIO',
       x: 11,
       y: 8.5,
       label: 'Radio relay',
@@ -58,6 +92,7 @@ export const depot: Mission = {
     },
     {
       id: 'engineer',
+      tag: 'VOSS',
       x: 26.4,
       y: 6.4,
       label: 'Iona Voss',
@@ -65,6 +100,7 @@ export const depot: Mission = {
     },
     {
       id: 'evidence',
+      tag: 'UNIT',
       x: 26,
       y: 8.1,
       label: 'Diagnostic unit',
@@ -72,6 +108,7 @@ export const depot: Mission = {
     },
     {
       id: 'extract',
+      tag: 'VAN',
       x: 4.5,
       y: 22.5,
       label: 'Extraction van',

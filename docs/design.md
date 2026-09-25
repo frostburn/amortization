@@ -22,6 +22,14 @@ The generated concept established composition and palette. Intentional differenc
 
 Generated portrait and person atlases supply character art. Architecture, sight cones, bullets, and markers come from game state. Generated map artwork never defines collisions.
 
+## Material breach
+
+The second contract turns access into a standing squad order. An exposed fire-control shunt on the public street must be held continuously; it does not consume the disguise. The disguised runner uses that access, prepares the delivery gate, and steals a required physical ledger. Moving the operator, assigning another job, or losing them releases the shutter. A doorway safety sensor prevents invalid collision states, and cutting from either side prevents an abandoned infiltrator being permanently trapped.
+
+The loud alternative takes eight seconds and leaves permanent access. Nearby guards hear it even without radio service. A carrier cannot use a gun, cut the lock, or work the shunt until setting down the ledger. The conspicuous ledger removes the uniform's protection; the screen wall and road patrol make the withdrawal a distinct navigation problem. No failure timer forces a particular approach.
+
+Mission metadata owns briefs, objectives, map dimensions, gates, landmarks, response entry points, and patrols. The shared simulation supports an optional escort and a held shutter. The renderer fits each map and uses code-drawn filing cabinets and ground markings for the annex. Both operations can be launched directly; a completion also offers the next operation. Records remain independent and migrate the first operation's earlier score.
+
 ## Next useful work
 
 Tune whether splitting the crew earns its cognitive cost. Then extend civilian responses and challenges, spatial equipment choices, directional animation, route variety, and missions built from these systems.

@@ -1,8 +1,8 @@
 # Amortization
 
-A real-time squad tactics game for the browser. Four operatives enter a tram depot to extract a defecting engineer. One maintenance disguise admits a single person; the rest of the crew can prepare access or provide armed backup.
+A real-time squad tactics game for the browser. Control four operatives together or individually. One maintenance disguise admits a single person; the rest of the crew can prepare access or provide armed backup.
 
-The first operation, **The release clause**, is playable from briefing through extraction or defeat, with a quiet route, an armed approach, and optional evidence to carry home.
+**Two operations** are playable from briefing through extraction or defeat. Use **Operations** to launch either contract, or **Next operation** after completing the first. Restart and Shift+R restart the selected mission.
 
 ## Development
 
@@ -38,11 +38,11 @@ To play from another device on your local network, use `npm run dev -- --host 0.
 | Right-click a labelled diamond     | Nearest selected operative approaches and interacts            |
 | Right-click a guard                | Draw weapons and attack                                        |
 | G                                  | Regroup everyone at the lead selected operative                |
-| S                                  | Hold position                                                  |
+| S                                  | Hold position / release the archive shunt                      |
 | F                                  | Draw / conceal selected weapons                                |
 | E                                  | Interact with a nearby landmark                                |
 | H                                  | Use a field dressing: one per operative, up to 55 health       |
-| X                                  | Put down the diagnostic unit                                   |
+| X                                  | Put down carried evidence                                      |
 | Space                              | Pause / resume; orders work while paused                       |
 | Hold Tab                           | Slow time to 20%                                               |
 | Wheel / + and − buttons            | Zoom                                                           |
@@ -53,7 +53,7 @@ To play from another device on your local network, use `npm run dev -- --host 0.
 
 On touch screens, tap portraits to select, tap ground or a landmark to order, and drag to pan. The sidebar provides the main actions. Desktop mouse and keyboard offer the most precise control. Losing tab focus pauses play.
 
-## Mission rules
+## The release clause · Operation 01
 
 - **KIT** contains one maintenance uniform. Taking it conceals the operative's weapon. Workshop access is permitted; the marked secure office remains restricted.
 - Suspicion grows only while a guard can see something suspicious. Walls and trams block sight. Unconfirmed suspicion decays out of sight.
@@ -66,7 +66,20 @@ On touch screens, tap portraits to select, tap ground or a landmark to order, an
 
 An approachable quiet route is KIT → west entrance → RADIO → VOSS → west entrance → VAN. Move promptly in the office and use pause to plan. For an armed approach, keep the crew together, use the trams as cover, and prepare an exit.
 
-Results track time, crew survival, evidence, and alarm status. The best extraction time is stored locally when browser storage is available.
+## Material breach · Operation 02
+
+Voss has traced fraudulent contracts to their paper original in a guarded records annex. Bring the **LEDGER** and all surviving operatives to the van on the east road.
+
+- **KIT** grants maintenance access to the yard, not the archive. The ledger is conspicuous even in uniform.
+- Assign an operative to **SHUNT** outside the west wall. Their standing order keeps the archive shutter open while another enters. Changing selection preserves the order; moving, Hold, or death releases it. A safety sensor prevents the shutter closing on a person in the doorway.
+- **CUT** is the alternative: eight seconds to force the shutter permanently. Local guards investigate even if **RADIO** has been disabled. A trapped operative can also cut the lock from inside.
+- Open **GATE** from inside before collecting the ledger. This gives the carrier a short exit on the east road. Watch the patrol and use the archive screen wall as cover.
+- The ledger is required, slows its carrier, and occupies both hands. Drop it to fight or transfer it; recover it if its carrier falls. Extraction waits for the carrier and every survivor.
+- Bring the shunt operator back along the public street if preserving cover. An automatic route to the east van may go through the restricted yard.
+
+A quiet approach uses a disguised runner and a second operative at SHUNT. Prepare RADIO and GATE before lifting the ledger, time the exit past the road patrol, then release the operator. An armed approach can advance through the west entrance as a group, cut the shutter, and escort the carrier out.
+
+Results track time, crew survival, evidence, and alarm status. Best times and completion counts are stored separately for each operation. Existing first-mission records migrate automatically. Play remains available when browser storage is disabled.
 
 ## Structure
 
@@ -82,10 +95,10 @@ Results track time, crew survival, evidence, and alarm status. The best extracti
 
 Simulation runs at 30 Hz with interpolated rendering. All gameplay uses world coordinates; isometric projection only affects presentation. Map geometry drives collision, pathfinding, and sight, including the extraction van. A half-metre A* grid uses a binary heap; its connections, smoothing, destinations, and movement share one body-clearance rule. Isometric draw order respects entire scenery footprints and the characters' interpolated foot positions. Wall-mounted details inherit their wall's order.
 
-CI uses one Ubuntu job, Node 24, and Chromium. The simulation suite includes a complete quiet extraction and checks for navigation clearance, local identification, disguise permissions, radio disruption, evidence custody, and extraction requirements.
+CI uses one Ubuntu job, Node 24, and Chromium. The simulation suite includes complete quiet and armed extractions for both missions and checks for navigation clearance, local identification, disguise permissions, radio disruption, evidence custody, and extraction requirements.
 
 ## Current scope
 
-One ground-level mission and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, directional character animation, and mid-mission saves remain future work. In-world operatives share a sprite and use numbered selection markers; their portraits are distinct.
+Two ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, directional character animation, and mid-mission saves remain future work. In-world operatives share a sprite and use numbered selection markers; their portraits are distinct.
 
 See [design notes](docs/design.md) and [art provenance](docs/art.md). Distributed under the repository's [MIT license](LICENSE).

@@ -6,7 +6,11 @@ export const BODY_RADIUS = 0.2;
 const EPSILON = 1e-7;
 
 export function obstacles(world: World): Rect[] {
-  return world.gateOpen ? world.mission.solids : [...world.mission.solids, world.mission.gate];
+  return [
+    ...world.mission.solids,
+    ...(world.gateOpen ? [] : [world.mission.gate]),
+    ...(world.mission.archive && !world.shutterOpen ? [world.mission.archive.door] : []),
+  ];
 }
 
 export function passable(world: World, p: Vec, radius = BODY_RADIUS): boolean {
