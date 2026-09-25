@@ -1,6 +1,6 @@
 import { distance, living } from './types';
 import type { Person, World } from './types';
-import { findPath, lineClear, passable } from './navigation';
+import { canWalk, findPath, lineClear } from './navigation';
 import { completeInteraction, dropEvidence, interactionPoint } from './orders';
 import { updateAwareness } from './awareness';
 import { shoot } from './combat';
@@ -12,7 +12,7 @@ function walk(world: World, p: Person, speed: number, dt: number) {
   while (budget > 0 && p.path.length) {
     const target = p.path[0],
       length = distance(p, target);
-    if (length < 0.025) {
+    if (length < 1e-8) {
       p.path.shift();
       continue;
     }
@@ -21,7 +21,7 @@ function walk(world: World, p: Person, speed: number, dt: number) {
       x: p.x + ((target.x - p.x) / length) * amount,
       y: p.y + ((target.y - p.y) / length) * amount,
     };
-    if (!passable(world, next)) {
+    if (!canWalk(world, p, next)) {
       p.path = [];
       break;
     }

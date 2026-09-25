@@ -80,7 +80,7 @@ Results track time, crew survival, evidence, and alarm status. The best extracti
 | `src/audio/`   | Gesture-activated synthesized effects                                                  |
 | `tests/`       | Simulation scenarios and browser checks                                                |
 
-Simulation runs at 30 Hz with interpolated rendering. All gameplay uses world coordinates; isometric projection only affects presentation. Map geometry drives collision, pathfinding, and sight. A half-metre A* grid uses a binary heap and clearance-aware path smoothing.
+Simulation runs at 30 Hz with interpolated rendering. All gameplay uses world coordinates; isometric projection only affects presentation. Map geometry drives collision, pathfinding, and sight, including the extraction van. A half-metre A* grid uses a binary heap; its connections, smoothing, destinations, and movement share one body-clearance rule. Isometric draw order respects entire scenery footprints and the characters' interpolated foot positions. Wall-mounted details inherit their wall's order.
 
 CI uses one Ubuntu job, Node 24, and Chromium. The simulation suite includes a complete quiet extraction and checks for navigation clearance, local identification, disguise permissions, radio disruption, evidence custody, and extraction requirements.
 

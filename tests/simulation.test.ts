@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createWorld } from '../src/sim/world';
 import { STEP, step } from '../src/sim/step';
-import { findPath, lineClear, passable } from '../src/sim/navigation';
+import { canWalk, findPath, lineClear, passable } from '../src/sim/navigation';
 import {
   attack,
   completeInteraction,
@@ -30,7 +30,7 @@ describe('navigation and orders', () => {
     let p = { x: a.x, y: a.y };
     for (const q of path) {
       expect(passable(w, q)).toBe(true);
-      expect(lineClear(w, p, q, 0.2)).toBe(true);
+      expect(canWalk(w, p, q)).toBe(true);
       p = q;
     }
     expect(distance(p, end)).toBeLessThan(0.1);

@@ -1,22 +1,26 @@
 import { distance } from './types';
 import type { Rect, Vec, World } from './types';
 
+export const BODY_RADIUS = 0.2;
+// Permit contact with the clearance boundary without trapping a body on it.
+const EPSILON = 1e-7;
+
 export function obstacles(world: World): Rect[] {
   return world.gateOpen ? world.mission.solids : [...world.mission.solids, world.mission.gate];
 }
 
-export function passable(world: World, p: Vec, radius = 0.2): boolean {
+export function passable(world: World, p: Vec, radius = BODY_RADIUS): boolean {
   return (
-    p.x >= radius &&
-    p.y >= radius &&
-    p.x < world.mission.width - radius &&
-    p.y < world.mission.height - radius &&
+    p.x >= radius - EPSILON &&
+    p.y >= radius - EPSILON &&
+    p.x <= world.mission.width - radius + EPSILON &&
+    p.y <= world.mission.height - radius + EPSILON &&
     !obstacles(world).some(
       (r) =>
-        p.x > r.x - radius &&
-        p.x < r.x + r.w + radius &&
-        p.y > r.y - radius &&
-        p.y < r.y + r.h + radius,
+        p.x >= r.x - radius + EPSILON &&
+        p.x <= r.x + r.w + radius - EPSILON &&
+        p.y >= r.y - radius + EPSILON &&
+        p.y <= r.y + r.h + radius - EPSILON,
     )
   );
 }
@@ -45,6 +49,11 @@ export function intersects(a: Vec, b: Vec, rect: Rect, margin = 0): boolean {
 export const lineClear = (world: World, a: Vec, b: Vec, margin = 0) =>
   !obstacles(world).some((r) => intersects(a, b, r, margin));
 
+// Destinations, grid connections, smoothing, and movement share one body clearance.
+// Sight rays retain their separate, inclusive edge test.
+export const canWalk = (world: World, a: Vec, b: Vec) =>
+  passable(world, a) && passable(world, b) && lineClear(world, a, b, BODY_RADIUS - EPSILON);
+
 export function nearestFree(world: World, target: Vec): Vec {
   if (passable(world, target)) return { ...target };
   for (let radius = 0.4; radius <= 4; radius += 0.4) {
@@ -62,17 +71,14 @@ export function nearestFree(world: World, target: Vec): Vec {
 // A half-metre grid is small enough for doors. A binary heap keeps repeated guard paths cheap.
 export function findPath(world: World, start: Vec, requested: Vec): Vec[] {
   const end = nearestFree(world, requested);
-  if (!passable(world, end)) return [];
-  if (lineClear(world, start, end, 0.21)) return [end];
+  if (!passable(world, start) || !passable(world, end)) return [];
+  if (canWalk(world, start, end)) return [end];
   const width = world.mission.width * 2,
     height = world.mission.height * 2;
   const point = (id: number) => ({
     x: (id % width) / 2 + 0.25,
     y: Math.floor(id / width) / 2 + 0.25,
   });
-  const cell = (p: Vec) => Math.floor(p.y * 2) * width + Math.floor(p.x * 2);
-  const startId = cell(start),
-    endId = cell(end);
   const costs = new Float64Array(width * height).fill(Infinity);
   const parent = new Int32Array(width * height).fill(-1);
   const closed = new Uint8Array(width * height);
@@ -106,17 +112,29 @@ export function findPath(world: World, start: Vec, requested: Vec): Vec[] {
     }
     return top.id;
   }
-  costs[startId] = 0;
-  push(startId, 0);
+  // The real start is a separate node: its containing cell's centre can be inside
+  // a building. Connect only to nearby grid centres that it can actually reach.
+  const sx = Math.floor(start.x * 2),
+    sy = Math.floor(start.y * 2);
+  for (let y = sy - 1; y <= sy + 1; y++)
+    for (let x = sx - 1; x <= sx + 1; x++) {
+      if (x < 0 || y < 0 || x >= width || y >= height) continue;
+      const id = y * width + x,
+        p = point(id);
+      if (!canWalk(world, start, p)) continue;
+      costs[id] = distance(start, p);
+      push(id, costs[id] + distance(p, end));
+    }
   while (heap.length) {
     const id = pop();
     if (closed[id]) continue;
     closed[id] = 1;
-    const p = id === startId ? start : point(id);
-    if (id === endId || (distance(p, end) < 0.8 && lineClear(world, p, end, 0.21))) {
+    const p = point(id);
+    // Sharing a grid cell does not prove the final segment clears its corner.
+    if (distance(p, end) < 0.8 && canWalk(world, p, end)) {
       const result: Vec[] = [end];
       let cursor = id;
-      while (cursor !== startId && cursor >= 0) {
+      while (cursor >= 0) {
         result.push(point(cursor));
         cursor = parent[cursor];
       }
@@ -126,7 +144,7 @@ export function findPath(world: World, start: Vec, requested: Vec): Vec[] {
       let from = start;
       for (let i = 0; i < result.length; i++) {
         let j = i;
-        while (j + 1 < result.length && lineClear(world, from, result[j + 1], 0.21)) j++;
+        while (j + 1 < result.length && canWalk(world, from, result[j + 1])) j++;
         smooth.push(result[j]);
         from = result[j];
         i = j;
@@ -141,7 +159,7 @@ export function findPath(world: World, start: Vec, requested: Vec): Vec[] {
         if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
         const next = ny * width + nx,
           q = point(next);
-        if (closed[next] || !passable(world, q) || !lineClear(world, p, q, 0.21)) continue;
+        if (closed[next] || !canWalk(world, p, q)) continue;
         const cost = costs[id] + distance(p, q);
         if (cost < costs[next]) {
           costs[next] = cost;

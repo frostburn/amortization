@@ -9,9 +9,10 @@ import {
   Texture,
 } from 'pixi.js';
 import { distance, living, EXTRACTION_RADIUS } from '../sim/types';
-import type { ObjectKind, Person, Solid, Vec, World } from '../sim/types';
+import type { ObjectKind, Person, Rect, Solid, Vec, World } from '../sim/types';
 import { available, landmark } from '../sim/orders';
 import { lineClear } from '../sim/navigation';
+import { depthOrder } from './depth';
 
 const TILE_X = 26,
   TILE_Y = 14,
@@ -105,6 +106,7 @@ export class Scene {
   private marks = new Container();
   private effects = new Graphics();
   private views = new Map<string, PersonView>();
+  private scenery: { root: Container; footprint: Rect }[] = [];
   private icons = new Map<ObjectKind, Container>();
   private textures: Texture[] = [];
   private gate: Graphics | null = null;
@@ -159,6 +161,7 @@ export class Scene {
   reset(world: World) {
     this.world = world;
     this.views.clear();
+    this.scenery = [];
     this.icons.clear();
     this.objects.removeChildren().forEach((c) => c.destroy({ children: true }));
     this.marks.removeChildren().forEach((c) => c.destroy({ children: true }));
@@ -205,23 +208,9 @@ export class Scene {
     for (let x = 24.4; x < 27.7; x += 0.5) plane(g, x, 8.85, 0.25, 0.12, COLORS.amber);
     for (const solid of world.mission.solids) this.addSolid(solid);
     this.gate = new Graphics();
-    this.gate.zIndex = 45.5;
-    box(this.gate, 21, 20, 4, 0.35, 1.1, 0x9eaa96, 0x627669, 0x394d43);
-    this.objects.addChild(this.gate);
-    // Depot equipment and lights are scenery; all substantial cover is a simulation solid.
-    for (let x = 10.5; x < 27; x += 3) {
-      const p = project({ x, y: 4.3 }, 1.3);
-      const lamp = new Graphics();
-      lamp.ellipse(p.x, p.y + 16, 26, 9).fill({ color: 0xe8ba76, alpha: 0.08 });
-      lamp.circle(p.x, p.y, 3).fill(0xf3c58a);
-      this.marks.addChild(lamp);
-    }
-    const depotLabel = text('DEPOT 06', 22, 0xc3c4a8);
-    const dp = project({ x: 10, y: 20.5 }, 1.3);
-    depotLabel.position.set(dp.x, dp.y);
-    depotLabel.skew.y = Math.atan(TILE_Y / TILE_X);
-    this.objects.addChild(depotLabel);
-    depotLabel.zIndex = 31;
+    const gate = world.mission.gate;
+    box(this.gate, gate.x, gate.y, gate.w, gate.h, 1.1, 0x9eaa96, 0x627669, 0x394d43);
+    this.addScenery(this.gate, gate);
     const office = text('SECURE OFFICE', 10, 0xf0c68b);
     office.position.copyFrom(project({ x: 25.5, y: 4.5 }, 1.8));
     office.anchor.set(0.5, 1);
@@ -231,13 +220,6 @@ export class Scene {
     road.position.copyFrom(rp);
     road.skew.y = Math.atan(TILE_Y / TILE_X);
     this.marks.addChild(road);
-    const van = new Graphics();
-    box(van, 2.2, 21, 1.6, 3, 1.2, 0x3b756d, 0x244e49, 0x32625b);
-    plane(van, 2.35, 21.2, 1.3, 0.6, 0x173230, 1.21);
-    van.zIndex = 27;
-    const vp = project({ x: 3.8, y: 23.6 }, 0.4);
-    van.circle(vp.x, vp.y, 4).fill(0xc5aa73);
-    this.objects.addChild(van);
     for (const o of world.mission.landmarks) {
       const root = new Container();
       const mark = new Graphics();
@@ -270,9 +252,20 @@ export class Scene {
       this.marks.addChild(root);
     }
   }
+  private addScenery(root: Container, footprint: Rect) {
+    this.scenery.push({ root, footprint });
+    this.objects.addChild(root);
+  }
   private addSolid(s: Solid) {
-    const g = new Graphics();
-    if (s.kind === 'tram') {
+    const root = new Container(),
+      g = new Graphics();
+    root.addChild(g);
+    if (s.kind === 'van') {
+      box(g, s.x, s.y, s.w, s.h, s.height, 0x3b756d, 0x244e49, 0x32625b);
+      plane(g, s.x + 0.15, s.y + 0.2, s.w - 0.3, 0.6, 0x173230, s.height + 0.01);
+      const p = project({ x: s.x + s.w, y: s.y + s.h - 0.4 }, 0.4);
+      g.circle(p.x, p.y, 4).fill(0xc5aa73);
+    } else if (s.kind === 'tram') {
       box(g, s.x, s.y, s.w, s.h, s.height, 0x6b4b40, 0x8a4f40, 0x533e37);
       for (let y = s.y + 0.6; y < s.y + s.h - 0.5; y += 1.25) {
         const a = project({ x: s.x + s.w + 0.015, y }, 1.2),
@@ -310,8 +303,21 @@ export class Scene {
         plane(g, s.x + 0.4, s.y + 0.4, s.w - 0.8, s.h - 0.8, 0x46544a, s.height + 0.03);
       }
     }
-    g.zIndex = s.x + s.y + (s.w + s.h) * 0.5;
-    this.objects.addChild(g);
+    // Wall-mounted details must inherit their wall's occlusion, too.
+    if (s.id === 'north') {
+      for (let x = 10.5; x < 27; x += 3) {
+        const p = project({ x, y: 4.3 }, 1.3);
+        g.ellipse(p.x, p.y + 16, 26, 9).fill({ color: 0xe8ba76, alpha: 0.08 });
+        g.circle(p.x, p.y, 3).fill(0xf3c58a);
+      }
+    }
+    if (s.id === 'south-a') {
+      const label = text('DEPOT 06', 22, 0xc3c4a8);
+      label.position.copyFrom(project({ x: 10, y: 20.5 }, 1.3));
+      label.skew.y = Math.atan(TILE_Y / TILE_X);
+      root.addChild(label);
+    }
+    this.addScenery(root, s);
   }
   private resize() {
     if (!this.app.renderer) return;
@@ -400,6 +406,7 @@ export class Scene {
       this.coneTime = w.time;
     }
     this.cones.visible = this.showVision;
+    const depthItems = this.scenery.filter((item) => item.root.visible);
     for (const p of [...w.agents, ...w.guards, w.engineer]) {
       const a = w.agents.find((a) => a.id === p.id),
         guard = w.guards.find((g) => g.id === p.id);
@@ -410,7 +417,7 @@ export class Scene {
         y: p.previous.y + (p.y - p.previous.y) * alpha,
       };
       v.root.position.copyFrom(project(pos));
-      v.root.zIndex = p.x + p.y + 0.7;
+      depthItems.push({ root: v.root, footprint: { ...pos, w: 0, h: 0 } });
       v.sprite.alpha = living(p) ? 1 : 0.3;
       v.sprite.rotation = living(p) ? 0 : Math.PI / 2;
       v.sprite.scale.x =
@@ -445,6 +452,9 @@ export class Scene {
       if (a?.carrying)
         v.ink.rect(8, -14, 10, 9).fill(COLORS.amber).stroke({ color: 0x2b352d, width: 1 });
     }
+    depthOrder(depthItems).forEach((item, index) => {
+      item.root.zIndex = index;
+    });
     for (const [id, icon] of this.icons) {
       icon.visible = available(w, id);
       icon.position.copyFrom(project(landmark(w, id), 1.45));

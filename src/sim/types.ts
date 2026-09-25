@@ -10,7 +10,7 @@ export interface Rect extends Vec {
 }
 export interface Solid extends Rect {
   id: string;
-  kind: 'wall' | 'tram' | 'crate' | 'building';
+  kind: 'wall' | 'tram' | 'crate' | 'building' | 'van';
   height: number;
 }
 export type ObjectKind = 'disguise' | 'gate' | 'relay' | 'evidence' | 'engineer' | 'extract';
