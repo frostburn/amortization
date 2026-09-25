@@ -67,3 +67,48 @@ test('accepts successive movement orders next to and around the kiosk', async ({
   }
   expect(errors).toEqual([]);
 });
+
+test('switches operations, holds the shunt while selecting a teammate, and restarts mission two', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Choose operation' }).click();
+  await page.getByRole('button', { name: /02 .*Material breach/ }).click();
+  await expect(page.getByRole('dialog')).toContainText('Two people, one borrowed identity');
+  await page.getByRole('button', { name: 'Begin operation' }).click();
+  await page.getByRole('button', { name: 'Select Vale', exact: true }).click();
+  const map = (await page.locator('canvas').boundingBox())!;
+  const scale = Math.min(map.width / (62 * 26 + 80), map.height / (62 * 14 + 110));
+  await page.mouse.click(
+    map.x + map.width / 2 + ((4.8 - 10.2) * 26 - 3 * 26) * scale,
+    map.y + map.height / 2 + ((4.8 + 10.2) * 14 - 1.45 * 25 - 31 * 14 + 25) * scale,
+    { button: 'right' },
+  );
+  await expect(page.locator('#condition-1')).toHaveText('Holding shunt', { timeout: 10_000 });
+  await page.getByRole('button', { name: 'Select all' }).click();
+  await expect(page.locator('#work-label')).toContainText('Vale: holding SHUNT');
+  await page.getByRole('button', { name: 'Select Vale', exact: true }).click();
+  // Reissuing an order on the marker still works when its operator overlaps it.
+  await page.mouse.click(
+    map.x + map.width / 2 + ((4.8 - 10.2) * 26 - 3 * 26) * scale,
+    map.y + map.height / 2 + ((4.8 + 10.2) * 14 - 1.45 * 25 - 31 * 14 + 25) * scale,
+    { button: 'right' },
+  );
+  await page.getByRole('button', { name: 'Select Morrow', exact: true }).click();
+  await expect(page.locator('#archive-status')).toHaveText('SHUNT held by Vale');
+  await expect(page.locator('#objective-primary')).toContainText('shutter open');
+  await page.getByRole('button', { name: 'Select Vale', exact: true }).click();
+  await page.locator('[data-action="hold"]').click();
+  await expect(page.locator('#archive-status')).toHaveText('Shutter: locked');
+  await page.getByRole('button', { name: 'Restart', exact: true }).click();
+  await expect(page.locator('#mission-title')).toHaveText('Material breach');
+  await expect(page.locator('#condition-1')).toHaveText('Concealed');
+  await page.getByRole('button', { name: 'Operations', exact: true }).click();
+  await page.getByRole('button', { name: /01 .*The release clause/ }).click();
+  await expect(page.getByRole('dialog')).toContainText('Voss wants out.');
+  await page.getByRole('button', { name: 'Begin operation' }).click();
+  await expect(page.locator('#archive-status')).toBeHidden();
+  expect(errors).toEqual([]);
+});

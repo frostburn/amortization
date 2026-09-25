@@ -13,14 +13,15 @@ import {
   toggleWeapons,
 } from './sim/orders';
 import { distance, living } from './sim/types';
-import type { World } from './sim/types';
+import type { Mission, World } from './sim/types';
 import { Scene } from './render/scene';
 import type { Hit } from './render/scene';
 import { Hud } from './ui/hud';
 import type { Action } from './ui/hud';
 import { bindControls } from './input/controls';
 import { Sound } from './audio/sound';
-import { readRecords, recordWin } from './ui/storage';
+import { missionRecord, readRecords, recordWin } from './ui/storage';
+import { missions, nextMission } from './content/missions';
 
 async function boot() {
   let world: World = createWorld(),
@@ -44,6 +45,20 @@ async function boot() {
   });
   const scene = new Scene(hud.stage, world);
   await scene.init();
+  function startMission(mission: Mission, briefing: boolean) {
+    world = createWorld(mission);
+    selected = world.agents.map((a) => a.id);
+    paused = briefing;
+    slow = false;
+    saved = false;
+    accumulator = 0;
+    scene.reset(world);
+    hud.close();
+    hud.reset(mission);
+    hud.vision(scene.showVision);
+    if (briefing) hud.showBriefing();
+    updateHud();
+  }
   function order(hit: Hit) {
     if (world.status !== 'playing') return;
     if (hit.kind === 'ground') moveAgents(world, selected, hit.point);
@@ -55,7 +70,21 @@ async function boot() {
     }
   }
   function action(type: Action) {
+    if (type.startsWith('mission:')) {
+      const mission = missions.find((m) => type === `mission:${m.id}`);
+      if (mission) startMission(mission, true);
+      return;
+    }
     switch (type) {
+      case 'operations':
+        paused = true;
+        hud.showOperations(records);
+        break;
+      case 'next': {
+        const mission = nextMission(world.mission.id);
+        if (world.status === 'won' && mission) startMission(mission, true);
+        break;
+      }
       case 'pause':
         if (world.status === 'playing') paused = !paused;
         break;
@@ -63,23 +92,17 @@ async function boot() {
         sound.toggle();
         break;
       case 'begin':
+        if (world.status !== 'playing') break;
         hud.close();
         paused = false;
         break;
       case 'briefing':
         paused = true;
         if (world.status === 'playing') hud.showBriefing();
+        else hud.showEnd(world, missionRecord(records, world.mission.id).best, true);
         break;
       case 'restart': {
-        world = createWorld();
-        selected = world.agents.map((a) => a.id);
-        paused = false;
-        slow = false;
-        saved = false;
-        accumulator = 0;
-        scene.reset(world);
-        hud.close();
-        hud.reset();
+        startMission(world.mission, false);
         break;
       }
       case 'all':
@@ -139,7 +162,13 @@ async function boot() {
     updateHud();
   }
   function updateHud() {
-    hud.update(world, { selected, paused, slow, sound: sound.enabled, best: records.best });
+    hud.update(world, {
+      selected,
+      paused,
+      slow,
+      sound: sound.enabled,
+      best: missionRecord(records, world.mission.id).best,
+    });
   }
   bindControls(scene, hud, {
     world: () => world,
@@ -182,10 +211,10 @@ async function boot() {
     if (world.status !== 'playing') {
       paused = true;
       if (world.status === 'won' && !saved) {
-        records = recordWin(world.time);
+        records = recordWin(world.mission.id, world.time);
         saved = true;
       }
-      hud.showEnd(world, records.best);
+      hud.showEnd(world, missionRecord(records, world.mission.id).best);
     }
     if (now - lastHud > 90) {
       updateHud();

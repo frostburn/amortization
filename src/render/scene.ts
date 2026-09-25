@@ -8,7 +8,7 @@ import {
   Text,
   Texture,
 } from 'pixi.js';
-import { distance, living, EXTRACTION_RADIUS } from '../sim/types';
+import { distance, inside, living, people, EXTRACTION_RADIUS } from '../sim/types';
 import type { ObjectKind, Person, Rect, Solid, Vec, World } from '../sim/types';
 import { available, landmark } from '../sim/orders';
 import { lineClear } from '../sim/navigation';
@@ -110,6 +110,7 @@ export class Scene {
   private icons = new Map<ObjectKind, Container>();
   private textures: Texture[] = [];
   private gate: Graphics | null = null;
+  private shutter: Graphics | null = null;
   private world: World;
   private fit = 1;
   zoom = 1;
@@ -162,21 +163,26 @@ export class Scene {
     this.world = world;
     this.views.clear();
     this.scenery = [];
+    this.shutter = null;
+    this.coneTime = -1;
     this.icons.clear();
     this.objects.removeChildren().forEach((c) => c.destroy({ children: true }));
     this.marks.removeChildren().forEach((c) => c.destroy({ children: true }));
     this.build();
+    this.resize();
     this.home();
   }
   private build() {
     const world = this.world,
       g = this.floor;
     g.clear();
-    plane(g, 0, 0, 32, 26, COLORS.ground);
-    for (let x = 0; x < 32; x++)
-      for (let y = 0; y < 26; y++) {
-        const depot = x >= 9 && x <= 28 && y >= 4 && y <= 20;
-        const street = x < 7 || y > 21;
+    const mission = world.mission;
+    plane(g, 0, 0, mission.width, mission.height, COLORS.ground);
+    for (let x = 0; x < mission.width; x++)
+      for (let y = 0; y < mission.height; y++) {
+        const depot = inside({ x, y }, mission.restricted);
+        const street =
+          x < mission.restricted.x - 1 || y > mission.restricted.y + mission.restricted.h;
         const noise = (x * 17 + y * 23) % 5;
         plane(
           g,
@@ -191,32 +197,62 @@ export class Scene {
               : [0x303e37, 0x344039, 0x33413b, 0x35413b, 0x303d37][noise],
         );
       }
-    // Pavements and rails share the simulation's coordinate space.
-    plane(g, 7, 0, 1.5, 21.2, 0x525c53);
-    plane(g, 7, 20.6, 22, 0.65, 0x647060);
-    plane(g, 0, 24.5, 32, 0.16, 0x74796a);
-    plane(g, 2, 0, 0.13, 7.5, 0x74796a);
-    for (let x = 8; x < 32; x += 3) plane(g, x, 23.4, 1.25, 0.1, 0xb4af8e);
-    for (const x of [13.45, 15.05, 20.25, 21.9]) {
-      plane(g, x, 5, 0.1, 15, 0x111c1c);
-      plane(g, x + 0.07, 5, 0.045, 15, 0x8b9688);
+    // Each site's ground markings use the same coordinates as its collision map.
+    if (mission.id === 'depot') {
+      plane(g, 7, 0, 1.5, 21.2, 0x525c53);
+      plane(g, 7, 20.6, 22, 0.65, 0x647060);
+      plane(g, 0, 24.5, 32, 0.16, 0x74796a);
+      plane(g, 2, 0, 0.13, 7.5, 0x74796a);
+      for (let x = 8; x < 32; x += 3) plane(g, x, 23.4, 1.25, 0.1, 0xb4af8e);
+      for (const x of [13.45, 15.05, 20.25, 21.9]) {
+        plane(g, x, 5, 0.1, 15, 0x111c1c);
+        plane(g, x + 0.07, 5, 0.045, 15, 0x8b9688);
+      }
+      for (let y = 5; y < 20; y += 0.65)
+        for (const x of [13.2, 20]) plane(g, x, y, 2.2, 0.1, 0x343e38);
+      // Mark the secure office visibly, including its accessible southern opening.
+      plane(g, 24.4, 4.5, 3.3, 4.3, 0x70614b, 0, 0.55);
+      for (let x = 24.4; x < 27.7; x += 0.5) plane(g, x, 8.85, 0.25, 0.12, COLORS.amber);
+    } else {
+      plane(g, 6.4, 0, 1.1, 22, 0x59645e);
+      plane(g, 7.5, 21.65, 23.5, 0.6, 0x657168);
+      plane(g, 30.7, 2, 0.65, 20, 0x657168);
+      for (let x = 8; x < 34; x += 3) plane(g, x, 25, 1.25, 0.1, 0xb4af8e);
+      for (let y = 4; y < 26; y += 3) plane(g, 32.6, y, 0.1, 1.25, 0xb4af8e);
+      const s = mission.secure;
+      plane(g, s.x, s.y, s.w, s.h, 0x746752, 0, 0.65);
+      plane(g, 24.8, 11.8, 2.7, 0.8, 0x242e2b);
+      for (let x = 24.8; x < 27.5; x += 0.4) plane(g, x, 12.45, 0.2, 0.2, COLORS.amber);
+      // Loading bays, paper pallets, and fire-control wiring distinguish the annex.
+      for (let x = 10; x < 26; x += 4) {
+        plane(g, x, 18.4, 0.08, 2.2, 0x8d9785);
+        plane(g, x, 20.6, 2.7, 0.08, 0x8d9785);
+      }
+      plane(g, 4.7, 8.9, 0.12, 1.3, 0xce9e60);
     }
-    for (let y = 5; y < 20; y += 0.65)
-      for (const x of [13.2, 20]) plane(g, x, y, 2.2, 0.1, 0x343e38);
-    // Mark the secure office visibly, including its accessible southern opening.
-    plane(g, 24.4, 4.5, 3.3, 4.3, 0x70614b, 0, 0.55);
-    for (let x = 24.4; x < 27.7; x += 0.5) plane(g, x, 8.85, 0.25, 0.12, COLORS.amber);
     for (const solid of world.mission.solids) this.addSolid(solid);
     this.gate = new Graphics();
     const gate = world.mission.gate;
     box(this.gate, gate.x, gate.y, gate.w, gate.h, 1.1, 0x9eaa96, 0x627669, 0x394d43);
     this.addScenery(this.gate, gate);
-    const office = text('SECURE OFFICE', 10, 0xf0c68b);
-    office.position.copyFrom(project({ x: 25.5, y: 4.5 }, 1.8));
+    if (mission.archive) {
+      this.shutter = new Graphics();
+      const d = mission.archive.door;
+      box(this.shutter, d.x, d.y, d.w, d.h, 1.6, 0x9b8e70, 0x695d47, 0x4e554b);
+      this.addScenery(this.shutter, d);
+    }
+    const office = text(mission.archive ? 'SECURE ARCHIVE' : 'SECURE OFFICE', 10, 0xf0c68b);
+    office.position.copyFrom(
+      project({ x: mission.secure.x + mission.secure.w / 2, y: mission.secure.y + 0.5 }, 1.8),
+    );
     office.anchor.set(0.5, 1);
     this.marks.addChild(office);
-    const road = text('MUNICIPAL TRANSIT / 06', 10, 0x718277);
-    const rp = project({ x: 12, y: 24.8 });
+    const road = text(
+      mission.id === 'depot' ? 'MUNICIPAL TRANSIT / 06' : 'CIVIC RECORDS / NO PUBLIC ACCESS',
+      10,
+      0x718277,
+    );
+    const rp = project({ x: 12, y: mission.height - 1.2 });
     road.position.copyFrom(rp);
     road.skew.y = Math.atan(TILE_Y / TILE_X);
     this.marks.addChild(road);
@@ -233,18 +269,7 @@ export class Scene {
         .poly([0, -9, 7, 0, 0, 9, -7, 0])
         .fill({ color: 0x162722, alpha: 0.9 })
         .stroke({ color, width: 1.5 });
-      const label = text(
-        {
-          disguise: 'KIT',
-          gate: 'GATE',
-          relay: 'RADIO',
-          engineer: 'VOSS',
-          evidence: 'UNIT',
-          extract: 'VAN',
-        }[o.id],
-        10,
-        color,
-      );
+      const label = text(o.tag, 10, color);
       label.anchor.set(0.5, 1);
       label.y = -12;
       root.addChild(mark, label);
@@ -265,6 +290,13 @@ export class Scene {
       plane(g, s.x + 0.15, s.y + 0.2, s.w - 0.3, 0.6, 0x173230, s.height + 0.01);
       const p = project({ x: s.x + s.w, y: s.y + s.h - 0.4 }, 0.4);
       g.circle(p.x, p.y, 4).fill(0xc5aa73);
+    } else if (s.kind === 'shelves') {
+      box(g, s.x, s.y, s.w, s.h, s.height, 0x637474, 0x465b5c, 0x34484c);
+      for (let z = 0.3; z < s.height; z += 0.38) {
+        const a = project({ x: s.x + 0.12, y: s.y + s.h + 0.01 }, z);
+        const b = project({ x: s.x + s.w - 0.12, y: s.y + s.h + 0.01 }, z);
+        g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ color: 0xadc0b2, width: 1.4 });
+      }
     } else if (s.kind === 'tram') {
       box(g, s.x, s.y, s.w, s.h, s.height, 0x6b4b40, 0x8a4f40, 0x533e37);
       for (let y = s.y + 0.6; y < s.y + s.h - 0.5; y += 1.25) {
@@ -311,9 +343,9 @@ export class Scene {
         g.circle(p.x, p.y, 3).fill(0xf3c58a);
       }
     }
-    if (s.id === 'south-a') {
-      const label = text('DEPOT 06', 22, 0xc3c4a8);
-      label.position.copyFrom(project({ x: 10, y: 20.5 }, 1.3));
+    if (s.id === 'south-a' || s.id === 'annex-front') {
+      const label = text(s.id === 'south-a' ? 'DEPOT 06' : 'RECORDS / 02', 22, 0xc3c4a8);
+      label.position.copyFrom(project({ x: s.x + 1, y: s.y + s.h + 0.1 }, 1.3));
       label.skew.y = Math.atan(TILE_Y / TILE_X);
       root.addChild(label);
     }
@@ -323,8 +355,10 @@ export class Scene {
     if (!this.app.renderer) return;
     this.app.renderer.resize(this.host.clientWidth, this.host.clientHeight);
     this.fit = Math.min(
-      this.host.clientWidth / ((32 + 26) * TILE_X + 80),
-      this.host.clientHeight / ((32 + 26) * TILE_Y + 110),
+      this.host.clientWidth /
+        ((this.world.mission.width + this.world.mission.height) * TILE_X + 80),
+      this.host.clientHeight /
+        ((this.world.mission.width + this.world.mission.height) * TILE_Y + 110),
     );
     this.updateCamera();
   }
@@ -332,8 +366,15 @@ export class Scene {
     const scale = this.fit * this.zoom;
     this.camera.scale.set(scale);
     this.offset = {
-      x: this.host.clientWidth / 2 - 3 * TILE_X * scale + this.pan.x,
-      y: this.host.clientHeight / 2 - 29 * TILE_Y * scale + this.pan.y + 25 * scale,
+      x:
+        this.host.clientWidth / 2 -
+        ((this.world.mission.width - this.world.mission.height) / 2) * TILE_X * scale +
+        this.pan.x,
+      y:
+        this.host.clientHeight / 2 -
+        ((this.world.mission.width + this.world.mission.height) / 2) * TILE_Y * scale +
+        this.pan.y +
+        25 * scale,
     };
     this.camera.position.set(this.offset.x, this.offset.y);
   }
@@ -362,17 +403,20 @@ export class Scene {
       scale = this.fit * this.zoom;
     return { x: q.x * scale + this.offset.x, y: q.y * scale + this.offset.y };
   }
-  hit(x: number, y: number): Hit {
+  hit(x: number, y: number, prioritizeObjects = false): Hit {
     const p = { x, y };
+    const object = this.world.mission.landmarks.find(
+      (o) =>
+        available(this.world, o.id) &&
+        distance(p, this.screen(landmark(this.world, o.id), 1.45)) < 19,
+    );
+    // An order aimed at a diamond must still reach it when the crew crowds it.
+    // Ordinary left-click selection keeps operatives first.
+    if (prioritizeObjects && object) return { kind: 'object', id: object.id };
     for (const a of this.world.agents.filter(living))
       if (distance(p, this.screen(a, 0.5)) < 20) return { kind: 'agent', id: a.id };
-    for (const o of this.world.mission.landmarks)
-      if (
-        available(this.world, o.id) &&
-        distance(p, this.screen(landmark(this.world, o.id), 1.45)) < 19
-      )
-        return { kind: 'object', id: o.id };
-    if (distance(p, this.screen(this.world.engineer, 0.5)) < 18)
+    if (object) return { kind: 'object', id: object.id };
+    if (this.world.engineer && distance(p, this.screen(this.world.engineer, 0.5)) < 18)
       return { kind: 'object', id: 'engineer' };
     for (const g of this.world.guards.filter(living))
       if (distance(p, this.screen(g, 0.5)) < 18) return { kind: 'guard', id: g.id };
@@ -401,13 +445,14 @@ export class Scene {
   render(selected: string[], alpha: number) {
     const w = this.world;
     if (this.gate) this.gate.visible = !w.gateOpen;
+    if (this.shutter) this.shutter.visible = !w.shutterOpen;
     if (w.time - this.coneTime > 0.12 || w.time < this.coneTime) {
       this.drawVision();
       this.coneTime = w.time;
     }
     this.cones.visible = this.showVision;
     const depthItems = this.scenery.filter((item) => item.root.visible);
-    for (const p of [...w.agents, ...w.guards, w.engineer]) {
+    for (const p of people(w)) {
       const a = w.agents.find((a) => a.id === p.id),
         guard = w.guards.find((g) => g.id === p.id);
       const type = a ? (a.disguised ? 1 : 0) : guard ? 2 : 3;
@@ -457,6 +502,7 @@ export class Scene {
     });
     for (const [id, icon] of this.icons) {
       icon.visible = available(w, id);
+      icon.alpha = id === 'override' && w.overrideBy ? 0.6 : 1;
       icon.position.copyFrom(project(landmark(w, id), 1.45));
     }
     this.effects.clear();

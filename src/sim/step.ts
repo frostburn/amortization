@@ -1,10 +1,17 @@
-import { distance, living } from './types';
+import { distance, living, people } from './types';
 import type { Person, World } from './types';
 import { canWalk, findPath, lineClear } from './navigation';
-import { completeInteraction, dropEvidence, interactionPoint } from './orders';
+import {
+  available,
+  completeInteraction,
+  dropEvidence,
+  interactionDuration,
+  interactionPoint,
+} from './orders';
 import { updateAwareness } from './awareness';
 import { shoot } from './combat';
 import { notify } from './world';
+import { updateShutter } from './shutter';
 
 export const STEP = 1 / 30;
 function walk(world: World, p: Person, speed: number, dt: number) {
@@ -36,7 +43,8 @@ function walk(world: World, p: Person, speed: number, dt: number) {
 export function step(world: World, dt = STEP) {
   if (world.status !== 'playing') return;
   world.time += dt;
-  for (const p of [...world.agents, ...world.guards, world.engineer]) {
+  updateShutter(world);
+  for (const p of people(world)) {
     p.previous = { x: p.x, y: p.y };
     p.cooldown = Math.max(0, p.cooldown - dt);
   }
@@ -45,6 +53,11 @@ export function step(world: World, dt = STEP) {
     if (!living(a)) {
       if (a.carrying) dropEvidence(world, [a.id]);
       continue;
+    }
+    if (a.order.kind === 'interact' && !available(world, a.order.target)) {
+      a.order = { kind: 'hold' };
+      a.path = [];
+      a.interaction = 0;
     }
     if (a.order.kind === 'attack') {
       const id = a.order.target,
@@ -63,17 +76,24 @@ export function step(world: World, dt = STEP) {
       if (distance(a, p) < 1.15 && lineClear(world, a, p)) {
         a.path = [];
         a.interaction += dt;
-        const duration = id === 'gate' && a.y > 20 ? 3 : id === 'relay' ? 1.5 : 0.65;
+        const duration = interactionDuration(world, a, id);
         if (a.interaction >= duration) completeInteraction(world, a, id);
       } else if (!a.path.length) {
         a.path = findPath(world, a, p);
         if (!a.path.length) {
           a.order = { kind: 'hold' };
-          notify(world, 'Cannot reach that position from here.');
+          notify(
+            world,
+            id === 'evidence' && world.mission.archive && !world.shutterOpen
+              ? 'Archive locked. Assign another operative to SHUNT, or use CUT at the shutter.'
+              : 'Cannot reach that position from here.',
+          );
         }
       }
     }
-    if (a.weapon && !a.carrying) {
+    const working =
+      a.order.kind === 'interact' && (a.order.target === 'override' || a.order.target === 'breach');
+    if (a.weapon && !a.carrying && !working) {
       const order = a.order;
       const candidates = world.guards.filter(
         (g) =>
@@ -107,7 +127,7 @@ export function step(world: World, dt = STEP) {
   updateAwareness(world, dt);
   for (const g of world.guards.filter(living)) walk(world, g, g.mode === 'combat' ? 2.25 : 1.2, dt);
   const v = world.engineer;
-  if (v.recruited) {
+  if (v?.recruited) {
     let leader = world.agents.find((a) => a.id === v.leader && living(a));
     if (!leader) {
       leader = world.agents.filter(living).sort((a, b) => distance(a, v) - distance(b, v))[0];

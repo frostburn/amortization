@@ -1,5 +1,5 @@
 import { distance, inside, living } from './types';
-import type { Guard, Operative, World } from './types';
+import type { Guard, Operative, Vec, World } from './types';
 import { findPath, lineClear } from './navigation';
 import { shoot } from './combat';
 import { makeGuard, notify } from './world';
@@ -14,6 +14,7 @@ export function sees(world: World, guard: Guard, person: Operative): boolean {
 export function suspicionRate(world: World, agent: Operative): number {
   if (world.known.includes(agent.id)) return 130;
   if (agent.weapon) return 95;
+  if (agent.carrying && world.mission.objective === 'ledger') return 95;
   if (inside(agent, world.mission.restricted)) {
     if (!agent.disguised) return 52;
     if (inside(agent, world.mission.secure)) return 29;
@@ -26,8 +27,18 @@ export function raiseAlarm(world: World, ids: string[] = []) {
   if (world.alarm) return;
   world.alarm = true;
   world.alarmTime = world.time;
-  notify(world, 'Security called it in. Reinforcements approaching the loading gate.', 'warning');
+  notify(world, 'Security called it in. Reinforcements approaching the delivery gate.', 'warning');
   world.sounds.push({ kind: 'alarm', x: 16 });
+}
+export function investigateNoise(world: World, point: Vec) {
+  for (const g of world.guards.filter(living)) {
+    if (distance(g, point) > 12) continue;
+    g.mode = 'combat';
+    g.lastSeen = { ...point };
+    g.searchTime = 15;
+    g.path = [];
+    g.repath = 0;
+  }
 }
 export function updateAwareness(world: World, dt: number) {
   for (const g of world.guards.filter(living)) {
@@ -104,13 +115,8 @@ export function updateAwareness(world: World, dt: number) {
     world.waves < 2 &&
     world.time - world.alarmTime > 12 + world.waves * 32
   ) {
-    for (let i = 0; i < 3; i++) {
-      const p = { x: 29.5 + i * 0.65, y: 21.8 };
-      const g = makeGuard(`response-${world.waves}-${i}`, p, [
-        p,
-        { x: 23, y: 18 },
-        { x: 11, y: 12 },
-      ]);
+    for (const [i, p] of world.mission.response.spawns.entries()) {
+      const g = makeGuard(`response-${world.waves}-${i}`, p, [p, ...world.mission.response.patrol]);
       g.known = [...world.known];
       world.guards.push(g);
     }

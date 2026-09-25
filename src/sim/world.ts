@@ -34,6 +34,7 @@ export function makeGuard(id: string, position: Vec, patrol: Vec[], angle = Math
 export function createWorld(mission: Mission = depot): World {
   const names = ['Morrow', 'Vale', 'Rook', 'Sable'];
   const roles = ['Field lead', 'Systems', 'Security', 'Recon'];
+  const engineerPosition = mission.landmarks.find((o) => o.id === 'engineer');
   return {
     mission,
     agents: mission.spawns.map((p, i) => ({
@@ -50,19 +51,20 @@ export function createWorld(mission: Mission = depot): World {
       interaction: 0,
     })),
     guards: mission.guards.map((g, i) => makeGuard(`guard-${i}`, g.position, g.patrol, g.angle)),
-    engineer: {
-      ...body(
-        'voss',
-        mission.landmarks.find((o) => o.id === 'engineer')!,
-        75,
-      ),
-      leader: null,
-      recruited: false,
-      repath: 0,
-    },
+    engineer: engineerPosition
+      ? {
+          ...body('voss', engineerPosition, 75),
+          leader: null,
+          recruited: false,
+          repath: 0,
+        }
+      : null,
     time: 0,
     status: 'playing',
     gateOpen: false,
+    shutterOpen: false,
+    shutterBreached: false,
+    overrideBy: null,
     relayOff: false,
     disguiseTaken: false,
     evidence: 'available',
@@ -76,8 +78,7 @@ export function createWorld(mission: Mission = depot): World {
     sounds: [],
     shots: 0,
     casualties: 0,
-    message:
-      'The maintenance kit is outside the west entrance. One disguise, four operatives. Choose your approach.',
+    message: mission.intro,
   };
 }
 export function notify(world: World, text: string, kind: Notice['kind'] = 'info') {
