@@ -5,10 +5,9 @@ import { available, landmark } from '../sim/orders';
 import { lineClear } from '../sim/navigation';
 import { depthOrder } from './depth';
 import { PersonSprite } from './person';
+import { project, TILE_X, TILE_Y } from './isometric';
+import { drawVan } from './van';
 
-const TILE_X = 26,
-  TILE_Y = 14,
-  HEIGHT = 25;
 const COLORS = {
   ground: 0x263331,
   concrete: 0x43504a,
@@ -17,10 +16,6 @@ const COLORS = {
   amber: 0xefbd73,
   red: 0xf57869,
 };
-export const project = (p: Vec, z = 0) => ({
-  x: (p.x - p.y) * TILE_X,
-  y: (p.x + p.y) * TILE_Y - z * HEIGHT,
-});
 const polygon = (g: Graphics, points: Vec[], color: number, alpha = 1) =>
   g.poly(points.flatMap((p) => [p.x, p.y])).fill({ color, alpha });
 const plane = (
@@ -282,10 +277,7 @@ export class Scene {
       g = new Graphics();
     root.addChild(g);
     if (s.kind === 'van') {
-      box(g, s.x, s.y, s.w, s.h, s.height, 0x3b756d, 0x244e49, 0x32625b);
-      plane(g, s.x + 0.15, s.y + 0.2, s.w - 0.3, 0.6, 0x173230, s.height + 0.01);
-      const p = project({ x: s.x + s.w, y: s.y + s.h - 0.4 }, 0.4);
-      g.circle(p.x, p.y, 4).fill(0xc5aa73);
+      drawVan(g, s);
     } else if (s.kind === 'shelves') {
       box(g, s.x, s.y, s.w, s.h, s.height, 0x637474, 0x465b5c, 0x34484c);
       for (let z = 0.3; z < s.height; z += 0.38) {
@@ -443,7 +435,7 @@ export class Scene {
     if (!v) {
       const root = new Container(),
         ink = new Graphics(),
-        sprite = new PersonSprite(this.textures[type]);
+        sprite = new PersonSprite(this.textures[type], type);
       const name = text(label, 11);
       name.anchor.set(0.5, 1);
       name.y = -40;
@@ -452,7 +444,7 @@ export class Scene {
       v = { root, ink, sprite, label: name };
       this.views.set(p.id, v);
     }
-    if (v.sprite.texture !== this.textures[type]) v.sprite.texture = this.textures[type];
+    v.sprite.setArt(this.textures[type], type);
     return v;
   }
   render(selected: string[], alpha: number) {
@@ -486,7 +478,14 @@ export class Scene {
             ? COLORS.red
             : COLORS.amber
           : COLORS.amber;
-      v.ink.clear().ellipse(0, 1, 11, 5).fill({ color: 0x0d1915, alpha: 0.7 });
+      v.ink.clear().ellipse(0, 0, 8, 3.5).fill({ color: 0x0d1915, alpha: 0.25 });
+      if (living(p)) {
+        const feet = v.sprite.contacts;
+        for (let i = 0; i < feet.length; i += 2)
+          v.ink
+            .ellipse(feet[i], feet[i + 1] + 0.2, 3.4, 1.65)
+            .fill({ color: 0x0d1915, alpha: 0.65 });
+      }
       v.label.visible = !!a && living(p);
       v.label.style.fill = color;
       if (a && selected.includes(a.id)) v.ink.ellipse(0, 0, 12, 6).stroke({ color, width: 2 });

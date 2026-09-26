@@ -1,26 +1,33 @@
 import { distance, living } from '../sim/types';
 import type { Person } from '../sim/types';
+import { TILE_X, TILE_Y } from './isometric';
 
 export const PERSON_SIZE = 43;
-const STRIDE = 1.4;
+export const WALK_STRIDE = 1.1;
 const smooth = (value: number) => {
   const t = Math.max(0, Math.min(1, value));
   return t * t * (3 - 2 * t);
 };
 
 /** Deform the existing cutout: opposing steps, raised swing foot, bent knee and arm swing. */
-export function poseWalker(rest: Float32Array, vertices: Float32Array, p: Person, alpha: number) {
+export function poseWalker(
+  rest: Float32Array,
+  vertices: Float32Array,
+  p: Person,
+  alpha: number,
+  ground = false,
+) {
   const travelled = distance(p.previous, p);
   if (!living(p) || travelled <= 1e-6) {
     vertices.set(rest);
     return;
   }
   // Interpolate distance with the feet, so pause and slow time also freeze/slow the gait.
-  const phase = ((p.step - travelled * (1 - alpha)) / STRIDE) * Math.PI * 2;
+  const phase = ((p.step - travelled * (1 - alpha)) / WALK_STRIDE) * Math.PI * 2;
   const swing = Math.sin(phase);
   const lift = Math.cos(phase);
-  const dx = (Math.cos(p.angle) - Math.sin(p.angle)) * 26;
-  const dy = (Math.cos(p.angle) + Math.sin(p.angle)) * 14;
+  const dx = (Math.cos(p.angle) - Math.sin(p.angle)) * TILE_X;
+  const dy = (Math.cos(p.angle) + Math.sin(p.angle)) * TILE_Y;
   const length = Math.hypot(dx, dy);
   // The art faces left and the entire mesh mirrors when travelling right.
   const forwardX = -Math.abs(dx) / length;
@@ -41,6 +48,7 @@ export function poseWalker(rest: Float32Array, vertices: Float32Array, p: Person
       smooth((v - 0.28) / 0.13) *
       (1 - smooth((v - 0.58) / 0.12));
     vertices[i] = x + (stride * 3.6 + knee * 0.7 - swing * side * arm * 0.8) * forwardX;
-    vertices[i + 1] = y + stride * 2.3 * forwardY - raised * leg * 2.4 - bob * (1 - leg);
+    vertices[i + 1] =
+      y + stride * 2.3 * forwardY - (ground ? 0 : raised * leg * 2.4) - bob * (1 - leg);
   }
 }

@@ -24,7 +24,9 @@ The generated concept established composition and palette. Intentional differenc
 
 Generated portrait and person atlases supply character art. Architecture, sight cones, bullets, and markers come from game state. Generated map artwork never defines collisions.
 
-The person atlas is animated through a small mesh: opposite strides and foot lifts, knee flexion and restrained arm swing. Gait phase comes from interpolated walking distance, keeping it aligned with movement, pause and slow time. Shadows, selection rings and depth ordering stay at the ground position. Vehicle face details use world-plane projection rather than screen-space offsets.
+The person atlas is animated through a small mesh: opposite strides and foot lifts, knee flexion and restrained arm swing. Gait phase advances once per 1.1 world units of interpolated walking distance, keeping it aligned with movement, pause and slow time. Each atlas quadrant has its own sole anchors. Contact shadows follow the ground projection of each foot while the swinging boot lifts above them; selection rings and depth ordering retain the world ground position. Vehicle face details use world-plane projection rather than screen-space offsets.
+
+The extraction van uses a shaped cab and cargo body with a sloped windscreen, short bonnet, door seams and handles. Tyres touch the road and show through wheel openings in the side panel. Its visual height matches a standing person; its navigation footprint and extraction radius are unchanged.
 
 ## Material breach
 

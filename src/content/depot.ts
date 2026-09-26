@@ -63,7 +63,7 @@ export const depot: Mission = {
     { id: 'kiosk', x: 2.5, y: 8, w: 3.5, h: 5, height: 2.4, kind: 'building' },
     { id: 'substation', x: 11, y: 0.7, w: 9, h: 2, height: 2, kind: 'building' },
     { id: 'office-block', x: 0.5, y: 0.5, w: 6, h: 5, height: 3.5, kind: 'building' },
-    { id: 'extraction-van', x: 2.2, y: 21, w: 1.6, h: 3, height: 1.2, kind: 'van' },
+    { id: 'extraction-van', x: 2.2, y: 21, w: 1.6, h: 3, height: 1.55, kind: 'van' },
   ],
   landmarks: [
     {

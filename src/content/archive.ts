@@ -76,7 +76,7 @@ export const archive: Mission = {
     { id: 'gate-cover', x: 26, y: 18.8, w: 2.5, h: 1.4, height: 1.2, kind: 'crate' },
     { id: 'street-block', x: 0.7, y: 3, w: 4.8, h: 4.5, height: 3, kind: 'building' },
     { id: 'fire-panel', x: 4.2, y: 8.4, w: 1.8, h: 0.7, height: 0.8, kind: 'shelves' },
-    { id: 'archive-van', x: 28, y: 24, w: 1.6, h: 3, height: 1.2, kind: 'van' },
+    { id: 'archive-van', x: 28, y: 24, w: 1.6, h: 3, height: 1.55, kind: 'van' },
   ],
   landmarks: [
     {
