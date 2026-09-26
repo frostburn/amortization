@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { poseWalker } from '../src/render/gait';
+import { poseWalker, WALK_STRIDE } from '../src/render/gait';
 import { body } from '../src/sim/world';
 import { Texture, TextureSource } from 'pixi.js';
 import { PersonSprite } from '../src/render/person';
@@ -14,12 +14,13 @@ describe('walking cycle', () => {
     const sprite = new PersonSprite(texture);
     const p = walker();
     p.previous = { x: p.x, y: p.y };
-    for (const art of [texture, uniform, texture]) {
-      sprite.texture = art;
+    for (const variant of [0, 1, 2, 3, 0]) {
+      sprite.setArt(variant === 1 ? uniform : texture, variant);
       sprite.pose(p, 1);
       expect(sprite.getLocalBounds().width).toBeCloseTo(43);
       expect(sprite.getLocalBounds().height).toBeCloseTo(43);
-      expect(sprite.pivot.y).toBeCloseTo(43 * 0.94);
+      expect(sprite.contacts[0] + sprite.contacts[2]).toBeCloseTo(0);
+      expect(sprite.contacts[1] + sprite.contacts[3]).toBeCloseTo(0);
     }
     sprite.destroy();
     texture.destroy(true);
@@ -30,14 +31,27 @@ describe('walking cycle', () => {
     const p = walker(),
       first = rest.slice(),
       second = rest.slice();
-    p.step = 1.4 / 4;
+    p.step = WALK_STRIDE / 4;
     poseWalker(rest, first, p, 1);
-    p.step += 1.4 / 2;
+    p.step += WALK_STRIDE / 2;
     poseWalker(rest, second, p, 1);
     expect((first[0] - rest[0]) * (first[2] - rest[2])).toBeLessThan(0);
     expect((first[0] - rest[0]) * (second[0] - rest[0])).toBeLessThan(0);
     expect(Math.abs(first[0] - second[0])).toBeGreaterThan(4);
     expect(Math.abs(first[5] - rest[5])).toBeLessThan(0.5);
+  });
+
+  it('keeps the planted sole on its contact shadow while the other foot lifts', () => {
+    const p = walker(),
+      boots = rest.slice(),
+      shadows = rest.slice();
+    p.step = WALK_STRIDE / 8;
+    poseWalker(rest, boots, p, 1);
+    poseWalker(rest, shadows, p, 1, true);
+    expect(boots[1]).toBeCloseTo(shadows[1]);
+    expect(boots[3]).toBeLessThan(shadows[3] - 1);
+    expect(boots[0]).toBeCloseTo(shadows[0]);
+    expect(boots[2]).toBeCloseTo(shadows[2]);
   });
 
   it('interpolates by distance, freezes at the same simulation state, and stands still without movement', () => {
