@@ -4,12 +4,20 @@ import { findPath, nearestFree } from './navigation';
 import { notify } from './world';
 import { investigateNoise, raiseAlarm } from './awareness';
 import { updateShutter } from './shutter';
+import { courierGuard, routeCourier } from './courier';
 
 export function landmark(world: World, id: ObjectKind): Landmark {
   const source = world.mission.landmarks.find((o) => o.id === id)!;
   if (id === 'engineer' && world.engineer)
     return { ...source, x: world.engineer.x, y: world.engineer.y };
-  if (id === 'evidence') return { ...source, ...world.evidencePosition };
+  if (id === 'evidence') {
+    const courier = world.evidence === 'courier' ? courierGuard(world) : null;
+    return {
+      ...source,
+      x: courier?.x ?? world.evidencePosition.x,
+      y: courier?.y ?? world.evidencePosition.y,
+    };
+  }
   return source;
 }
 export function available(world: World, id: ObjectKind) {
@@ -19,7 +27,11 @@ export function available(world: World, id: ObjectKind) {
       (id === 'disguise' && world.disguiseTaken) ||
       (id === 'gate' && world.gateOpen) ||
       (id === 'relay' && world.relayOff) ||
-      (id === 'evidence' && world.evidence !== 'available') ||
+      (id === 'evidence' &&
+        world.evidence !== 'available' &&
+        !(world.evidence === 'courier' && world.courier?.phase === 'inspection')) ||
+      (id === 'divert' && (world.courier?.diverted || world.evidence !== 'courier')) ||
+      (id === 'dispatch' && (world.courier?.phase !== 'ready' || world.evidence !== 'courier')) ||
       (id === 'override' && world.shutterBreached) ||
       (id === 'breach' && world.shutterOpen)
     )
@@ -52,13 +64,23 @@ export function moveAgents(world: World, ids: string[], target: Vec) {
   });
 }
 export function interact(world: World, ids: string[], id: ObjectKind) {
-  if (!available(world, id)) return;
+  if (!available(world, id)) {
+    if (id === 'evidence' && world.evidence === 'courier')
+      notify(
+        world,
+        'The courier holds CASE. Use DIVERT and CALL to arrange an inspection, or engage the courier directly.',
+      );
+    return;
+  }
   const agents = world.agents.filter((a) => ids.includes(a.id) && living(a));
   const target = landmark(world, id);
   const a = agents.sort((a, b) => distance(a, target) - distance(b, target))[0];
   if (!a) return;
-  if (a.carrying && (id === 'override' || id === 'breach')) {
-    notify(world, 'Set the cargo down before working the archive controls.');
+  if (
+    a.carrying &&
+    (id === 'override' || id === 'breach' || id === 'divert' || id === 'dispatch')
+  ) {
+    notify(world, 'Set the cargo down before working these controls.');
     return;
   }
   a.order = { kind: 'interact', target: id };
@@ -107,6 +129,7 @@ export function dropEvidence(world: World, ids: string[]) {
       a.carrying = false;
       world.evidence = 'available';
       world.evidencePosition = { x: a.x, y: a.y };
+      if (world.courier) world.courier.clearance = null;
       notify(world, `${world.mission.evidenceName} set down. Another operative can collect it.`);
     }
 }
@@ -132,9 +155,9 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
     const van = landmark(world, 'extract');
     const carrier = world.agents.find((p) => living(p) && p.carrying);
     const waiting =
-      world.mission.objective === 'ledger' &&
+      world.mission.objective !== 'escort' &&
       (!carrier || distance(carrier, van) > EXTRACTION_RADIUS)
-        ? 'Bring the original debt ledger to the van. It is required for this contract.'
+        ? `Bring the ${world.mission.evidenceName.toLowerCase()} to the van. It is required for this contract.`
         : world.engineer && !world.engineer.recruited
           ? 'Recruit Voss before requesting extraction.'
           : world.engineer && distance(world.engineer, van) > EXTRACTION_RADIUS
@@ -146,7 +169,7 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
       a.interaction = 0;
       a.path = [];
       a.order =
-        world.engineer?.recruited || (world.mission.objective === 'ledger' && !!carrier)
+        world.engineer?.recruited || (world.mission.objective !== 'escort' && !!carrier)
           ? { kind: 'interact', target: 'extract' }
           : { kind: 'hold' };
       if (world.message !== waiting) notify(world, waiting);
@@ -190,13 +213,62 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
       );
       break;
     case 'evidence':
+      if (world.evidence === 'courier') {
+        const courier = courierGuard(world),
+          c = world.courier;
+        if (
+          !c ||
+          !courier ||
+          !living(courier) ||
+          courier.mode === 'combat' ||
+          !a.disguised ||
+          a.weapon ||
+          courier.known.includes(a.id) ||
+          world.known.includes(a.id)
+        ) {
+          notify(
+            world,
+            'Handover refused. Use the maintenance disguise with weapons concealed and an unrecognized identity.',
+            'warning',
+          );
+          break;
+        }
+        c.clearance = a.id;
+        c.phase = 'secured';
+        courier.path = [];
+      }
       world.evidence = 'carried';
       a.carrying = true;
       a.weapon = false;
       notify(
         world,
-        `${a.name} is carrying the ${world.mission.evidenceName.toLowerCase()}. Both hands occupied. X sets it down.${world.mission.objective === 'ledger' ? ' The ledger attracts suspicion even in uniform.' : ''}`,
+        `${a.name} is carrying the ${world.mission.evidenceName.toLowerCase()}. Both hands occupied. X sets it down.${world.courier?.clearance === a.id ? ' Signed cargo clearance preserves your cover; dropping it voids the clearance.' : world.mission.objective !== 'escort' ? ' The cargo attracts suspicion even in uniform.' : ''}`,
       );
+      break;
+    case 'divert':
+      if (world.courier) {
+        world.courier.diverted = true;
+        if (world.courier.phase !== 'ready') {
+          world.courier.phase = 'transit';
+          routeCourier(world);
+        }
+        notify(
+          world,
+          world.courier.phase === 'ready'
+            ? 'Route set to INSPECTION. CALL starts the transfer when the crew is ready.'
+            : 'Transfer redirected. The courier will head to INSPECTION when clear of contact.',
+        );
+      }
+      break;
+    case 'dispatch':
+      if (world.courier) {
+        world.courier.phase = 'transit';
+        routeCourier(world);
+        notify(
+          world,
+          `Transfer requested. Courier heading to ${world.courier.diverted ? 'INSPECTION' : 'the east checkpoint'}.`,
+        );
+      }
       break;
     case 'breach':
       world.shutterBreached = true;
@@ -217,7 +289,7 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
         world,
         world.mission.objective === 'escort'
           ? 'Contract fulfilled. Voss is out. The crew is clear.'
-          : 'Contract fulfilled. The original ledger is secured. The crew is clear.',
+          : `Contract fulfilled. The ${world.mission.evidenceName.toLowerCase()} is secured. The crew is clear.`,
       );
       break;
     }

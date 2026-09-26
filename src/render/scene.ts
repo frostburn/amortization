@@ -2,11 +2,15 @@ import { Application, Assets, Container, Graphics, Rectangle, Text, Texture } fr
 import { distance, inside, living, people, EXTRACTION_RADIUS } from '../sim/types';
 import type { ObjectKind, Person, Rect, Solid, Vec, World } from '../sim/types';
 import { available, landmark } from '../sim/orders';
-import { lineClear } from '../sim/navigation';
+import { findPath, lineClear } from '../sim/navigation';
 import { depthOrder } from './depth';
 import { PersonSprite } from './person';
 import { project, TILE_X, TILE_Y } from './isometric';
 import { drawVan } from './van';
+import { courierGuard } from '../sim/courier';
+
+const markerHeight = (world: World, id: ObjectKind) =>
+  id === 'evidence' && world.evidence === 'courier' ? 2.1 : 1.45;
 
 const COLORS = {
   ground: 0x263331,
@@ -99,6 +103,7 @@ export class Scene {
   private views = new Map<string, PersonView>();
   private scenery: { root: Container; footprint: Rect }[] = [];
   private icons = new Map<ObjectKind, Container>();
+  private transferRoutes: Graphics[] = [];
   private textures: Texture[] = [];
   private gate: Graphics | null = null;
   private shutter: Graphics | null = null;
@@ -157,6 +162,7 @@ export class Scene {
     this.shutter = null;
     this.coneTime = -1;
     this.icons.clear();
+    this.transferRoutes = [];
     this.objects.removeChildren().forEach((c) => c.destroy({ children: true }));
     this.marks.removeChildren().forEach((c) => c.destroy({ children: true }));
     this.build();
@@ -204,7 +210,7 @@ export class Scene {
       // Mark the secure office visibly, including its accessible southern opening.
       plane(g, 24.4, 4.5, 3.3, 4.3, 0x70614b, 0, 0.55);
       for (let x = 24.4; x < 27.7; x += 0.5) plane(g, x, 8.85, 0.25, 0.12, COLORS.amber);
-    } else {
+    } else if (mission.id === 'archive') {
       plane(g, 6.4, 0, 1.1, 22, 0x59645e);
       plane(g, 7.5, 21.65, 23.5, 0.6, 0x657168);
       plane(g, 30.7, 2, 0.65, 20, 0x657168);
@@ -220,6 +226,47 @@ export class Scene {
         plane(g, x, 20.6, 2.7, 0.08, 0x8d9785);
       }
       plane(g, 4.7, 8.9, 0.12, 1.3, 0xce9e60);
+    } else if (mission.transfer) {
+      plane(g, 6.5, 0, 1, 22, 0x59645e);
+      plane(g, 7.5, 21.6, 25.5, 0.55, 0x657168);
+      plane(g, 8.5, 11.4, 22.7, 3.7, 0x35423e);
+      plane(g, 26.3, 3.4, 1.9, 17.1, 0x35423e);
+      const s = mission.secure;
+      plane(g, s.x, s.y, s.w, s.h, 0x746752, 0, 0.55);
+      for (let x = 9; x < 31; x += 2) plane(g, x, 13, 0.8, 0.09, 0x89907a);
+      for (let y = 4; y < 21; y += 2.5) plane(g, 33.8, y, 0.1, 1.15, 0xb4af8e);
+      for (const bay of [mission.transfer.inspection, mission.transfer.checkpoint]) {
+        plane(g, bay.x - 1.5, bay.y - 1.6, 3, 3.2, 0x766746, 0, 0.3);
+        for (let x = bay.x - 1.5; x < bay.x + 1.5; x += 0.5)
+          plane(g, x, bay.y + 1.5, 0.25, 0.16, COLORS.amber);
+        const label = text(
+          bay === mission.transfer.inspection ? 'INSPECTION' : 'CHECKPOINT',
+          9,
+          COLORS.amber,
+        );
+        label.position.copyFrom(project({ x: bay.x - 1.5, y: bay.y - 1.5 }));
+        label.skew.y = Math.atan(TILE_Y / TILE_X);
+        this.addScenery(label, { ...bay, w: 0, h: 0 });
+      }
+      for (const end of [mission.transfer.checkpoint, mission.transfer.inspection]) {
+        const route = new Graphics();
+        const { start, junction } = mission.transfer;
+        const points = [
+          start,
+          ...findPath(world, start, junction),
+          ...findPath(world, junction, end),
+        ].map((p) => project(p, 0.02));
+        route
+          .poly(
+            points.flatMap((p) => [p.x, p.y]),
+            false,
+          )
+          .stroke({ color: COLORS.amber, width: 2, alpha: 0.7 });
+        const tip = points.at(-1)!;
+        route.circle(tip.x, tip.y, 6).stroke({ color: COLORS.amber, width: 2 });
+        this.transferRoutes.push(route);
+        this.addScenery(route, { x: 0, y: 0, w: 0, h: 0 });
+      }
     }
     for (const solid of world.mission.solids) this.addSolid(solid);
     this.gate = new Graphics();
@@ -232,14 +279,24 @@ export class Scene {
       box(this.shutter, d.x, d.y, d.w, d.h, 1.6, 0x9b8e70, 0x695d47, 0x4e554b);
       this.addScenery(this.shutter, d);
     }
-    const office = text(mission.archive ? 'SECURE ARCHIVE' : 'SECURE OFFICE', 10, 0xf0c68b);
+    const office = text(
+      mission.transfer ? 'CUSTOMS' : mission.archive ? 'SECURE ARCHIVE' : 'SECURE OFFICE',
+      10,
+      0xf0c68b,
+    );
     office.position.copyFrom(
-      project({ x: mission.secure.x + mission.secure.w / 2, y: mission.secure.y + 0.5 }, 1.8),
+      mission.transfer
+        ? project({ x: 25, y: 6.5 }, 2.4)
+        : project({ x: mission.secure.x + mission.secure.w / 2, y: mission.secure.y + 0.5 }, 1.8),
     );
     office.anchor.set(0.5, 1);
     this.marks.addChild(office);
     const road = text(
-      mission.id === 'depot' ? 'MUNICIPAL TRANSIT / 06' : 'CIVIC RECORDS / NO PUBLIC ACCESS',
+      mission.transfer
+        ? 'BONDED TRANSFER / 09'
+        : mission.id === 'depot'
+          ? 'MUNICIPAL TRANSIT / 06'
+          : 'CIVIC RECORDS / NO PUBLIC ACCESS',
       10,
       0x718277,
     );
@@ -278,6 +335,34 @@ export class Scene {
     root.addChild(g);
     if (s.kind === 'van') {
       drawVan(g, s);
+    } else if (s.kind === 'container') {
+      // Paired sealed cargo containers share one collision footprint.
+      for (let i = 0; i < 2; i++) {
+        const y = s.y + (i * s.h) / 2,
+          h = s.h / 2 - 0.04;
+        box(g, s.x, y, s.w, h, s.height, 0x526d70, 0x3d5b60, 0x2e484e);
+        for (let x = s.x + 0.3; x < s.x + s.w - 0.2; x += 0.4) {
+          panel(g, { x, y: y + h }, { x: x + 0.07, y: y + h }, 0.16, s.height - 0.12, 0x698186);
+          plane(g, x, y + 0.12, 0.07, h - 0.24, 0x718586, s.height + 0.01);
+        }
+        for (const dy of [0.2, h / 2, h - 0.2])
+          panel(
+            g,
+            { x: s.x + s.w, y: y + dy },
+            { x: s.x + s.w, y: y + dy + 0.04 },
+            0.15,
+            s.height - 0.15,
+            0x8b9890,
+          );
+        panel(
+          g,
+          { x: s.x + s.w, y: y + h / 2 - 0.18 },
+          { x: s.x + s.w, y: y + h / 2 + 0.18 },
+          0.45,
+          0.65,
+          COLORS.amber,
+        );
+      }
     } else if (s.kind === 'shelves') {
       box(g, s.x, s.y, s.w, s.h, s.height, 0x637474, 0x465b5c, 0x34484c);
       for (let z = 0.3; z < s.height; z += 0.38) {
@@ -412,9 +497,16 @@ export class Scene {
     const p = { x, y };
     const object = this.world.mission.landmarks.find(
       (o) =>
-        available(this.world, o.id) &&
-        distance(p, this.screen(landmark(this.world, o.id), 1.45)) < 19,
+        (available(this.world, o.id) ||
+          (o.id === 'evidence' && this.world.evidence === 'courier')) &&
+        distance(p, this.screen(landmark(this.world, o.id), markerHeight(this.world, o.id))) < 19,
     );
+    const courier = this.world.evidence === 'courier' ? courierGuard(this.world) : null;
+    if (prioritizeObjects && object?.id === 'evidence' && courier && living(courier)) {
+      const bodyDistance = distance(p, this.screen(courier, 0.5));
+      if (bodyDistance < 18 && bodyDistance < distance(p, this.screen(courier, 2.1)))
+        return { kind: 'guard', id: courier.id };
+    }
     // An order aimed at a diamond must still reach it when the crew crowds it.
     // Ordinary left-click selection keeps operatives first.
     if (prioritizeObjects && object) return { kind: 'object', id: object.id };
@@ -449,6 +541,9 @@ export class Scene {
   }
   render(selected: string[], alpha: number) {
     const w = this.world;
+    this.transferRoutes.forEach((route, i) => {
+      route.visible = w.evidence === 'courier' && i === Number(w.courier?.diverted);
+    });
     if (this.gate) this.gate.visible = !w.gateOpen;
     if (this.shutter) this.shutter.visible = !w.shutterOpen;
     if (w.time - this.coneTime > 0.12 || w.time < this.coneTime) {
@@ -502,16 +597,16 @@ export class Scene {
           .fill(color);
         if (guard.radio > 0) v.ink.circle(14, -35, 4).stroke({ color: COLORS.red, width: 2 });
       }
-      if (a?.carrying)
+      if (a?.carrying || (p.id === w.courier?.guardId && w.evidence === 'courier' && living(p)))
         v.ink.rect(8, -14, 10, 9).fill(COLORS.amber).stroke({ color: 0x2b352d, width: 1 });
     }
     depthOrder(depthItems).forEach((item, index) => {
       item.root.zIndex = index;
     });
     for (const [id, icon] of this.icons) {
-      icon.visible = available(w, id);
+      icon.visible = available(w, id) || (id === 'evidence' && w.evidence === 'courier');
       icon.alpha = id === 'override' && w.overrideBy ? 0.6 : 1;
-      icon.position.copyFrom(project(landmark(w, id), 1.45));
+      icon.position.copyFrom(project(landmark(w, id), markerHeight(w, id)));
     }
     this.effects.clear();
     const van = landmark(w, 'extract');

@@ -50,7 +50,12 @@ export function createWorld(mission: Mission = depot): World {
       carrying: false,
       interaction: 0,
     })),
-    guards: mission.guards.map((g, i) => makeGuard(`guard-${i}`, g.position, g.patrol, g.angle)),
+    guards: [
+      ...mission.guards.map((g, i) => makeGuard(`guard-${i}`, g.position, g.patrol, g.angle)),
+      ...(mission.transfer
+        ? [makeGuard('courier', mission.transfer.start, [mission.transfer.start])]
+        : []),
+    ],
     engineer: engineerPosition
       ? {
           ...body('voss', engineerPosition, 75),
@@ -67,8 +72,11 @@ export function createWorld(mission: Mission = depot): World {
     overrideBy: null,
     relayOff: false,
     disguiseTaken: false,
-    evidence: 'available',
+    evidence: mission.transfer ? 'courier' : 'available',
     evidencePosition: { ...mission.landmarks.find((o) => o.id === 'evidence')! },
+    courier: mission.transfer
+      ? { guardId: 'courier', phase: 'ready', diverted: false, wait: 0, clearance: null }
+      : null,
     alarm: false,
     alarmTime: 0,
     waves: 0,

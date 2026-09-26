@@ -1,6 +1,7 @@
 import { distance, living, EXTRACTION_RADIUS } from '../sim/types';
 import type { Mission, World } from '../sim/types';
 import { suspicionRate } from '../sim/awareness';
+import { clearedCargo, courierGuard } from '../sim/courier';
 import { interactionDuration, landmark } from '../sim/orders';
 import { missions, nextMission } from '../content/missions';
 import { missionRecord } from './storage';
@@ -72,7 +73,7 @@ export class Hud {
         </section>
         <aside class="sidebar">
           <section class="mission-section"><p class="section-label">MISSION</p><h2 id="mission-title"></h2><p class="description" id="mission-description"></p><div class="objectives"><p id="objective-primary">○ Locate Voss</p><p id="objective-extract">○ Extract at the van</p><p class="optional" id="objective-evidence">◇ Diagnostic unit <span>optional</span></p></div></section>
-          <section class="alert-section"><p class="section-label">ALERT STATUS</p><p class="alert" id="alert">● Site quiet</p><p class="fine" id="radio-status">Radio network online</p><p class="fine" id="archive-status" hidden></p></section>
+          <section class="alert-section"><p class="section-label">ALERT STATUS</p><p class="alert" id="alert">● Site quiet</p><p class="fine" id="radio-status">Radio network online</p><p class="fine" id="archive-status" hidden></p><p class="fine" id="courier-status" hidden></p></section>
           <section class="selection-section"><p class="section-label">SELECTED OPERATIVE<span id="selected-count">4 / 4</span></p><div class="selected-info"><span id="selected-portrait" class="portrait portrait-0" aria-hidden="true"></span><div><h3 id="selected-name">Full crew</h3><p id="selected-role">Four operatives</p><p id="selected-cover">Weapons concealed</p></div></div><p class="assessment" id="assessment">Move together. Split when it matters.</p><div id="work-status" hidden><p class="fine" id="work-label"></p><progress id="work-progress" value="0" max="1" aria-label="Interaction progress"></progress></div></section>
           <section class="orders-section"><p class="section-label">ORDERS</p><div class="orders">${(['regroup', 'hold', 'weapons', 'interact'] as const).map((id, i) => `<button data-action="${id}" title="${['Regroup at the lead selected operative (G)', 'Hold position (S)', 'Draw or conceal weapons (F)', 'Interact with nearest object (E)'][i]}">${icon(id)}<span id="${id}-label">${['Regroup', 'Hold', 'Draw weapons', 'Interact'][i]}</span><kbd>${['G', 'S', 'F', 'E'][i]}</kbd></button>`).join('')}</div><div class="utility"><button data-action="all">Select all <kbd>Q</kbd></button><button data-action="heal">Field dressing <kbd>H</kbd></button><button data-action="drop" id="drop-button" hidden>Set unit down <kbd>X</kbd></button></div></section>
           <section class="intel-section"><p class="section-label">FIELD NOTES</p><p id="intel">A maintenance kit was left outside the west entrance. One person can enter under cover.</p><button data-action="vision" id="vision-button" aria-pressed="true">Sight cones: on</button><p class="best" id="best"></p></section>
@@ -115,7 +116,7 @@ export class Hud {
     if (!this.modal.open) this.modal.showModal();
   }
   showOperations(records: Records) {
-    this.modal.innerHTML = `<div class="dialog-number">CONTRACT DESK</div><h2 id="dialog-title">Operations</h2><p class="dialog-body">Choose a contract. Starting an operation resets the current attempt. Both contracts are available for replay.</p><div class="operation-list">${missions
+    this.modal.innerHTML = `<div class="dialog-number">CONTRACT DESK</div><h2 id="dialog-title">Operations</h2><p class="dialog-body">Choose a contract. Starting an operation resets the current attempt. All contracts are available for replay.</p><div class="operation-list">${missions
       .map((m) => {
         const record = missionRecord(records, m.id);
         return `<button data-action="mission:${m.id}" class="operation-card"><span class="section-label">${m.number} / ${m.location}</span><strong>${m.title}</strong><span>${m.description}</span><small>${record.best === null ? 'No completed extraction' : `Best ${time(record.best)} · ${record.completions} completed`}</small></button>`;
@@ -140,13 +141,14 @@ export class Hud {
     this.set('intel', mission.intro);
     this.field('objective-evidence').classList.toggle('optional', mission.objective === 'escort');
     this.field('archive-status').hidden = !mission.archive;
+    this.field('courier-status').hidden = !mission.transfer;
   }
   showEnd(world: World, best: number | null, force = false) {
     if (this.endShown && !force) return;
     this.endShown = true;
     const won = world.status === 'won',
       alive = world.agents.filter(living).length;
-    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? (world.mission.objective === 'escort' ? 'Voss is free.' : 'The original is in our hands.') : 'The crew is down.'}</p><p class="dialog-body">${won ? 'The van crosses the district line before anyone agrees who should pay for this.' : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results"><div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div><div><dt>Evidence</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div></dl>${best !== null ? `<p class="fine">Best extraction: ${time(best)}</p>` : ''}<button class="primary" data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Run it again'} <span>→</span></button><button class="dialog-secondary" data-action="operations">Operations</button>`;
+    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? (world.mission.objective === 'escort' ? 'Voss is free.' : world.mission.objective === 'case' ? 'The account keys are ours.' : 'The original is in our hands.') : 'The crew is down.'}</p><p class="dialog-body">${won ? 'The van crosses the district line before anyone agrees who should pay for this.' : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results"><div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div><div><dt>Evidence</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div></dl>${best !== null ? `<p class="fine">Best extraction: ${time(best)}</p>` : ''}<button class="primary" data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Run it again'} <span>→</span></button><button class="dialog-secondary" data-action="operations">Operations</button>`;
     if (!this.modal.open) this.modal.showModal();
   }
   update(world: World, state: HudState) {
@@ -167,15 +169,21 @@ export class Hud {
     }
     this.set(
       'objective-primary',
-      world.mission.archive
-        ? world.shutterBreached
-          ? '✓ Archive shutter forced'
-          : world.shutterOpen
-            ? '✓ Archive shutter open'
-            : '○ Open archive shutter'
-        : world.engineer?.recruited
-          ? '✓ Voss following escort'
-          : '○ Locate Voss',
+      world.courier
+        ? world.evidence !== 'courier'
+          ? '✓ Courier intercepted'
+          : world.courier.diverted
+            ? '✓ Route set to inspection'
+            : '○ Divert or ambush the courier'
+        : world.mission.archive
+          ? world.shutterBreached
+            ? '✓ Archive shutter forced'
+            : world.shutterOpen
+              ? '✓ Archive shutter open'
+              : '○ Open archive shutter'
+          : world.engineer?.recruited
+            ? '✓ Voss following escort'
+            : '○ Locate Voss',
     );
     this.set(
       'objective-extract',
@@ -183,15 +191,21 @@ export class Hud {
     );
     this.field('objective-primary').classList.toggle(
       'complete',
-      world.mission.archive ? world.shutterOpen : !!world.engineer?.recruited,
+      world.courier
+        ? world.courier.diverted || world.evidence !== 'courier'
+        : world.mission.archive
+          ? world.shutterOpen
+          : !!world.engineer?.recruited,
     );
     this.set(
       'objective-evidence',
-      world.evidence === 'available'
-        ? `${world.mission.objective === 'escort' ? '◇' : '○'} ${world.mission.evidenceName}${world.mission.objective === 'escort' ? ' · optional' : ' · required'}`
-        : world.evidence === 'carried'
-          ? `✓ ${world.mission.evidenceName} carried`
-          : '✓ Evidence secured',
+      world.evidence === 'courier'
+        ? '○ Access case · with courier'
+        : world.evidence === 'available'
+          ? `${world.mission.objective === 'escort' ? '◇' : '○'} ${world.mission.evidenceName}${world.mission.objective === 'escort' ? ' · optional' : ' · required'}`
+          : world.evidence === 'carried'
+            ? `✓ ${world.mission.evidenceName} carried`
+            : '✓ Evidence secured',
     );
     const local = world.guards.some((g) => living(g) && g.mode === 'combat');
     this.set(
@@ -241,9 +255,11 @@ export class Hud {
             : a.exposed
               ? 'Identity compromised. Break sight and prepare an exit.'
               : a.carrying
-                ? world.mission.objective === 'ledger'
-                  ? 'The ledger attracts suspicion even in uniform. Both hands occupied; X sets it down.'
-                  : 'Both hands occupied. Set the unit down to fire.'
+                ? clearedCargo(world, a)
+                  ? 'Signed cargo clearance. Keep the uniform; dropping CASE voids clearance. Both hands occupied.'
+                  : world.mission.objective !== 'escort'
+                    ? 'This cargo attracts suspicion even in uniform. Both hands occupied; X sets it down.'
+                    : 'Both hands occupied. Set the unit down to fire.'
                 : a.weapon
                   ? 'Visible weapon. Guards will challenge you.'
                   : suspicionRate(world, a) > 0
@@ -259,7 +275,7 @@ export class Hud {
     this.field('drop-button').hidden = !selected.some((a) => a.carrying);
     this.set(
       'drop-button',
-      `Set ${world.mission.objective === 'ledger' ? 'ledger' : 'unit'} down · X`,
+      `Set ${world.mission.objective === 'case' ? 'case' : world.mission.objective === 'ledger' ? 'ledger' : 'unit'} down · X`,
     );
     const worker = selected.find((p) => p.order.kind === 'interact' && p.interaction > 0);
     const work = worker?.order.kind === 'interact' ? worker.order.target : null;
@@ -296,6 +312,34 @@ export class Hud {
           : 'One operative holds SHUNT; another enters the archive. CUT is the noisy alternative. Prepare the east gate before lifting the ledger.',
       );
     }
+    if (world.courier) {
+      const c = world.courier;
+      const status = {
+        ready: `Courier: awaiting CALL · ${c.diverted ? 'inspection route' : 'east route'}`,
+        transit: `Courier: moving to ${c.diverted ? 'inspection' : 'east checkpoint'}`,
+        checkpoint: `Courier: checkpoint · returns in ${Math.ceil(c.wait)}s`,
+        returning: 'Courier: returning · CALL available on arrival',
+        inspection: 'Courier: awaiting signature at INSPECTION',
+        secured:
+          world.evidence === 'available'
+            ? 'Courier: CASE on the ground'
+            : 'Courier: CASE recovered',
+      };
+      this.set(
+        'courier-status',
+        world.evidence === 'courier' && courierGuard(world)?.mode === 'combat'
+          ? 'Courier: in contact · transfer interrupted'
+          : status[c.phase],
+      );
+      this.set(
+        'intel',
+        world.evidence === 'carried'
+          ? 'Bring CASE and every survivor to the west-street VAN. Signed clearance belongs to its disguised carrier and is lost if the case is set down.'
+          : world.evidence === 'available'
+            ? 'Recover CASE from its amber marker. It needs both hands and is conspicuous without signed clearance.'
+            : 'DIVERT changes the route. CALL starts the transfer. At INSPECTION, right-click CASE with a concealed, disguised operative to sign. Right-click the courier’s body to attack.',
+      );
+    }
     for (const p of world.agents) {
       const card = this.app.querySelector<HTMLElement>(`[data-agent="${p.index}"]`)!;
       card.setAttribute('aria-pressed', String(state.selected.includes(p.id)));
@@ -308,9 +352,11 @@ export class Hud {
           : world.overrideBy === p.id
             ? 'Holding shunt'
             : p.carrying
-              ? world.mission.objective === 'ledger'
-                ? 'Carrying ledger'
-                : 'Carrying unit'
+              ? world.mission.objective === 'case'
+                ? 'Carrying case'
+                : world.mission.objective === 'ledger'
+                  ? 'Carrying ledger'
+                  : 'Carrying unit'
               : p.exposed
                 ? 'Compromised'
                 : p.disguised

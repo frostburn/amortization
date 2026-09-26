@@ -10,11 +10,20 @@ export interface Rect extends Vec {
 }
 export interface Solid extends Rect {
   id: string;
-  kind: 'wall' | 'tram' | 'crate' | 'building' | 'van' | 'shelves';
+  kind: 'wall' | 'tram' | 'crate' | 'container' | 'building' | 'van' | 'shelves';
   height: number;
 }
 export type ObjectKind =
-  'disguise' | 'gate' | 'relay' | 'evidence' | 'engineer' | 'extract' | 'override' | 'breach';
+  | 'disguise'
+  | 'gate'
+  | 'relay'
+  | 'evidence'
+  | 'engineer'
+  | 'extract'
+  | 'override'
+  | 'breach'
+  | 'divert'
+  | 'dispatch';
 export interface Landmark extends Vec {
   id: ObjectKind;
   tag: string;
@@ -22,11 +31,11 @@ export interface Landmark extends Vec {
   detail: string;
 }
 export interface Mission {
-  id: 'depot' | 'archive';
+  id: 'depot' | 'archive' | 'transfer';
   number: string;
   title: string;
   location: string;
-  objective: 'escort' | 'ledger';
+  objective: 'escort' | 'ledger' | 'case';
   description: string;
   briefing: { lead: string; body: string; routes: { title: string; body: string }[] };
   intro: string;
@@ -34,6 +43,7 @@ export interface Mission {
   gateOutside: Vec;
   response: { spawns: Vec[]; patrol: Vec[] };
   archive?: { door: Rect; inside: Vec };
+  transfer?: { start: Vec; checkpoint: Vec; inspection: Vec; junction: Vec };
   width: number;
   height: number;
   solids: Solid[];
@@ -117,8 +127,15 @@ export interface World {
   overrideBy: string | null;
   relayOff: boolean;
   disguiseTaken: boolean;
-  evidence: 'available' | 'carried' | 'extracted';
+  evidence: 'courier' | 'available' | 'carried' | 'extracted';
   evidencePosition: Vec;
+  courier: {
+    guardId: string;
+    phase: 'ready' | 'transit' | 'checkpoint' | 'returning' | 'inspection' | 'secured';
+    diverted: boolean;
+    wait: number;
+    clearance: string | null;
+  } | null;
   alarm: boolean;
   alarmTime: number;
   waves: number;

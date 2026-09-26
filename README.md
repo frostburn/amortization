@@ -2,7 +2,7 @@
 
 A real-time squad tactics game for the browser. Control four operatives together or individually. One maintenance disguise admits a single person; the rest of the crew can prepare access or provide armed backup.
 
-**Two operations** are playable from briefing through extraction or defeat. Use **Operations** to launch either contract, or **Next operation** after completing the first. Restart and Shift+R restart the selected mission.
+**Three operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing either of the first two. Restart and Shift+R restart the selected mission.
 
 ## Development
 
@@ -82,6 +82,19 @@ Voss has traced fraudulent contracts to their paper original in a guarded record
 
 A quiet approach uses a disguised runner and a second operative at SHUNT. Prepare RADIO and GATE before lifting the ledger, time the exit past the road patrol, then release the operator. An armed approach can advance through the west entrance as a group, cut the shutter, and escort the carrier out.
 
+## Adverse possession · Operation 03
+
+The ledger exposes an escrow account. Its physical access keys are in a security courier's **CASE** at the bonded transfer yard. Bring the case and every survivor to the west-street van.
+
+- **CALL**, on the public street, starts the transfer when you choose. The courier carries the case along the amber route to the east checkpoint, waits twelve seconds, and returns. A missed transfer can be requested again.
+- **DIVERT**, inside the yard, redirects the courier to the screened **INSPECTION** bay. It also redirects a transfer already in progress. The courier waits at inspection without a deadline; contact with the crew interrupts their route.
+- Take **KIT** and use a disguised operative with a concealed weapon and an identity unknown to the courier or radio network to sign for **CASE** at inspection. Click the case diamond to interact; click the courier's body to attack.
+- A signed handover gives that disguised carrier cargo clearance. The case still needs both hands and slows movement. Dropping it, transferring it, or losing the carrier voids clearance; recovered cargo attracts suspicion even in uniform.
+- An armed interception drops **CASE** where the courier falls, including before a transfer has started. The squad can recover it and continue the mission. **RADIO** prevents further reinforcement calls; local combat remains active.
+- Only possession of the case and every surviving operative at **VAN** completes the contract. Quiet signatures and armed recovery both count.
+
+A quiet route is KIT → RADIO → DIVERT, with another operative at CALL while the runner waits at inspection. Sign for CASE, then bring everyone back through the west entrance. For an ambush, call and divert the courier, hold the west side of the yard as a squad, then recover the case and withdraw. Pause and slow time also stop or slow courier movement and the checkpoint countdown.
+
 Results track time, crew survival, evidence, and alarm status. Best times and completion counts are stored separately for each operation. Existing first-mission records migrate automatically. Play remains available when browser storage is disabled.
 
 ## Structure
@@ -100,10 +113,10 @@ Simulation runs at 30 Hz with interpolated rendering. All gameplay uses world co
 
 Characters use a small deformable mesh over the existing atlas for alternating steps, knee lift and arm motion. The walking cycle follows interpolated distance travelled, so idle characters stand still and pause/slow time also affect animation. Each character image is anchored between its soles, with contact shadows following the feet along the ground. Tram windscreens, lamps and trim are projected on their actual vertical face. The extraction van has a cab, sloped windscreen, cargo doors and tyres visible through open wheel arches; its original collision footprint is preserved.
 
-CI uses one Ubuntu job, Node 24, and Chromium. The simulation suite includes complete quiet and armed extractions for both missions and checks for navigation clearance, local identification, disguise permissions, radio disruption, evidence custody, and extraction requirements.
+CI uses one Ubuntu job, Node 24, and Chromium. The simulation suite includes complete quiet and armed extractions for all three missions and checks for navigation clearance, local identification, disguise permissions, radio disruption, evidence custody, and extraction requirements.
 
 ## Current scope
 
-Two ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, full directional character art, and mid-mission saves remain future work. In-world operatives share animated art and use numbered selection markers; their portraits are distinct.
+Three ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, full directional character art, and mid-mission saves remain future work. In-world operatives share animated art and use numbered selection markers; their portraits are distinct.
 
 See [design notes](docs/design.md) and [art provenance](docs/art.md). Distributed under the repository's [MIT license](LICENSE).
