@@ -17,6 +17,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
   let start: Vec | null = null,
     last: Vec | null = null,
     button = 0,
+    pointer: number | null = null,
     drag = false,
     add = false,
     pointerType = 'mouse';
@@ -26,7 +27,9 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
   };
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas.addEventListener('pointerdown', (e) => {
+    if (!e.isPrimary || start || e.button > 2) return;
     start = position(e);
+    pointer = e.pointerId;
     last = start;
     button = e.button;
     drag = false;
@@ -36,9 +39,9 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     e.preventDefault();
   });
   canvas.addEventListener('pointermove', (e) => {
-    if (!start || !last) return;
+    if (!start || !last || e.pointerId !== pointer) return;
     const p = position(e);
-    if (Math.hypot(p.x - start.x, p.y - start.y) > 5) drag = true;
+    if (Math.hypot(p.x - start.x, p.y - start.y) > 8) drag = true;
     if (drag) {
       if (button === 1 || pointerType === 'touch') scene.panBy(p.x - last.x, p.y - last.y);
       else if (button === 0) hud.selectionBox(start, p);
@@ -48,11 +51,15 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
   const cancel = () => {
     start = null;
     last = null;
+    pointer = null;
     hud.selectionBox(null);
   };
-  canvas.addEventListener('pointercancel', cancel);
+  for (const event of ['pointercancel', 'lostpointercapture'] as const)
+    canvas.addEventListener(event, (e) => {
+      if (e.pointerId === pointer) cancel();
+    });
   canvas.addEventListener('pointerup', (e) => {
-    if (!start) return;
+    if (!start || e.pointerId !== pointer) return;
     const p = position(e);
     if (drag && button === 0 && pointerType !== 'touch') {
       const ids = target
@@ -68,16 +75,19 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
           );
         })
         .map((a) => a.id);
-      target.select(add ? [...new Set([...target.selection(), ...ids])] : ids);
+      // A missed box must not leave the crew without an active selection.
+      if (ids.length) target.select(add ? [...new Set([...target.selection(), ...ids])] : ids);
     } else if (!drag && button !== 1) {
       const hit = scene.hit(p.x, p.y, button === 2 || pointerType === 'touch');
-      if (button === 0 && hit.kind === 'agent')
+      if (button === 0 && pointerType !== 'touch' && hit.kind === 'agent')
         target.select(
           add
             ? target.selection().includes(hit.id)
               ? target.selection().filter((id) => id !== hit.id)
               : [...target.selection(), hit.id]
-            : [hit.id],
+            : target.selection().includes(hit.id)
+              ? target.selection()
+              : [hit.id],
         );
       else target.order(hit);
     }

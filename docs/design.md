@@ -2,6 +2,8 @@
 
 The crew normally operates together. Splitting is useful when one maintenance identity can enter a guarded workplace while others prepare access and extraction. Selecting someone never changes another operative's order. Selecting everyone and regrouping are separate commands.
 
+Selection should survive imprecise combat inputs. Clicking a selected operative on the map keeps their group; portraits and number keys deliberately isolate individuals. Empty drag boxes and attempts to remove the final selected member keep the existing selection. Losing that final operative selects the survivors. Touch map taps issue orders; portraits handle touch selection.
+
 Reaching the engineer changes entry into escort. Physical evidence removes one gun from the fight and can change hands. A blown disguise creates a combat problem rather than immediate mission failure.
 
 ## Boundaries
@@ -22,6 +24,8 @@ The generated concept established composition and palette. Intentional differenc
 
 Generated portrait and person atlases supply character art. Architecture, sight cones, bullets, and markers come from game state. Generated map artwork never defines collisions.
 
+The person atlas is animated through a small mesh: opposite strides and foot lifts, knee flexion and restrained arm swing. Gait phase comes from interpolated walking distance, keeping it aligned with movement, pause and slow time. Shadows, selection rings and depth ordering stay at the ground position. Vehicle face details use world-plane projection rather than screen-space offsets.
+
 ## Material breach
 
 The second contract turns access into a standing squad order. An exposed fire-control shunt on the public street must be held continuously; it does not consume the disguise. The disguised runner uses that access, prepares the delivery gate, and steals a required physical ledger. Moving the operator, assigning another job, or losing them releases the shutter. A doorway safety sensor prevents invalid collision states, and cutting from either side prevents an abandoned infiltrator being permanently trapped.
@@ -32,4 +36,4 @@ Mission metadata owns briefs, objectives, map dimensions, gates, landmarks, resp
 
 ## Next useful work
 
-Tune whether splitting the crew earns its cognitive cost. Then extend civilian responses and challenges, spatial equipment choices, directional animation, route variety, and missions built from these systems.
+Tune whether splitting the crew earns its cognitive cost. Then extend civilian responses and challenges, spatial equipment choices, full directional character art, route variety, and missions built from these systems.

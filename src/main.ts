@@ -37,14 +37,21 @@ async function boot() {
   const hud = new Hud(action, (index, add) => {
     const a = world.agents[index];
     if (!living(a)) return;
-    selected = add
-      ? selected.includes(a.id)
-        ? selected.filter((id) => id !== a.id)
-        : [...selected, a.id]
-      : [a.id];
+    select(
+      add
+        ? selected.includes(a.id)
+          ? selected.filter((id) => id !== a.id)
+          : [...selected, a.id]
+        : [a.id],
+    );
   });
   const scene = new Scene(hud.stage, world);
   await scene.init();
+  function select(ids: string[]) {
+    const alive = ids.filter((id) => world.agents.some((a) => a.id === id && living(a)));
+    if (alive.length) selected = [...new Set(alive)];
+    updateHud();
+  }
   function startMission(mission: Mission, briefing: boolean) {
     world = createWorld(mission);
     selected = world.agents.map((a) => a.id);
@@ -162,6 +169,9 @@ async function boot() {
     updateHud();
   }
   function updateHud() {
+    // Keep a surviving crew actionable if the last selected operative falls.
+    selected = selected.filter((id) => world.agents.some((a) => a.id === id && living(a)));
+    if (!selected.length) selected = world.agents.filter(living).map((a) => a.id);
     hud.update(world, {
       selected,
       paused,
@@ -173,10 +183,7 @@ async function boot() {
   bindControls(scene, hud, {
     world: () => world,
     selection: () => selected,
-    select: (ids) => {
-      selected = ids;
-      updateHud();
-    },
+    select,
     order,
     action,
     slow: (enabled) => {

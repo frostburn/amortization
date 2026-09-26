@@ -39,6 +39,80 @@ test('keeps the briefing and controls usable on a narrow viewport', async ({ pag
   expect(overflow).toBe(false);
 });
 
+test('keeps the squad selected through missed drags and map clicks, with deliberate individual selection', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Begin operation' }).click();
+  await page.getByRole('button', { name: 'Pause', exact: true }).click();
+  const map = (await page.locator('canvas').boundingBox())!;
+  const scale = Math.min(map.width / (58 * 26 + 80), map.height / (58 * 14 + 110));
+  const morrow = {
+    x: map.x + map.width / 2 + ((5.4 - 21.2) * 26 - 3 * 26) * scale,
+    y: map.y + map.height / 2 + ((5.4 + 21.2) * 14 - 0.5 * 25 - 29 * 14 + 25) * scale,
+  };
+  await page.mouse.click(morrow.x, morrow.y);
+  await expect(page.locator('#selected-count')).toHaveText('4 / 4');
+  for (const distance of [6, 80]) {
+    await page.mouse.move(map.x + 40, map.y + 40);
+    await page.mouse.down();
+    await page.mouse.move(map.x + 40 + distance, map.y + 40 + distance);
+    await page.mouse.up();
+    await expect(page.locator('#selected-count')).toHaveText('4 / 4');
+  }
+  // Combat commands still reach everyone after the near-miss inputs.
+  await page.keyboard.press('f');
+  for (let i = 0; i < 4; i++)
+    await expect(page.locator(`#condition-${i}`)).toHaveText('Weapon drawn');
+  await page.keyboard.down('Shift');
+  await page.mouse.click(morrow.x, morrow.y);
+  await page.keyboard.up('Shift');
+  await expect(page.locator('#selected-count')).toHaveText('3 / 4');
+  await expect(page.getByRole('button', { name: 'Select Morrow', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
+  await page.getByRole('button', { name: 'Select Vale', exact: true }).click();
+  await expect(page.locator('#selected-name')).toHaveText('Vale');
+  await page
+    .getByRole('button', { name: 'Select Vale', exact: true })
+    .click({ modifiers: ['Shift'] });
+  await expect(page.locator('#selected-count')).toHaveText('1 / 4');
+  await page.keyboard.press('q');
+  await page.keyboard.press('3');
+  await expect(page.locator('#selected-name')).toHaveText('Rook');
+  // A deliberate box around the starting crew still replaces a solo selection.
+  await page.mouse.move(morrow.x - 65, morrow.y - 30);
+  await page.mouse.down();
+  await page.mouse.move(morrow.x + 65, morrow.y + 75, { steps: 4 });
+  await page.mouse.up();
+  await expect(page.locator('#selected-count')).toHaveText('4 / 4');
+});
+
+test('touch map orders preserve the squad while portraits select individuals', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  });
+  const page = await context.newPage();
+  await page.goto('http://127.0.0.1:4173/');
+  await page.getByRole('button', { name: 'Begin operation' }).tap();
+  await page.getByRole('button', { name: 'Pause', exact: true }).tap();
+  const map = (await page.locator('canvas').boundingBox())!;
+  const scale = Math.min(map.width / (58 * 26 + 80), map.height / (58 * 14 + 110));
+  await page.touchscreen.tap(
+    map.x + map.width / 2 + ((5.4 - 21.2) * 26 - 3 * 26) * scale,
+    map.y + map.height / 2 + ((5.4 + 21.2) * 14 - 0.5 * 25 - 29 * 14 + 25) * scale,
+  );
+  await expect(page.locator('#selected-count')).toHaveText('4 / 4');
+  await page.getByRole('button', { name: 'Select Sable', exact: true }).tap();
+  await expect(page.locator('#selected-name')).toHaveText('Sable');
+  await context.close();
+});
+
 test('accepts successive movement orders next to and around the kiosk', async ({ page }) => {
   test.setTimeout(60_000);
   const errors: string[] = [];
