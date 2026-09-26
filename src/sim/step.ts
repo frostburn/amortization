@@ -12,6 +12,7 @@ import { updateAwareness } from './awareness';
 import { shoot } from './combat';
 import { notify } from './world';
 import { updateShutter } from './shutter';
+import { updateCourier } from './courier';
 
 export const STEP = 1 / 30;
 function walk(world: World, p: Person, speed: number, dt: number) {
@@ -125,6 +126,7 @@ export function step(world: World, dt = STEP) {
     }
   }
   updateAwareness(world, dt);
+  updateCourier(world, dt);
   for (const g of world.guards.filter(living)) walk(world, g, g.mode === 'combat' ? 2.25 : 1.2, dt);
   const v = world.engineer;
   if (v?.recruited) {

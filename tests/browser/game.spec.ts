@@ -1,5 +1,58 @@
 import { expect, test } from '@playwright/test';
 
+test('routes a courier transfer, distinguishes CASE from its carrier, and resets mission three', async ({
+  page,
+}) => {
+  test.setTimeout(40_000);
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Choose operation' }).click();
+  await page.getByRole('button', { name: /03 .*Adverse possession/ }).click();
+  await expect(page.getByRole('dialog')).toContainText('A signature in someone else');
+  await page.getByRole('button', { name: 'Begin operation' }).click();
+  await page.getByRole('button', { name: 'Pause', exact: true }).click();
+  await expect(page.locator('#objective-evidence')).toHaveText('○ Access case · with courier');
+  await expect(page.locator('#archive-status')).toBeHidden();
+  const map = (await page.locator('canvas').boundingBox())!;
+  const scale = Math.min(map.width / (64 * 26 + 80), map.height / (64 * 14 + 110));
+  const order = async (x: number, y: number, z = 1.45) =>
+    page.mouse.click(
+      map.x + map.width / 2 + ((x - y) * 26 - 4 * 26) * scale,
+      map.y + map.height / 2 + ((x + y) * 14 - z * 25 - 32 * 14 + 25) * scale,
+      { button: 'right' },
+    );
+  await page.getByRole('button', { name: 'Select Morrow', exact: true }).click();
+  await order(27, 6, 2.1);
+  await expect(page.locator('#message')).toContainText('The courier holds CASE');
+  await expect(page.locator('#condition-0')).toHaveText('Concealed');
+  await order(27, 6, 0.5);
+  await expect(page.locator('#condition-0')).toHaveText('Weapon drawn');
+  await page.getByRole('button', { name: 'Conceal weapons' }).click();
+  await order(4.8, 19.5);
+  await page.getByRole('button', { name: 'Resume', exact: true }).click();
+  await expect(page.locator('#condition-0')).toHaveText('Maintenance', { timeout: 8_000 });
+  await order(10.5, 15.3);
+  await expect(page.locator('#objective-primary')).toHaveText('✓ Route set to inspection', {
+    timeout: 10_000,
+  });
+  await page.getByRole('button', { name: 'Select Vale', exact: true }).click();
+  await order(4.8, 16);
+  await expect(page.locator('#courier-status')).toContainText('moving to inspection', {
+    timeout: 8_000,
+  });
+  await page.getByRole('button', { name: 'Pause', exact: true }).click();
+  const clock = await page.locator('#clock').textContent();
+  await page.waitForTimeout(1100);
+  await expect(page.locator('#clock')).toHaveText(clock!);
+  await page.getByRole('button', { name: 'Restart', exact: true }).click();
+  await expect(page.locator('#mission-title')).toHaveText('Adverse possession');
+  await expect(page.locator('#courier-status')).toHaveText('Courier: awaiting CALL · east route');
+  await expect(page.locator('#condition-0')).toHaveText('Concealed');
+  await expect(page.locator('#selected-count')).toHaveText('4 / 4');
+  expect(errors).toEqual([]);
+});
+
 test('loads art, accepts individual orders while paused, and restarts cleanly', async ({
   page,
 }) => {

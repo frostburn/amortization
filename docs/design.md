@@ -34,7 +34,17 @@ The second contract turns access into a standing squad order. An exposed fire-co
 
 The loud alternative takes eight seconds and leaves permanent access. Nearby guards hear it even without radio service. A carrier cannot use a gun, cut the lock, or work the shunt until setting down the ledger. The conspicuous ledger removes the uniform's protection; the screen wall and road patrol make the withdrawal a distinct navigation problem. No failure timer forces a particular approach.
 
-Mission metadata owns briefs, objectives, map dimensions, gates, landmarks, response entry points, and patrols. The shared simulation supports an optional escort and a held shutter. The renderer fits each map and uses code-drawn filing cabinets and ground markings for the annex. Both operations can be launched directly; a completion also offers the next operation. Records remain independent and migrate the first operation's earlier score.
+Mission metadata owns briefs, objectives, map dimensions, gates, landmarks, response entry points, and patrols. The shared simulation supports an optional escort and a held shutter. The renderer fits each map and uses code-drawn filing cabinets and ground markings for the annex. All operations can be launched directly; a completion also offers the next operation. Records remain independent and migrate the first operation's earlier score.
+
+## Adverse possession
+
+The third contract turns an objective into a moving actor. The player controls dispatch timing from the public street and the destination from inside the yard. The courier travels through a marked junction, visits the checkpoint, and returns if missed; diversion redirects an active transfer to a screened inspection bay with no deadline. This makes preparation and splitting useful without making a failed timing window a softlock.
+
+The courier is an armed guard with the same sight, identity memory, combat, and navigation as the yard patrols. The transfer controller owns peaceful movement; combat temporarily takes over. The case marker follows the courier, then remains at their actual position if they fall. A dead courier does not fail the contract, and a dead or interrupted carrier leaves recoverable cargo. There is only one case in circulation.
+
+A disguised operative can obtain a signed handover at inspection if their weapon is concealed and the courier and radio network do not know their identity. Clearance protects only that disguised carrier's possession of the case; it does not grant secure-area access or erase guard memories. Dropping or transferring the case voids it. The armed route uses the same required-cargo extraction rules as the ledger.
+
+The map exposes the active route, both handover bays, and a live transfer status including the checkpoint countdown. CASE interaction and courier targeting are distinct even when their hit areas overlap at low zoom. Existing missions retain their own independent records; mission three fits the current record format without a migration or new dependency.
 
 ## Next useful work
 

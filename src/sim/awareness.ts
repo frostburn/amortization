@@ -3,6 +3,7 @@ import type { Guard, Operative, Vec, World } from './types';
 import { findPath, lineClear } from './navigation';
 import { shoot } from './combat';
 import { makeGuard, notify } from './world';
+import { clearedCargo } from './courier';
 
 export function sees(world: World, guard: Guard, person: Operative): boolean {
   const range = distance(guard, person);
@@ -14,7 +15,8 @@ export function sees(world: World, guard: Guard, person: Operative): boolean {
 export function suspicionRate(world: World, agent: Operative): number {
   if (world.known.includes(agent.id)) return 130;
   if (agent.weapon) return 95;
-  if (agent.carrying && world.mission.objective === 'ledger') return 95;
+  if (agent.carrying && world.mission.objective !== 'escort' && !clearedCargo(world, agent))
+    return 95;
   if (inside(agent, world.mission.restricted)) {
     if (!agent.disguised) return 52;
     if (inside(agent, world.mission.secure)) return 29;
@@ -103,7 +105,7 @@ export function updateAwareness(world: World, dt: number) {
       const suspect = world.agents.find((a) => (g.suspicion[a.id] || 0) === highest);
       if (suspect) g.angle = Math.atan2(suspect.y - g.y, suspect.x - g.x);
       g.path = [];
-    } else if (!g.path.length) {
+    } else if (!g.path.length && g.id !== world.courier?.guardId) {
       const destination = g.patrol[g.waypoint];
       if (distance(g, destination) < 0.5) g.waypoint = (g.waypoint + 1) % g.patrol.length;
       g.path = findPath(world, g, g.patrol[g.waypoint]);
