@@ -1,18 +1,10 @@
-import {
-  Application,
-  Assets,
-  Container,
-  Graphics,
-  Rectangle,
-  Sprite,
-  Text,
-  Texture,
-} from 'pixi.js';
+import { Application, Assets, Container, Graphics, Rectangle, Text, Texture } from 'pixi.js';
 import { distance, inside, living, people, EXTRACTION_RADIUS } from '../sim/types';
 import type { ObjectKind, Person, Rect, Solid, Vec, World } from '../sim/types';
 import { available, landmark } from '../sim/orders';
 import { lineClear } from '../sim/navigation';
 import { depthOrder } from './depth';
+import { PersonSprite } from './person';
 
 const TILE_X = 26,
   TILE_Y = 14,
@@ -73,6 +65,10 @@ function box(
   polygon(g, [b, c, ct, bt], right);
   plane(g, x, y, w, h, top, z);
 }
+// Details on vertical faces use the same world projection as the body beneath them.
+function panel(g: Graphics, a: Vec, b: Vec, bottom: number, top: number, color: number) {
+  polygon(g, [project(a, bottom), project(b, bottom), project(b, top), project(a, top)], color);
+}
 function text(label: string, size = 12, color = 0xd4ded6) {
   return new Text({
     text: label,
@@ -88,7 +84,7 @@ function text(label: string, size = 12, color = 0xd4ded6) {
 
 interface PersonView {
   root: Container;
-  sprite: Sprite;
+  sprite: PersonSprite;
   ink: Graphics;
   label: Text;
 }
@@ -300,17 +296,34 @@ export class Scene {
     } else if (s.kind === 'tram') {
       box(g, s.x, s.y, s.w, s.h, s.height, 0x6b4b40, 0x8a4f40, 0x533e37);
       for (let y = s.y + 0.6; y < s.y + s.h - 0.5; y += 1.25) {
-        const a = project({ x: s.x + s.w + 0.015, y }, 1.2),
-          b = project({ x: s.x + s.w + 0.015, y: y + 0.9 }, 1.2);
-        polygon(g, [a, b, { x: b.x, y: b.y + 14 }, { x: a.x, y: a.y + 14 }], 0x223934);
+        panel(g, { x: s.x + s.w, y }, { x: s.x + s.w, y: y + 0.9 }, 0.7, 1.3, 0x223934);
       }
       plane(g, s.x + 0.35, s.y + 0.45, s.w - 0.7, s.h - 0.9, 0x34433d, s.height + 0.05);
       for (let y = s.y + 1; y < s.y + s.h - 0.5; y += 1.6)
         plane(g, s.x + 0.5, y, 1.2, 0.55, 0x65756b, s.height + 0.07);
-      const p = project({ x: s.x + 1.1, y: s.y + s.h }, 0.75);
-      g.ellipse(p.x, p.y, 13, 8).fill(0x294a40);
-      g.circle(p.x - 13, p.y + 11, 2.8).fill(0xe2c08c);
-      g.circle(p.x + 13, p.y + 11, 2.8).fill(0xe2c08c);
+      const front = s.y + s.h;
+      const fascia = (x: number, width: number, bottom: number, top: number, color: number) =>
+        panel(g, { x: s.x + x, y: front }, { x: s.x + x + width, y: front }, bottom, top, color);
+      fascia(0.18, s.w - 0.36, 0.82, 1.45, 0x302f2b);
+      for (const x of [0.25, s.w / 2 + 0.06]) {
+        fascia(x, s.w / 2 - 0.31, 0.9, 1.37, 0x294a40);
+        fascia(x, s.w / 2 - 0.31, 1.29, 1.33, 0x6e8a78);
+      }
+      fascia(0.1, s.w - 0.2, 0.2, 0.36, 0x343d36);
+      for (const x of [0.38, s.w - 0.38]) {
+        polygon(
+          g,
+          Array.from({ length: 16 }, (_, i) => {
+            const angle = (i / 16) * Math.PI * 2;
+            return project(
+              { x: s.x + x + Math.cos(angle) * 0.11, y: front },
+              0.56 + Math.sin(angle) * 0.11,
+            );
+          }),
+          0xe2c08c,
+        );
+      }
+      for (const z of [0.48, 0.58, 0.68]) fascia(0.78, s.w - 1.56, z, z + 0.025, 0x493e35);
     } else if (s.kind === 'crate') {
       box(g, s.x, s.y, s.w, s.h, s.height, 0x87836a, 0x5b6655, 0x65715e);
       plane(g, s.x + s.w * 0.4, s.y, 0.12, s.h, 0xa6a589, s.height + 0.01);
@@ -413,8 +426,11 @@ export class Scene {
     // An order aimed at a diamond must still reach it when the crew crowds it.
     // Ordinary left-click selection keeps operatives first.
     if (prioritizeObjects && object) return { kind: 'object', id: object.id };
-    for (const a of this.world.agents.filter(living))
-      if (distance(p, this.screen(a, 0.5)) < 20) return { kind: 'agent', id: a.id };
+    const agent = this.world.agents
+      .filter(living)
+      .map((a) => ({ a, distance: distance(p, this.screen(a, 0.5)) }))
+      .sort((a, b) => a.distance - b.distance)[0];
+    if (agent && agent.distance < 20) return { kind: 'agent', id: agent.a.id };
     if (object) return { kind: 'object', id: object.id };
     if (this.world.engineer && distance(p, this.screen(this.world.engineer, 0.5)) < 18)
       return { kind: 'object', id: 'engineer' };
@@ -427,10 +443,7 @@ export class Scene {
     if (!v) {
       const root = new Container(),
         ink = new Graphics(),
-        sprite = new Sprite(this.textures[type]);
-      sprite.anchor.set(0.5, 0.94);
-      sprite.width = 43;
-      sprite.height = 43;
+        sprite = new PersonSprite(this.textures[type]);
       const name = text(label, 11);
       name.anchor.set(0.5, 1);
       name.y = -40;
@@ -439,7 +452,7 @@ export class Scene {
       v = { root, ink, sprite, label: name };
       this.views.set(p.id, v);
     }
-    v.sprite.texture = this.textures[type];
+    if (v.sprite.texture !== this.textures[type]) v.sprite.texture = this.textures[type];
     return v;
   }
   render(selected: string[], alpha: number) {
@@ -463,11 +476,7 @@ export class Scene {
       };
       v.root.position.copyFrom(project(pos));
       depthItems.push({ root: v.root, footprint: { ...pos, w: 0, h: 0 } });
-      v.sprite.alpha = living(p) ? 1 : 0.3;
-      v.sprite.rotation = living(p) ? 0 : Math.PI / 2;
-      v.sprite.scale.x =
-        Math.abs(v.sprite.scale.x) * (Math.cos(p.angle) - Math.sin(p.angle) > 0 ? -1 : 1);
-      v.sprite.y = p.path.length && living(p) ? Math.sin(p.step * 9) * 1.1 : 0;
+      v.sprite.pose(p, alpha);
       const color = a
         ? a.exposed
           ? COLORS.red

@@ -30,9 +30,10 @@ To play from another device on your local network, use `npm run dev -- --host 0.
 
 | Input                              | Action                                                         |
 | ---------------------------------- | -------------------------------------------------------------- |
-| Click an operative / portrait; 1–4 | Select individually                                            |
-| Shift-click / Shift+number         | Add to selection; shift-click also removes                     |
-| Left-drag                          | Select a group                                                 |
+| Click a portrait; 1–4              | Select individually                                            |
+| Click an operative on the map      | Select an unselected operative; keep a selected group together |
+| Shift-click / Shift+number         | Add to selection; shift-click removes unless it is the last member |
+| Left-drag                          | Select a group; an empty box preserves the current selection    |
 | Q                                  | Select every surviving operative without changing their orders |
 | Right-click ground                 | Move selected operatives in a loose formation                  |
 | Right-click a labelled diamond     | Nearest selected operative approaches and interacts            |
@@ -52,6 +53,8 @@ To play from another device on your local network, use `npm run dev -- --host 0.
 | V                                  | Toggle guard sight cones                                       |
 
 On touch screens, tap portraits to select, tap ground or a landmark to order, and drag to pan. The sidebar provides the main actions. Desktop mouse and keyboard offer the most precise control. Losing tab focus pauses play.
+
+Map clicks on an already selected operative keep the group selected. Use a portrait or number key to isolate someone deliberately. If the last selected operative falls, selection transfers to the survivors without changing their orders.
 
 ## The release clause · Operation 01
 
@@ -95,10 +98,12 @@ Results track time, crew survival, evidence, and alarm status. Best times and co
 
 Simulation runs at 30 Hz with interpolated rendering. All gameplay uses world coordinates; isometric projection only affects presentation. Map geometry drives collision, pathfinding, and sight, including the extraction van. A half-metre A* grid uses a binary heap; its connections, smoothing, destinations, and movement share one body-clearance rule. Isometric draw order respects entire scenery footprints and the characters' interpolated foot positions. Wall-mounted details inherit their wall's order.
 
+Characters use a small deformable mesh over the existing atlas for alternating steps, knee lift and arm motion. The walking cycle follows interpolated distance travelled, so idle characters stand still and pause/slow time also affect animation. Tram windscreens, lamps and trim are projected on their actual vertical face.
+
 CI uses one Ubuntu job, Node 24, and Chromium. The simulation suite includes complete quiet and armed extractions for both missions and checks for navigation clearance, local identification, disguise permissions, radio disruption, evidence custody, and extraction requirements.
 
 ## Current scope
 
-Two ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, directional character animation, and mid-mission saves remain future work. In-world operatives share a sprite and use numbered selection markers; their portraits are distinct.
+Two ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, full directional character art, and mid-mission saves remain future work. In-world operatives share animated art and use numbered selection markers; their portraits are distinct.
 
 See [design notes](docs/design.md) and [art provenance](docs/art.md). Distributed under the repository's [MIT license](LICENSE).

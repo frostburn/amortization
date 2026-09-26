@@ -235,7 +235,7 @@ export class Hud {
       !a
         ? 'Select an operative to issue orders.'
         : all
-          ? 'Selection changes never cancel existing orders.'
+          ? 'Map clicks keep this group selected. Use a portrait or 1–4 to select one.'
           : world.overrideBy === a.id
             ? 'Holding the shutter open. Select a teammate; moving or Hold releases the shunt.'
             : a.exposed
