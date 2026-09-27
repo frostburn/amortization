@@ -33,6 +33,9 @@ Panel orders include every survivor and enter the ordinary replay command path.
 Map extraction orders still affect only the selection. Waiting witnesses keep
 their wait order and can resume from the panel; arriving in a ring alone never
 silently ends the mission.
+Whole-crew rally is blocked while someone remains inside an archive that depends
+on a held SHUNT. The panel names who must cross first; a breached shutter needs
+no such restriction. Individual map orders remain under player control.
 
 - Cover is physical occlusion. This release has no numerical cover bonus or cover snapping.
 - Moving people are not permanent navigation obstacles. Destination slots spread the crew; future local avoidance can improve crowd flow.

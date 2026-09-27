@@ -2,7 +2,12 @@ import { distance, isExtraction, living, EXTRACTION_RADIUS } from '../sim/types'
 import type { Mission, Rect, World } from '../sim/types';
 import { RESPONSE_TIMES, suspicionRate } from '../sim/awareness';
 import { clearedCargo, courierGuard } from '../sim/courier';
-import { extractionStatus, interactionDuration, landmark } from '../sim/orders';
+import {
+  extractionRallyBlocker,
+  extractionStatus,
+  interactionDuration,
+  landmark,
+} from '../sim/orders';
 import { missions, nextMission } from '../content/missions';
 import { missionRecord } from './storage';
 import type { Records } from './storage';
@@ -298,6 +303,7 @@ export class Hud {
       world.status !== 'playing' ||
       !(world.escort?.recruited || world.evidence === 'carried' || extracting);
     this.field('exit-alternate').hidden = !exits.some((o) => o.id === 'alternate');
+    const rallyBlocker = extractionRallyBlocker(world);
     let ready = false;
     for (const exit of exits) {
       if (!isExtraction(exit.id)) continue;
@@ -312,8 +318,10 @@ export class Hud {
       );
       this.set(
         `exit-status-${exit.id}`,
-        `${status.present}/${status.total} crew in ring. ${status.ready ? (ordered ? 'Boarding…' : 'Ready — order extraction to leave.') : status.waiting}`,
+        rallyBlocker ||
+          `${status.present}/${status.total} crew in ring. ${status.ready ? (ordered ? 'Boarding…' : 'Ready — order extraction to leave.') : status.waiting}`,
       );
+      (this.field(`exit-button-${exit.id}`) as HTMLButtonElement).disabled = !!rallyBlocker;
       this.field(`exit-${exit.id}`).classList.toggle('ready', status.ready);
       this.field(`exit-button-${exit.id}`).title =
         'Order every surviving operative to this exit. Other orders are replaced; a waiting witness stays in cover.';

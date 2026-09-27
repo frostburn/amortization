@@ -1,5 +1,67 @@
 import { expect, test } from '@playwright/test';
 
+test('explains why a whole-crew rally must wait for the held archive shutter', async ({ page }) => {
+  // Mount the production HUD with a controlled doorway state, without a running game loop.
+  await page.route('**/extraction-hud', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: '<div id="app"></div>',
+    }),
+  );
+  await page.goto('/extraction-hud');
+  const result = await page.evaluate(async () => {
+    const modules = [
+      '/src/ui/hud.ts',
+      '/src/sim/world.ts',
+      '/src/content/archive.ts',
+      '/src/sim/orders.ts',
+    ];
+    const [{ Hud }, { createWorld }, { archive }, { completeInteraction, landmark }] =
+      await Promise.all(modules.map((path) => import(path)));
+    const w = createWorld(archive),
+      carrier = w.agents[0],
+      operator = w.agents[1];
+    const actions: string[] = [];
+    const hud = new Hud(
+      (action: string) => actions.push(action),
+      () => {},
+      () => {},
+    );
+    hud.reset(archive);
+    const shunt = landmark(w, 'override');
+    Object.assign(operator, { x: shunt.x, y: shunt.y });
+    completeInteraction(w, operator, 'override');
+    Object.assign(carrier, { x: 26, y: 11.5, carrying: true });
+    w.evidence = 'carried';
+    const update = () =>
+      hud.update(w, {
+        selected: [carrier.id],
+        paused: true,
+        slow: false,
+        sound: false,
+        best: null,
+      });
+    update();
+    const button = document.querySelector<HTMLButtonElement>('#exit-button-extract')!;
+    const blocked = button.disabled,
+      reason = document.querySelector('#exit-status-extract')!.textContent;
+    button.click();
+    const blockedActions = [...actions];
+    carrier.y = 13;
+    update();
+    const enabled = !button.disabled;
+    button.click();
+    return { blocked, reason, blockedActions, enabled, actions, operatorOrder: operator.order };
+  });
+  expect(result.blocked).toBe(true);
+  expect(result.reason).toContain('Move Morrow outside the archive');
+  expect(result.reason).toContain('Keep SHUNT held');
+  expect(result.blockedActions).toEqual([]);
+  expect(result.enabled).toBe(true);
+  expect(result.actions).toEqual(['extract:extract']);
+  expect(result.operatorOrder).toEqual({ kind: 'interact', target: 'override' });
+});
+
 test('orders the whole selection to the vehicle using either mouse or touch', async ({
   browser,
 }) => {

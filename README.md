@@ -145,6 +145,9 @@ exit without changing selection. Counts and names explain who is missing;
 requires an order, so gathering near a van does not silently end optional work.
 A waiting witness stays in cover until **Ask … to follow** is pressed. Move or
 Hold can cancel individual extraction orders.
+When SHUNT is held, move everyone out of the archive before using the whole-crew
+rally. The panel names anyone still inside and keeps rally disabled until they
+clear the shutter, protecting them from being locked in when the operator leaves.
 
 **?** opens objective help. While the guide is open, **Tab** moves between focused UI buttons and **Enter/Space** activates a goal or location. Click the map or close the guide to return focus to gameplay; holding **Tab** on the map still slows time.
 

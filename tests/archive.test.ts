@@ -5,6 +5,7 @@ import {
   available,
   completeInteraction,
   dropEvidence,
+  extractionRallyBlocker,
   heal,
   hold,
   interact,
@@ -80,6 +81,20 @@ describe('Material breach', () => {
     step(w);
     expect(w.overrideBy).toBeNull();
     expect(w.shutterOpen).toBe(false);
+  });
+  it('blocks a whole-crew extraction rally until everyone clears a held archive shutter', () => {
+    const w = createWorld(archive),
+      carrier = w.agents[0];
+    const operator = activate(w);
+    Object.assign(carrier, { x: 26, y: 11.5, carrying: true });
+    expect(extractionRallyBlocker(w)).toContain('Move Morrow outside the archive');
+    expect(operator.order).toEqual({ kind: 'interact', target: 'override' });
+    Object.assign(carrier, { x: 26, y: 13 });
+    expect(extractionRallyBlocker(w)).toBeNull();
+    // A permanently cut shutter needs no operator, even with someone inside.
+    Object.assign(carrier, { x: 26, y: 11.5 });
+    w.shutterBreached = true;
+    expect(extractionRallyBlocker(w)).toBeNull();
   });
   it('makes cutting a timed, noisy alternative even with the radio disabled', () => {
     const w = createWorld(archive),

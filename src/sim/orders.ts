@@ -201,6 +201,15 @@ export function dropEvidence(world: World, ids: string[]) {
       notify(world, `${world.mission.evidenceName} set down. Another operative can collect it.`);
     }
 }
+/** A whole-crew rally must not abandon a held shutter with people still inside. */
+export function extractionRallyBlocker(world: World): string | null {
+  if (!world.mission.archive || world.shutterBreached || !world.overrideBy) return null;
+  const insideArchive = world.agents.filter((p) => living(p) && inside(p, world.mission.secure));
+  return insideArchive.length
+    ? `Move ${insideArchive.map((p) => p.name).join(', ')} outside the archive before rallying. Keep SHUNT held until they clear the shutter.`
+    : null;
+}
+
 /** Shared by boarding and the HUD so the displayed readiness cannot disagree. */
 export function extractionStatus(world: World, id: 'extract' | 'alternate') {
   const van = landmark(world, id),

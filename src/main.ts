@@ -1,7 +1,7 @@
 import './ui/style.css';
 import { createWorld, notify } from './sim/world';
 import { step, STEP } from './sim/step';
-import { available, landmark } from './sim/orders';
+import { available, extractionRallyBlocker, landmark } from './sim/orders';
 import { applyCommand } from './sim/commands';
 import type { Command } from './sim/commands';
 import { distance, living } from './sim/types';
@@ -122,6 +122,12 @@ async function boot() {
       return;
     }
     if (type === 'extract:extract' || type === 'extract:alternate') {
+      const blocker = extractionRallyBlocker(world);
+      if (blocker) {
+        notify(world, blocker);
+        updateHud();
+        return;
+      }
       issue({
         kind: 'interact',
         agents: world.agents.filter(living).map((a) => a.id),
