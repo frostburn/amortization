@@ -37,10 +37,24 @@ switch to the other three operatives to recover the evidence and extract.
 - The original note, “Fair enough.”, and the `unversioned`/local-changes build
   metadata are preserved along with the original checkpoints.
 
+`transfer-stealth.replay.json` is the unchanged player submission
+`amortization-transfer-won-e275548b.replay.json`, recorded on 2026-09-27 and provided
+in chat for PR #7. Most orders direct one operative through dispatch, diversion,
+radio relay, and evidence pickup interactions before squad extraction.
+
+- Exactly verified against the same simulation fingerprint above.
+- Won at tick 1503 (50.1 simulation seconds), with 35 orders, all four agents
+  surviving, no shots, no alarm, and evidence extracted.
+- The original note and the `unversioned`/local-changes build metadata are
+  preserved along with the original checkpoints.
+- Player feedback for the gameplay pass: the diversion felt unnecessary; give
+  the diverted character a guarding cycle that the player must sneak around.
+  Ending the mission also required extra clicks and positioning adjustments.
+
 Each recording has its own named current-rules completion test. These routes
-cover a depot assault and an archive operation, not the entire campaign or its
-difficulty. Balance changes may intentionally invalidate a route and require a
-new recording.
+cover depot, archive, and transfer; custody still has no player recording.
+They do not establish that the campaign's difficulty is appropriate. Balance
+changes may intentionally invalidate a route and require a new recording.
 
 To verify a submitted bundle against compatible code before curating it:
 
