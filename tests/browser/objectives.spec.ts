@@ -52,9 +52,23 @@ test('previews, pins and refocuses goals without changing a queued squad order',
   await page.keyboard.press('Tab');
   await expect(page.locator('#objective-evidence')).toBeFocused();
   await page.keyboard.press('Space');
+  await expect(page.getByRole('button', { name: 'Locate UNIT', exact: true })).toBeFocused();
   await expect(page.locator('canvas')).toHaveAttribute(
     'aria-description',
     'Highlighted mission items: UNIT.',
+  );
+  await page.keyboard.press('Escape');
+  await expect(page.locator('canvas')).toBeFocused();
+  await page.keyboard.press('?');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('button', { name: 'Locate VOSS', exact: true })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: 'Locate KIT', exact: true })).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(page.locator('.objective-locator')).toHaveCount(1);
+  await expect(page.locator('canvas')).toHaveAttribute(
+    'aria-description',
+    'Highlighted mission items: KIT.',
   );
   await expect(page.locator('#pause-label')).toHaveText('Resume');
   await page.getByRole('button', { name: 'Restart', exact: true }).click();

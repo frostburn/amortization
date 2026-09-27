@@ -125,7 +125,7 @@ export class Hud {
         this.hoveredGoal = null;
         this.refreshGuide();
       });
-      button.addEventListener('click', () => this.locateGoal(id));
+      button.addEventListener('click', (e) => this.locateGoal(id, e.detail === 0));
     }
     this.field('objective-guide').addEventListener('click', (e) => {
       const button = (e.target as HTMLElement).closest<HTMLElement>('button');
@@ -167,11 +167,15 @@ export class Hud {
   get guideOpen() {
     return !this.field('objective-guide').hidden;
   }
-  private locateGoal(id: GoalId) {
+  private locateGoal(id: GoalId, focusGuide = false) {
     this.pinnedGoal = id;
     this.hoveredGoal = null;
     this.guideTarget = null;
     this.refreshGuide(true);
+    if (focusGuide)
+      this.field('guide-locations').querySelector<HTMLButtonElement>('button')?.focus({
+        preventScroll: true,
+      });
     if (matchMedia('(max-width: 750px)').matches) this.stage.scrollIntoView({ block: 'start' });
   }
   private refreshGuide(focus = false) {
