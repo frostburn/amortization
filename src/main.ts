@@ -36,17 +36,24 @@ async function boot() {
     last = performance.now(),
     lastHud = 0;
   const sound = new Sound();
-  const hud = new Hud(action, (index, add) => {
-    const a = world.agents[index];
-    if (!living(a)) return;
-    select(
-      add
-        ? selected.includes(a.id)
-          ? selected.filter((id) => id !== a.id)
-          : [...selected, a.id]
-        : [a.id],
-    );
-  });
+  const hud = new Hud(
+    action,
+    (index, add) => {
+      const a = world.agents[index];
+      if (!living(a)) return;
+      select(
+        add
+          ? selected.includes(a.id)
+            ? selected.filter((id) => id !== a.id)
+            : [...selected, a.id]
+          : [a.id],
+      );
+    },
+    (targets, focus, panel) => {
+      scene.showGuidance(targets, panel);
+      if (focus) scene.focusGuidance();
+    },
+  );
   const scene = new Scene(hud.stage, world);
   await scene.init();
   function select(ids: string[]) {
@@ -85,6 +92,9 @@ async function boot() {
       return;
     }
     switch (type) {
+      case 'objectives':
+        hud.focusObjectives();
+        break;
       case 'operations':
         paused = true;
         hud.showOperations(records);

@@ -28,6 +28,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas.addEventListener('pointerdown', (e) => {
     if (!e.isPrimary || start || e.button > 2) return;
+    canvas.focus({ preventScroll: true });
     start = position(e);
     pointer = e.pointerId;
     last = start;
@@ -96,12 +97,14 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
   stage.addEventListener(
     'wheel',
     (e) => {
+      if ((e.target as HTMLElement).closest('.objective-guide')) return;
       e.preventDefault();
       scene.zoomBy(e.deltaY < 0 ? 1.12 : 1 / 1.12);
     },
     { passive: false },
   );
   const mapping: Record<string, Action> = {
+    '?': 'objectives',
     q: 'all',
     g: 'regroup',
     s: 'hold',
@@ -120,6 +123,19 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
       e.metaKey ||
       e.altKey ||
       (e.target as HTMLElement).matches('input,textarea')
+    )
+      return;
+    if (e.key === 'Escape' && hud.guideOpen) {
+      e.preventDefault();
+      hud.clearGuide(true);
+      return;
+    }
+    // Mission help is keyboard-navigable; gameplay shortcuts keep working after squad clicks.
+    const buttonTarget = (e.target as HTMLElement).closest('button');
+    if (
+      (buttonTarget && e.key === 'Tab' && hud.guideOpen) ||
+      ((e.target as HTMLElement).closest('[data-goal], .objective-guide') &&
+        [' ', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key))
     )
       return;
     if (e.key === 'Tab') {

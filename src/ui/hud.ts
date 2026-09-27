@@ -1,13 +1,16 @@
 import { distance, isExtraction, living, EXTRACTION_RADIUS } from '../sim/types';
-import type { Mission, World } from '../sim/types';
+import type { Mission, Rect, World } from '../sim/types';
 import { suspicionRate } from '../sim/awareness';
 import { clearedCargo, courierGuard } from '../sim/courier';
 import { interactionDuration, landmark } from '../sim/orders';
 import { missions, nextMission } from '../content/missions';
 import { missionRecord } from './storage';
 import type { Records } from './storage';
+import { missionGoals } from './objectives';
+import type { Goal, GoalId, GuideTarget } from './objectives';
 
 export type Action =
+  | 'objectives'
   | 'operations'
   | 'next'
   | `mission:${Mission['id']}`
@@ -62,19 +65,28 @@ export class Hud {
   private endShown = false;
   private mission: Mission = missions[0];
   private fields = new Map<string, HTMLElement>();
-  constructor(onAction: (action: Action) => void, onSelect: (index: number, add: boolean) => void) {
+  private goals: Goal[] = [];
+  private hoveredGoal: GoalId | null = null;
+  private pinnedGoal: GoalId | null = null;
+  private guideTarget: GuideTarget | null = null;
+  private guideKey = '';
+  constructor(
+    onAction: (action: Action) => void,
+    onSelect: (index: number, add: boolean) => void,
+    private onGuide: (targets: GuideTarget[], focus: boolean, panel: Rect) => void,
+  ) {
     this.app = document.querySelector('#app')!;
     this.app.innerHTML = `
       <header class="topbar"><h1>AMORTIZATION</h1><span class="operation" id="operation-title"></span><div class="top-actions"><button data-action="operations">Operations</button><button data-action="briefing" title="Mission briefing and controls">Briefing</button><button data-action="pause" id="pause-button">${icon('play')}<span id="pause-label">Resume</span></button><button data-action="sound" id="sound-button">Sound off</button></div></header>
       <main class="game-layout">
         <section class="map-column" aria-label="Operation map and crew">
-          <div class="stage" id="stage"><div class="map-top"><span id="time-mode">PLANNING / ORDERS ACTIVE</span><span id="clock">00:00</span></div><div class="map-controls"><button data-action="zoom-out" aria-label="Zoom out">−</button><button data-action="home">Fit map</button><button data-action="zoom-in" aria-label="Zoom in">+</button></div><div class="map-caption"><span id="map-location"></span><small>Municipal assets division</small></div><div class="selection-box" id="selection-box"></div></div>
+          <div class="stage" id="stage"><div class="map-top"><span id="time-mode">PLANNING / ORDERS ACTIVE</span><span id="clock">00:00</span></div><div class="map-controls"><button data-action="zoom-out" aria-label="Zoom out">−</button><button data-action="home">Fit map</button><button data-action="zoom-in" aria-label="Zoom in">+</button></div><div class="map-caption"><span id="map-location"></span><small>Municipal assets division</small></div><div class="selection-box" id="selection-box"></div><div id="objective-guide" class="objective-guide" role="region" aria-label="Objective guidance" hidden><div class="guide-heading"><span>MISSION GUIDE</span><button data-dismiss-guide aria-label="Close mission guide">×</button></div><h3 id="guide-title"></h3><p id="guide-detail"></p><div id="guide-locations" aria-label="Locate mission items"></div><p class="guide-instruction">Right-click a map diamond to act; on touch, tap it.</p></div></div>
           <div class="dispatch"><span>COMMS</span><p id="message" role="status">Preparing the operation…</p></div>
           <div class="squad" aria-label="Squad selection">${['Morrow', 'Vale', 'Rook', 'Sable'].map((name, i) => `<button class="agent-card" data-agent="${i}" aria-label="Select ${name}" aria-pressed="true"><span class="portrait portrait-${i}" aria-hidden="true"></span><span class="agent-copy"><span class="agent-heading"><b>${i + 1}</b> ${name}</span><span class="agent-condition" id="condition-${i}">Ready</span><span class="health-track"><span id="health-${i}"></span></span></span></button>`).join('')}</div>
           <footer class="controls-hint"><span><kbd>1–4</kbd> operative <kbd>Q</kbd> squad <kbd>RMB</kbd> order <kbd>Space</kbd> pause <kbd>Tab</kbd> slow</span><button data-action="restart" title="Restart operation (Shift+R)">Restart</button></footer>
         </section>
         <aside class="sidebar">
-          <section class="mission-section"><p class="section-label">MISSION</p><h2 id="mission-title"></h2><p class="description" id="mission-description"></p><div class="objectives"><p id="objective-primary">○ Locate Voss</p><p id="objective-extract">○ Extract at the van</p><p class="optional" id="objective-evidence">◇ Diagnostic unit <span>optional</span></p></div></section>
+          <section class="mission-section"><p class="section-label">MISSION</p><h2 id="mission-title"></h2><p class="description" id="mission-description"></p><div class="objectives">${(['primary', 'evidence', 'extract'] as const).map((id) => `<button id="objective-${id}" data-goal="${id}" aria-controls="objective-guide" aria-describedby="objective-help" title="Locate relevant mission items"></button>`).join('')}</div><p id="objective-help">Hover to preview · click/tap to locate<br><kbd>?</kbd> objective help</p></section>
           <section class="alert-section"><p class="section-label">ALERT STATUS</p><p class="alert" id="alert">● Site quiet</p><p class="fine" id="radio-status">Radio network online</p><p class="fine" id="archive-status" hidden></p><p class="fine" id="courier-status" hidden></p></section>
           <section class="selection-section"><p class="section-label">SELECTED OPERATIVE<span id="selected-count">4 / 4</span></p><div class="selected-info"><span id="selected-portrait" class="portrait portrait-0" aria-hidden="true"></span><div><h3 id="selected-name">Full crew</h3><p id="selected-role">Four operatives</p><p id="selected-cover">Weapons concealed</p></div></div><p class="assessment" id="assessment">Move together. Split when it matters.</p><div id="work-status" hidden><p class="fine" id="work-label"></p><progress id="work-progress" value="0" max="1" aria-label="Interaction progress"></progress></div></section>
           <section id="escort-controls" hidden><p class="section-label">ESCORT</p><p id="escort-status" class="fine"></p><div class="utility"><button data-action="escort-wait" id="escort-wait-button"></button><button data-action="escort-aid" id="escort-aid-button" hidden></button></div></section><section class="orders-section"><p class="section-label">ORDERS</p><div class="orders">${(['regroup', 'hold', 'weapons', 'interact'] as const).map((id, i) => `<button data-action="${id}" title="${['Regroup at the lead selected operative (G)', 'Hold position (S)', 'Draw or conceal weapons (F)', 'Interact with nearest object (E)'][i]}">${icon(id)}<span id="${id}-label">${['Regroup', 'Hold', 'Draw weapons', 'Interact'][i]}</span><kbd>${['G', 'S', 'F', 'E'][i]}</kbd></button>`).join('')}</div><div class="utility"><button data-action="all">Select all <kbd>Q</kbd></button><button data-action="heal">Field dressing <kbd>H</kbd></button><button data-action="drop" id="drop-button" hidden>Set unit down <kbd>X</kbd></button></div></section>
@@ -92,6 +104,39 @@ export class Hud {
         onSelect(Number(el.dataset.agent), (e as MouseEvent).shiftKey);
       else onAction(el.dataset.action as Action);
     });
+    for (const button of this.app.querySelectorAll<HTMLElement>('[data-goal]')) {
+      const id = button.dataset.goal as GoalId;
+      button.addEventListener('pointerenter', (e) => {
+        if (e.pointerType !== 'mouse') return;
+        this.hoveredGoal = id;
+        this.refreshGuide();
+      });
+      button.addEventListener('pointerleave', () => {
+        if (!button.matches(':focus-visible')) this.hoveredGoal = null;
+        this.refreshGuide();
+      });
+      button.addEventListener('focus', () => {
+        if (button.matches(':focus-visible')) {
+          this.hoveredGoal = id;
+          this.refreshGuide();
+        }
+      });
+      button.addEventListener('blur', () => {
+        this.hoveredGoal = null;
+        this.refreshGuide();
+      });
+      button.addEventListener('click', () => this.locateGoal(id));
+    }
+    this.field('objective-guide').addEventListener('click', (e) => {
+      const button = (e.target as HTMLElement).closest<HTMLElement>('button');
+      if (button?.hasAttribute('data-dismiss-guide')) this.clearGuide(true);
+      else if (button?.dataset.locateTarget) {
+        this.pinnedGoal = this.hoveredGoal || this.pinnedGoal;
+        this.hoveredGoal = null;
+        this.guideTarget = button.dataset.locateTarget as GuideTarget;
+        this.refreshGuide(true);
+      }
+    });
     this.modal.addEventListener('cancel', (e) => {
       e.preventDefault();
       onAction('begin');
@@ -108,6 +153,65 @@ export class Hud {
   private set(id: string, value: string) {
     const e = this.field(id);
     if (e.textContent !== value) e.textContent = value;
+  }
+  focusObjectives() {
+    this.field('objective-primary').focus();
+    this.locateGoal('primary');
+  }
+  clearGuide(focusMap = false) {
+    this.hoveredGoal = this.pinnedGoal = null;
+    this.guideTarget = null;
+    this.refreshGuide();
+    if (focusMap) this.stage.querySelector('canvas')?.focus({ preventScroll: true });
+  }
+  get guideOpen() {
+    return !this.field('objective-guide').hidden;
+  }
+  private locateGoal(id: GoalId) {
+    this.pinnedGoal = id;
+    this.hoveredGoal = null;
+    this.guideTarget = null;
+    this.refreshGuide(true);
+    if (matchMedia('(max-width: 750px)').matches) this.stage.scrollIntoView({ block: 'start' });
+  }
+  private refreshGuide(focus = false) {
+    const goal = this.goals.find((g) => g.id === (this.hoveredGoal || this.pinnedGoal));
+    const panel = this.field('objective-guide');
+    panel.hidden = !goal;
+    for (const g of this.goals)
+      this.field(`objective-${g.id}`).classList.toggle('is-active', g === goal);
+    if (!goal) {
+      if (this.guideKey) this.onGuide([], false, { x: 0, y: 0, w: 0, h: 0 });
+      this.guideKey = '';
+      return;
+    }
+    const key = `${goal.id}:${goal.targets.join(',')}`;
+    if (!goal.targets.includes(this.guideTarget!)) this.guideTarget = null;
+    this.set('guide-title', goal.label.replace(/^[○✓◇] /, ''));
+    this.set('guide-detail', goal.detail);
+    if (key !== this.guideKey) {
+      this.guideTarget = null;
+      this.field('guide-locations').innerHTML = goal.targets
+        .map((id) => {
+          const tag =
+            id === 'inspection'
+              ? 'INSPECTION'
+              : this.mission.landmarks.find((o) => o.id === id)!.tag;
+          return `<button data-locate-target="${id}" aria-label="Locate ${tag}">${tag}<span aria-hidden="true"> ↗</span></button>`;
+        })
+        .join('');
+      this.guideKey = key;
+    }
+    for (const button of this.field('guide-locations').querySelectorAll<HTMLElement>('button'))
+      button.classList.toggle('is-active', button.dataset.locateTarget === this.guideTarget);
+    const bounds = panel.getBoundingClientRect(),
+      stage = this.stage.getBoundingClientRect();
+    this.onGuide(this.guideTarget ? [this.guideTarget] : goal.targets, focus, {
+      x: bounds.left - stage.left,
+      y: bounds.top - stage.top,
+      w: bounds.width,
+      h: bounds.height,
+    });
   }
   private briefing() {
     const m = this.mission;
@@ -132,6 +236,10 @@ export class Hud {
     this.modal.close();
   }
   reset(mission: Mission = this.mission) {
+    this.hoveredGoal = this.pinnedGoal = null;
+    this.guideTarget = null;
+    this.guideKey = '';
+    this.field('objective-guide').hidden = true;
     this.mission = mission;
     this.endShown = false;
     this.lastMessage = '';
@@ -170,52 +278,14 @@ export class Hud {
       this.set('message', world.message);
       this.lastMessage = world.message;
     }
-    this.set(
-      'objective-primary',
-      world.courier
-        ? world.evidence !== 'courier'
-          ? '✓ Courier intercepted'
-          : world.courier.diverted
-            ? '✓ Route set to inspection'
-            : '○ Divert or ambush the courier'
-        : world.mission.archive
-          ? world.shutterBreached
-            ? '✓ Archive shutter forced'
-            : world.shutterOpen
-              ? '✓ Archive shutter open'
-              : '○ Open archive shutter'
-          : world.escortLocked
-            ? '○ Unlock the transport'
-            : world.escort?.recruited
-              ? `✓ ${world.escort.name} ${world.escort.waiting ? 'waiting for escort' : 'following escort'}`
-              : `○ Locate ${world.escort?.name || 'the witness'}`,
-    );
-    this.set(
-      'objective-extract',
-      world.status === 'won'
-        ? `✓ Extracted${world.extractedAt ? ` at ${landmark(world, world.extractedAt).tag}` : ''}`
-        : world.mission.landmarks.some((o) => o.id === 'alternate')
-          ? '○ Extract at STREET or SERVICE'
-          : '○ Extract at the van',
-    );
-    this.field('objective-primary').classList.toggle(
-      'complete',
-      world.courier
-        ? world.courier.diverted || world.evidence !== 'courier'
-        : world.mission.archive
-          ? world.shutterOpen
-          : !!world.escort?.recruited,
-    );
-    this.set(
-      'objective-evidence',
-      world.evidence === 'courier'
-        ? '○ Access case · with courier'
-        : world.evidence === 'available'
-          ? `${world.mission.objective === 'escort' ? '◇' : '○'} ${world.mission.evidenceName}${world.mission.objective === 'escort' ? ' · optional' : ' · required'}`
-          : world.evidence === 'carried'
-            ? `✓ ${world.mission.evidenceName} carried`
-            : '✓ Evidence secured',
-    );
+    this.goals = missionGoals(world);
+    for (const goal of this.goals) {
+      this.set(`objective-${goal.id}`, goal.label);
+      this.field(`objective-${goal.id}`).classList.toggle('complete', goal.complete);
+      this.field(`objective-${goal.id}`).classList.toggle('optional', !!goal.optional);
+    }
+    if (world.status !== 'playing') this.clearGuide();
+    else this.refreshGuide();
     const local = world.guards.some((g) => living(g) && g.mode === 'combat');
     this.set(
       'alert',

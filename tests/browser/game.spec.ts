@@ -85,7 +85,7 @@ test('routes a courier transfer, distinguishes CASE from its carrier, and resets
   await page.getByRole('button', { name: 'Resume', exact: true }).click();
   await expect(page.locator('#condition-0')).toHaveText('Maintenance', { timeout: 8_000 });
   await order(10.5, 15.3);
-  await expect(page.locator('#objective-primary')).toHaveText('✓ Route set to inspection', {
+  await expect(page.locator('#objective-primary')).toHaveText('○ Use CALL to start the transfer', {
     timeout: 10_000,
   });
   await page.getByRole('button', { name: 'Select Vale', exact: true }).click();
