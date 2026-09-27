@@ -46,6 +46,7 @@ export function interactionPoint(world: World, agent: Operative, id: ObjectKind)
 }
 export function interactionDuration(world: World, agent: Operative, id: ObjectKind) {
   if (id === 'breach') return 8;
+  if (id === 'divert') return 3;
   if (id === 'release') return 3;
   if (id === 'gate' && !inside(agent, world.mission.restricted)) return 3;
   return id === 'relay' ? 1.5 : id === 'override' ? 0.8 : 0.65;
@@ -81,8 +82,25 @@ export function interact(world: World, ids: string[], id: ObjectKind) {
   }
   const agents = world.agents.filter((a) => ids.includes(a.id) && living(a));
   const target = landmark(world, id);
+  if (isExtraction(id)) {
+    // Extraction is a crew order. Sending only the nearest operative strands
+    // everyone else (and the witness following them) at their previous orders.
+    for (const a of agents) {
+      if (a.order.kind === 'interact' && a.order.target === id) continue;
+      a.order = { kind: 'interact', target: id };
+      a.interaction = 0;
+      a.path = findPath(world, a, target);
+    }
+    if (agents.length)
+      notify(
+        world,
+        `Selected crew heading to ${target.tag}. Extraction will wait for every survivor and the objective.`,
+      );
+    return;
+  }
   const a = agents.sort((a, b) => distance(a, target) - distance(b, target))[0];
   if (!a) return;
+  if (a.order.kind === 'interact' && a.order.target === id) return;
   if (
     a.carrying &&
     (id === 'override' ||
@@ -211,17 +229,16 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
         : world.escort && (!world.escort.recruited || !living(world.escort))
           ? `Bring ${world.escort.name} out alive before requesting extraction.`
           : world.escort && distance(world.escort, van) > EXTRACTION_RADIUS
-            ? `Waiting for ${world.escort.name} at ${van.tag}. Keep their escort nearby.`
+            ? world.escort.waiting
+              ? `Waiting for ${world.escort.name}. Use the Escort controls to ask them to follow.`
+              : `Waiting for ${world.escort.name} at ${van.tag}. Bring their escort to the van.`
             : world.agents.some((p) => living(p) && distance(p, van) > EXTRACTION_RADIUS)
               ? 'Waiting for the crew. Bring every survivor inside the extraction ring.'
               : null;
     if (waiting) {
       a.interaction = 0;
       a.path = [];
-      a.order =
-        world.escort?.recruited || (world.mission.objective !== 'escort' && !!carrier)
-          ? { kind: 'interact', target: id }
-          : { kind: 'hold' };
+      a.order = { kind: 'interact', target: id };
       if (world.message !== waiting) notify(world, waiting);
       return;
     }

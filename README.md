@@ -93,7 +93,7 @@ npm run replay:verify -- --current --expect-win attempt.replay.json
 The first command verifies compatible code and every state checkpoint. The second
 tests completion under current rules. Both exit nonzero on failure. Selected player
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
-distinct routes. The corpus currently includes player-recorded depot, archive, and transfer
+distinct routes. The corpus currently includes player-recorded depot and archive
 victories; see `tests/replays/README.md` for provenance and coverage.
 
 ## Controls
@@ -143,7 +143,7 @@ The instructions follow mission progress: CALL after a courier diversion, a seco
 - **GATE** opens the loading gate from inside. Outside, cutting the lock takes three seconds and triggers the alarm if radios are online.
 - **VOSS** follows the operative who recruits her. Interacting again transfers the escort. A survivor takes over if the escort falls.
 - **UNIT** is optional evidence. It slows its carrier and occupies both hands. Drop and recollect to transfer it; recover it if its carrier falls.
-- Bring Voss and **all surviving operatives** inside the extraction area, then interact with **VAN**.
+- Select the crew and right-click or tap **VAN** (the vehicle or its diamond). Everyone selected approaches the van; the order completes when Voss and **all surviving operatives** reach its ring. Unselected operatives keep their orders. Move or Hold cancels extraction for the selected operatives.
 
 An approachable quiet route is KIT → west entrance → RADIO → VOSS → west entrance → VAN. Move promptly in the office and use pause to plan. For an armed approach, keep the crew together, use the trams as cover, and prepare an exit.
 
@@ -164,8 +164,8 @@ A quiet approach uses a disguised runner and a second operative at SHUNT. Prepar
 
 The ledger exposes an escrow account. Its physical access keys are in a security courier's **CASE** at the bonded transfer yard. Bring the case and every survivor to the west-street van.
 
-- **CALL**, on the public street, starts the transfer when you choose. The courier carries the case along the amber route to the east checkpoint, waits twelve seconds, and returns. A missed transfer can be requested again.
-- **DIVERT**, inside the yard, redirects the courier to the screened **INSPECTION** bay. It also redirects a transfer already in progress. The courier waits at inspection without a deadline; contact with the crew interrupts their route.
+- The courier patrols the secure holding yard. **CALL**, on the public street, starts the transfer when you choose. The courier carries the case along the amber route to the east checkpoint, waits twelve seconds, and returns. A missed transfer can be requested again.
+- **DIVERT**, inside the yard, redirects the courier to the screened **INSPECTION** bay. Changing it takes three seconds and attracts suspicion if a guard sees it, even in uniform. Watch the west patrol and wait for their back to turn. It also redirects a transfer already in progress. The courier waits at inspection without a deadline; contact with the crew interrupts their route.
 - Take **KIT** and use a disguised operative with a concealed weapon and an identity unknown to the courier or radio network to sign for **CASE** at inspection. Click the case diamond to interact; click the courier's body to attack.
 - A signed handover gives that disguised carrier cargo clearance. The case still needs both hands and slows movement. Dropping it, transferring it, or losing the carrier voids clearance; recovered cargo attracts suspicion even in uniform.
 - An armed interception drops **CASE** where the courier falls, including before a transfer has started. The squad can recover it and continue the mission. **RADIO** prevents further reinforcement calls; local combat remains active.
@@ -179,7 +179,7 @@ The access keys lead to auditor **Mara Quill**, held in a security transport at 
 
 - **KIT** provides the identity needed for **WARRANT**, a three-second forged release in the records office. Conceal the weapon and keep that operative unexposed. Unlocking the transport does not start the escape: right-click **MARA** when the route is ready.
 - **CUT** at the transport is the armed alternative. It takes eight seconds and attracts nearby guards, even after **RADIO** is disabled. Mara stays protected inside until collected.
-- **STREET**, beyond the east **GATE**, offers a short but exposed exit. **SERVICE** on the west street is farther away; the walled service corridor provides cover. Bring Mara and every surviving operative to the **same** extraction ring, then interact with its marker.
+- **STREET**, beyond the east **GATE**, offers a short but exposed exit. **SERVICE** on the west street is farther away; the walled service corridor provides cover. Order the selected crew to either van or its marker. Extraction waits for Mara and every survivor in the **same** ring. If Mara was told to wait, ask her to follow before leaving.
 - The **Escort** controls let Mara wait in place or resume following. Right-click her marker to transfer her escort; a surviving operative takes over if her leader falls. She has no disguise, so the runner's uniform does not protect her.
 - **Treat Mara** spends one selected operative's field dressing to restore up to 55 health. That operative needs free hands and must stand within two metres with clear sight. The same dressing can otherwise be used for their own wounds.
 - The **REGISTER** is optional evidence. Carrying it occupies both hands and slows the operative.

@@ -20,18 +20,18 @@ export const transfer: Mission = {
   description: 'Intercept the courier. Extract their access case.',
   evidenceName: 'Access case',
   intro:
-    'Voss: the ledger names a sealed account. Its access keys travel by courier. Change DIVERT inside the yard, then use CALL on the public street to bring them to inspection.',
+    'Voss: the access keys travel by courier. Watch the patrol before changing DIVERT: a uniform will not hide tampering. CALL brings the courier to inspection.',
   briefing: {
     lead: 'Possession is nine tenths of the contract.',
     body: 'The ledger points to an escrow account used to buy the district. A security courier carries its physical access keys. Bring CASE and every surviving operative to the west-street van. The transfer starts only when you request it.',
     routes: [
       {
         title: 'A signature in someone else’s name',
-        body: 'Take KIT, enter through the west opening, and change DIVERT. A teammate can use CALL from the public street while the runner waits at INSPECTION. The courier waits there for a disguised operative with a concealed weapon and an unrecognized identity to collect CASE.',
+        body: 'Take KIT and enter through the west opening. The west patrol watches DIVERT: wait until their back is turned before changing it. Tampering takes three seconds and is suspicious even in uniform. A teammate can use CALL from the public street to bring the courier to INSPECTION. Sign for CASE there with a concealed weapon and an unrecognized identity.',
       },
       {
         title: 'Choose the ground',
-        body: 'The amber route shows where the courier will walk. Set an ambush, or sign for the case quietly. Signed clearance protects the disguised carrier; dropping the case voids it. An armed interception leaves CASE where the courier falls. RADIO stops reinforcements. A missed transfer returns and can be called again.',
+        body: 'The courier patrols the secure holding yard until CALL. The amber route shows the transfer lane. DIVERT brings them behind the inspection screen, away from the east checkpoint guards. Set an ambush, or sign quietly. Signed clearance protects the disguised carrier; dropping the case voids it. An armed interception leaves CASE where the courier falls. RADIO stops reinforcements. A missed transfer returns and can be called again.',
       },
     ],
   },
@@ -43,6 +43,12 @@ export const transfer: Mission = {
   gateOutside: { x: 33.2, y: 17.5 },
   transfer: {
     start: { x: 27, y: 6 },
+    patrol: [
+      { x: 27, y: 6 },
+      { x: 30.5, y: 6 },
+      { x: 30.5, y: 8.5 },
+      { x: 27, y: 8.5 },
+    ],
     junction: { x: 23, y: 13 },
     checkpoint: { x: 28.5, y: 18.5 },
     inspection: { x: 13, y: 18.5 },
@@ -100,7 +106,8 @@ export const transfer: Mission = {
       x: 10.5,
       y: 15.3,
       label: 'Inspection routing signal',
-      detail: 'Redirect the courier to the screened inspection bay, even during a transfer.',
+      detail:
+        'Redirect to the screened inspection bay. Three seconds of tampering: wait for the west patrol to look away, even in disguise.',
     },
     {
       id: 'relay',
@@ -145,7 +152,7 @@ export const transfer: Mission = {
   guards: [
     patrol(
       [
-        { x: 12.8, y: 11.5 },
+        { x: 12.8, y: 17.8 },
         { x: 13.5, y: 5 },
       ],
       -Math.PI / 2,

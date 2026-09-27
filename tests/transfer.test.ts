@@ -13,7 +13,7 @@ import {
   toggleWeapons,
 } from '../src/sim/orders';
 import { courierGuard } from '../src/sim/courier';
-import { investigateNoise, suspicionRate } from '../src/sim/awareness';
+import { investigateNoise, sees, suspicionRate } from '../src/sim/awareness';
 import { STEP, step } from '../src/sim/step';
 import { distance, living } from '../src/sim/types';
 import type { World } from '../src/sim/types';
@@ -37,11 +37,13 @@ function inspection() {
 }
 
 describe('Adverse possession', () => {
-  it('starts on CALL, tracks the moving case, and permits a repeat after a missed transfer', () => {
+  it('patrols before CALL, tracks the moving case, and repeats after a missed transfer', () => {
     const w = createWorld(transfer),
       courier = courierGuard(w)!;
     advance(w, 15);
-    expect(distance(courier, transfer.transfer!.start)).toBe(0);
+    expect(distance(courier, transfer.transfer!.start)).toBeGreaterThan(2);
+    expect(w.courier!.phase).toBe('ready');
+    expect(distance(courier, landmark(w, 'evidence'))).toBe(0);
     expect(available(w, 'evidence')).toBe(false);
     interact(w, [w.agents[1].id], 'dispatch');
     until(w, () => w.courier!.phase === 'transit');
@@ -64,6 +66,10 @@ describe('Adverse possession', () => {
     interact(w, [w.agents[1].id], 'dispatch');
     interact(w, [a.id], 'disguise');
     until(w, () => a.disguised && w.courier!.phase === 'transit');
+    moveAgents(w, [a.id], { x: 10.5, y: 15.3 });
+    until(w, () => !a.path.length);
+    // Follow the patrol north while their back is turned, then change the signal.
+    until(w, () => w.guards[0].y < 10 && w.guards[0].angle < 0);
     interact(w, [a.id], 'divert');
     until(w, () => w.courier!.diverted);
     until(w, () => w.courier!.phase === 'inspection');
@@ -72,6 +78,24 @@ describe('Adverse possession', () => {
     expect(distance(courierGuard(w)!, transfer.transfer!.inspection)).toBeLessThan(0.35);
     expect(available(w, 'evidence')).toBe(true);
     expect(w.alarm).toBe(false);
+  });
+
+  it('exposes a disguised operative tampering in view of the west patrol', () => {
+    const w = createWorld(transfer),
+      a = w.agents[0],
+      guard = w.guards[0];
+    a.disguised = true;
+    const signal = landmark(w, 'divert');
+    Object.assign(a, { x: signal.x, y: signal.y });
+    // The patrol is approaching the routing signal from the north.
+    Object.assign(guard, { x: 12.8, y: 13.5, angle: Math.PI / 2 });
+    expect(sees(w, guard, a)).toBe(true);
+    expect(suspicionRate(w, a)).toBe(0);
+    interact(w, [a.id], 'divert');
+    advance(w, 1.5);
+    expect(w.courier!.diverted).toBe(false);
+    expect(a.exposed).toBe(true);
+    expect(guard.known).toContain(a.id);
   });
 
   it('keeps combat in control during diversion, then resumes the interrupted transfer', () => {

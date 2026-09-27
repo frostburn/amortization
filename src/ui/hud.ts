@@ -417,7 +417,7 @@ export class Hud {
           ? 'Bring CASE and every survivor to the west-street VAN. Signed clearance belongs to its disguised carrier and is lost if the case is set down.'
           : world.evidence === 'available'
             ? 'Recover CASE from its amber marker. It needs both hands and is conspicuous without signed clearance.'
-            : 'DIVERT changes the route. CALL starts the transfer. At INSPECTION, right-click CASE with a concealed, disguised operative to sign. Right-click the courier’s body to attack.',
+            : 'Watch the west patrol before using DIVERT: tampering takes three seconds and is suspicious in uniform. CALL starts the transfer. At INSPECTION, right-click CASE with a concealed, disguised operative to sign. Right-click the courier’s body to attack.',
       );
     }
     for (const p of world.agents) {

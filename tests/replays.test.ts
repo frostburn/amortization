@@ -13,3 +13,18 @@ it.each(files)('completes the player recording %s under current rules', (file) =
   expect(result.error).toBeNull();
   expect(result.result.status).toBe('won');
 });
+
+it('finishes the depot return without the recorded corrective clicks after the first VAN order', () => {
+  const bundle = parseReplay(
+    readFileSync(join(directory, 'depot-squad-assault.replay.json'), 'utf8'),
+  );
+  const firstExtraction = bundle.commands.findIndex(
+    ({ command }) => command.kind === 'interact' && command.target === 'extract',
+  );
+  expect(firstExtraction).toBeGreaterThan(0);
+  bundle.commands = bundle.commands.slice(0, firstExtraction + 1);
+  const result = verifyReplay(bundle, buildInfo(process.cwd()), true);
+  expect(result.error).toBeNull();
+  expect(result.result.status).toBe('won');
+  expect(result.tick).toBeLessThan(bundle.ticks);
+});

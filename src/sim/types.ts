@@ -45,7 +45,7 @@ export interface Mission {
   gateOutside: Vec;
   response: { spawns: Vec[]; patrol: Vec[] };
   archive?: { door: Rect; inside: Vec };
-  transfer?: { start: Vec; checkpoint: Vec; inspection: Vec; junction: Vec };
+  transfer?: { start: Vec; patrol: Vec[]; checkpoint: Vec; inspection: Vec; junction: Vec };
   escort?: {
     id: string;
     name: string;

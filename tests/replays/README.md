@@ -37,24 +37,22 @@ switch to the other three operatives to recover the evidence and extract.
 - The original note, “Fair enough.”, and the `unversioned`/local-changes build
   metadata are preserved along with the original checkpoints.
 
-`transfer-stealth.replay.json` is the unchanged player submission
-`amortization-transfer-won-e275548b.replay.json`, recorded on 2026-09-27 and provided
-in chat for PR #7. Most orders direct one operative through dispatch, diversion,
-radio relay, and evidence pickup interactions before squad extraction.
+The transfer recording `amortization-transfer-won-e275548b.replay.json` was removed
+when the routing controls gained a watched, three-second interaction and the
+courier gained a holding-yard patrol. Its original command timings no longer
+complete the mission under current rules. New transfer recordings should account
+for the patrol before changing DIVERT.
 
-- Exactly verified against the same simulation fingerprint above.
-- Won at tick 1503 (50.1 simulation seconds), with 35 orders, all four agents
-  surviving, no shots, no alarm, and evidence extracted.
-- The original note and the `unversioned`/local-changes build metadata are
-  preserved along with the original checkpoints.
-- Player feedback for the gameplay pass: the diversion felt unnecessary; give
-  the diverted character a guarding cycle that the player must sneak around.
-  Ending the mission also required extra clicks and positioning adjustments.
+Each retained recording has its own named current-rules completion test. These
+routes cover depot and archive; transfer and custody currently have no player
+recording. The original files above remain byte-for-byte unchanged and still win
+under current rules. Their historical state checkpoints require the original
+simulation; balance changes may intentionally invalidate a route and require a
+new recording.
 
-Each recording has its own named current-rules completion test. These routes
-cover depot, archive, and transfer; custody still has no player recording.
-They do not establish that the campaign's difficulty is appropriate. Balance
-changes may intentionally invalidate a route and require a new recording.
+The depot recording also reproduces the extraction regression: a separate test
+stops issuing commands after its first VAN order and requires the crew and Voss
+to finish without the later corrective movement and escort clicks.
 
 To verify a submitted bundle against compatible code before curating it:
 

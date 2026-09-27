@@ -53,7 +53,7 @@ export function createWorld(mission: Mission = depot): World {
     guards: [
       ...mission.guards.map((g, i) => makeGuard(`guard-${i}`, g.position, g.patrol, g.angle)),
       ...(mission.transfer
-        ? [makeGuard('courier', mission.transfer.start, [mission.transfer.start])]
+        ? [makeGuard('courier', mission.transfer.start, mission.transfer.patrol)]
         : []),
     ],
     escort: escortPosition
