@@ -34,25 +34,6 @@
 .playtest-dialog p {
   line-height: 1.5;
 }
-.playtest-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  margin: 18px 0;
-  padding: 4px;
-  background: #101c18;
-  border: 1px solid #394b40;
-}
-.playtest-tabs button {
-  padding: 11px 8px;
-  border-color: transparent;
-  background: transparent;
-}
-.playtest-tabs button[aria-selected='true'] {
-  background: #294536;
-  border-color: var(--mint);
-  color: var(--mint);
-}
 .playtest-dialog label {
   display: block;
   margin: 18px 0 6px;
@@ -159,4 +140,25 @@
   .playtest-actions button {
     flex: 1 1 140px;
   }
+}
+.playtest-enabled {
+  display: flex;
+  flex-direction: column;
+}
+.playtest-enabled .topbar {
+  height: auto;
+  min-height: 58px;
+  flex: none;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.playtest-enabled .top-actions {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+.playtest-enabled .game-layout {
+  flex: 1;
+  min-height: 0;
+  height: auto;
 }
