@@ -1,0 +1,103 @@
+.playtest-dialog {
+  width: min(680px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 26px;
+  overflow-y: auto;
+}
+.playtest-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.playtest-heading button {
+  font-size: 24px;
+  min-width: 36px;
+}
+.playtest-dialog h2 {
+  margin: 12px 0;
+}
+.playtest-dialog p {
+  line-height: 1.5;
+}
+.playtest-dialog label {
+  display: block;
+  margin: 18px 0 6px;
+  color: var(--mint);
+}
+.playtest-dialog select,
+.playtest-dialog textarea,
+.playtest-dialog input {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  background: #101c18;
+  padding: 9px;
+  border: 1px solid #526156;
+  border-radius: 2px;
+}
+.playtest-dialog textarea {
+  resize: vertical;
+}
+.playtest-dialog :is(select, textarea, input):focus-visible,
+.playtest-transport select:focus-visible {
+  outline: 2px solid var(--mint);
+  outline-offset: 2px;
+}
+#playtest-summary {
+  margin-top: 12px;
+}
+#playtest-build {
+  overflow-wrap: anywhere;
+}
+.playtest-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 10px;
+}
+.playtest-actions button {
+  padding: 10px 14px;
+}
+#playtest-download {
+  background: #294536;
+  border-color: var(--mint);
+}
+#playtest-feedback,
+#playtest-storage {
+  color: var(--amber);
+  margin: 10px 0;
+}
+.playtest-transport {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #1f3029;
+  border-bottom: 1px solid var(--mint);
+  font-size: 12px;
+}
+.playtest-transport[hidden] {
+  display: none;
+}
+.playtest-transport span {
+  flex: 1 1 250px;
+}
+.playtest-transport button,
+.playtest-transport select {
+  padding: 6px 9px;
+}
+.playtest-transport select {
+  background: #101c18;
+  color: inherit;
+  border: 1px solid #526156;
+}
+@media (max-width: 600px) {
+  .playtest-dialog {
+    padding: 18px;
+  }
+  .playtest-actions button {
+    flex: 1 1 140px;
+  }
+}
