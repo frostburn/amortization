@@ -11,6 +11,8 @@ import {
   landmark,
   moveAgents,
   toggleWeapons,
+  treatEscort,
+  waitEscort,
 } from './sim/orders';
 import { distance, living } from './sim/types';
 import type { Mission, World } from './sim/types';
@@ -131,6 +133,12 @@ async function boot() {
         break;
       case 'heal':
         heal(world, selected);
+        break;
+      case 'escort-wait':
+        waitEscort(world);
+        break;
+      case 'escort-aid':
+        treatEscort(world, selected);
         break;
       case 'drop':
         dropEvidence(world, selected);

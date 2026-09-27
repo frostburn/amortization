@@ -5,7 +5,7 @@ import { shoot } from './combat';
 import { makeGuard, notify } from './world';
 import { clearedCargo } from './courier';
 
-export function sees(world: World, guard: Guard, person: Operative): boolean {
+export function sees(world: World, guard: Guard, person: Vec): boolean {
   const range = distance(guard, person);
   if (range > 7.5 || !lineClear(world, guard, person)) return false;
   if (range < 1.3) return true;
@@ -67,6 +67,34 @@ export function updateAwareness(world: World, dt: number) {
         g.searchTime = 9;
       }
     }
+    const escort =
+      world.mission.escort?.vulnerable && world.escort?.recruited && living(world.escort)
+        ? world.escort
+        : null;
+    if (escort) {
+      const visible = sees(world, g, escort);
+      g.suspicion[escort.id] = Math.max(
+        0,
+        Math.min(100, (g.suspicion[escort.id] || 0) + (visible ? 90 : -22) * dt),
+      );
+      highest = Math.max(highest, g.suspicion[escort.id]);
+      if (g.suspicion[escort.id] >= 100 && !g.known.includes(escort.id)) {
+        g.known.push(escort.id);
+        g.reported = false;
+        if (g.radio <= 0) g.radio = 2.5;
+        notify(
+          world,
+          `${escort.name} spotted. Get them behind cover or stop the guard.`,
+          'warning',
+        );
+      }
+      if (visible && (g.known.includes(escort.id) || world.known.includes(escort.id))) {
+        g.mode = 'combat';
+        g.target = escort.id;
+        g.lastSeen = { x: escort.x, y: escort.y };
+        g.searchTime = 9;
+      }
+    }
     if (g.mode !== 'combat') g.mode = highest > 15 ? 'challenge' : 'patrol';
     if (g.radio > 0) {
       g.radio -= dt;
@@ -76,7 +104,8 @@ export function updateAwareness(world: World, dt: number) {
       }
     }
     if (g.mode === 'combat') {
-      const target = world.agents.find((a) => a.id === g.target && living(a));
+      const target =
+        escort?.id === g.target ? escort : world.agents.find((a) => a.id === g.target && living(a));
       if (target && distance(g, target) < 7.5 && lineClear(world, g, target)) {
         g.angle = Math.atan2(target.y - g.y, target.x - g.x);
         g.lastSeen = { x: target.x, y: target.y };
@@ -102,7 +131,10 @@ export function updateAwareness(world: World, dt: number) {
         }
       }
     } else if (g.mode === 'challenge') {
-      const suspect = world.agents.find((a) => (g.suspicion[a.id] || 0) === highest);
+      const suspect =
+        escort && g.suspicion[escort.id] === highest
+          ? escort
+          : world.agents.find((a) => (g.suspicion[a.id] || 0) === highest);
       if (suspect) g.angle = Math.atan2(suspect.y - g.y, suspect.x - g.x);
       g.path = [];
     } else if (!g.path.length && g.id !== world.courier?.guardId) {

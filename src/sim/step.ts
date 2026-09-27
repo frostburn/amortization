@@ -93,7 +93,10 @@ export function step(world: World, dt = STEP) {
       }
     }
     const working =
-      a.order.kind === 'interact' && (a.order.target === 'override' || a.order.target === 'breach');
+      a.order.kind === 'interact' &&
+      (a.order.target === 'override' ||
+        a.order.target === 'breach' ||
+        a.order.target === 'release');
     if (a.weapon && !a.carrying && !working) {
       const order = a.order;
       const candidates = world.guards.filter(
@@ -128,22 +131,29 @@ export function step(world: World, dt = STEP) {
   updateAwareness(world, dt);
   updateCourier(world, dt);
   for (const g of world.guards.filter(living)) walk(world, g, g.mode === 'combat' ? 2.25 : 1.2, dt);
-  const v = world.engineer;
-  if (v?.recruited) {
+  const v = world.escort;
+  if (v?.recruited && living(v)) {
     let leader = world.agents.find((a) => a.id === v.leader && living(a));
     if (!leader) {
       leader = world.agents.filter(living).sort((a, b) => distance(a, v) - distance(b, v))[0];
       v.leader = leader?.id || null;
     }
     v.repath -= dt;
-    if (leader && distance(v, leader) > 1.25 && v.repath <= 0) {
+    if (!v.waiting && leader && distance(v, leader) > 1.25 && v.repath <= 0) {
       v.path = findPath(world, v, leader);
       v.repath = 0.45;
     }
-    if (leader && distance(v, leader) <= 1.1) v.path = [];
-    walk(world, v, 2.65, dt);
+    if (v.waiting || (leader && distance(v, leader) <= 1.1)) v.path = [];
+    walk(world, v, world.mission.escort!.speed, dt);
   }
-  if (!world.agents.some(living)) {
+  if (v && !living(v)) {
+    world.status = 'lost';
+    notify(
+      world,
+      `${v.name} was killed. The contract required a living witness. Restart the operation.`,
+      'warning',
+    );
+  } else if (!world.agents.some(living)) {
     world.status = 'lost';
     notify(world, 'The crew is down. Restart the operation.', 'warning');
   }

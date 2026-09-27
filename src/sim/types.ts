@@ -10,7 +10,7 @@ export interface Rect extends Vec {
 }
 export interface Solid extends Rect {
   id: string;
-  kind: 'wall' | 'tram' | 'crate' | 'container' | 'building' | 'van' | 'shelves';
+  kind: 'wall' | 'tram' | 'crate' | 'container' | 'building' | 'van' | 'transport' | 'shelves';
   height: number;
 }
 export type ObjectKind =
@@ -18,8 +18,10 @@ export type ObjectKind =
   | 'gate'
   | 'relay'
   | 'evidence'
-  | 'engineer'
+  | 'escort'
   | 'extract'
+  | 'alternate'
+  | 'release'
   | 'override'
   | 'breach'
   | 'divert'
@@ -31,7 +33,7 @@ export interface Landmark extends Vec {
   detail: string;
 }
 export interface Mission {
-  id: 'depot' | 'archive' | 'transfer';
+  id: 'depot' | 'archive' | 'transfer' | 'custody';
   number: string;
   title: string;
   location: string;
@@ -44,6 +46,14 @@ export interface Mission {
   response: { spawns: Vec[]; patrol: Vec[] };
   archive?: { door: Rect; inside: Vec };
   transfer?: { start: Vec; checkpoint: Vec; inspection: Vec; junction: Vec };
+  escort?: {
+    id: string;
+    name: string;
+    hp: number;
+    speed: number;
+    locked: boolean;
+    vulnerable: boolean;
+  };
   width: number;
   height: number;
   solids: Solid[];
@@ -94,7 +104,9 @@ export interface Guard extends Person {
   searchTime: number;
   repath: number;
 }
-export interface Engineer extends Person {
+export interface Escort extends Person {
+  name: string;
+  waiting: boolean;
   leader: string | null;
   recruited: boolean;
   repath: number;
@@ -118,7 +130,9 @@ export interface World {
   mission: Mission;
   agents: Operative[];
   guards: Guard[];
-  engineer: Engineer | null;
+  escort: Escort | null;
+  escortLocked: boolean;
+  extractedAt: 'extract' | 'alternate' | null;
   time: number;
   status: 'playing' | 'won' | 'lost';
   gateOpen: boolean;
@@ -151,8 +165,10 @@ export const distance = (a: Vec, b: Vec) => Math.hypot(a.x - b.x, a.y - b.y);
 export const inside = (p: Vec, r: Rect) =>
   p.x >= r.x && p.y >= r.y && p.x <= r.x + r.w && p.y <= r.y + r.h;
 export const living = (p: Person) => p.hp > 0;
+export const isExtraction = (id: ObjectKind): id is 'extract' | 'alternate' =>
+  id === 'extract' || id === 'alternate';
 export const people = (w: World): Person[] => [
   ...w.agents,
   ...w.guards,
-  ...(w.engineer ? [w.engineer] : []),
+  ...(w.escort ? [w.escort] : []),
 ];

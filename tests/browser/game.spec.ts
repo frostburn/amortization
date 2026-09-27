@@ -1,5 +1,57 @@
 import { expect, test } from '@playwright/test';
 
+test('releases Mara, preserves her wait order across selection, and resets the escort controls', async ({
+  page,
+}) => {
+  test.setTimeout(50_000);
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Choose operation' }).click();
+  await page.getByRole('button', { name: /04 .*Protective custody/ }).click();
+  await expect(page.getByRole('dialog')).toContainText('Two ways out');
+  await page.getByRole('button', { name: 'Begin operation' }).click();
+  await expect(page.locator('#objective-primary')).toHaveText('○ Unlock the transport');
+  await expect(page.locator('#objective-extract')).toContainText('STREET or SERVICE');
+  await expect(page.locator('#escort-controls')).toBeHidden();
+  const map = (await page.locator('canvas').boundingBox())!;
+  const scale = Math.min(map.width / (68 * 26 + 80), map.height / (68 * 14 + 110));
+  const order = async (x: number, y: number, z = 1.45) =>
+    page.mouse.click(
+      map.x + map.width / 2 + ((x - y) * 26 - 4 * 26) * scale,
+      map.y + map.height / 2 + ((x + y) * 14 - z * 25 - 34 * 14 + 25) * scale,
+      { button: 'right' },
+    );
+  await page.getByRole('button', { name: 'Select Morrow', exact: true }).click();
+  await order(25, 18.4);
+  await expect(page.locator('#message')).toContainText('Transport locked');
+  await order(5.5, 21);
+  await expect(page.locator('#condition-0')).toHaveText('Maintenance', { timeout: 8_000 });
+  await order(14.3, 6.2);
+  await expect(page.locator('#objective-primary')).toHaveText('○ Locate Mara', { timeout: 15_000 });
+  await expect(page.locator('#escort-controls')).toBeHidden();
+  await order(25, 18.4);
+  await expect(page.locator('#escort-status')).toHaveText('Mara · 75 / 75 health · following', {
+    timeout: 15_000,
+  });
+  await page.getByRole('button', { name: 'Tell Mara to wait', exact: true }).click();
+  await page.getByRole('button', { name: 'Select Vale', exact: true }).click();
+  await expect(page.locator('#escort-status')).toContainText('waiting');
+  await expect(page.locator('#objective-primary')).toHaveText('✓ Mara waiting for escort');
+  await page.getByRole('button', { name: 'Ask Mara to follow', exact: true }).click();
+  await expect(page.locator('#escort-status')).toContainText('following');
+  await page.getByRole('button', { name: 'Restart', exact: true }).click();
+  await expect(page.locator('#mission-title')).toHaveText('Protective custody');
+  await expect(page.locator('#objective-primary')).toHaveText('○ Unlock the transport');
+  await expect(page.locator('#escort-controls')).toBeHidden();
+  await page.getByRole('button', { name: 'Operations', exact: true }).click();
+  await page.getByRole('button', { name: /01 .*The release clause/ }).click();
+  await page.getByRole('button', { name: 'Begin operation' }).click();
+  await expect(page.locator('#objective-primary')).toHaveText('○ Locate Voss');
+  await expect(page.locator('#escort-controls')).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
 test('routes a courier transfer, distinguishes CASE from its carrier, and resets mission three', async ({
   page,
 }) => {

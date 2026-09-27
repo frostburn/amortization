@@ -37,7 +37,7 @@ describe('Material breach', () => {
   it('seals the archive until an operative holds the override, then releases on a new order', () => {
     const w = createWorld(archive),
       end = w.evidencePosition;
-    expect(w.engineer).toBeNull();
+    expect(w.escort).toBeNull();
     expect(findPath(w, w.agents[0], end)).toEqual([]);
     const operator = activate(w);
     expect(w.shutterOpen).toBe(true);

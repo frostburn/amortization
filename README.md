@@ -2,7 +2,7 @@
 
 A real-time squad tactics game for the browser. Control four operatives together or individually. One maintenance disguise admits a single person; the rest of the crew can prepare access or provide armed backup.
 
-**Three operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing either of the first two. Restart and Shift+R restart the selected mission.
+**Four operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing any of the first three. Restart and Shift+R restart the selected mission.
 
 ## Development
 
@@ -95,6 +95,19 @@ The ledger exposes an escrow account. Its physical access keys are in a security
 
 A quiet route is KIT → RADIO → DIVERT, with another operative at CALL while the runner waits at inspection. Sign for CASE, then bring everyone back through the west entrance. For an ambush, call and divert the courier, hold the west side of the yard as a squad, then recover the case and withdraw. Pause and slow time also stop or slow courier movement and the checkpoint countdown.
 
+## Protective custody · Operation 04
+
+The access keys lead to auditor **Mara Quill**, held in a security transport at a remand station. Free her and bring every survivor to either extraction van. Once collected, Mara is vulnerable to guard fire and moves more slowly than the operatives. Her death fails the contract.
+
+- **KIT** provides the identity needed for **WARRANT**, a three-second forged release in the records office. Conceal the weapon and keep that operative unexposed. Unlocking the transport does not start the escape: right-click **MARA** when the route is ready.
+- **CUT** at the transport is the armed alternative. It takes eight seconds and attracts nearby guards, even after **RADIO** is disabled. Mara stays protected inside until collected.
+- **STREET**, beyond the east **GATE**, offers a short but exposed exit. **SERVICE** on the west street is farther away; the walled service corridor provides cover. Bring Mara and every surviving operative to the **same** extraction ring, then interact with its marker.
+- The **Escort** controls let Mara wait in place or resume following. Right-click her marker to transfer her escort; a surviving operative takes over if her leader falls. She has no disguise, so the runner's uniform does not protect her.
+- **Treat Mara** spends one selected operative's field dressing to restore up to 55 health. That operative needs free hands and must stand within two metres with clear sight. The same dressing can otherwise be used for their own wounds.
+- The **REGISTER** is optional evidence. Carrying it occupies both hands and slows the operative.
+
+For a quiet escape, take KIT, disable RADIO, file WARRANT, and collect Mara. Lead her north of the lower cargo containers, west through the service corridor, and out the west entrance to SERVICE. Send the rest of the crew up the public street. For an armed extraction, clear the transport bay before cutting the lock, leave Mara waiting behind cover while the crew secures the gate, then bring her to STREET.
+
 Results track time, crew survival, evidence, and alarm status. Best times and completion counts are stored separately for each operation. Existing first-mission records migrate automatically. Play remains available when browser storage is disabled.
 
 ## Structure
@@ -113,10 +126,10 @@ Simulation runs at 30 Hz with interpolated rendering. All gameplay uses world co
 
 Characters use a small deformable mesh over the existing atlas for alternating steps, knee lift and arm motion. The walking cycle follows interpolated distance travelled, so idle characters stand still and pause/slow time also affect animation. Each character image is anchored between its soles, with contact shadows following the feet along the ground. Tram windscreens, lamps and trim are projected on their actual vertical face. The extraction van has a cab, sloped windscreen, cargo doors and tyres visible through open wheel arches; its original collision footprint is preserved.
 
-CI uses one Ubuntu job, Node 24, and Chromium. The simulation suite includes complete quiet and armed extractions for all three missions and checks for navigation clearance, local identification, disguise permissions, radio disruption, evidence custody, and extraction requirements.
+CI uses one Ubuntu job, Node 24, and Chromium. The simulation suite includes complete quiet and armed extractions for all four missions and checks for navigation clearance, local identification, disguise permissions, radio disruption, evidence custody, and extraction requirements.
 
 ## Current scope
 
-Three ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, full directional character art, and mid-mission saves remain future work. In-world operatives share animated art and use numbered selection markers; their portraits are distinct.
+Four ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, full directional character art, and mid-mission saves remain future work. In-world operatives share animated art and use numbered selection markers; their portraits are distinct.
 
 See [design notes](docs/design.md) and [art provenance](docs/art.md). Distributed under the repository's [MIT license](LICENSE).

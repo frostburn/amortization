@@ -16,6 +16,7 @@ export const depot: Mission = {
   title: 'The release clause',
   location: 'Tram depot 06',
   objective: 'escort',
+  escort: { id: 'voss', name: 'Voss', hp: 75, speed: 2.65, locked: false, vulnerable: false },
   description: 'Retrieve engineer Iona Voss.',
   evidenceName: 'Diagnostic unit',
   intro:
@@ -91,7 +92,7 @@ export const depot: Mission = {
       detail: 'Disable to prevent calls for reinforcements. Guards can still fight.',
     },
     {
-      id: 'engineer',
+      id: 'escort',
       tag: 'VOSS',
       x: 26.4,
       y: 6.4,
