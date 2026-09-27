@@ -8,6 +8,8 @@ import { PersonSprite } from './person';
 import { project, TILE_X, TILE_Y } from './isometric';
 import { drawVan } from './van';
 import { courierGuard } from '../sim/courier';
+import { guideLocation } from '../ui/objectives';
+import type { GuideTarget } from '../ui/objectives';
 
 const markerHeight = (world: World, id: ObjectKind) =>
   id === 'evidence' && world.evidence === 'courier' ? 2.1 : 1.45;
@@ -114,6 +116,9 @@ export class Scene {
   private pan = { x: 0, y: 0 };
   private coneTime = -1;
   private resizeObserver: ResizeObserver;
+  private guideLayer = document.createElement('div');
+  private guideMarkers = new Map<GuideTarget, HTMLElement>();
+  private guidePanel: Rect = { x: 0, y: 0, w: 0, h: 0 };
   showVision = true;
   constructor(
     private host: HTMLElement,
@@ -132,6 +137,10 @@ export class Scene {
       preference: 'webgl',
     });
     this.host.appendChild(this.app.canvas);
+    this.app.canvas.tabIndex = 0;
+    this.guideLayer.className = 'objective-locators';
+    this.guideLayer.setAttribute('aria-hidden', 'true');
+    this.host.appendChild(this.guideLayer);
     this.app.canvas.setAttribute(
       'aria-label',
       'Tactical map. Select operatives with 1 to 4; right-click to order.',
@@ -157,6 +166,7 @@ export class Scene {
   }
   reset(world: World) {
     this.world = world;
+    this.showGuidance([], { x: 0, y: 0, w: 0, h: 0 });
     this.views.clear();
     this.scenery = [];
     this.shutter = null;
@@ -500,13 +510,127 @@ export class Scene {
     this.updateCamera();
   }
   zoomBy(delta: number) {
-    this.zoom = Math.max(0.7, Math.min(2.8, this.zoom * delta));
+    this.zoom = Math.max(0.4, Math.min(2.8, this.zoom * delta));
     this.updateCamera();
   }
   panBy(x: number, y: number) {
     this.pan.x += x;
     this.pan.y += y;
     this.updateCamera();
+  }
+  showGuidance(ids: GuideTarget[], panel: Rect) {
+    this.guidePanel = panel;
+    for (const [id, marker] of this.guideMarkers) {
+      if (!ids.includes(id)) {
+        marker.remove();
+        this.guideMarkers.delete(id);
+      }
+    }
+    for (const id of ids) {
+      const location = guideLocation(this.world, id);
+      if (!location || this.guideMarkers.has(id)) continue;
+      const marker = document.createElement('div');
+      marker.className = 'objective-locator';
+      marker.dataset.target = id;
+      marker.innerHTML = '<i class="locator-ring"></i><i class="locator-arrow"></i><span></span>';
+      marker.querySelector('span')!.textContent = location.tag;
+      this.guideLayer.appendChild(marker);
+      this.guideMarkers.set(id, marker);
+    }
+    const description = ids.length
+      ? `Highlighted mission items: ${ids
+          .map((id) => guideLocation(this.world, id)?.tag)
+          .filter(Boolean)
+          .join(', ')}.`
+      : '';
+    if (this.app.canvas.getAttribute('aria-description') !== description)
+      this.app.canvas.setAttribute('aria-description', description);
+    this.drawGuidance();
+  }
+  focusGuidance() {
+    const points = [...this.guideMarkers.keys()].flatMap((id) => {
+      const p = guideLocation(this.world, id);
+      return p ? [project(p, p.z)] : [];
+    });
+    if (!points.length) return;
+    const wide = this.host.clientWidth > 800;
+    const left = wide ? this.guidePanel.x + this.guidePanel.w + 45 : 45;
+    const top = wide ? 80 : this.guidePanel.y + this.guidePanel.h + 50;
+    const right = this.host.clientWidth - 45,
+      bottom = this.host.clientHeight - 60;
+    const minX = Math.min(...points.map((p) => p.x)),
+      maxX = Math.max(...points.map((p) => p.x));
+    const minY = Math.min(...points.map((p) => p.y)),
+      maxY = Math.max(...points.map((p) => p.y));
+    this.zoom = Math.max(
+      0.4,
+      Math.min(
+        2.8,
+        Math.max(50, right - left) / Math.max(240, maxX - minX) / this.fit,
+        Math.max(50, bottom - top) / Math.max(140, maxY - minY) / this.fit,
+      ),
+    );
+    this.updateCamera();
+    const scale = this.fit * this.zoom;
+    this.panBy(
+      (left + right) / 2 - (((minX + maxX) / 2) * scale + this.offset.x),
+      (Math.min(top, bottom - 50) + bottom) / 2 - (((minY + maxY) / 2) * scale + this.offset.y),
+    );
+    this.drawGuidance();
+  }
+  private drawGuidance() {
+    if (!this.guideMarkers.size) return;
+    const positions: Vec[] = [];
+    const width = this.host.clientWidth,
+      height = this.host.clientHeight;
+    for (const [id, marker] of this.guideMarkers) {
+      const p = guideLocation(this.world, id);
+      if (!p) continue;
+      const actual = this.screen(p, p.z);
+      let x = Math.max(45, Math.min(width - 45, actual.x));
+      let y = Math.max(80, Math.min(height - 60, actual.y));
+      // Keep a locator visible when its subject is off screen or underneath the help panel.
+      if (
+        x < this.guidePanel.x + this.guidePanel.w + 35 &&
+        y < this.guidePanel.y + this.guidePanel.h + 45
+      )
+        y = Math.min(height - 60, this.guidePanel.y + this.guidePanel.h + 45);
+      const offscreen = Math.abs(x - actual.x) > 1 || Math.abs(y - actual.y) > 1;
+      if (offscreen) {
+        const candidates = [{ x, y }];
+        for (let i = 1; i <= 8; i++) {
+          const offset = Math.ceil(i / 2) * (i % 2 ? 1 : -1);
+          candidates.push(
+            x === 45 || x === width - 45 ? { x, y: y + offset * 58 } : { x: x + offset * 90, y },
+          );
+        }
+        for (let px = 45; px <= width - 45; px += 90) candidates.push({ x: px, y: height - 60 });
+        const free = candidates.find(
+          (p) =>
+            p.x >= 45 &&
+            p.x <= width - 45 &&
+            p.y >= 80 &&
+            p.y <= height - 60 &&
+            !(
+              p.x < this.guidePanel.x + this.guidePanel.w + 35 &&
+              p.y < this.guidePanel.y + this.guidePanel.h + 45
+            ) &&
+            !positions.some((q) => Math.abs(q.x - p.x) < 85 && Math.abs(q.y - p.y) < 55),
+        );
+        if (free) {
+          x = free.x;
+          y = free.y;
+        }
+      }
+      marker.classList.toggle('is-offscreen', offscreen);
+      marker.classList.toggle(
+        'label-below',
+        !offscreen && positions.some((q) => Math.abs(q.x - x) < 90 && Math.abs(q.y - y) < 55),
+      );
+      marker.style.transform = `translate(${x}px, ${y}px)`;
+      marker.style.setProperty('--bearing', `${Math.atan2(actual.y - y, actual.x - x)}rad`);
+      positions.push({ x, y });
+    }
   }
   toWorld(x: number, y: number): Vec {
     const scale = this.fit * this.zoom;
@@ -568,6 +692,7 @@ export class Scene {
   }
   render(selected: string[], alpha: number) {
     const w = this.world;
+    this.drawGuidance();
     this.transferRoutes.forEach((route, i) => {
       route.visible = w.evidence === 'courier' && i === Number(w.courier?.diverted);
     });
@@ -637,6 +762,7 @@ export class Scene {
         (id === 'escort' && w.escortLocked) ||
         (id === 'evidence' && w.evidence === 'courier');
       icon.alpha = id === 'override' && w.overrideBy ? 0.6 : 1;
+      icon.children[1].visible = !this.guideMarkers.has(id);
       icon.position.copyFrom(project(landmark(w, id), markerHeight(w, id)));
     }
     this.effects.clear();

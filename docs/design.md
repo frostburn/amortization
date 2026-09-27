@@ -56,6 +56,12 @@ Wait/follow orders make it possible to clear a route without pulling the witness
 
 The transport reuses the van geometry with a grey body, security stripe, and barred side window. Its collision footprint remains explicit mission content. The HUD exposes escort health and orders only after recruitment; both extraction rings and the service corridor are visible on the map.
 
+## Objective guidance
+
+Mission goals expose the current requirements and point to their map locations. Hover previews without moving the camera; clicking or tapping frames the relevant items and keeps a short guide open. Each named location can be focused separately. Inspection never issues an operative order or changes selection.
+
+A read-only goal model supplies both the HUD labels and context-sensitive help. It distinguishes a diverted courier from a called transfer, explains why a shunt operator must stay put, removes the forged-release suggestion after the maintenance identity is lost, and states the extraction requirements. The locator resolves people and cargo from current simulation positions, including handoffs and drops. It uses a screen overlay for legible labels and off-screen arrows, leaving world occlusion and map hit-testing intact.
+
 ## Next useful work
 
 Tune whether splitting the crew earns its cognitive cost. Then extend civilian responses and challenges, spatial equipment choices, full directional character art, route variety, and missions built from these systems.

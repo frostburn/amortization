@@ -28,33 +28,41 @@ To play from another device on your local network, use `npm run dev -- --host 0.
 
 ## Controls
 
-| Input                              | Action                                                         |
-| ---------------------------------- | -------------------------------------------------------------- |
-| Click a portrait; 1–4              | Select individually                                            |
-| Click an operative on the map      | Select an unselected operative; keep a selected group together |
-| Shift-click / Shift+number         | Add to selection; shift-click removes unless it is the last member |
-| Left-drag                          | Select a group; an empty box preserves the current selection    |
-| Q                                  | Select every surviving operative without changing their orders |
-| Right-click ground                 | Move selected operatives in a loose formation                  |
-| Right-click a labelled diamond     | Nearest selected operative approaches and interacts            |
-| Right-click a guard                | Draw weapons and attack                                        |
-| G                                  | Regroup everyone at the lead selected operative                |
-| S                                  | Hold position / release the archive shunt                      |
-| F                                  | Draw / conceal selected weapons                                |
-| E                                  | Interact with a nearby landmark                                |
-| H                                  | Use a field dressing: one per operative, up to 55 health       |
-| X                                  | Put down carried evidence                                      |
-| Space                              | Pause / resume; orders work while paused                       |
-| Hold Tab                           | Slow time to 20%                                               |
-| Wheel / + and − buttons            | Zoom                                                           |
-| Arrows / middle-drag               | Pan                                                            |
-| Home / Fit map                     | Reset camera                                                   |
-| Shift+R / Restart                  | Restart operation                                              |
-| V                                  | Toggle guard sight cones                                       |
+| Input                          | Action                                                             |
+| ------------------------------ | ------------------------------------------------------------------ |
+| Click a portrait; 1–4          | Select individually                                                |
+| Click an operative on the map  | Select an unselected operative; keep a selected group together     |
+| Shift-click / Shift+number     | Add to selection; shift-click removes unless it is the last member |
+| Left-drag                      | Select a group; an empty box preserves the current selection       |
+| Q                              | Select every surviving operative without changing their orders     |
+| Right-click ground             | Move selected operatives in a loose formation                      |
+| Right-click a labelled diamond | Nearest selected operative approaches and interacts                |
+| Right-click a guard            | Draw weapons and attack                                            |
+| G                              | Regroup everyone at the lead selected operative                    |
+| S                              | Hold position / release the archive shunt                          |
+| F                              | Draw / conceal selected weapons                                    |
+| E                              | Interact with a nearby landmark                                    |
+| H                              | Use a field dressing: one per operative, up to 55 health           |
+| X                              | Put down carried evidence                                          |
+| Space                          | Pause / resume; orders work while paused                           |
+| Hold Tab                       | Slow time to 20%                                                   |
+| Wheel / + and − buttons        | Zoom                                                               |
+| Arrows / middle-drag           | Pan                                                                |
+| Home / Fit map                 | Reset camera                                                       |
+| Shift+R / Restart              | Restart operation                                                  |
+| V                              | Toggle guard sight cones                                           |
 
 On touch screens, tap portraits to select, tap ground or a landmark to order, and drag to pan. The sidebar provides the main actions. Desktop mouse and keyboard offer the most precise control. Losing tab focus pauses play.
 
 Map clicks on an already selected operative keep the group selected. Use a portrait or number key to isolate someone deliberately. If the last selected operative falls, selection transfers to the survivors without changing their orders.
+
+## Mission guidance
+
+Hover over a mission goal to highlight its relevant items and read the current requirements. Click or tap a goal to keep the guide open and frame those locations. On a phone, this also brings the map back into view. The named buttons in the guide focus individual items; **Escape** or **×** closes it. Locating an objective preserves squad selection and standing orders.
+
+The instructions follow mission progress: CALL after a courier diversion, a second operative while SHUNT is held, forged release or CUT for the transport, and everyone at the same extraction ring. Optional evidence is identified explicitly. Locators follow witnesses, couriers, carried cargo and dropped evidence; edge arrows show targets outside the current view. Marker labels remain readable at low zoom, and pulse animation respects reduced-motion settings.
+
+**?** opens objective help. While the guide is open, **Tab** moves between focused UI buttons and **Enter/Space** activates a goal or location. Click the map or close the guide to return focus to gameplay; holding **Tab** on the map still slows time.
 
 ## The release clause · Operation 01
 
