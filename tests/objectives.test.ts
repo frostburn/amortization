@@ -8,6 +8,7 @@ import { createWorld } from '../src/sim/world';
 import { completeInteraction, dropEvidence, landmark } from '../src/sim/orders';
 import { courierGuard } from '../src/sim/courier';
 import { guideLocation, missionGoals, transferFeedback } from '../src/ui/objectives';
+import { extractionRequirement } from '../src/ui/extraction';
 import type { GoalId } from '../src/ui/objectives';
 import type { World } from '../src/sim/types';
 
@@ -128,6 +129,9 @@ describe('mission guidance', () => {
     const exit = landmark(w, 'alternate');
     a.x = exit.x;
     a.y = exit.y;
+    expect(goal(w, 'extract').label).toContain('before extraction');
+    expect(goal(w, 'extract').targets).toEqual(goal(w).targets);
+    w.escort!.recruited = true;
     expect(goal(w, 'extract').detail).toContain('same extraction ring');
     expect(goal(w, 'extract').detail).toContain('SERVICE: 1/4 crew');
     expect(goal(w, 'extract').targets).toEqual(['extract', 'alternate', 'gate']);
@@ -137,6 +141,31 @@ describe('mission guidance', () => {
       const world = createWorld(mission);
       for (const g of missionGoals(world))
         for (const id of g.targets) expect(guideLocation(world, id)).not.toBeNull();
+    }
+  });
+
+  it.each(missions)('unlocks $id exits only when the required objective is secured', (mission) => {
+    const w = createWorld(mission);
+    expect(extractionRequirement(w)).not.toBeNull();
+    // Optional evidence in rescue/broadcast missions must never enable the end action.
+    w.evidence = 'carried';
+    w.agents[0].carrying = true;
+    if (w.broadcast) {
+      w.broadcast.progress = 0.9333333333333332; // First exit attempt in replay 52011baa.
+      expect(extractionRequirement(w)?.detail).toContain('3% uploaded');
+      expect(goal(w, 'extract').targets).toContain('upload');
+      w.broadcast.progress = mission.broadcast!.duration;
+    } else if (w.escort) {
+      expect(extractionRequirement(w)?.detail).toContain('recruit');
+      w.escort.recruited = true;
+    }
+    expect(extractionRequirement(w)).toBeNull();
+    expect(goal(w, 'extract').targets).toContain('extract');
+    if (!w.broadcast && !w.escort) {
+      dropEvidence(w, [w.agents[0].id]);
+      expect(extractionRequirement(w)?.goal).toBe('evidence');
+      expect(goal(w, 'extract').targets).toContain('evidence');
+      expect(goal(w, 'extract').targets).not.toContain('extract');
     }
   });
 

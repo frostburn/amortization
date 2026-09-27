@@ -93,8 +93,8 @@ npm run replay:verify -- --current --expect-win attempt.replay.json
 The first command verifies compatible code and every state checkpoint. The second
 tests completion under current rules. Both exit nonzero on failure. Selected player
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
-distinct routes. Fifteen retained recordings cover the first four missions, including
-six completions from the latest UI playtests. Invalidated recordings were removed;
+distinct routes. Sixteen retained recordings cover all five missions, including
+the Public offering extraction-feedback run. Invalidated recordings were removed;
 all five missions have synthetic quiet and armed completion tests. See
 `tests/replays/README.md` for provenance, current outcomes, and retired routes.
 
@@ -162,13 +162,18 @@ Hover over a mission goal to highlight its relevant items and read the current r
 
 The instructions follow mission progress: CALL after a courier diversion, a second operative while SHUNT is held, forged release or CUT for the transport, the split LOOP/UPLINK upload, and everyone at the same extraction ring. Optional evidence is identified explicitly. Locators follow witnesses, couriers, carried cargo and dropped evidence; edge arrows show targets outside the current view. Marker labels remain readable at low zoom, and pulse animation respects reduced-motion settings.
 
+Extraction stays locked until the required objective is secured: recruit the witness,
+carry LEDGER/CASE, or finish the audit upload. Optional cargo never unlocks the exit.
+Locked vans are marked on the map; clicking one explains and highlights the missing
+objective without replacing any orders. The same rule covers the sidebar and Interact.
 After recovering the objective, extraction controls appear beside its mission
 goal in the sidebar. **Rally crew to VAN** (or STREET / SERVICE) orders every survivor to that
 exit without changing selection. Counts and names explain who is missing;
 **Extract at VAN** appears when the crew and objective are ready. Boarding still
 requires an order, so gathering near a van does not silently end optional work.
 A waiting witness stays in cover until **Ask … to follow** is pressed. Move or
-Hold can cancel individual extraction orders.
+Hold can cancel individual extraction orders. If a cargo pickup exposes the controls
+before the required objective is ready, the exit button stays disabled with its reason.
 When SHUNT is held, move everyone out of the archive before using the whole-crew
 rally. The panel names anyone still inside and keeps rally disabled until they
 clear the shutter, protecting them from being locked in when the operator leaves.

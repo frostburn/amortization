@@ -17,6 +17,7 @@ import { missionRecord } from './storage';
 import type { Records, MissionRecord } from './storage';
 import { missionGoals, transferFeedback } from './objectives';
 import type { Goal, GoalId, GuideTarget } from './objectives';
+import { extractionRequirement } from './extraction';
 
 export type Action =
   | 'objectives'
@@ -182,9 +183,9 @@ export class Hud {
     const e = this.field(id);
     if (e.textContent !== value) e.textContent = value;
   }
-  focusObjectives() {
-    this.field('objective-primary').focus();
-    this.locateGoal('primary');
+  focusObjectives(id: GoalId = 'primary') {
+    this.field(`objective-${id}`).focus({ preventScroll: true });
+    this.locateGoal(id);
   }
   clearGuide(focusMap = false) {
     this.hoveredGoal = this.pinnedGoal = null;
@@ -328,7 +329,8 @@ export class Hud {
       world.status !== 'playing' ||
       !(world.escort?.recruited || world.evidence === 'carried' || published(world) || extracting);
     this.field('exit-alternate').hidden = !exits.some((o) => o.id === 'alternate');
-    const rallyBlocker = extractionRallyBlocker(world);
+    const requirement = extractionRequirement(world);
+    const rallyBlocker = requirement?.detail || extractionRallyBlocker(world);
     for (const exit of exits) {
       if (!isExtraction(exit.id)) continue;
       const status = extractionStatus(world, exit.id);
@@ -337,7 +339,9 @@ export class Hud {
         .every((p) => p.order.kind === 'interact' && p.order.target === exit.id);
       this.set(
         `exit-button-${exit.id}`,
-        `${status.ready ? 'Extract at' : 'Rally crew to'} ${exit.tag}`,
+        requirement
+          ? `${exit.tag} locked`
+          : `${status.ready ? 'Extract at' : 'Rally crew to'} ${exit.tag}`,
       );
       this.set(
         `exit-status-${exit.id}`,
@@ -347,6 +351,7 @@ export class Hud {
       (this.field(`exit-button-${exit.id}`) as HTMLButtonElement).disabled = !!rallyBlocker;
       this.field(`exit-${exit.id}`).classList.toggle('ready', status.ready);
       this.field(`exit-button-${exit.id}`).title =
+        rallyBlocker ||
         'Order every surviving operative to this exit. Other orders are replaced; a waiting witness stays in cover.';
     }
     if (world.status !== 'playing') this.clearGuide();

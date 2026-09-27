@@ -12,7 +12,7 @@ test('releases Mara, preserves her wait order across selection, and resets the e
   await expect(page.getByRole('dialog')).toContainText('Two ways out');
   await page.getByRole('button', { name: 'Begin operation' }).click();
   await expect(page.locator('#objective-primary')).toHaveText('○ Unlock the transport');
-  await expect(page.locator('#objective-extract')).toContainText('STREET or SERVICE');
+  await expect(page.locator('#objective-extract')).toHaveText('○ Rescue Mara before extraction');
   await expect(page.locator('#escort-controls')).toBeHidden();
   const map = (await page.locator('canvas').boundingBox())!;
   const scale = Math.min(map.width / (68 * 26 + 80), map.height / (68 * 14 + 110));
@@ -153,8 +153,13 @@ test('loads art, accepts individual orders while paused, and restarts cleanly', 
   const interact = (await page.locator('[data-action="interact"]').boundingBox())!;
   expect(interact.y + interact.height).toBeLessThan(720);
   await page.mouse.click(interact.x + interact.width / 2, interact.y + interact.height / 2);
-  await expect(page.locator('#message')).toContainText('Selected crew heading to VAN');
-  await expect(page.locator('#condition-0')).toHaveText('Moving');
+  await expect(page.locator('#message')).toContainText('Extraction locked: recruit Voss');
+  await expect(page.locator('#condition-0')).toHaveText('Concealed');
+  await page.getByRole('button', { name: 'Close mission guide' }).click();
+  await page.keyboard.press('e');
+  await expect(page.locator('#objective-guide')).toBeVisible();
+  await expect(page.locator('#condition-0')).toHaveText('Concealed');
+  await expect(page.locator('#selected-count')).toHaveText('1 / 4');
   await page.getByRole('button', { name: 'Draw weapons' }).click();
   await expect(page.locator('#condition-0')).toHaveText('Weapon drawn');
   await expect(page.locator('#condition-1')).toHaveText('Concealed');

@@ -19,6 +19,7 @@ import { drawVan } from './van';
 import { courierGuard } from '../sim/courier';
 import { guideLocation } from '../ui/objectives';
 import type { GuideTarget } from '../ui/objectives';
+import { extractionRequirement } from '../ui/extraction';
 
 const markerHeight = (world: World, id: ObjectKind) =>
   id === 'evidence' && world.evidence === 'courier' ? 2.1 : 1.45;
@@ -892,6 +893,7 @@ export class Scene {
     depthOrder(depthItems).forEach((item, index) => {
       item.root.zIndex = index;
     });
+    const exitLocked = !!extractionRequirement(w);
     for (const [id, icon] of this.icons) {
       icon.visible =
         available(w, id) ||
@@ -900,6 +902,12 @@ export class Scene {
       icon.alpha = id === 'override' && w.overrideBy ? 0.6 : 1;
       icon.children[1].visible = !this.guideMarkers.has(id);
       icon.position.copyFrom(project(landmark(w, id), markerHeight(w, id)));
+      if (isExtraction(id)) {
+        const label = icon.children[1] as Text;
+        label.text = `${landmark(w, id).tag}${exitLocked ? ' · LOCKED' : ''}`;
+        label.style.fill = exitLocked ? 0x9aa69f : COLORS.mint;
+        icon.children[0].tint = exitLocked ? 0x9aa69f : 0xffffff;
+      }
     }
     this.effects.clear();
     for (const exit of w.mission.landmarks.filter((o) => isExtraction(o.id))) {
@@ -911,7 +919,7 @@ export class Scene {
           EXTRACTION_RADIUS * Math.SQRT2 * TILE_X,
           EXTRACTION_RADIUS * Math.SQRT2 * TILE_Y,
         )
-        .stroke({ color: COLORS.mint, width: 1, alpha: 0.3 });
+        .stroke({ color: exitLocked ? 0x9aa69f : COLORS.mint, width: 1, alpha: 0.3 });
     }
     for (const a of w.agents.filter((a) => selected.includes(a.id) && living(a))) {
       if (a.path.length) {

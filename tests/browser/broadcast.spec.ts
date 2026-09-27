@@ -31,6 +31,21 @@ test('launches operation five and keeps LOOP held when a different operative rec
   await expect(page.locator('#condition-0')).toHaveText('Moving');
   await expect(page.locator('#condition-1')).toHaveText('Holding loop');
   await expect(page.locator('#broadcast-progress-label')).toHaveText('0% · Awaiting UPLINK');
+  // A live click on the van must not pull either operative off their station order.
+  await page.locator('[data-action="all"]').click();
+  await page.locator('[data-action="home"]').click();
+  const map = (await page.locator('canvas').boundingBox())!;
+  const scale = Math.min(map.width / (70 * 26 + 80), map.height / (70 * 14 + 110));
+  await page.mouse.click(
+    map.x + map.width / 2 + ((36.1 - 28) * 26 - 5 * 26) * scale,
+    map.y + map.height / 2 + ((36.1 + 28) * 14 - 1.55 * 25 - 35 * 14 + 25) * scale,
+    { button: 'right' },
+  );
+  await expect(page.locator('#message')).toContainText('Extraction locked: finish UPLINK');
+  await expect(page.locator('#condition-0')).toHaveText('Moving');
+  await expect(page.locator('#condition-1')).toHaveText('Holding loop');
+  await expect(page.locator('#selected-count')).toHaveText('4 / 4');
+  await expect(page.locator('#guide-detail')).toContainText('Extraction locked: finish UPLINK');
   await page.locator('#objective-primary').hover();
   await expect(page.locator('#guide-detail')).toContainText('Vale holds LOOP');
   await expect(page.locator('canvas')).toHaveAttribute(
@@ -123,7 +138,7 @@ async function mountTransmission(page: Page) {
 
 test('shows saved upload, trace and completion states without scrolling laptop mission actions', async ({
   page,
-}) => {
+}, testInfo) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -143,6 +158,21 @@ test('shows saved upload, trace and completion states without scrolling laptop m
   await expect(page.locator('#broadcast-progress-label')).toContainText('Morrow uploading');
   await expect(page.locator('#broadcast-status')).toHaveText('LOOP held by Vale');
   await fits();
+  // Reproduce the submitted run: LOG was collected while UPLINK was unfinished.
+  await page.evaluate(() => {
+    const { world, advance } = window.transmission;
+    world.evidence = 'carried';
+    world.agents[2].carrying = true;
+    advance(0);
+  });
+  await expect(page.getByRole('button', { name: 'VAN locked', exact: true })).toBeDisabled();
+  await expect(page.locator('#exit-status-extract')).toContainText('finish UPLINK');
+  await expect(page.locator('#objective-extract')).toHaveText('○ Finish UPLINK before extraction');
+  await page.locator('#exit-button-extract').evaluate((el) => (el as HTMLButtonElement).click());
+  await expect(page.locator('#condition-0')).toHaveText('Uploading audit');
+  await expect(page.locator('#condition-1')).toHaveText('Holding loop');
+  await fits();
+  await page.screenshot({ path: testInfo.outputPath('laptop-locked-extraction.png') });
   await page.locator('[data-action="hold"]').click();
   const saved = await page.locator('#broadcast-progress').getAttribute('value');
   await page.evaluate(() => window.transmission.advance(2));
@@ -167,9 +197,11 @@ test('shows saved upload, trace and completion states without scrolling laptop m
   await expect(page.locator('#broadcast-actions')).toBeHidden();
   await expect(page.getByRole('button', { name: 'Rally crew to VAN', exact: true })).toBeVisible();
   await fits();
+  await page.getByRole('button', { name: 'Rally crew to VAN', exact: true }).click();
+  await page.evaluate(() => window.transmission.advance(60));
+  expect(await page.evaluate(() => window.transmission.world.status)).toBe('won');
   await page.evaluate(() => {
     const { world, hud } = window.transmission;
-    world.status = 'won';
     hud.showEnd(world, { best: 100, fullCrewBest: 100, completions: 1 });
   });
   await expect(page.getByRole('dialog')).toContainText('The audit is public.');
@@ -196,8 +228,22 @@ test('keeps transmission actions tappable and locators readable on a phone', asy
   await page.getByRole('button', { name: 'Select Morrow', exact: true }).tap();
   await page.getByRole('button', { name: 'Work UPLINK', exact: true }).tap();
   await page.evaluate(() => window.transmission.advance(3));
-  await page.locator('#objective-primary').tap();
+  await page.evaluate(() => {
+    const { world, advance } = window.transmission;
+    world.evidence = 'carried';
+    world.agents[2].carrying = true;
+    advance(0);
+  });
+  const exit = page.getByRole('button', { name: 'VAN locked', exact: true });
+  await expect(exit).toBeDisabled();
+  await exit.scrollIntoViewIfNeeded();
+  const bounds = (await exit.boundingBox())!;
+  await page.touchscreen.tap(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+  await expect(page.locator('#condition-0')).toHaveText('Uploading audit');
+  await expect(page.locator('#condition-1')).toHaveText('Holding loop');
+  await page.locator('#objective-extract').tap();
   await expect(page.locator('#objective-guide')).toBeInViewport();
+  await expect(page.locator('#guide-detail')).toContainText('finish UPLINK');
   await page.getByRole('button', { name: 'Locate UPLINK', exact: true }).tap();
   await expect(page.locator('[data-target="upload"]')).not.toHaveClass(/is-offscreen/);
   await page.screenshot({ path: testInfo.outputPath('phone-transmission.png') });

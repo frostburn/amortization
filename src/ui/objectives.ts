@@ -3,6 +3,7 @@ import type { ObjectKind, Vec, World } from '../sim/types';
 import { landmark } from '../sim/orders';
 import { clearedCargo, courierGuard } from '../sim/courier';
 import { published } from '../sim/broadcast';
+import { extractionRequirement } from './extraction';
 
 export type GoalId = 'primary' | 'evidence' | 'extract';
 export type GuideTarget = ObjectKind | 'inspection';
@@ -250,17 +251,24 @@ export function missionGoals(w: World): Goal[] {
       return `${exit.tag}: ${crew}/${w.agents.filter(living).length} crew${v?.recruited && distance(v, exit) <= EXTRACTION_RADIUS ? ` + ${v.name}` : ''}`;
     })
     .join(' · ');
+  const requirement = extractionRequirement(w);
   const extraction: Goal = {
     id: 'extract',
     complete: w.status === 'won',
     label:
       w.status === 'won'
         ? `✓ Extracted${w.extractedAt ? ` at ${landmark(w, w.extractedAt).tag}` : ''}`
-        : exits.length > 1
-          ? '○ Extract at STREET or SERVICE'
-          : '○ Extract at the van',
-    detail: `Use the controls beside the extraction goal to rally every survivor and leave. Or select the crew and right-click or tap the van or its diamond. The order waits for ${v ? `${v.name} and ` : m.broadcast ? 'the audit to be published and ' : `the ${tag} carrier and `}every surviving operative inside the same extraction ring.${v?.waiting ? ` ${v.name} is waiting: ask them to follow.` : ''}${exits.length > 1 ? ' STREET is short and exposed; SERVICE is longer, via the screened corridor.' : ''}${eastGate ? ' Open GATE from inside for the east exit.' : ''}${m.broadcast ? ' Bring the LOOP operator along the public south street; LOG is optional.' : ''} ${counts}.`,
-    targets: [...exits.map((o) => o.id), ...(eastGate ? ['gate' as const] : [])],
+        : requirement
+          ? `○ ${requirement.label} before extraction`
+          : exits.length > 1
+            ? '○ Extract at STREET or SERVICE'
+            : '○ Extract at the van',
+    detail: requirement
+      ? `${requirement.detail} Complete the highlighted objective to unlock the exit. Clicking a locked van leaves current orders in place.`
+      : `Use the controls beside the extraction goal to rally every survivor and leave. Or select the crew and right-click or tap the van or its diamond. The order waits for ${v ? `${v.name} and ` : m.broadcast ? '' : `the ${tag} carrier and `}every surviving operative inside the same extraction ring.${v?.waiting ? ` ${v.name} is waiting: ask them to follow.` : ''}${exits.length > 1 ? ' STREET is short and exposed; SERVICE is longer, via the screened corridor.' : ''}${eastGate ? ' Open GATE from inside for the east exit.' : ''}${m.broadcast ? ' Bring the LOOP operator along the public south street; LOG is optional.' : ''} ${counts}.`,
+    targets: requirement
+      ? (requirement.goal === 'primary' ? primary : evidence).targets
+      : [...exits.map((o) => o.id), ...(eastGate ? ['gate' as const] : [])],
   };
   return [primary, evidence, extraction];
 }

@@ -62,7 +62,7 @@ test('explains why a whole-crew rally must wait for the held archive shutter', a
   expect(result.operatorOrder).toEqual({ kind: 'interact', target: 'override' });
 });
 
-test('orders the whole selection to the vehicle using either mouse or touch', async ({
+test('locked vehicle clicks explain the missing objective without issuing orders on mouse or touch', async ({
   browser,
 }) => {
   for (const touch of [false, true]) {
@@ -85,23 +85,17 @@ test('orders the whole selection to the vehicle using either mouse or touch', as
     const y = map.y + map.height / 2 + ((3 + 22.1) * 14 - 1.55 * 25 - 29 * 14 + 25) * scale;
     if (touch) await page.touchscreen.tap(x, y);
     else await page.mouse.click(x, y, { button: 'right' });
-    await expect(page.locator('#message')).toContainText('Selected crew heading to VAN');
-    for (let i = 0; i < 4; i++) await expect(page.locator(`#condition-${i}`)).toHaveText('Moving');
-    await page.getByRole('button', { name: 'Select Vale', exact: true }).click();
-    await page.locator('[data-action="hold"]').click();
-    await page.getByRole('button', { name: 'Select Morrow', exact: true }).click();
-    const rally = page.getByRole('button', { name: 'Rally crew to VAN', exact: true });
-    if (touch) await rally.tap();
-    else {
-      await rally.focus();
-      await page.keyboard.press('Space');
-    }
+    await expect(page.locator('#message')).toContainText('Extraction locked: recruit Voss');
+    for (let i = 0; i < 4; i++)
+      await expect(page.locator(`#condition-${i}`)).toHaveText('Concealed');
+    await expect(page.locator('#guide-detail')).toContainText('Extraction locked: recruit Voss');
+    await expect(page.locator('canvas')).toHaveAttribute(
+      'aria-description',
+      'Highlighted mission items: VOSS, KIT.',
+    );
+    await expect(page.getByRole('button', { name: 'Rally crew to VAN', exact: true })).toBeHidden();
     await expect(page.locator('#pause-label')).toHaveText('Resume');
-    await expect(page.locator('#selected-count')).toHaveText('1 / 4');
-    for (let i = 0; i < 4; i++) await expect(page.locator(`#condition-${i}`)).toHaveText('Moving');
-    await expect(page.locator('#exit-status-extract')).toContainText('Bring Voss out alive');
-    await page.getByRole('button', { name: 'Resume', exact: true }).click();
-    await expect(page.locator('#message')).toContainText('Bring Voss out alive', { timeout: 8000 });
+    await expect(page.locator('#selected-count')).toHaveText('4 / 4');
     await expect(page.getByRole('dialog', { name: 'Account settled.' })).toBeHidden();
     expect(errors).toEqual([]);
     await context.close();
