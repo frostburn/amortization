@@ -121,6 +121,15 @@ async function boot() {
       if (mission) startMission(mission, true);
       return;
     }
+    if (type === 'extract:extract' || type === 'extract:alternate') {
+      issue({
+        kind: 'interact',
+        agents: world.agents.filter(living).map((a) => a.id),
+        target: type === 'extract:extract' ? 'extract' : 'alternate',
+      });
+      updateHud();
+      return;
+    }
     switch (type) {
       case 'objectives':
         hud.focusObjectives();

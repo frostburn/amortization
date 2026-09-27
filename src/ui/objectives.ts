@@ -202,7 +202,7 @@ export function missionGoals(w: World): Goal[] {
         : exits.length > 1
           ? '○ Extract at STREET or SERVICE'
           : '○ Extract at the van',
-    detail: `Select the crew and right-click or tap the van or its diamond to approach and extract. The order waits for ${v ? `${v.name} and ` : `the ${tag} carrier and `}every surviving operative inside the same extraction ring.${v?.waiting ? ` ${v.name} is waiting: use the Escort controls to ask them to follow.` : ''}${exits.length > 1 ? ' STREET is short and exposed; SERVICE is longer, via the screened corridor.' : ''}${eastGate ? ' Open GATE from inside for the east exit.' : ''} ${counts}.`,
+    detail: `Use the extraction controls below the map to rally every survivor and leave. Or select the crew and right-click or tap the van or its diamond. The order waits for ${v ? `${v.name} and ` : `the ${tag} carrier and `}every surviving operative inside the same extraction ring.${v?.waiting ? ` ${v.name} is waiting: ask them to follow.` : ''}${exits.length > 1 ? ' STREET is short and exposed; SERVICE is longer, via the screened corridor.' : ''}${eastGate ? ' Open GATE from inside for the east exit.' : ''} ${counts}.`,
     targets: [...exits.map((o) => o.id), ...(eastGate ? ['gate' as const] : [])],
   };
   return [primary, evidence, extraction];

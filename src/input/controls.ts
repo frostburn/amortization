@@ -1,6 +1,6 @@
 import type { Scene } from '../render/scene';
 import type { Hit } from '../render/scene';
-import type { Vec, World } from '../sim/types';
+import type { Rect, Vec, World } from '../sim/types';
 import type { Hud, Action } from '../ui/hud';
 
 export interface ControlsTarget {
@@ -10,6 +10,11 @@ export interface ControlsTarget {
   order: (hit: Hit) => void;
   action: (action: Action) => void;
   slow: (enabled: boolean) => void;
+}
+function selectionArea(a: Vec, b: Vec): Rect {
+  const w = Math.max(12, Math.abs(b.x - a.x)),
+    h = Math.max(12, Math.abs(b.y - a.y));
+  return { x: (a.x + b.x - w) / 2, y: (a.y + b.y - h) / 2, w, h };
 }
 export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
   const stage = hud.stage,
@@ -45,7 +50,10 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     if (Math.hypot(p.x - start.x, p.y - start.y) > 8) drag = true;
     if (drag) {
       if (button === 1 || pointerType === 'touch') scene.panBy(p.x - last.x, p.y - last.y);
-      else if (button === 0) hud.selectionBox(start, p);
+      else if (button === 0) {
+        const r = selectionArea(start, p);
+        hud.selectionBox(r, { x: r.x + r.w, y: r.y + r.h });
+      }
     }
     last = p;
   });
@@ -63,16 +71,13 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     if (!start || e.pointerId !== pointer) return;
     const p = position(e);
     if (drag && button === 0 && pointerType !== 'touch') {
+      const r = selectionArea(start, p);
       const ids = target
         .world()
         .agents.filter((a) => {
-          const q = scene.screen(a);
+          const q = scene.agentBounds(a);
           return (
-            a.hp > 0 &&
-            q.x >= Math.min(start!.x, p.x) &&
-            q.x <= Math.max(start!.x, p.x) &&
-            q.y >= Math.min(start!.y, p.y) &&
-            q.y <= Math.max(start!.y, p.y)
+            a.hp > 0 && q.x + q.w >= r.x && q.x <= r.x + r.w && q.y + q.h >= r.y && q.y <= r.y + r.h
           );
         })
         .map((a) => a.id);
@@ -134,6 +139,8 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     // Mission help is keyboard-navigable; gameplay shortcuts keep working after squad clicks.
     const buttonTarget = (e.target as HTMLElement).closest('button');
     if (
+      ((e.target as HTMLElement).closest('#extraction-controls') &&
+        [' ', 'Enter', 'Tab'].includes(e.key)) ||
       (buttonTarget && e.key === 'Tab' && hud.guideOpen) ||
       ((e.target as HTMLElement).closest('[data-goal], .objective-guide') &&
         [' ', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key))

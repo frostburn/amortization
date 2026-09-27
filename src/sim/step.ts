@@ -8,8 +8,8 @@ import {
   interactionDuration,
   interactionPoint,
 } from './orders';
-import { updateAwareness } from './awareness';
-import { shoot } from './combat';
+import { reportGunfire, updateAwareness } from './awareness';
+import { shoot, WEAPON_RANGE } from './combat';
 import { notify } from './world';
 import { updateShutter } from './shutter';
 import { updateCourier } from './courier';
@@ -106,28 +106,13 @@ export function step(world: World, dt = STEP) {
         (g) =>
           living(g) &&
           (order.kind === 'attack' ? g.id === order.target : g.mode === 'combat') &&
-          distance(a, g) <= 8 &&
+          distance(a, g) <= WEAPON_RANGE &&
           lineClear(world, a, g),
       );
       candidates.sort((g, h) => distance(a, g) - distance(a, h));
       if (candidates[0] && shoot(world, a, candidates[0], false)) {
         a.exposed = true;
-        // Gunfire is local. Nearby guards investigate its position, without learning every identity.
-        for (const g of world.guards.filter(living))
-          if (distance(g, a) < 11) {
-            g.lastSeen = { x: a.x, y: a.y };
-            g.searchTime = 10;
-            g.mode = 'combat';
-            g.path = [];
-            if (lineClear(world, g, a)) {
-              if (!g.known.includes(a.id)) {
-                g.known.push(a.id);
-                g.reported = false;
-              }
-              g.target = a.id;
-              if (!g.reported && g.radio <= 0) g.radio = 2.5;
-            }
-          }
+        reportGunfire(world, a);
       }
     }
   }

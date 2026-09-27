@@ -201,6 +201,32 @@ export function dropEvidence(world: World, ids: string[]) {
       notify(world, `${world.mission.evidenceName} set down. Another operative can collect it.`);
     }
 }
+/** Shared by boarding and the HUD so the displayed readiness cannot disagree. */
+export function extractionStatus(world: World, id: 'extract' | 'alternate') {
+  const van = landmark(world, id),
+    survivors = world.agents.filter(living),
+    missing = survivors.filter((p) => distance(p, van) > EXTRACTION_RADIUS),
+    carrier = survivors.find((p) => p.carrying),
+    v = world.escort;
+  const waiting =
+    world.mission.objective !== 'escort' && (!carrier || distance(carrier, van) > EXTRACTION_RADIUS)
+      ? `Bring the ${world.mission.evidenceName.toLowerCase()} to ${van.tag}. It is required for this contract.`
+      : v && (!v.recruited || !living(v))
+        ? `Bring ${v.name} out alive before requesting extraction.`
+        : v && distance(v, van) > EXTRACTION_RADIUS
+          ? v.waiting
+            ? `Waiting for ${v.name}. Use the Escort controls to ask them to follow.`
+            : `Waiting for ${v.name} at ${van.tag}. Bring their escort to the van.`
+          : missing.length
+            ? `Waiting for ${missing.map((p) => p.name).join(', ')}. Bring every survivor inside the extraction ring.`
+            : null;
+  return {
+    ready: survivors.length > 0 && !waiting,
+    waiting,
+    present: survivors.length - missing.length,
+    total: survivors.length,
+  };
+}
 export function completeInteraction(world: World, a: Operative, id: ObjectKind) {
   if (id === 'override' && available(world, id) && !a.carrying) {
     const previous = world.agents.find((p) => p.id === world.overrideBy && p.id !== a.id);
@@ -220,21 +246,7 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
     return;
   }
   if (isExtraction(id)) {
-    const van = landmark(world, id);
-    const carrier = world.agents.find((p) => living(p) && p.carrying);
-    const waiting =
-      world.mission.objective !== 'escort' &&
-      (!carrier || distance(carrier, van) > EXTRACTION_RADIUS)
-        ? `Bring the ${world.mission.evidenceName.toLowerCase()} to the van. It is required for this contract.`
-        : world.escort && (!world.escort.recruited || !living(world.escort))
-          ? `Bring ${world.escort.name} out alive before requesting extraction.`
-          : world.escort && distance(world.escort, van) > EXTRACTION_RADIUS
-            ? world.escort.waiting
-              ? `Waiting for ${world.escort.name}. Use the Escort controls to ask them to follow.`
-              : `Waiting for ${world.escort.name} at ${van.tag}. Bring their escort to the van.`
-            : world.agents.some((p) => living(p) && distance(p, van) > EXTRACTION_RADIUS)
-              ? 'Waiting for the crew. Bring every survivor inside the extraction ring.'
-              : null;
+    const { waiting } = extractionStatus(world, id);
     if (waiting) {
       a.interaction = 0;
       a.path = [];

@@ -652,6 +652,14 @@ export class Scene {
       scale = this.fit * this.zoom;
     return { x: q.x * scale + this.offset.x, y: q.y * scale + this.offset.y };
   }
+  agentBounds(p: Vec): Rect {
+    const foot = this.screen(p),
+      scale = this.fit * this.zoom;
+    // Select the visible body, including a little tolerance at low zoom.
+    const halfWidth = Math.max(4, 9 * scale),
+      height = Math.max(12, 36 * scale);
+    return { x: foot.x - halfWidth, y: foot.y - height, w: halfWidth * 2, h: height + 2 };
+  }
   hit(x: number, y: number, prioritizeObjects = false): Hit {
     const p = { x, y };
     const object = this.world.mission.landmarks

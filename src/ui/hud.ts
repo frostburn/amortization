@@ -1,8 +1,8 @@
 import { distance, isExtraction, living, EXTRACTION_RADIUS } from '../sim/types';
 import type { Mission, Rect, World } from '../sim/types';
-import { suspicionRate } from '../sim/awareness';
+import { RESPONSE_TIMES, suspicionRate } from '../sim/awareness';
 import { clearedCargo, courierGuard } from '../sim/courier';
-import { interactionDuration, landmark } from '../sim/orders';
+import { extractionStatus, interactionDuration, landmark } from '../sim/orders';
 import { missions, nextMission } from '../content/missions';
 import { missionRecord } from './storage';
 import type { Records } from './storage';
@@ -11,6 +11,7 @@ import type { Goal, GoalId, GuideTarget } from './objectives';
 
 export type Action =
   | 'objectives'
+  | `extract:${'extract' | 'alternate'}`
   | 'operations'
   | 'next'
   | `mission:${Mission['id']}`
@@ -81,6 +82,7 @@ export class Hud {
       <main class="game-layout">
         <section class="map-column" aria-label="Operation map and crew">
           <div class="stage" id="stage"><div class="map-top"><span id="time-mode">PLANNING / ORDERS ACTIVE</span><span id="clock">00:00</span></div><div class="map-controls"><button data-action="zoom-out" aria-label="Zoom out">−</button><button data-action="home">Fit map</button><button data-action="zoom-in" aria-label="Zoom in">+</button></div><div class="map-caption"><span id="map-location"></span><small>Municipal assets division</small></div><div class="selection-box" id="selection-box"></div><div id="objective-guide" class="objective-guide" role="region" aria-label="Objective guidance" hidden><div class="guide-heading"><span>MISSION GUIDE</span><button data-dismiss-guide aria-label="Close mission guide">×</button></div><h3 id="guide-title"></h3><p id="guide-detail"></p><div id="guide-locations" aria-label="Locate mission items"></div><p class="guide-instruction">Right-click a map diamond to act; on touch, tap it.</p></div></div>
+          <section id="extraction-controls" class="extraction-controls" aria-label="Extraction" hidden><p id="extraction-heading" class="section-label">EXTRACTION</p>${(['extract', 'alternate'] as const).map((id) => `<div id="exit-${id}" class="exit-row"><button data-action="extract:${id}" id="exit-button-${id}" aria-describedby="exit-status-${id}"></button><p id="exit-status-${id}"></p></div>`).join('')}<button data-action="escort-wait" id="extraction-follow" hidden></button></section>
           <div class="dispatch"><span>COMMS</span><p id="message" role="status">Preparing the operation…</p></div>
           <div class="squad" aria-label="Squad selection">${['Morrow', 'Vale', 'Rook', 'Sable'].map((name, i) => `<button class="agent-card" data-agent="${i}" aria-label="Select ${name}" aria-pressed="true"><span class="portrait portrait-${i}" aria-hidden="true"></span><span class="agent-copy"><span class="agent-heading"><b>${i + 1}</b> ${name}</span><span class="agent-condition" id="condition-${i}">Ready</span><span class="health-track"><span id="health-${i}"></span></span></span></button>`).join('')}</div>
           <footer class="controls-hint"><span><kbd>1–4</kbd> operative <kbd>Q</kbd> squad <kbd>RMB</kbd> order <kbd>Space</kbd> pause <kbd>Tab</kbd> slow</span><button data-action="restart" title="Restart operation (Shift+R)">Restart</button></footer>
@@ -219,7 +221,7 @@ export class Hud {
   }
   private briefing() {
     const m = this.mission;
-    return `<div class="dialog-number">${m.number} / ${m.location}</div><h2 id="dialog-title">${m.title}</h2><p class="dialog-lead">${m.briefing.lead}</p><p class="dialog-body">${m.briefing.body}</p><div class="briefing-routes">${m.briefing.routes.map((route) => `<div><b>${route.title}</b><p>${route.body}</p></div>`).join('')}</div><p class="briefing-controls"><kbd>1–4</kbd> select one · <kbd>Q</kbd> select all<br><kbd>RMB</kbd> move / interact / attack · <kbd>Space</kbd> pause<br><kbd>F</kbd> draw / conceal · <kbd>S</kbd> hold / release shunt<br>Drag to select · Wheel to zoom · Arrows / middle-drag to pan</p><button class="primary" data-action="begin">Begin operation <span>→</span></button><button class="dialog-secondary" data-action="operations">Choose operation</button><p class="dialog-foot">Orders remain active while paused. Selection changes preserve orders.</p>`;
+    return `<div class="dialog-number">${m.number} / ${m.location}</div><h2 id="dialog-title">${m.title}</h2><p class="dialog-lead">${m.briefing.lead}</p><p class="dialog-body">${m.briefing.body}</p><div class="briefing-routes">${m.briefing.routes.map((route) => `<div><b>${route.title}</b><p>${route.body}</p></div>`).join('')}</div><p class="dialog-body">Guards can return an opening volley. Gunfire can be reported through walls. Use cover and field dressings; disable RADIO to stop support.</p><p class="briefing-controls"><kbd>1–4</kbd> select one · <kbd>Q</kbd> select all<br><kbd>RMB</kbd> move / interact / attack · <kbd>Space</kbd> pause<br><kbd>F</kbd> draw / conceal · <kbd>S</kbd> hold / release shunt<br>Drag to select · Wheel to zoom · Arrows / middle-drag to pan</p><button class="primary" data-action="begin">Begin operation <span>→</span></button><button class="dialog-secondary" data-action="operations">Choose operation</button><p class="dialog-foot">Orders remain active while paused. Selection changes preserve orders.</p>`;
   }
   showBriefing() {
     this.modal.innerHTML = this.briefing();
@@ -288,6 +290,40 @@ export class Hud {
       this.field(`objective-${goal.id}`).classList.toggle('complete', goal.complete);
       this.field(`objective-${goal.id}`).classList.toggle('optional', !!goal.optional);
     }
+    const exits = world.mission.landmarks.filter((o) => isExtraction(o.id));
+    const extracting = world.agents.some(
+      (p) => living(p) && p.order.kind === 'interact' && isExtraction(p.order.target),
+    );
+    this.field('extraction-controls').hidden =
+      world.status !== 'playing' ||
+      !(world.escort?.recruited || world.evidence === 'carried' || extracting);
+    this.field('exit-alternate').hidden = !exits.some((o) => o.id === 'alternate');
+    let ready = false;
+    for (const exit of exits) {
+      if (!isExtraction(exit.id)) continue;
+      const status = extractionStatus(world, exit.id);
+      ready ||= status.ready;
+      const ordered = world.agents
+        .filter(living)
+        .every((p) => p.order.kind === 'interact' && p.order.target === exit.id);
+      this.set(
+        `exit-button-${exit.id}`,
+        `${status.ready ? 'Extract at' : 'Rally crew to'} ${exit.tag}`,
+      );
+      this.set(
+        `exit-status-${exit.id}`,
+        `${status.present}/${status.total} crew in ring. ${status.ready ? (ordered ? 'Boarding…' : 'Ready — order extraction to leave.') : status.waiting}`,
+      );
+      this.field(`exit-${exit.id}`).classList.toggle('ready', status.ready);
+      this.field(`exit-button-${exit.id}`).title =
+        'Order every surviving operative to this exit. Other orders are replaced; a waiting witness stays in cover.';
+    }
+    this.set(
+      'extraction-heading',
+      ready ? 'CREW READY TO LEAVE' : 'EXTRACTION · ORDERS THE WHOLE CREW',
+    );
+    this.field('extraction-follow').hidden = !world.escort?.waiting || !world.escort.recruited;
+    if (world.escort) this.set('extraction-follow', `Ask ${world.escort.name} to follow`);
     if (world.status !== 'playing') this.clearGuide();
     else this.refreshGuide();
     const local = world.guards.some((g) => living(g) && g.mode === 'combat');
@@ -302,13 +338,20 @@ export class Hud {
             : '● Site quiet',
     );
     this.field('alert').classList.toggle('danger', world.alarm || local);
+    const pendingCall = Math.min(
+      ...world.guards.filter((g) => living(g) && !g.reported && g.radio > 0).map((g) => g.radio),
+    );
     this.set(
       'radio-status',
       world.relayOff
         ? 'Radio relay disabled'
         : world.alarm
-          ? `${world.waves} / 2 response teams arrived`
-          : 'Radio network online',
+          ? world.waves < RESPONSE_TIMES.length
+            ? `Response team in ${Math.max(0, Math.ceil(RESPONSE_TIMES[world.waves] - (world.time - world.alarmTime)))}s · RADIO stops support`
+            : `${world.waves} / ${RESPONSE_TIMES.length} response teams arrived`
+          : Number.isFinite(pendingCall)
+            ? `Backup call in ${Math.ceil(pendingCall)}s · stop the caller or RADIO`
+            : 'Radio network online',
     );
     this.set('selected-count', `${selected.length} / 4`);
     this.set('selected-name', all ? 'Crew selected' : a ? a.name : 'No selection');
@@ -472,7 +515,7 @@ export class Hud {
         .join(' · ');
       this.set(
         'intel',
-        `${escort.name} ${escort.waiting ? 'waits in place' : `follows ${world.agents.find((a) => a.id === escort.leader)?.name || 'the crew'}`}. ${exits}. Bring everyone to the same ring, then right-click its marker.`,
+        `${escort.name} ${escort.waiting ? 'waits in place' : `follows ${world.agents.find((a) => a.id === escort.leader)?.name || 'the crew'}`}. ${exits}. Use the extraction controls below the map to rally the crew and leave.`,
       );
     }
     this.set('best', state.best === null ? '' : `Best extraction ${time(state.best)}`);

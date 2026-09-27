@@ -15,6 +15,7 @@ test('orders the whole selection to the vehicle using either mouse or touch', as
     await page.goto('http://127.0.0.1:4173/');
     await page.getByRole('button', { name: 'Begin operation' }).click();
     await page.getByRole('button', { name: 'Pause', exact: true }).click();
+    await expect(page.getByRole('region', { name: 'Extraction', exact: true })).toBeHidden();
     const map = (await page.locator('canvas').boundingBox())!;
     const scale = Math.min(map.width / (58 * 26 + 80), map.height / (58 * 14 + 110));
     // Aim at the van roof, away from its floating VAN marker.
@@ -24,6 +25,19 @@ test('orders the whole selection to the vehicle using either mouse or touch', as
     else await page.mouse.click(x, y, { button: 'right' });
     await expect(page.locator('#message')).toContainText('Selected crew heading to VAN');
     for (let i = 0; i < 4; i++) await expect(page.locator(`#condition-${i}`)).toHaveText('Moving');
+    await page.getByRole('button', { name: 'Select Vale', exact: true }).click();
+    await page.locator('[data-action="hold"]').click();
+    await page.getByRole('button', { name: 'Select Morrow', exact: true }).click();
+    const rally = page.getByRole('button', { name: 'Rally crew to VAN', exact: true });
+    if (touch) await rally.tap();
+    else {
+      await rally.focus();
+      await page.keyboard.press('Space');
+    }
+    await expect(page.locator('#pause-label')).toHaveText('Resume');
+    await expect(page.locator('#selected-count')).toHaveText('1 / 4');
+    for (let i = 0; i < 4; i++) await expect(page.locator(`#condition-${i}`)).toHaveText('Moving');
+    await expect(page.locator('#exit-status-extract')).toContainText('Bring Voss out alive');
     await page.getByRole('button', { name: 'Resume', exact: true }).click();
     await expect(page.locator('#message')).toContainText('Bring Voss out alive', { timeout: 8000 });
     await expect(page.getByRole('dialog', { name: 'Account settled.' })).toBeHidden();

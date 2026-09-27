@@ -207,19 +207,22 @@ describe('Protective custody', () => {
     expect(v.hp).toBe(75);
   });
 
-  it('supports a squad breach and an armed escape through the east street', () => {
+  it('supports radio sabotage, a squad breach and a covered armed escape through the east street', () => {
     const w = createWorld(custody),
       ids = w.agents.map((a) => a.id),
       v = w.escort!;
     toggleWeapons(w, ids);
+    moveAgents(w, ids, { x: 10.5, y: 11.5 });
+    until(w, () => w.agents.filter(living).every((a) => !a.path.length));
+    interact(w, ids, 'relay');
+    until(w, () => w.relayOff);
     for (const p of [
-      { x: 10.5, y: 11.5 },
       { x: 24.5, y: 15.3 },
       { x: 29.6, y: 18.5 },
     ]) {
       moveAgents(w, ids, p);
       until(w, () => w.agents.filter(living).every((a) => !a.path.length));
-      advance(w, 4);
+      advance(w, 2);
     }
     heal(w, ids);
     interact(w, ids, 'breach');
@@ -238,7 +241,8 @@ describe('Protective custody', () => {
     until(w, () => distance(v, landmark(w, 'extract')) < 3.5);
     interact(w, ids, 'extract');
     until(w, () => w.status === 'won');
-    expect(w.alarm).toBe(true);
+    expect(w.relayOff).toBe(true);
+    expect(w.waves).toBe(0);
     expect(w.shots).toBeGreaterThan(0);
     expect(w.agents.filter(living)).toHaveLength(4);
     expect(v.hp).toBeGreaterThan(0);
