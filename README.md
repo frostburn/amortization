@@ -93,8 +93,8 @@ npm run replay:verify -- --current --expect-win attempt.replay.json
 The first command verifies compatible code and every state checkpoint. The second
 tests completion under current rules. Both exit nonzero on failure. Selected player
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
-distinct routes. Sixteen retained recordings cover the first five missions, including
-the Public offering extraction-feedback run. Invalidated recordings were removed;
+distinct routes. Seventeen retained recordings cover all six missions, including
+the Public offering extraction-feedback run and a Severance squad assault. Invalidated recordings were removed;
 all six missions have synthetic quiet and armed completion tests. See
 `tests/replays/README.md` for provenance, current outcomes, and retired routes.
 
@@ -303,11 +303,12 @@ isolated debt backups. Destroy both cores, then get everyone to the north-east v
 The quiet verification route waits for patrol windows, uses one disguised planter,
 and extracts all four without taking damage or firing. The armed route advances
 together, covers the planter, and secures the gate before the return. These are
-synthetic verification runs; human difficulty feedback is still needed for mission
-six. Its quiet route verifies every serialized replay checkpoint, including the new
-remote detonation command. All sixteen human bundles remain unchanged and win under
-current rules; older builds require **Try current rules** because the simulation
-fingerprint has changed.
+synthetic verification runs. A retained human squad assault also completes in
+56.1 seconds with all four operatives, the optional register, and no site alarm.
+Both its checkpoints and the synthetic quiet route verify exactly, including the
+remote detonation command. All seventeen human bundles remain unchanged and win
+under current rules; older builds require **Try current rules** because the
+simulation fingerprint has changed.
 
 Results track time, crew survival, evidence, and alarm status. Operation five also reports publication; operation six reports backup destruction. Each operation keeps
 separate **Full crew** (all four survive) and **Any crew** best times, plus its

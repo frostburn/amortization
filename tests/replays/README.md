@@ -6,7 +6,7 @@ This checks a route's continued viability; it does not claim that an older
 simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All sixteen retained files are byte-for-byte copies of submissions provided in chat
+All seventeen retained files are byte-for-byte copies of submissions provided in chat
 on 2026-09-27, including their `unversioned` / local-changes metadata.
 
 ## Earlier routes
@@ -175,6 +175,21 @@ back exactly. The new recording is retained as completion evidence; separate
 browser regressions verify that new early exit clicks preserve standing orders
 and that completing the audit enables a rally which actually ends the mission.
 
+## Severance squad assault
+
+`severance-squad-assault.replay.json` is the unchanged submission
+`amortization-severance-won-546bc6e8.replay.json`, with an empty feedback note.
+Every original checkpoint verifies against simulation fingerprint
+`6d4441a171e3a3d4bd4dfe8a7088840278bfeda3667cbd19fa2a8f4df0473b1e`.
+It wins at tick **1684** (56.1 seconds), with **4 survivors**, **50 shots**, no
+site alarm, both backups destroyed, and the optional REGISTER extracted.
+
+The crew advances together, disables RADIO early, collects REGISTER, and plants
+WEST followed by EAST. A repeated EAST order preserves the placement progress.
+They leave through GATE, detonate outside the compound, and board VAN. No
+disguise or field dressing is used. This provides human completion coverage for
+the sixth mission without changing the submitted commands or balance rules.
+
 ## Retired recordings
 
 These recordings no longer win within their recorded duration under revised
@@ -199,7 +214,7 @@ in git history; they were not converted to passing fixtures.
 Earlier notes (“Click stuff. Go home.” and “Shoot and click.”) motivated guard
 survivability, equal weapon range, audible gunfire reports, and earlier response
 teams. This pass changes formation, assignment, feedback and record categories;
-it does not change combat values. All four missions also retain command-driven
+it does not change combat values. All six missions also retain command-driven
 quiet and armed completion tests. Those are synthetic routes, not human runs.
 
 ```sh
