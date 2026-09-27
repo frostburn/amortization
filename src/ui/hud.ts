@@ -1,17 +1,20 @@
 import { distance, isExtraction, living, EXTRACTION_RADIUS } from '../sim/types';
 import type { Mission, Rect, World } from '../sim/types';
 import { RESPONSE_TIMES, suspicionRate } from '../sim/awareness';
-import { clearedCargo, courierGuard } from '../sim/courier';
+import { WEAPON_RANGE } from '../sim/combat';
+import { lineClear } from '../sim/navigation';
+import { clearedCargo } from '../sim/courier';
 import {
   extractionRallyBlocker,
   extractionStatus,
+  escortMedic,
   interactionDuration,
   landmark,
 } from '../sim/orders';
 import { missions, nextMission } from '../content/missions';
 import { missionRecord } from './storage';
-import type { Records } from './storage';
-import { missionGoals } from './objectives';
+import type { Records, MissionRecord } from './storage';
+import { missionGoals, transferFeedback } from './objectives';
 import type { Goal, GoalId, GuideTarget } from './objectives';
 
 export type Action =
@@ -31,8 +34,11 @@ export type Action =
   | 'weapons'
   | 'interact'
   | 'heal'
+  | `heal:${number}`
+  | 'locate-escort'
   | 'escort-wait'
   | 'escort-aid'
+  | 'call-transfer'
   | 'drop'
   | 'vision'
   | 'home'
@@ -44,6 +50,7 @@ export interface HudState {
   slow: boolean;
   sound: boolean;
   best: number | null;
+  fullCrewBest?: number | null;
 }
 const icons: Record<string, string> = {
   pause: '<path d="M8 5v14M16 5v14"/>',
@@ -63,6 +70,8 @@ const time = (seconds: number) =>
     .padStart(2, '0')}:${Math.floor(seconds % 60)
     .toString()
     .padStart(2, '0')}`;
+const recordTimes = (best: number | null, fullCrewBest: number | null) =>
+  `Full crew: ${fullCrewBest === null ? '—' : time(fullCrewBest)} · Any crew: ${best === null ? '—' : time(best)}`;
 export class Hud {
   readonly stage: HTMLElement;
   readonly modal: HTMLDialogElement;
@@ -76,28 +85,36 @@ export class Hud {
   private pinnedGoal: GoalId | null = null;
   private guideTarget: GuideTarget | null = null;
   private guideKey = '';
+  private escortHp: number | null = null;
+  private escortHitUntil = 0;
   constructor(
     onAction: (action: Action) => void,
     onSelect: (index: number, add: boolean) => void,
     private onGuide: (targets: GuideTarget[], focus: boolean, panel: Rect) => void,
   ) {
     this.app = document.querySelector('#app')!;
+    const escortControls = `<section id="escort-controls" class="objective-actions escort-panel" aria-label="Witness" hidden><button data-action="locate-escort" id="escort-focus" title="Locate the witness without changing squad orders"><strong id="escort-alert" role="status"></strong><span id="escort-status"></span></button><div class="escort-actions"><button data-action="escort-wait" id="escort-wait-button"></button><button data-action="escort-aid" id="escort-aid-button" hidden></button></div><p id="escort-aid-hint" hidden></p></section>`;
+    const extractionControls = `<section id="extraction-controls" class="objective-actions extraction-controls" aria-label="Extraction" hidden>${(['extract', 'alternate'] as const).map((id) => `<div id="exit-${id}" class="exit-row"><button data-action="extract:${id}" id="exit-button-${id}" aria-describedby="exit-status-${id}"></button><p id="exit-status-${id}"></p></div>`).join('')}</section>`;
+    const courierControls = `<section id="courier-controls" class="objective-actions" aria-label="Courier transfer" hidden><p id="courier-status" role="status"></p><button data-action="call-transfer" id="courier-call-button" hidden>Send selected to CALL</button></section>`;
     this.app.innerHTML = `
       <header class="topbar"><h1>AMORTIZATION</h1><span class="operation" id="operation-title"></span><div class="top-actions"><button data-action="operations">Operations</button><button data-action="briefing" title="Mission briefing and controls">Briefing</button><button data-action="pause" id="pause-button">${icon('play')}<span id="pause-label">Resume</span></button><button data-action="sound" id="sound-button">Sound off</button></div></header>
       <main class="game-layout">
-        <section class="map-column" aria-label="Operation map and crew">
-          <div class="stage" id="stage"><div class="map-top"><span id="time-mode">PLANNING / ORDERS ACTIVE</span><span id="clock">00:00</span></div><div class="map-controls"><button data-action="zoom-out" aria-label="Zoom out">−</button><button data-action="home">Fit map</button><button data-action="zoom-in" aria-label="Zoom in">+</button></div><div class="map-caption"><span id="map-location"></span><small>Municipal assets division</small></div><div class="selection-box" id="selection-box"></div><div id="objective-guide" class="objective-guide" role="region" aria-label="Objective guidance" hidden><div class="guide-heading"><span>MISSION GUIDE</span><button data-dismiss-guide aria-label="Close mission guide">×</button></div><h3 id="guide-title"></h3><p id="guide-detail"></p><div id="guide-locations" aria-label="Locate mission items"></div><p class="guide-instruction">Right-click a map diamond to act; on touch, tap it.</p></div></div>
-          <section id="extraction-controls" class="extraction-controls" aria-label="Extraction" hidden><p id="extraction-heading" class="section-label">EXTRACTION</p>${(['extract', 'alternate'] as const).map((id) => `<div id="exit-${id}" class="exit-row"><button data-action="extract:${id}" id="exit-button-${id}" aria-describedby="exit-status-${id}"></button><p id="exit-status-${id}"></p></div>`).join('')}<button data-action="escort-wait" id="extraction-follow" hidden></button></section>
-          <div class="dispatch"><span>COMMS</span><p id="message" role="status">Preparing the operation…</p></div>
-          <div class="squad" aria-label="Squad selection">${['Morrow', 'Vale', 'Rook', 'Sable'].map((name, i) => `<button class="agent-card" data-agent="${i}" aria-label="Select ${name}" aria-pressed="true"><span class="portrait portrait-${i}" aria-hidden="true"></span><span class="agent-copy"><span class="agent-heading"><b>${i + 1}</b> ${name}</span><span class="agent-condition" id="condition-${i}">Ready</span><span class="health-track"><span id="health-${i}"></span></span></span></button>`).join('')}</div>
+        <aside class="sidebar crew-sidebar" aria-label="Crew and orders">
+          <section class="crew-section"><div class="crew-heading"><p class="section-label">CREW</p><button data-action="all">Select all <kbd>Q</kbd></button></div>
+          <div class="squad" aria-label="Squad selection">${['Morrow', 'Vale', 'Rook', 'Sable'].map((name, i) => `<div class="crew-slot"><button class="agent-card" data-agent="${i}" aria-label="Select ${name}" aria-pressed="true"><span class="portrait portrait-${i}" aria-hidden="true"></span><span class="agent-copy"><span class="agent-heading"><b>${i + 1}</b> ${name}</span><span class="agent-condition" id="condition-${i}">Ready</span><span class="health-track"><span id="health-${i}"></span></span><span class="health-label" id="health-label-${i}"></span></span></button><button class="crew-aid" data-action="heal:${i}" id="aid-${i}" hidden></button></div>`).join('')}</div>
+          </section>
+          <section class="selection-section"><p class="section-label">SELECTED<span id="selected-count">4 / 4</span></p><div class="selected-info"><div><h3 id="selected-name">Full crew</h3><p id="selected-cover">Weapons concealed</p></div></div><p class="assessment" id="assessment">Move together. Split when it matters.</p><div id="work-status" hidden><p class="fine" id="work-label"></p><progress id="work-progress" value="0" max="1" aria-label="Interaction progress"></progress></div></section>
+          <section class="orders-section"><p class="section-label">ORDERS</p><div class="orders">${(['regroup', 'hold', 'weapons', 'interact'] as const).map((id, i) => `<button data-action="${id}" title="${['Regroup at the lead selected operative (G)', 'Hold position (S)', 'Draw or conceal weapons (F)', 'Interact with nearest object (E)'][i]}">${icon(id)}<span id="${id}-label">${['Regroup', 'Hold', 'Draw weapons', 'Interact'][i]}</span><kbd>${['G', 'S', 'F', 'E'][i]}</kbd></button>`).join('')}</div><div class="utility"><button data-action="heal" id="heal-button"><span id="heal-label">Field dressing</span> <kbd>H</kbd></button><button data-action="drop" id="drop-button" disabled>Set unit down <kbd>X</kbd></button></div></section>
+        </aside>
+        <section class="map-column" aria-label="Operation map">
+          <div class="stage" id="stage"><div class="map-top"><span id="time-mode">PLANNING / ORDERS ACTIVE</span><span id="clock">00:00</span></div><div class="map-controls"><button data-action="vision" id="vision-button" aria-pressed="true">Sight cones: on</button><button data-action="zoom-out" aria-label="Zoom out">−</button><button data-action="home">Fit map</button><button data-action="zoom-in" aria-label="Zoom in">+</button></div><div class="map-caption"><span id="map-location"></span><small>Municipal assets division</small></div><div class="selection-box" id="selection-box"></div><div id="objective-guide" class="objective-guide" role="region" aria-label="Objective guidance" hidden><div class="guide-heading"><span>MISSION GUIDE</span><button data-dismiss-guide aria-label="Close mission guide">×</button></div><h3 id="guide-title"></h3><p id="guide-detail"></p><div id="guide-locations" aria-label="Locate mission items"></div><p class="guide-instruction">Right-click a map diamond to act; on touch, tap it.</p></div></div>
           <footer class="controls-hint"><span><kbd>1–4</kbd> operative <kbd>Q</kbd> squad <kbd>RMB</kbd> order <kbd>Space</kbd> pause <kbd>Tab</kbd> slow</span><button data-action="restart" title="Restart operation (Shift+R)">Restart</button></footer>
         </section>
-        <aside class="sidebar">
-          <section class="mission-section"><p class="section-label">MISSION</p><h2 id="mission-title"></h2><p class="description" id="mission-description"></p><div class="objectives">${(['primary', 'evidence', 'extract'] as const).map((id) => `<button id="objective-${id}" data-goal="${id}" aria-controls="objective-guide" aria-describedby="objective-help" title="Locate relevant mission items"></button>`).join('')}</div><p id="objective-help">Hover to preview · click/tap to locate<br><kbd>?</kbd> objective help</p></section>
-          <section class="alert-section"><p class="section-label">ALERT STATUS</p><p class="alert" id="alert">● Site quiet</p><p class="fine" id="radio-status">Radio network online</p><p class="fine" id="archive-status" hidden></p><p class="fine" id="courier-status" hidden></p></section>
-          <section class="selection-section"><p class="section-label">SELECTED OPERATIVE<span id="selected-count">4 / 4</span></p><div class="selected-info"><span id="selected-portrait" class="portrait portrait-0" aria-hidden="true"></span><div><h3 id="selected-name">Full crew</h3><p id="selected-role">Four operatives</p><p id="selected-cover">Weapons concealed</p></div></div><p class="assessment" id="assessment">Move together. Split when it matters.</p><div id="work-status" hidden><p class="fine" id="work-label"></p><progress id="work-progress" value="0" max="1" aria-label="Interaction progress"></progress></div></section>
-          <section id="escort-controls" hidden><p class="section-label">ESCORT</p><p id="escort-status" class="fine"></p><div class="utility"><button data-action="escort-wait" id="escort-wait-button"></button><button data-action="escort-aid" id="escort-aid-button" hidden></button></div></section><section class="orders-section"><p class="section-label">ORDERS</p><div class="orders">${(['regroup', 'hold', 'weapons', 'interact'] as const).map((id, i) => `<button data-action="${id}" title="${['Regroup at the lead selected operative (G)', 'Hold position (S)', 'Draw or conceal weapons (F)', 'Interact with nearest object (E)'][i]}">${icon(id)}<span id="${id}-label">${['Regroup', 'Hold', 'Draw weapons', 'Interact'][i]}</span><kbd>${['G', 'S', 'F', 'E'][i]}</kbd></button>`).join('')}</div><div class="utility"><button data-action="all">Select all <kbd>Q</kbd></button><button data-action="heal">Field dressing <kbd>H</kbd></button><button data-action="drop" id="drop-button" hidden>Set unit down <kbd>X</kbd></button></div></section>
-          <section class="intel-section"><p class="section-label">FIELD NOTES</p><p id="intel">A maintenance kit was left outside the west entrance. One person can enter under cover.</p><button data-action="vision" id="vision-button" aria-pressed="true">Sight cones: on</button><p class="best" id="best"></p></section>
+        <aside class="sidebar mission-sidebar" aria-label="Mission and status">
+          <section class="mission-section"><h2 id="mission-title"></h2><div class="objectives">${(['primary', 'evidence', 'extract'] as const).map((id) => `<div class="objective-group" id="objective-group-${id}"><button id="objective-${id}" data-goal="${id}" aria-controls="objective-guide" aria-describedby="objective-help" title="Locate relevant mission items"></button>${id === 'primary' ? escortControls + courierControls : id === 'extract' ? extractionControls : ''}</div>`).join('')}</div><p id="objective-help">Hover or tap goals to locate · <kbd>?</kbd> help</p></section>
+          <section class="alert-section" aria-label="Alert status"><p class="alert" id="alert">● Site quiet</p><p class="fine" id="radio-status">Radio network online</p><p class="fine" id="archive-status" hidden></p></section>
+          <section class="dispatch" aria-label="Comms"><span>COMMS</span><p id="message" role="status">Preparing the operation…</p></section>
+          <details class="intel-section"><summary>Field notes &amp; records</summary><div class="intel-content"><p class="description" id="mission-description"></p><p id="intel"></p><p class="best" id="best"></p></div></details>
         </aside>
       </main>
       <dialog id="mission-dialog" aria-labelledby="dialog-title"></dialog>`;
@@ -183,7 +200,7 @@ export class Hud {
       this.field('guide-locations').querySelector<HTMLButtonElement>('button')?.focus({
         preventScroll: true,
       });
-    if (matchMedia('(max-width: 750px)').matches) this.stage.scrollIntoView({ block: 'start' });
+    if (matchMedia('(max-width: 900px)').matches) this.stage.scrollIntoView({ block: 'start' });
   }
   private refreshGuide(focus = false) {
     const goal = this.goals.find((g) => g.id === (this.hoveredGoal || this.pinnedGoal));
@@ -236,7 +253,7 @@ export class Hud {
     this.modal.innerHTML = `<div class="dialog-number">CONTRACT DESK</div><h2 id="dialog-title">Operations</h2><p class="dialog-body">Choose a contract. Starting an operation resets the current attempt. All contracts are available for replay.</p><div class="operation-list">${missions
       .map((m) => {
         const record = missionRecord(records, m.id);
-        return `<button data-action="mission:${m.id}" class="operation-card"><span class="section-label">${m.number} / ${m.location}</span><strong>${m.title}</strong><span>${m.description}</span><small>${record.best === null ? 'No completed extraction' : `Best ${time(record.best)} · ${record.completions} completed`}</small></button>`;
+        return `<button data-action="mission:${m.id}" class="operation-card"><span class="section-label">${m.number} / ${m.location}</span><strong>${m.title}</strong><span>${m.description}</span><small>${record.best === null ? 'No completed extraction' : `${recordTimes(record.best, record.fullCrewBest)} · ${record.completions} completed`}</small></button>`;
       })
       .join(
         '',
@@ -247,6 +264,8 @@ export class Hud {
     this.modal.close();
   }
   reset(mission: Mission = this.mission) {
+    this.escortHp = null;
+    this.escortHitUntil = 0;
     this.hoveredGoal = this.pinnedGoal = null;
     this.guideTarget = null;
     this.guideKey = '';
@@ -262,15 +281,16 @@ export class Hud {
     this.set('intel', mission.intro);
     this.field('objective-evidence').classList.toggle('optional', mission.objective === 'escort');
     this.field('archive-status').hidden = !mission.archive;
-    this.field('courier-status').hidden = !mission.transfer;
+    this.field('courier-controls').hidden = !mission.transfer;
     this.field('escort-controls').hidden = true;
+    this.app.querySelector<HTMLDetailsElement>('.intel-section')!.open = false;
   }
-  showEnd(world: World, best: number | null, force = false) {
+  showEnd(world: World, record: MissionRecord, force = false) {
     if (this.endShown && !force) return;
     this.endShown = true;
     const won = world.status === 'won',
       alive = world.agents.filter(living).length;
-    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? (world.mission.objective === 'escort' ? `${world.escort!.name} is free.` : world.mission.objective === 'case' ? 'The account keys are ours.' : 'The original is in our hands.') : world.escort && !living(world.escort) ? `${world.escort.name} was killed.` : 'The crew is down.'}</p><p class="dialog-body">${won ? 'The van crosses the district line before anyone agrees who should pay for this.' : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results"><div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div><div><dt>Evidence</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div>${won && world.mission.landmarks.some((o) => o.id === 'alternate') && world.extractedAt ? `<div><dt>Extraction</dt><dd>${landmark(world, world.extractedAt).tag}</dd></div>` : ''}</dl>${best !== null ? `<p class="fine">Best extraction: ${time(best)}</p>` : ''}<button class="primary" data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Run it again'} <span>→</span></button><button class="dialog-secondary" data-action="operations">Operations</button>`;
+    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? (world.mission.objective === 'escort' ? `${world.escort!.name} is free.` : world.mission.objective === 'case' ? 'The account keys are ours.' : 'The original is in our hands.') : world.escort && !living(world.escort) ? `${world.escort.name} was killed.` : 'The crew is down.'}</p><p class="dialog-body">${won ? 'The van crosses the district line before anyone agrees who should pay for this.' : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results"><div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div><div><dt>Evidence</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div>${won && world.mission.landmarks.some((o) => o.id === 'alternate') && world.extractedAt ? `<div><dt>Extraction</dt><dd>${landmark(world, world.extractedAt).tag}</dd></div>` : ''}</dl>${record.best !== null ? `<p class="fine">${recordTimes(record.best, record.fullCrewBest)}</p>` : ''}<button class="primary" data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Run it again'} <span>→</span></button><button class="dialog-secondary" data-action="operations">Operations</button>`;
     if (!this.modal.open) this.modal.showModal();
   }
   update(world: World, state: HudState) {
@@ -304,11 +324,9 @@ export class Hud {
       !(world.escort?.recruited || world.evidence === 'carried' || extracting);
     this.field('exit-alternate').hidden = !exits.some((o) => o.id === 'alternate');
     const rallyBlocker = extractionRallyBlocker(world);
-    let ready = false;
     for (const exit of exits) {
       if (!isExtraction(exit.id)) continue;
       const status = extractionStatus(world, exit.id);
-      ready ||= status.ready;
       const ordered = world.agents
         .filter(living)
         .every((p) => p.order.kind === 'interact' && p.order.target === exit.id);
@@ -326,12 +344,6 @@ export class Hud {
       this.field(`exit-button-${exit.id}`).title =
         'Order every surviving operative to this exit. Other orders are replaced; a waiting witness stays in cover.';
     }
-    this.set(
-      'extraction-heading',
-      ready ? 'CREW READY TO LEAVE' : 'EXTRACTION · ORDERS THE WHOLE CREW',
-    );
-    this.field('extraction-follow').hidden = !world.escort?.waiting || !world.escort.recruited;
-    if (world.escort) this.set('extraction-follow', `Ask ${world.escort.name} to follow`);
     if (world.status !== 'playing') this.clearGuide();
     else this.refreshGuide();
     const local = world.guards.some((g) => living(g) && g.mode === 'combat');
@@ -363,18 +375,18 @@ export class Hud {
     );
     this.set('selected-count', `${selected.length} / 4`);
     this.set('selected-name', all ? 'Crew selected' : a ? a.name : 'No selection');
-    this.set(
-      'selected-role',
-      all ? `${selected.length} operatives` : a ? a.role : 'Choose a portrait',
-    );
-    this.field('selected-portrait').className = `portrait portrait-${a?.index || 0}`;
+    this.field('selected-name').title = all
+      ? `${selected.length} operatives`
+      : a?.role || 'Choose a portrait';
     this.set(
       'selected-cover',
       a
         ? all
           ? `${selected.filter((a) => a.weapon).length} weapons drawn`
           : a.disguised
-            ? 'Maintenance uniform'
+            ? a.exposed
+              ? 'Uniform · identity compromised'
+              : 'Maintenance uniform'
             : 'Civilian cover'
         : '',
     );
@@ -406,7 +418,7 @@ export class Hud {
       'weapons-label',
       selected.some((a) => !a.weapon && !a.carrying) ? 'Draw weapons' : 'Conceal weapons',
     );
-    this.field('drop-button').hidden = !selected.some((a) => a.carrying);
+    (this.field('drop-button') as HTMLButtonElement).disabled = !selected.some((a) => a.carrying);
     this.set('drop-button', `Set ${landmark(world, 'evidence').tag.toLowerCase()} down · X`);
     const worker = selected.find((p) => p.order.kind === 'interact' && p.interaction > 0);
     const work = worker?.order.kind === 'interact' ? worker.order.target : null;
@@ -444,24 +456,22 @@ export class Hud {
       );
     }
     if (world.courier) {
-      const c = world.courier;
-      const status = {
-        ready: `Courier: awaiting CALL · ${c.diverted ? 'inspection route' : 'east route'}`,
-        transit: `Courier: moving to ${c.diverted ? 'inspection' : 'east checkpoint'}`,
-        checkpoint: `Courier: checkpoint · returns in ${Math.ceil(c.wait)}s`,
-        returning: 'Courier: returning · CALL available on arrival',
-        inspection: 'Courier: awaiting signature at INSPECTION',
-        secured:
-          world.evidence === 'available'
-            ? 'Courier: CASE on the ground'
-            : 'Courier: CASE recovered',
-      };
-      this.set(
-        'courier-status',
-        world.evidence === 'courier' && courierGuard(world)?.mode === 'combat'
-          ? 'Courier: in contact · transfer interrupted'
-          : status[c.phase],
+      const feedback = transferFeedback(world)!;
+      this.set('courier-status', feedback.status);
+      this.field('courier-status').classList.toggle('danger', feedback.interrupted);
+      const call = this.field('courier-call-button') as HTMLButtonElement;
+      const caller = world.agents.find(
+        (p) => living(p) && p.order.kind === 'interact' && p.order.target === 'dispatch',
       );
+      call.hidden = !feedback.needsCall || world.status !== 'playing';
+      call.disabled = !!caller || !selected.some((p) => !p.carrying);
+      this.set(
+        'courier-call-button',
+        caller ? `${caller.name} heading to CALL` : 'Send selected to CALL',
+      );
+      call.title = caller
+        ? 'The transfer starts after the operative reaches CALL and finishes the order.'
+        : 'Order a selected operative with free hands to CALL. DIVERT sets the route; CALL starts the transfer.';
       this.set(
         'intel',
         world.evidence === 'carried'
@@ -475,6 +485,13 @@ export class Hud {
       const card = this.app.querySelector<HTMLElement>(`[data-agent="${p.index}"]`)!;
       card.setAttribute('aria-pressed', String(state.selected.includes(p.id)));
       card.classList.toggle('down', !living(p));
+      card.classList.toggle('wounded', living(p) && p.hp <= 32);
+      this.set(`health-label-${p.index}`, `${Math.ceil(p.hp)} / ${p.maxHp} HP`);
+      const aid = this.field(`aid-${p.index}`) as HTMLButtonElement;
+      aid.hidden = world.status !== 'playing' || !living(p) || !p.medkit || p.hp === p.maxHp;
+      this.set(`aid-${p.index}`, `+${Math.min(55, p.maxHp - p.hp)}`);
+      aid.setAttribute('aria-label', `Treat ${p.name} +${Math.min(55, p.maxHp - p.hp)}`);
+      aid.title = `Use ${p.name}'s one field dressing; selection and orders stay active.`;
       this.field(`health-${p.index}`).style.width = `${p.hp}%`;
       this.set(
         `condition-${p.index}`,
@@ -496,8 +513,38 @@ export class Hud {
       );
     }
     const escort = world.escort;
-    this.field('escort-controls').hidden = !escort?.recruited;
+    const dressings = selected.filter((p) => p.medkit).length;
+    this.set('heal-label', `Field dressing · ${dressings} left`);
+    (this.field('heal-button') as HTMLButtonElement).disabled = !selected.some(
+      (p) => p.medkit && p.hp < p.maxHp,
+    );
+    this.field('escort-controls').hidden = !escort?.recruited || world.status !== 'playing';
     if (escort?.recruited) {
+      if (this.escortHp !== null && escort.hp < this.escortHp) this.escortHitUntil = world.time + 3;
+      this.escortHp = escort.hp;
+      const underFire =
+        world.time < this.escortHitUntil ||
+        world.guards.some(
+          (g) =>
+            living(g) &&
+            g.mode === 'combat' &&
+            g.target === escort.id &&
+            distance(g, escort) <= WEAPON_RANGE &&
+            lineClear(world, g, escort),
+        );
+      this.set(
+        'escort-alert',
+        underFire
+          ? `${escort.name} under fire`
+          : escort.hp <= 32
+            ? `${escort.name} badly wounded`
+            : `Locate ${escort.name}`,
+      );
+      this.field('escort-controls').classList.toggle('under-fire', underFire || escort.hp <= 32);
+      const medic = escortMedic(
+        world,
+        world.agents.map((p) => p.id),
+      );
       this.set(
         'escort-status',
         `${escort.name} · ${Math.ceil(escort.hp)} / ${escort.maxHp} health · ${escort.waiting ? 'waiting' : 'following'}`,
@@ -507,11 +554,20 @@ export class Hud {
         'escort-wait-button',
         `${escort.waiting ? 'Ask' : 'Tell'} ${escort.name} to ${escort.waiting ? 'follow' : 'wait'}`,
       );
-      this.set('escort-aid-button', `Treat ${escort.name} · 1 dressing`);
+      this.set(
+        'escort-aid-button',
+        `Treat ${escort.name}${medic ? ` · ${medic.name}'s dressing` : ''}`,
+      );
       this.field('escort-aid-button').hidden =
         !world.mission.escort?.vulnerable || escort.hp >= escort.maxHp;
       (this.field('escort-wait-button') as HTMLButtonElement).disabled = !living(escort);
-      (this.field('escort-aid-button') as HTMLButtonElement).disabled = !living(escort);
+      (this.field('escort-aid-button') as HTMLButtonElement).disabled = !medic;
+      this.field('escort-aid-hint').hidden =
+        !world.mission.escort?.vulnerable || escort.hp >= escort.maxHp || !!medic;
+      this.set(
+        'escort-aid-hint',
+        'Bring an operative with free hands and a dressing next to the witness.',
+      );
       const exits = world.mission.landmarks
         .filter((o) => isExtraction(o.id))
         .map((exit) => {
@@ -523,10 +579,13 @@ export class Hud {
         .join(' · ');
       this.set(
         'intel',
-        `${escort.name} ${escort.waiting ? 'waits in place' : `follows ${world.agents.find((a) => a.id === escort.leader)?.name || 'the crew'}`}. ${exits}. Use the extraction controls below the map to rally the crew and leave.`,
+        `${escort.name} ${escort.waiting ? 'waits in place' : `follows ${world.agents.find((a) => a.id === escort.leader)?.name || 'the crew'}`}. ${exits}. Use the extraction objective to rally the crew and leave.`,
       );
     }
-    this.set('best', state.best === null ? '' : `Best extraction ${time(state.best)}`);
+    this.set(
+      'best',
+      state.best === null ? '' : recordTimes(state.best, state.fullCrewBest ?? null),
+    );
   }
   vision(enabled: boolean) {
     this.set('vision-button', `Sight cones: ${enabled ? 'on' : 'off'}`);

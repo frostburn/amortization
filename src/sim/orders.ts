@@ -1,6 +1,7 @@
 import { distance, inside, isExtraction, living, EXTRACTION_RADIUS } from './types';
 import type { Landmark, ObjectKind, Operative, Vec, World } from './types';
-import { findPath, lineClear, nearestFree } from './navigation';
+import { findPath, lineClear } from './navigation';
+import { formationTargets } from './formation';
 import { notify } from './world';
 import { investigateNoise, raiseAlarm } from './awareness';
 import { updateShutter } from './shutter';
@@ -53,18 +54,35 @@ export function interactionDuration(world: World, agent: Operative, id: ObjectKi
 }
 export function moveAgents(world: World, ids: string[], target: Vec) {
   const agents = world.agents.filter((a) => ids.includes(a.id) && living(a));
+  const destinations = formationTargets(world, agents, target);
   agents.forEach((a, i) => {
-    const p =
-      agents.length === 1
-        ? target
-        : { x: target.x + ((i % 2) - 0.5) * 0.8, y: target.y + (Math.floor(i / 2) - 0.5) * 0.8 };
-    const destination = nearestFree(world, p);
+    const destination = destinations[i];
     a.path = findPath(world, a, destination);
     a.order = { kind: 'move', target: destination };
     a.interaction = 0;
     if (!a.path.length && distance(a, destination) > 0.5)
       notify(world, 'No clear route. Open the loading gate or use the west entrance.');
   });
+}
+function interactionRefusal(world: World, a: Operative, id: ObjectKind): string | null {
+  if (a.carrying && ['override', 'breach', 'divert', 'dispatch', 'release'].includes(id))
+    return 'Set the cargo down before working these controls.';
+  if (id === 'release' && (!a.disguised || a.weapon || a.exposed))
+    return 'Release refused. WARRANT requires a maintenance identity that has not been exposed, with weapons concealed.';
+  if (id === 'evidence' && world.evidence === 'courier') {
+    const courier = courierGuard(world);
+    if (
+      !courier ||
+      !living(courier) ||
+      courier.mode === 'combat' ||
+      !a.disguised ||
+      a.weapon ||
+      courier.known.includes(a.id) ||
+      world.known.includes(a.id)
+    )
+      return 'Handover refused. Use the maintenance disguise with weapons concealed and an unrecognized identity.';
+  }
+  return null;
 }
 export function interact(world: World, ids: string[], id: ObjectKind) {
   if (!available(world, id)) {
@@ -98,23 +116,32 @@ export function interact(world: World, ids: string[], id: ObjectKind) {
       );
     return;
   }
-  const a = agents.sort((a, b) => distance(a, target) - distance(b, target))[0];
-  if (!a) return;
-  if (a.order.kind === 'interact' && a.order.target === id) return;
-  if (
-    a.carrying &&
-    (id === 'override' ||
-      id === 'breach' ||
-      id === 'divert' ||
-      id === 'dispatch' ||
-      id === 'release')
-  ) {
-    notify(world, 'Set the cargo down before working these controls.');
+  if (!agents.length) return;
+  const assigned = (a: Operative) => a.order.kind === 'interact' && a.order.target === id;
+  agents.sort(
+    (a, b) =>
+      Number(assigned(b)) - Number(assigned(a)) || distance(a, target) - distance(b, target),
+  );
+  const eligible = agents.filter((a) => !interactionRefusal(world, a, id));
+  for (const a of eligible) {
+    const point = interactionPoint(world, a, id);
+    const path = findPath(world, a, point);
+    const end = path.at(-1) ?? a;
+    if (distance(end, point) >= 1.15 || !lineClear(world, end, point)) continue;
+    if (assigned(a)) return; // Repeated squad clicks preserve the current worker's progress.
+    a.order = { kind: 'interact', target: id };
+    a.interaction = 0;
+    a.path = path;
     return;
   }
-  a.order = { kind: 'interact', target: id };
-  a.interaction = 0;
-  a.path = findPath(world, a, interactionPoint(world, a, id));
+  notify(
+    world,
+    eligible.length
+      ? id === 'evidence' && world.mission.archive && !world.shutterOpen
+        ? 'Archive locked. Assign another operative to SHUNT, or use CUT at the shutter.'
+        : `No selected operative can reach ${target.tag}.`
+      : interactionRefusal(world, agents[0], id)!,
+  );
 }
 export function hold(world: World, ids: string[]) {
   for (const a of world.agents)
@@ -165,10 +192,10 @@ export function waitEscort(world: World) {
       : `${escort.name} is following their escort again.`,
   );
 }
-export function treatEscort(world: World, ids: string[]) {
+export function escortMedic(world: World, ids: string[]) {
   const escort = world.escort;
   if (!escort?.recruited || !living(escort) || escort.hp >= escort.maxHp) return;
-  const medic = world.agents
+  return world.agents
     .filter(
       (a) =>
         ids.includes(a.id) &&
@@ -179,6 +206,11 @@ export function treatEscort(world: World, ids: string[]) {
         lineClear(world, a, escort),
     )
     .sort((a, b) => distance(a, escort) - distance(b, escort))[0];
+}
+export function treatEscort(world: World, ids: string[]) {
+  const escort = world.escort;
+  if (!escort?.recruited || !living(escort) || escort.hp >= escort.maxHp) return;
+  const medic = escortMedic(world, ids);
   if (!medic) {
     notify(
       world,
@@ -237,6 +269,14 @@ export function extractionStatus(world: World, id: 'extract' | 'alternate') {
   };
 }
 export function completeInteraction(world: World, a: Operative, id: ObjectKind) {
+  const refusal = interactionRefusal(world, a, id);
+  if (refusal) {
+    a.order = { kind: 'hold' };
+    a.path = [];
+    a.interaction = 0;
+    notify(world, refusal, 'warning');
+    return;
+  }
   if (id === 'override' && available(world, id) && !a.carrying) {
     const previous = world.agents.find((p) => p.id === world.overrideBy && p.id !== a.id);
     if (previous?.order.kind === 'interact' && previous.order.target === 'override') {
@@ -302,14 +342,6 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
       );
       break;
     case 'release':
-      if (!a.disguised || a.weapon || a.exposed) {
-        notify(
-          world,
-          'Release refused. WARRANT requires a maintenance identity that has not been exposed, with weapons concealed.',
-          'warning',
-        );
-        break;
-      }
       world.escortLocked = false;
       notify(
         world,
@@ -318,25 +350,8 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
       break;
     case 'evidence':
       if (world.evidence === 'courier') {
-        const courier = courierGuard(world),
-          c = world.courier;
-        if (
-          !c ||
-          !courier ||
-          !living(courier) ||
-          courier.mode === 'combat' ||
-          !a.disguised ||
-          a.weapon ||
-          courier.known.includes(a.id) ||
-          world.known.includes(a.id)
-        ) {
-          notify(
-            world,
-            'Handover refused. Use the maintenance disguise with weapons concealed and an unrecognized identity.',
-            'warning',
-          );
-          break;
-        }
+        const courier = courierGuard(world)!,
+          c = world.courier!;
         c.clearance = a.id;
         c.phase = 'secured';
         courier.path = [];

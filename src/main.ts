@@ -121,6 +121,12 @@ async function boot() {
       if (mission) startMission(mission, true);
       return;
     }
+    if (type.startsWith('heal:')) {
+      const medic = world.agents[Number(type.slice(5))];
+      if (medic && living(medic)) issue({ kind: 'heal', agents: [medic.id] });
+      updateHud();
+      return;
+    }
     if (type === 'extract:extract' || type === 'extract:alternate') {
       const blocker = extractionRallyBlocker(world);
       if (blocker) {
@@ -163,7 +169,7 @@ async function boot() {
       case 'briefing':
         paused = true;
         if (world.status === 'playing') hud.showBriefing();
-        else hud.showEnd(world, missionRecord(records, world.mission.id).best, true);
+        else hud.showEnd(world, missionRecord(records, world.mission.id), true);
         break;
       case 'restart': {
         startMission(world.mission, false);
@@ -183,9 +189,17 @@ async function boot() {
       case 'hold':
       case 'weapons':
       case 'heal':
-      case 'escort-aid':
       case 'drop':
         issue({ kind: type, agents: selected });
+        break;
+      case 'call-transfer':
+        issue({ kind: 'interact', agents: selected, target: 'dispatch' });
+        break;
+      case 'escort-aid':
+        issue({ kind: 'escort-aid', agents: world.agents.filter(living).map((p) => p.id) });
+        break;
+      case 'locate-escort':
+        hud.focusObjectives();
         break;
       case 'escort-wait':
         issue({ kind: 'escort-wait' });
@@ -234,6 +248,7 @@ async function boot() {
       slow,
       sound: sound.enabled,
       best: missionRecord(records, world.mission.id).best,
+      fullCrewBest: missionRecord(records, world.mission.id).fullCrewBest,
     });
   }
   bindControls(scene, hud, {
@@ -279,10 +294,10 @@ async function boot() {
     if (world.status !== 'playing' && !playtest?.isPlayback) {
       paused = true;
       if (world.status === 'won' && !saved) {
-        records = recordWin(world.mission.id, world.time);
+        records = recordWin(world.mission.id, world.time, world.agents.filter(living).length);
         saved = true;
       }
-      hud.showEnd(world, missionRecord(records, world.mission.id).best);
+      hud.showEnd(world, missionRecord(records, world.mission.id));
     }
     playtest?.update(now, wallElapsed, paused || hud.modal.open, slow);
     if (now - lastHud > 90) {

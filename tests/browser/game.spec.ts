@@ -45,7 +45,10 @@ test('releases Mara, preserves her wait order across selection, and resets the e
   await expect(
     extraction.getByRole('button', { name: 'Rally crew to SERVICE', exact: true }),
   ).toBeVisible();
-  await extraction.getByRole('button', { name: 'Ask Mara to follow', exact: true }).click();
+  await page
+    .getByRole('region', { name: 'Witness', exact: true })
+    .getByRole('button', { name: 'Ask Mara to follow', exact: true })
+    .click();
   await expect(page.locator('#escort-status')).toContainText('following');
   await page.getByRole('button', { name: 'Restart', exact: true }).click();
   await expect(page.locator('#mission-title')).toHaveText('Protective custody');
@@ -111,7 +114,9 @@ test('routes a courier transfer, distinguishes CASE from its carrier, and resets
     timeout: 10_000,
   });
   await page.getByRole('button', { name: 'Select Vale', exact: true }).click();
-  await order(4.8, 16);
+  await expect(page.locator('#courier-status')).toHaveText('DIVERT set · CALL still needed');
+  await page.getByRole('button', { name: 'Send selected to CALL', exact: true }).click();
+  await expect(page.locator('#courier-call-button')).toHaveText('Vale heading to CALL');
   await expect(page.locator('#courier-status')).toContainText('moving to inspection', {
     timeout: 8_000,
   });
@@ -130,6 +135,7 @@ test('routes a courier transfer, distinguishes CASE from its carrier, and resets
 test('loads art, accepts individual orders while paused, and restarts cleanly', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
@@ -143,6 +149,12 @@ test('loads art, accepts individual orders while paused, and restarts cleanly', 
     'aria-pressed',
     'false',
   );
+  // Use physical coordinates so Playwright cannot silently scroll Interact into view.
+  const interact = (await page.locator('[data-action="interact"]').boundingBox())!;
+  expect(interact.y + interact.height).toBeLessThan(720);
+  await page.mouse.click(interact.x + interact.width / 2, interact.y + interact.height / 2);
+  await expect(page.locator('#message')).toContainText('Selected crew heading to VAN');
+  await expect(page.locator('#condition-0')).toHaveText('Moving');
   await page.getByRole('button', { name: 'Draw weapons' }).click();
   await expect(page.locator('#condition-0')).toHaveText('Weapon drawn');
   await expect(page.locator('#condition-1')).toHaveText('Concealed');

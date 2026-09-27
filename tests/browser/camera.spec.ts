@@ -12,9 +12,10 @@ async function mountScene(page: Page) {
   await page.goto('/camera-fixture');
 }
 
-test('keeps the map steady through extraction, Follow, COMMS, and viewport resizing', async ({
+test('keeps the map usable through objective controls, injuries, COMMS, and viewport resizing', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
   await mountScene(page);
   const result = await page.evaluate(async () => {
     const modules = [
@@ -56,6 +57,11 @@ test('keeps the map steady through extraction, Follow, COMMS, and viewport resiz
       canvasHeight: scene.app.screen.height,
       scale: scene.camera.scale.x,
       point: scene.screen(target),
+      clickable:
+        document.elementFromPoint(
+          hud.stage.getBoundingClientRect().x + scene.screen(target).x,
+          hud.stage.getBoundingClientRect().y + scene.screen(target).y,
+        ) === scene.app.canvas,
       zoom: scene.zoom,
       expectedFit: Math.min(
         hud.stage.clientWidth / ((world.mission.width + world.mission.height) * 26 + 80),
@@ -77,6 +83,10 @@ test('keeps the map steady through extraction, Follow, COMMS, and viewport resiz
     update();
     await settle();
     const follow = snapshot();
+    world.agents[1].hp = 4;
+    update();
+    await settle();
+    const injured = snapshot();
     world.message =
       'Selected crew heading to STREET. Bring Mara and every surviving operative into the extraction ring before boarding. '.repeat(
         4,
@@ -84,7 +94,7 @@ test('keeps the map steady through extraction, Follow, COMMS, and viewport resiz
     update();
     await settle();
     const comms = snapshot();
-    hud.stage.parentElement!.style.width = '840px';
+    hud.stage.parentElement!.style.width = `${hud.stage.clientWidth - 120}px`;
     await settle();
     const resized = snapshot();
     const hit = scene.toWorld(initial.point.x, initial.point.y);
@@ -99,13 +109,27 @@ test('keeps the map steady through extraction, Follow, COMMS, and viewport resiz
     update();
     await settle();
     const restarted = snapshot();
-    return { initial, extraction, follow, comms, resized, hit, panned, fitted, restarted };
+    return { initial, extraction, follow, injured, comms, resized, hit, panned, fitted, restarted };
   });
-  expect(result.extraction.height).toBeLessThan(result.initial.height);
-  expect(result.follow.height).toBeLessThan(result.extraction.height);
-  expect(result.comms.height).toBeLessThan(result.follow.height);
+  expect(result.initial.height).toBeGreaterThan(500);
+  for (const state of [
+    result.initial,
+    result.extraction,
+    result.follow,
+    result.injured,
+    result.comms,
+  ]) {
+    expect(state.height).toBe(result.initial.height);
+    expect(state.clickable).toBe(true);
+  }
   expect(result.resized.width).toBeLessThan(result.initial.width);
-  for (const state of [result.extraction, result.follow, result.comms, result.resized]) {
+  for (const state of [
+    result.extraction,
+    result.follow,
+    result.injured,
+    result.comms,
+    result.resized,
+  ]) {
     expect(state.canvasWidth).toBe(state.width);
     expect(state.canvasHeight).toBe(state.height);
     expect(state.scale).toBeCloseTo(result.initial.scale, 10);
@@ -120,7 +144,7 @@ test('keeps the map steady through extraction, Follow, COMMS, and viewport resiz
     expect(state.zoom).toBe(1);
     expect(state.scale).toBeCloseTo(state.expectedFit, 10);
   }
-  expect(result.restarted.height).toBeGreaterThan(result.fitted.height);
+  expect(result.restarted.height).toBe(result.fitted.height);
 });
 
 test('shows Mara after either transport unlock, before she is recruited', async ({ page }) => {
