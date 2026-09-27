@@ -5,6 +5,7 @@ import {
   available,
   completeInteraction,
   dropEvidence,
+  extractionRallyBlocker,
   heal,
   hold,
   interact,
@@ -81,6 +82,20 @@ describe('Material breach', () => {
     expect(w.overrideBy).toBeNull();
     expect(w.shutterOpen).toBe(false);
   });
+  it('blocks a whole-crew extraction rally until everyone clears a held archive shutter', () => {
+    const w = createWorld(archive),
+      carrier = w.agents[0];
+    const operator = activate(w);
+    Object.assign(carrier, { x: 26, y: 11.5, carrying: true });
+    expect(extractionRallyBlocker(w)).toContain('Move Morrow outside the archive');
+    expect(operator.order).toEqual({ kind: 'interact', target: 'override' });
+    Object.assign(carrier, { x: 26, y: 13 });
+    expect(extractionRallyBlocker(w)).toBeNull();
+    // A permanently cut shutter needs no operator, even with someone inside.
+    Object.assign(carrier, { x: 26, y: 11.5 });
+    w.shutterBreached = true;
+    expect(extractionRallyBlocker(w)).toBeNull();
+  });
   it('makes cutting a timed, noisy alternative even with the radio disabled', () => {
     const w = createWorld(archive),
       a = w.agents[0];
@@ -155,18 +170,21 @@ describe('Material breach', () => {
     expect(w.agents.every((p) => p.hp === 100)).toBe(true);
     expect(w.shutterBreached).toBe(false);
   });
-  it('supports a squad assault, a forced shutter, and withdrawal with the ledger', () => {
+  it('supports an armed breach after isolating the radio and treating the crew', () => {
     const w = createWorld(archive),
       ids = w.agents.map((a) => a.id);
     toggleWeapons(w, ids);
+    moveAgents(w, ids, { x: 10, y: 12 });
+    until(w, () => w.agents.filter(living).every((a) => !a.path.length));
+    interact(w, ids, 'relay');
+    until(w, () => w.relayOff);
     for (const p of [
-      { x: 10, y: 12 },
       { x: 17, y: 12.8 },
       { x: 26, y: 14 },
     ]) {
       moveAgents(w, ids, p);
       until(w, () => w.agents.filter(living).every((a) => !a.path.length));
-      advance(w, 4);
+      advance(w, 2);
       heal(w, ids);
     }
     interact(w, ids, 'breach');
@@ -179,7 +197,8 @@ describe('Material breach', () => {
     until(w, () => w.agents.filter(living).every((a) => distance(a, { x: 30.7, y: 24.8 }) < 3.5));
     interact(w, ids, 'extract');
     until(w, () => w.status === 'won');
-    expect(w.alarm).toBe(true);
+    expect(w.relayOff).toBe(true);
+    expect(w.waves).toBe(0);
     expect(w.shots).toBeGreaterThan(0);
     expect(w.evidence).toBe('extracted');
     expect(w.agents.filter(living)).toHaveLength(4);

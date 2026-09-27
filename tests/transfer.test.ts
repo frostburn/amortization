@@ -194,20 +194,24 @@ describe('Adverse possession', () => {
     expect(living(courierGuard(w)!)).toBe(true);
   });
 
-  it('supports a squad ambush and recovery under a live alarm', () => {
+  it('supports a coordinated ambush that clears the controls before diverting the courier', () => {
     const w = createWorld(transfer),
       ids = w.agents.map((a) => a.id),
       caller = w.agents[1];
+    toggleWeapons(w, ids);
     interact(w, [caller.id], 'dispatch');
     until(w, () => w.courier!.phase === 'transit');
     moveAgents(w, ids, { x: 11.5, y: 16.5 });
     until(w, () => w.agents.filter(living).every((a) => !a.path.length));
-    // Let an identifying guard finish the radio call before the crew draws.
-    until(w, () => w.alarm);
-    toggleWeapons(w, ids);
+    heal(w, ids);
+    // Focus the nearby threats before exposing an operative at the controls.
+    for (const id of ['guard-0', 'guard-1', 'guard-2']) {
+      if (living(w.guards.find((g) => g.id === id)!)) attack(w, ids, id);
+      until(w, () => !living(w.guards.find((g) => g.id === id)!));
+    }
     interact(w, ids, 'divert');
     until(w, () => w.courier!.diverted);
-    advance(w, 5);
+    advance(w, 2);
     heal(w, ids);
     until(
       w,
@@ -221,7 +225,7 @@ describe('Adverse possession', () => {
     until(w, () => w.agents.filter(living).every((a) => distance(a, landmark(w, 'extract')) < 3.5));
     interact(w, ids, 'extract');
     until(w, () => w.status === 'won');
-    expect(w.alarm).toBe(true);
+    expect(w.alarm).toBe(false);
     expect(w.shots).toBeGreaterThan(0);
     expect(w.evidence).toBe('extracted');
     expect(w.agents.filter(living)).toHaveLength(4);

@@ -200,6 +200,47 @@ kbd {
   background: #131e1a;
   border-top: 1px solid #3a4b40;
 }
+.extraction-controls {
+  padding: 10px 16px;
+  border-top: 1px solid #547865;
+  background: #182f27;
+}
+.extraction-controls[hidden] {
+  display: none;
+}
+.extraction-controls .section-label {
+  margin: 0 0 6px;
+  color: var(--mint);
+}
+.exit-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+.exit-row[hidden] {
+  display: none;
+}
+.exit-row button,
+#extraction-follow {
+  min-height: 44px;
+  padding: 8px 12px;
+  flex: 0 0 156px;
+  font-size: 12px;
+  border-color: var(--mint);
+}
+.exit-row.ready button {
+  background: var(--mint);
+  color: #13271e;
+}
+.exit-row p {
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 0;
+}
+#extraction-follow {
+  margin-top: 8px;
+}
 .dispatch > span {
   font:
     9px 'Courier New',

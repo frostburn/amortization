@@ -38,12 +38,20 @@ test('releases Mara, preserves her wait order across selection, and resets the e
   await page.getByRole('button', { name: 'Select Vale', exact: true }).click();
   await expect(page.locator('#escort-status')).toContainText('waiting');
   await expect(page.locator('#objective-primary')).toHaveText('✓ Mara waiting for escort');
-  await page.getByRole('button', { name: 'Ask Mara to follow', exact: true }).click();
+  const extraction = page.getByRole('region', { name: 'Extraction', exact: true });
+  await expect(
+    extraction.getByRole('button', { name: 'Rally crew to STREET', exact: true }),
+  ).toBeVisible();
+  await expect(
+    extraction.getByRole('button', { name: 'Rally crew to SERVICE', exact: true }),
+  ).toBeVisible();
+  await extraction.getByRole('button', { name: 'Ask Mara to follow', exact: true }).click();
   await expect(page.locator('#escort-status')).toContainText('following');
   await page.getByRole('button', { name: 'Restart', exact: true }).click();
   await expect(page.locator('#mission-title')).toHaveText('Protective custody');
   await expect(page.locator('#objective-primary')).toHaveText('○ Unlock the transport');
   await expect(page.locator('#escort-controls')).toBeHidden();
+  await expect(extraction).toBeHidden();
   await page.getByRole('button', { name: 'Operations', exact: true }).click();
   await page.getByRole('button', { name: /01 .*The release clause/ }).click();
   await page.getByRole('button', { name: 'Begin operation' }).click();
@@ -206,6 +214,15 @@ test('keeps the squad selected through missed drags and map clicks, with deliber
   await page.mouse.move(morrow.x + 65, morrow.y + 75, { steps: 4 });
   await page.mouse.up();
   await expect(page.locator('#selected-count')).toHaveText('4 / 4');
+  // A short drag over Morrow's upper body must deliberately isolate him,
+  // even though the visible box excludes his foot point entirely.
+  await page.mouse.move(morrow.x - 5, morrow.y - 20 * scale);
+  await page.mouse.down();
+  await page.mouse.move(morrow.x + 5, morrow.y - 14 * scale, { steps: 3 });
+  await expect(page.locator('#selection-box')).toBeVisible();
+  await page.mouse.up();
+  await expect(page.locator('#selected-count')).toHaveText('1 / 4');
+  await expect(page.locator('#selected-name')).toHaveText('Morrow');
 });
 
 test('touch map orders preserve the squad while portraits select individuals', async ({

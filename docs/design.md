@@ -4,6 +4,11 @@ The crew normally operates together. Splitting is useful when one maintenance id
 
 Selection should survive imprecise combat inputs. Clicking a selected operative on the map keeps their group; portraits and number keys deliberately isolate individuals. Empty drag boxes and attempts to remove the final selected member keep the existing selection. Losing that final operative selects the survivors. Touch map taps issue orders; portraits handle touch selection.
 
+Intentional drag selection intersects the visible bodies, not just their foot
+points. A minimum 12-pixel rectangle is both drawn and used for selection. This
+makes small body drags useful for isolating a person while preserving missed-box
+protection.
+
 Reaching the engineer changes entry into escort. Physical evidence removes one gun from the fight and can change hands. A blown disguise creates a combat problem rather than immediate mission failure.
 
 ## Boundaries
@@ -12,6 +17,26 @@ Reaching the engineer changes entry into escort. Physical evidence removes one g
 - Mission geometry and patrols belong to content. Substantial props are solids; lights and lettering are decoration.
 - Guards own suspicion, remembered identities, last seen positions, and delayed radio reports. Site-wide identity knowledge follows a completed report.
 - The world clock drives patrols, interactions, weapons, radio calls, and reinforcements. Pause stops all; slow time scales all.
+
+Guards have 90 health, survive the crew's combined 68-damage opening volley, and
+share the crew's eight-unit weapon range. Their 16-damage shots have a 0.8-second
+cooldown. Target choice uses distance to visible known threats, not squad-array
+order. Nearby gunfire starts a 2.5-second report even through cover; hearing does
+not reveal an identity or permit shooting through a wall. Killing callers or
+disabling RADIO still interrupts escalation. Support arrives 6 and 30 seconds
+after the alarm, with countdowns shown in the HUD.
+
+The extraction panel shares its readiness calculation with boarding. It appears
+after objective recovery or an early extraction order and lists crew counts,
+missing people or cargo, and an explicit rally/extract action for each exit.
+Panel orders include every survivor and enter the ordinary replay command path.
+Map extraction orders still affect only the selection. Waiting witnesses keep
+their wait order and can resume from the panel; arriving in a ring alone never
+silently ends the mission.
+Whole-crew rally is blocked while someone remains inside an archive that depends
+on a held SHUNT. The panel names who must cross first; a breached shutter needs
+no such restriction. Individual map orders remain under player control.
+
 - Cover is physical occlusion. This release has no numerical cover bonus or cover snapping.
 - Moving people are not permanent navigation obstacles. Destination slots spread the crew; future local avoidance can improve crowd flow.
 - Local records have a version and validation. Browser storage failure must not prevent play.

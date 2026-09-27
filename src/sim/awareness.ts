@@ -1,9 +1,11 @@
 import { distance, inside, living } from './types';
-import type { Guard, Operative, Vec, World } from './types';
+import type { Guard, Operative, Person, Vec, World } from './types';
 import { findPath, lineClear } from './navigation';
-import { shoot } from './combat';
+import { shoot, WEAPON_RANGE } from './combat';
 import { makeGuard, notify } from './world';
 import { clearedCargo } from './courier';
+
+export const RESPONSE_TIMES = [6, 30] as const;
 
 export function sees(world: World, guard: Guard, person: Vec): boolean {
   const range = distance(guard, person);
@@ -44,10 +46,34 @@ export function investigateNoise(world: World, point: Vec) {
     g.repath = 0;
   }
 }
+export function reportGunfire(world: World, shooter: Operative) {
+  for (const g of world.guards.filter(living)) {
+    if (distance(g, shooter) > 12) continue;
+    g.lastSeen = { x: shooter.x, y: shooter.y };
+    g.searchTime = 10;
+    g.mode = 'combat';
+    g.path = [];
+    // A guard can report audible shots through a wall, but cannot identify or
+    // target the shooter without sight. Repeated shots never restart the call.
+    if (lineClear(world, g, shooter)) {
+      if (!g.known.includes(shooter.id)) {
+        g.known.push(shooter.id);
+        g.reported = false;
+      }
+      const current = [...world.agents, ...(world.escort ? [world.escort] : [])].find(
+        (p) => p.id === g.target && living(p),
+      );
+      if (!current || !lineClear(world, g, current) || distance(g, shooter) < distance(g, current))
+        g.target = shooter.id;
+    }
+    if (!g.reported && g.radio <= 0) g.radio = 2.5;
+  }
+}
 export function updateAwareness(world: World, dt: number) {
   for (const g of world.guards.filter(living)) {
     g.repath -= dt;
     let highest = 0;
+    let visibleTarget: Person | undefined;
     for (const a of world.agents.filter(living)) {
       const visible = sees(world, g, a);
       const rate = visible ? suspicionRate(world, a) : 0;
@@ -63,10 +89,7 @@ export function updateAwareness(world: World, dt: number) {
         notify(world, `${a.name} identified. A guard is calling for backup.`, 'warning');
       }
       if (visible && (g.known.includes(a.id) || world.known.includes(a.id))) {
-        g.mode = 'combat';
-        g.target = a.id;
-        g.lastSeen = { x: a.x, y: a.y };
-        g.searchTime = 9;
+        if (!visibleTarget || distance(g, a) < distance(g, visibleTarget)) visibleTarget = a;
       }
     }
     const escort =
@@ -91,11 +114,15 @@ export function updateAwareness(world: World, dt: number) {
         );
       }
       if (visible && (g.known.includes(escort.id) || world.known.includes(escort.id))) {
-        g.mode = 'combat';
-        g.target = escort.id;
-        g.lastSeen = { x: escort.x, y: escort.y };
-        g.searchTime = 9;
+        if (!visibleTarget || distance(g, escort) < distance(g, visibleTarget))
+          visibleTarget = escort;
       }
+    }
+    if (visibleTarget) {
+      g.mode = 'combat';
+      g.target = visibleTarget.id;
+      g.lastSeen = { x: visibleTarget.x, y: visibleTarget.y };
+      g.searchTime = 9;
     }
     if (g.mode !== 'combat') g.mode = highest > 15 ? 'challenge' : 'patrol';
     if (g.radio > 0) {
@@ -108,17 +135,12 @@ export function updateAwareness(world: World, dt: number) {
     if (g.mode === 'combat') {
       const target =
         escort?.id === g.target ? escort : world.agents.find((a) => a.id === g.target && living(a));
-      if (target && distance(g, target) < 7.5 && lineClear(world, g, target)) {
+      if (target && distance(g, target) <= WEAPON_RANGE && lineClear(world, g, target)) {
         g.angle = Math.atan2(target.y - g.y, target.x - g.x);
         g.lastSeen = { x: target.x, y: target.y };
         g.searchTime = 9;
-        if (distance(g, target) <= 6.8) {
-          g.path = [];
-          shoot(world, g, target, true);
-        } else if (g.repath <= 0) {
-          g.path = findPath(world, g, target);
-          g.repath = 0.8;
-        }
+        g.path = [];
+        shoot(world, g, target, true);
       } else {
         g.searchTime -= dt;
         if (g.lastSeen && g.repath <= 0) {
@@ -151,8 +173,8 @@ export function updateAwareness(world: World, dt: number) {
   if (
     world.alarm &&
     !world.relayOff &&
-    world.waves < 2 &&
-    world.time - world.alarmTime > 12 + world.waves * 32
+    world.waves < RESPONSE_TIMES.length &&
+    world.time - world.alarmTime > RESPONSE_TIMES[world.waves]
   ) {
     for (const [i, p] of world.mission.response.spawns.entries()) {
       const g = makeGuard(`response-${world.waves}-${i}`, p, [p, ...world.mission.response.patrol]);

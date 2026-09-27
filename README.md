@@ -93,43 +93,65 @@ npm run replay:verify -- --current --expect-win attempt.replay.json
 The first command verifies compatible code and every state checkpoint. The second
 tests completion under current rules. Both exit nonzero on failure. Selected player
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
-distinct routes. The corpus currently includes player-recorded victories for all four missions; see `tests/replays/README.md` for provenance and coverage.
+distinct routes. Seven retained recordings cover all four missions, including four
+new completions after the balance changes. Invalidated recordings were removed;
+all four missions also retain synthetic quiet and armed completion tests. See
+`tests/replays/README.md` for provenance, current outcomes, and retired routes.
 
 ## Controls
 
-| Input                          | Action                                                             |
-| ------------------------------ | ------------------------------------------------------------------ |
-| Click a portrait; 1–4          | Select individually                                                |
-| Click an operative on the map  | Select an unselected operative; keep a selected group together     |
-| Shift-click / Shift+number     | Add to selection; shift-click removes unless it is the last member |
-| Left-drag                      | Select a group; an empty box preserves the current selection       |
-| Q                              | Select every surviving operative without changing their orders     |
-| Right-click ground             | Move selected operatives in a loose formation                      |
-| Right-click a labelled diamond | Nearest selected operative approaches and interacts                |
-| Right-click a guard            | Draw weapons and attack                                            |
-| G                              | Regroup everyone at the lead selected operative                    |
-| S                              | Hold position / release the archive shunt                          |
-| F                              | Draw / conceal selected weapons                                    |
-| E                              | Interact with a nearby landmark                                    |
-| H                              | Use a field dressing: one per operative, up to 55 health           |
-| X                              | Put down carried evidence                                          |
-| Space                          | Pause / resume; orders work while paused                           |
-| Hold Tab                       | Slow time to 20%                                                   |
-| Wheel / + and − buttons        | Zoom                                                               |
-| Arrows / middle-drag           | Pan                                                                |
-| Home / Fit map                 | Reset camera                                                       |
-| Shift+R / Restart              | Restart operation                                                  |
-| V                              | Toggle guard sight cones                                           |
+| Input                          | Action                                                              |
+| ------------------------------ | ------------------------------------------------------------------- |
+| Click a portrait; 1–4          | Select individually                                                 |
+| Click an operative on the map  | Select an unselected operative; keep a selected group together      |
+| Shift-click / Shift+number     | Add to selection; shift-click removes unless it is the last member  |
+| Left-drag                      | Select visible bodies; an empty box preserves the current selection |
+| Q                              | Select every surviving operative without changing their orders      |
+| Right-click ground             | Move selected operatives in a loose formation                       |
+| Right-click a labelled diamond | Nearest selected operative approaches and interacts                 |
+| Right-click a guard            | Draw weapons and attack                                             |
+| G                              | Regroup everyone at the lead selected operative                     |
+| S                              | Hold position / release the archive shunt                           |
+| F                              | Draw / conceal selected weapons                                     |
+| E                              | Interact with a nearby landmark                                     |
+| H                              | Use a field dressing: one per operative, up to 55 health            |
+| X                              | Put down carried evidence                                           |
+| Space                          | Pause / resume; orders work while paused                            |
+| Hold Tab                       | Slow time to 20%                                                    |
+| Wheel / + and − buttons        | Zoom                                                                |
+| Arrows / middle-drag           | Pan                                                                 |
+| Home / Fit map                 | Reset camera                                                        |
+| Shift+R / Restart              | Restart operation                                                   |
+| V                              | Toggle guard sight cones                                            |
 
 On touch screens, tap portraits to select, tap ground or a landmark to order, and drag to pan. The sidebar provides the main actions. Desktop mouse and keyboard offer the most precise control. Losing tab focus pauses play.
 
+Changes to COMMS, extraction controls, or viewport size preserve the camera's
+scale and position. **Fit map** / **Home** frames the mission in the available
+space; starting or restarting a mission also fits its map.
+
 Map clicks on an already selected operative keep the group selected. Use a portrait or number key to isolate someone deliberately. If the last selected operative falls, selection transfers to the survivors without changing their orders.
+
+Dragging across a character's body deliberately replaces the selection, even if
+their feet fall outside the box. Thin or short drags get a minimum 12-pixel box,
+shown while dragging. Shift-drag adds the hit operatives.
 
 ## Mission guidance
 
 Hover over a mission goal to highlight its relevant items and read the current requirements. Click or tap a goal to keep the guide open and frame those locations. On a phone, this also brings the map back into view. The named buttons in the guide focus individual items; **Escape** or **×** closes it. Locating an objective preserves squad selection and standing orders.
 
 The instructions follow mission progress: CALL after a courier diversion, a second operative while SHUNT is held, forged release or CUT for the transport, and everyone at the same extraction ring. Optional evidence is identified explicitly. Locators follow witnesses, couriers, carried cargo and dropped evidence; edge arrows show targets outside the current view. Marker labels remain readable at low zoom, and pulse animation respects reduced-motion settings.
+
+After recovering the objective, extraction controls appear directly below the
+map. **Rally crew to VAN** (or STREET / SERVICE) orders every survivor to that
+exit without changing selection. Counts and names explain who is missing;
+**Extract at VAN** appears when the crew and objective are ready. Boarding still
+requires an order, so gathering near a van does not silently end optional work.
+A waiting witness stays in cover until **Ask … to follow** is pressed. Move or
+Hold can cancel individual extraction orders.
+When SHUNT is held, move everyone out of the archive before using the whole-crew
+rally. The panel names anyone still inside and keeps rally disabled until they
+clear the shutter, protecting them from being locked in when the operator leaves.
 
 **?** opens objective help. While the guide is open, **Tab** moves between focused UI buttons and **Enter/Space** activates a goal or location. Click the map or close the guide to return focus to gameplay; holding **Tab** on the map still slows time.
 
@@ -138,6 +160,7 @@ The instructions follow mission progress: CALL after a courier diversion, a seco
 - **KIT** contains one maintenance uniform. Taking it conceals the operative's weapon. Workshop access is permitted; the marked secure office remains restricted.
 - Suspicion grows only while a guard can see something suspicious. Walls and trams block sight. Unconfirmed suspicion decays out of sight.
 - An identifying guard engages locally and needs 2.5 seconds to radio the identification. Other guards learn it after the call.
+- Nearby guards can also report audible gunfire through cover without learning the shooter's identity. Stop the caller or disable RADIO before the report completes. The HUD shows call and response countdowns.
 - **RADIO** disables further calls and reinforcements. Guards retain their own observations and can still fight.
 - **GATE** opens the loading gate from inside. Outside, cutting the lock takes three seconds and triggers the alarm if radios are online.
 - **VOSS** follows the operative who recruits her. Interacting again transfers the escort. A survivor takes over if the escort falls.
@@ -145,6 +168,11 @@ The instructions follow mission progress: CALL after a courier diversion, a seco
 - Select the crew and right-click or tap **VAN** (the vehicle or its diamond). Everyone selected approaches the van; the order completes when Voss and **all surviving operatives** reach its ring. Unselected operatives keep their orders. Move or Hold cancels extraction for the selected operatives.
 
 An approachable quiet route is KIT → west entrance → RADIO → VOSS → west entrance → VAN. Move promptly in the office and use pause to plan. For an armed approach, keep the crew together, use the trams as cover, and prepare an exit.
+
+Guards can survive a four-person opening volley and return fire at the crew's
+weapon range. Use focus fire, cover and field dressings; do not send a lone
+operative to work controls under fire. A live alarm brings response teams after
+6 and 30 seconds. RADIO stops further arrivals, including after an alarm.
 
 ## Material breach · Operation 02
 

@@ -1,5 +1,67 @@
 import { expect, test } from '@playwright/test';
 
+test('explains why a whole-crew rally must wait for the held archive shutter', async ({ page }) => {
+  // Mount the production HUD with a controlled doorway state, without a running game loop.
+  await page.route('**/extraction-hud', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: '<div id="app"></div>',
+    }),
+  );
+  await page.goto('/extraction-hud');
+  const result = await page.evaluate(async () => {
+    const modules = [
+      '/src/ui/hud.ts',
+      '/src/sim/world.ts',
+      '/src/content/archive.ts',
+      '/src/sim/orders.ts',
+    ];
+    const [{ Hud }, { createWorld }, { archive }, { completeInteraction, landmark }] =
+      await Promise.all(modules.map((path) => import(path)));
+    const w = createWorld(archive),
+      carrier = w.agents[0],
+      operator = w.agents[1];
+    const actions: string[] = [];
+    const hud = new Hud(
+      (action: string) => actions.push(action),
+      () => {},
+      () => {},
+    );
+    hud.reset(archive);
+    const shunt = landmark(w, 'override');
+    Object.assign(operator, { x: shunt.x, y: shunt.y });
+    completeInteraction(w, operator, 'override');
+    Object.assign(carrier, { x: 26, y: 11.5, carrying: true });
+    w.evidence = 'carried';
+    const update = () =>
+      hud.update(w, {
+        selected: [carrier.id],
+        paused: true,
+        slow: false,
+        sound: false,
+        best: null,
+      });
+    update();
+    const button = document.querySelector<HTMLButtonElement>('#exit-button-extract')!;
+    const blocked = button.disabled,
+      reason = document.querySelector('#exit-status-extract')!.textContent;
+    button.click();
+    const blockedActions = [...actions];
+    carrier.y = 13;
+    update();
+    const enabled = !button.disabled;
+    button.click();
+    return { blocked, reason, blockedActions, enabled, actions, operatorOrder: operator.order };
+  });
+  expect(result.blocked).toBe(true);
+  expect(result.reason).toContain('Move Morrow outside the archive');
+  expect(result.reason).toContain('Keep SHUNT held');
+  expect(result.blockedActions).toEqual([]);
+  expect(result.enabled).toBe(true);
+  expect(result.actions).toEqual(['extract:extract']);
+  expect(result.operatorOrder).toEqual({ kind: 'interact', target: 'override' });
+});
+
 test('orders the whole selection to the vehicle using either mouse or touch', async ({
   browser,
 }) => {
@@ -15,6 +77,7 @@ test('orders the whole selection to the vehicle using either mouse or touch', as
     await page.goto('http://127.0.0.1:4173/');
     await page.getByRole('button', { name: 'Begin operation' }).click();
     await page.getByRole('button', { name: 'Pause', exact: true }).click();
+    await expect(page.getByRole('region', { name: 'Extraction', exact: true })).toBeHidden();
     const map = (await page.locator('canvas').boundingBox())!;
     const scale = Math.min(map.width / (58 * 26 + 80), map.height / (58 * 14 + 110));
     // Aim at the van roof, away from its floating VAN marker.
@@ -24,6 +87,19 @@ test('orders the whole selection to the vehicle using either mouse or touch', as
     else await page.mouse.click(x, y, { button: 'right' });
     await expect(page.locator('#message')).toContainText('Selected crew heading to VAN');
     for (let i = 0; i < 4; i++) await expect(page.locator(`#condition-${i}`)).toHaveText('Moving');
+    await page.getByRole('button', { name: 'Select Vale', exact: true }).click();
+    await page.locator('[data-action="hold"]').click();
+    await page.getByRole('button', { name: 'Select Morrow', exact: true }).click();
+    const rally = page.getByRole('button', { name: 'Rally crew to VAN', exact: true });
+    if (touch) await rally.tap();
+    else {
+      await rally.focus();
+      await page.keyboard.press('Space');
+    }
+    await expect(page.locator('#pause-label')).toHaveText('Resume');
+    await expect(page.locator('#selected-count')).toHaveText('1 / 4');
+    for (let i = 0; i < 4; i++) await expect(page.locator(`#condition-${i}`)).toHaveText('Moving');
+    await expect(page.locator('#exit-status-extract')).toContainText('Bring Voss out alive');
     await page.getByRole('button', { name: 'Resume', exact: true }).click();
     await expect(page.locator('#message')).toContainText('Bring Voss out alive', { timeout: 8000 });
     await expect(page.getByRole('dialog', { name: 'Account settled.' })).toBeHidden();

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { missions } from '../src/content/missions';
 import { createWorld } from '../src/sim/world';
-import { hold, interact, landmark } from '../src/sim/orders';
+import { extractionStatus, hold, interact, landmark } from '../src/sim/orders';
 import { STEP, step } from '../src/sim/step';
 import { distance, isExtraction } from '../src/sim/types';
 import type { World } from '../src/sim/types';
@@ -15,6 +15,27 @@ const exits = missions.flatMap((mission) =>
 );
 
 describe('extraction orders', () => {
+  it('reports missing crew by name and readiness when everyone and the ledger are in the ring', () => {
+    const w = createWorld(missions.find((m) => m.id === 'archive')!);
+    const van = landmark(w, 'extract');
+    for (const a of w.agents) Object.assign(a, { x: van.x, y: van.y });
+    expect(extractionStatus(w, 'extract').ready).toBe(false);
+    w.agents[0].carrying = true;
+    w.evidence = 'carried';
+    w.agents[1].y -= 5;
+    expect(extractionStatus(w, 'extract')).toMatchObject({ present: 3, total: 4, ready: false });
+    expect(extractionStatus(w, 'extract').waiting).toContain('Vale');
+    w.agents[1].y += 2;
+    expect(extractionStatus(w, 'extract')).toMatchObject({ present: 4, total: 4, ready: true });
+    expect(w.status).toBe('playing'); // Readiness preserves the choice to leave optional work.
+    interact(
+      w,
+      w.agents.map((a) => a.id),
+      'extract',
+    );
+    advance(w, 1);
+    expect(w.status).toBe('won');
+  });
   it.each(exits)(
     'rallies the selected crew and objective to $mission.id / $exit.tag with one order',
     ({ mission, exit }) => {

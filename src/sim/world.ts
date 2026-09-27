@@ -16,7 +16,8 @@ export function body(id: string, p: Vec, hp: number): Person {
 }
 export function makeGuard(id: string, position: Vec, patrol: Vec[], angle = Math.PI): Guard {
   return {
-    ...body(id, position, 62),
+    // A coordinated opening volley hurts, but leaves time to return fire or retreat.
+    ...body(id, position, 90),
     patrol,
     waypoint: 0,
     suspicion: {},
