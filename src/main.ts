@@ -4,7 +4,7 @@ import { step, STEP } from './sim/step';
 import { available, extractionRallyBlocker, landmark } from './sim/orders';
 import { applyCommand } from './sim/commands';
 import type { Command } from './sim/commands';
-import { distance, living } from './sim/types';
+import { distance, isExtraction, living } from './sim/types';
 import type { Mission, World } from './sim/types';
 import { Scene } from './render/scene';
 import type { Hit } from './render/scene';
@@ -14,6 +14,7 @@ import { bindControls } from './input/controls';
 import { Sound } from './audio/sound';
 import { missionRecord, readRecords, recordWin } from './ui/storage';
 import { missions, nextMission } from './content/missions';
+import { extractionRequirement } from './ui/extraction';
 
 async function boot() {
   let world: World = createWorld(),
@@ -91,6 +92,16 @@ async function boot() {
   }
   function issue(command: Command) {
     if (world.status !== 'playing' || playtest?.isPlayback) return;
+    const requirement =
+      command.kind === 'interact' && isExtraction(command.target)
+        ? extractionRequirement(world)
+        : null;
+    if (requirement) {
+      notify(world, requirement.detail);
+      updateHud();
+      hud.focusObjectives('extract');
+      return;
+    }
     playtest?.command(command);
     applyCommand(world, command);
   }
@@ -124,6 +135,15 @@ async function boot() {
     if (type.startsWith('heal:')) {
       const medic = world.agents[Number(type.slice(5))];
       if (medic && living(medic)) issue({ kind: 'heal', agents: [medic.id] });
+      updateHud();
+      return;
+    }
+    if (type === 'work:mask' || type === 'work:upload') {
+      issue({
+        kind: 'interact',
+        agents: selected,
+        target: type === 'work:mask' ? 'mask' : 'upload',
+      });
       updateHud();
       return;
     }

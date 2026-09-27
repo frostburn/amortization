@@ -10,7 +10,17 @@ export interface Rect extends Vec {
 }
 export interface Solid extends Rect {
   id: string;
-  kind: 'wall' | 'tram' | 'crate' | 'container' | 'building' | 'van' | 'transport' | 'shelves';
+  kind:
+    | 'wall'
+    | 'tram'
+    | 'crate'
+    | 'container'
+    | 'building'
+    | 'van'
+    | 'transport'
+    | 'shelves'
+    | 'mast'
+    | 'server';
   height: number;
 }
 export type ObjectKind =
@@ -25,7 +35,9 @@ export type ObjectKind =
   | 'override'
   | 'breach'
   | 'divert'
-  | 'dispatch';
+  | 'dispatch'
+  | 'mask'
+  | 'upload';
 export interface Landmark extends Vec {
   id: ObjectKind;
   tag: string;
@@ -33,11 +45,11 @@ export interface Landmark extends Vec {
   detail: string;
 }
 export interface Mission {
-  id: 'depot' | 'archive' | 'transfer' | 'custody';
+  id: 'depot' | 'archive' | 'transfer' | 'custody' | 'broadcast';
   number: string;
   title: string;
   location: string;
-  objective: 'escort' | 'ledger' | 'case';
+  objective: 'escort' | 'ledger' | 'case' | 'broadcast';
   description: string;
   briefing: { lead: string; body: string; routes: { title: string; body: string }[] };
   intro: string;
@@ -45,6 +57,7 @@ export interface Mission {
   gateOutside: Vec;
   response: { spawns: Vec[]; patrol: Vec[] };
   archive?: { door: Rect; inside: Vec };
+  broadcast?: { duration: number; traceTime: number };
   transfer?: { start: Vec; patrol: Vec[]; checkpoint: Vec; inspection: Vec; junction: Vec };
   escort?: {
     id: string;
@@ -150,6 +163,13 @@ export interface World {
     wait: number;
     clearance: string | null;
   } | null;
+  broadcast?: {
+    progress: number;
+    trace: number;
+    traced: boolean;
+    maskBy: string | null;
+    uploadBy: string | null;
+  };
   alarm: boolean;
   alarmTime: number;
   waves: number;

@@ -2,7 +2,7 @@
 
 A real-time squad tactics game for the browser. Control four operatives together or individually. One maintenance disguise admits a single person; the rest of the crew can prepare access or provide armed backup.
 
-**Four operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing any of the first three. Restart and Shift+R restart the selected mission.
+**Five operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing any of the first four. Restart and Shift+R restart the selected mission.
 
 ## Development
 
@@ -93,9 +93,9 @@ npm run replay:verify -- --current --expect-win attempt.replay.json
 The first command verifies compatible code and every state checkpoint. The second
 tests completion under current rules. Both exit nonzero on failure. Selected player
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
-distinct routes. Fifteen retained recordings cover all four missions, including
-six completions from the latest UI playtests. Invalidated recordings were removed;
-all four missions also retain synthetic quiet and armed completion tests. See
+distinct routes. Sixteen retained recordings cover all five missions, including
+the Public offering extraction-feedback run. Invalidated recordings were removed;
+all five missions have synthetic quiet and armed completion tests. See
 `tests/replays/README.md` for provenance, current outcomes, and retired routes.
 
 ## Controls
@@ -160,15 +160,20 @@ without changing selection or orders. **H** still treats the selected crew.
 
 Hover over a mission goal to highlight its relevant items and read the current requirements. Click or tap a goal to keep the guide open and frame those locations. On a phone, this also brings the map back into view. The named buttons in the guide focus individual items; **Escape** or **×** closes it. Locating an objective preserves squad selection and standing orders.
 
-The instructions follow mission progress: CALL after a courier diversion, a second operative while SHUNT is held, forged release or CUT for the transport, and everyone at the same extraction ring. Optional evidence is identified explicitly. Locators follow witnesses, couriers, carried cargo and dropped evidence; edge arrows show targets outside the current view. Marker labels remain readable at low zoom, and pulse animation respects reduced-motion settings.
+The instructions follow mission progress: CALL after a courier diversion, a second operative while SHUNT is held, forged release or CUT for the transport, the split LOOP/UPLINK upload, and everyone at the same extraction ring. Optional evidence is identified explicitly. Locators follow witnesses, couriers, carried cargo and dropped evidence; edge arrows show targets outside the current view. Marker labels remain readable at low zoom, and pulse animation respects reduced-motion settings.
 
+Extraction stays locked until the required objective is secured: recruit the witness,
+carry LEDGER/CASE, or finish the audit upload. Optional cargo never unlocks the exit.
+Locked vans are marked on the map; clicking one explains and highlights the missing
+objective without replacing any orders. The same rule covers the sidebar and Interact.
 After recovering the objective, extraction controls appear beside its mission
 goal in the sidebar. **Rally crew to VAN** (or STREET / SERVICE) orders every survivor to that
 exit without changing selection. Counts and names explain who is missing;
 **Extract at VAN** appears when the crew and objective are ready. Boarding still
 requires an order, so gathering near a van does not silently end optional work.
 A waiting witness stays in cover until **Ask … to follow** is pressed. Move or
-Hold can cancel individual extraction orders.
+Hold can cancel individual extraction orders. If a cargo pickup exposes the controls
+before the required objective is ready, the exit button stays disabled with its reason.
 When SHUNT is held, move everyone out of the archive before using the whole-crew
 rally. The panel names anyone still inside and keeps rally disabled until they
 clear the shutter, protecting them from being locked in when the operator leaves.
@@ -239,7 +244,42 @@ The access keys lead to auditor **Mara Quill**, held in a security transport at 
 
 For a quiet escape, take KIT, disable RADIO, file WARRANT, and collect Mara. Lead her north of the lower cargo containers, west through the service corridor, and out the west entrance to SERVICE. Send the rest of the crew up the public street. For an armed extraction, clear the transport bay before cutting the lock, leave Mara waiting behind cover while the crew secures the gate, then bring her to STREET.
 
-Results track time, crew survival, evidence, and alarm status. Each operation keeps
+## Public offering · Operation 05
+
+Mara's audit connects the recovered ledger and account keys. Publish it from the
+**Municipal exchange**, then extract every survivor at the east-street **VAN**.
+
+- **UPLINK** takes 24 seconds with free hands. Its operator cannot fire while
+  working. Moving or **Hold** pauses the upload; progress survives interruption,
+  a handoff, or the operator's death.
+- **LOOP** on the west street masks the signal while a second operative holds it.
+  Changing selection preserves the loop; moving or **Hold** releases it.
+- Without LOOP, five seconds of uploading traces the terminal. Pausing preserves
+  the partial trace; holding LOOP clears it until the terminal has been located.
+  A completed trace cannot be undone, but the upload can still finish.
+- The trace attracts nearby guards. **RADIO** prevents reinforcements, including
+  after a trace, but does not stop local investigation or visual recognition.
+- **KIT** gives one operative maintenance access. The server room is restricted
+  even in uniform, and a patrol walks through it. Use the racks to break sight,
+  wait for the patrol to leave, and resume the upload.
+- **Hold LOOP** and **Work UPLINK** beside the primary goal issue ordinary orders
+  to a selected operative with free hands. Upload progress, paused work, loop
+  ownership and the trace countdown stay visible when selection changes.
+- Prepare **GATE** for the east escape. Once published, both workstations release
+  their operators. Bring the west-street operative around the public south road;
+  the extraction rally replaces everyone's orders and waits for every survivor.
+- **LOG** is optional evidence of suppressed broadcasts. Carrying it is suspicious
+  even in uniform and prevents work at either station. Drop it to free the hands.
+
+The quiet verification route times patrol windows with a disguised uploader and
+an operative holding LOOP. The armed route disables RADIO, advances together
+through cover, treats wounds, and completes a traced upload. These are synthetic
+completion checks, not a substitute for human difficulty feedback. No human
+recording for operation five has been added yet. The simulation fingerprint changes;
+older recordings use **Try current rules** on this build. All fifteen retained
+human runs still complete, with their original bundles unchanged.
+
+Results track time, crew survival, evidence, and alarm status. Operation five also reports whether the audit was published. Each operation keeps
 separate **Full crew** (all four survive) and **Any crew** best times, plus its
 completion count. A faster run with casualties cannot replace the full-crew
 record. Earlier records migrate into Any crew; their survivor count was never
@@ -265,10 +305,10 @@ Simulation runs at 30 Hz with interpolated rendering. All gameplay uses world co
 
 Characters use a small deformable mesh over the existing atlas for alternating steps, knee lift and arm motion. The walking cycle follows interpolated distance travelled, so idle characters stand still and pause/slow time also affect animation. Each character image is anchored between its soles, with contact shadows following the feet along the ground. Tram windscreens, lamps and trim are projected on their actual vertical face. The extraction van has a cab, sloped windscreen, cargo doors and tyres visible through open wheel arches; its original collision footprint is preserved.
 
-CI uses one Ubuntu job, Node 24, and Chromium. The simulation suite includes complete quiet and armed extractions for all four missions and checks for navigation clearance, local identification, disguise permissions, radio disruption, evidence custody, and extraction requirements.
+CI uses one Ubuntu job, Node 24, and Chromium. The simulation suite includes complete quiet and armed extractions for all five missions and checks for navigation clearance, local identification, disguise permissions, radio disruption, evidence custody, and extraction requirements.
 
 ## Current scope
 
-Four ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, full directional character art, and mid-mission saves remain future work. In-world operatives share animated art and use numbered selection markers; their portraits are distinct.
+Five ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, full directional character art, and mid-mission saves remain future work. In-world operatives share animated art and use numbered selection markers; their portraits are distinct.
 
 See [design notes](docs/design.md) and [art provenance](docs/art.md). Distributed under the repository's [MIT license](LICENSE).

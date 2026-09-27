@@ -6,6 +6,7 @@ import { notify } from './world';
 import { investigateNoise, raiseAlarm } from './awareness';
 import { updateShutter } from './shutter';
 import { courierGuard, routeCourier } from './courier';
+import { BROADCAST_SETUP_TIME, published, workBroadcast } from './broadcast';
 
 export function landmark(world: World, id: ObjectKind): Landmark {
   const source = world.mission.landmarks.find((o) => o.id === id)!;
@@ -35,6 +36,8 @@ export function available(world: World, id: ObjectKind) {
       (id === 'divert' && (world.courier?.diverted || world.evidence !== 'courier')) ||
       (id === 'dispatch' && (world.courier?.phase !== 'ready' || world.evidence !== 'courier')) ||
       (id === 'override' && world.shutterBreached) ||
+      (id === 'upload' && published(world)) ||
+      (id === 'mask' && (published(world) || world.broadcast?.traced)) ||
       (id === 'breach' && (world.mission.archive ? world.shutterOpen : !world.escortLocked))
     )
   );
@@ -50,6 +53,7 @@ export function interactionDuration(world: World, agent: Operative, id: ObjectKi
   if (id === 'divert') return 3;
   if (id === 'release') return 3;
   if (id === 'gate' && !inside(agent, world.mission.restricted)) return 3;
+  if (id === 'mask' || id === 'upload') return BROADCAST_SETUP_TIME;
   return id === 'relay' ? 1.5 : id === 'override' ? 0.8 : 0.65;
 }
 export function moveAgents(world: World, ids: string[], target: Vec) {
@@ -65,7 +69,10 @@ export function moveAgents(world: World, ids: string[], target: Vec) {
   });
 }
 function interactionRefusal(world: World, a: Operative, id: ObjectKind): string | null {
-  if (a.carrying && ['override', 'breach', 'divert', 'dispatch', 'release'].includes(id))
+  if (
+    a.carrying &&
+    ['override', 'breach', 'divert', 'dispatch', 'release', 'mask', 'upload'].includes(id)
+  )
     return 'Set the cargo down before working these controls.';
   if (id === 'release' && (!a.disguised || a.weapon || a.exposed))
     return 'Release refused. WARRANT requires a maintenance identity that has not been exposed, with weapons concealed.';
@@ -250,17 +257,20 @@ export function extractionStatus(world: World, id: 'extract' | 'alternate') {
     carrier = survivors.find((p) => p.carrying),
     v = world.escort;
   const waiting =
-    world.mission.objective !== 'escort' && (!carrier || distance(carrier, van) > EXTRACTION_RADIUS)
-      ? `Bring the ${world.mission.evidenceName.toLowerCase()} to ${van.tag}. It is required for this contract.`
-      : v && (!v.recruited || !living(v))
-        ? `Bring ${v.name} out alive before requesting extraction.`
-        : v && distance(v, van) > EXTRACTION_RADIUS
-          ? v.waiting
-            ? `Waiting for ${v.name}. Use the Escort controls to ask them to follow.`
-            : `Waiting for ${v.name} at ${van.tag}. Bring their escort to the van.`
-          : missing.length
-            ? `Waiting for ${missing.map((p) => p.name).join(', ')}. Bring every survivor inside the extraction ring.`
-            : null;
+    world.mission.broadcast && !published(world)
+      ? "Publish Mara's audit at UPLINK before requesting extraction."
+      : ['ledger', 'case'].includes(world.mission.objective) &&
+          (!carrier || distance(carrier, van) > EXTRACTION_RADIUS)
+        ? `Bring the ${world.mission.evidenceName.toLowerCase()} to ${van.tag}. It is required for this contract.`
+        : v && (!v.recruited || !living(v))
+          ? `Bring ${v.name} out alive before requesting extraction.`
+          : v && distance(v, van) > EXTRACTION_RADIUS
+            ? v.waiting
+              ? `Waiting for ${v.name}. Use the Escort controls to ask them to follow.`
+              : `Waiting for ${v.name} at ${van.tag}. Bring their escort to the van.`
+            : missing.length
+              ? `Waiting for ${missing.map((p) => p.name).join(', ')}. Bring every survivor inside the extraction ring.`
+              : null;
   return {
     ready: survivors.length > 0 && !waiting,
     waiting,
@@ -275,6 +285,10 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
     a.path = [];
     a.interaction = 0;
     notify(world, refusal, 'warning');
+    return;
+  }
+  if ((id === 'mask' || id === 'upload') && available(world, id)) {
+    workBroadcast(world, a, id);
     return;
   }
   if (id === 'override' && available(world, id) && !a.carrying) {
@@ -419,9 +433,11 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
       if (world.evidence === 'carried') world.evidence = 'extracted';
       notify(
         world,
-        world.mission.objective === 'escort'
-          ? `Contract fulfilled. ${world.escort!.name} is out. The crew is clear.`
-          : `Contract fulfilled. The ${world.mission.evidenceName.toLowerCase()} is secured. The crew is clear.`,
+        world.mission.objective === 'broadcast'
+          ? "Contract fulfilled. Mara's audit is public. The crew is clear."
+          : world.mission.objective === 'escort'
+            ? `Contract fulfilled. ${world.escort!.name} is out. The crew is clear.`
+            : `Contract fulfilled. The ${world.mission.evidenceName.toLowerCase()} is secured. The crew is clear.`,
       );
       break;
     }

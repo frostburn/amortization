@@ -6,7 +6,7 @@ This checks a route's continued viability; it does not claim that an older
 simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All fifteen retained files are byte-for-byte copies of submissions provided in chat
+All sixteen retained files are byte-for-byte copies of submissions provided in chat
 on 2026-09-27, including their `unversioned` / local-changes metadata.
 
 ## Earlier routes
@@ -152,6 +152,28 @@ any automatic scrolling, and cover witness injuries, unavailable aid, records
 opened by keyboard, and phone controls. Notes and records no longer compete
 with active orders for space; cargo-drop availability does not move the buttons.
 These are layout and input changes only, with no changes to simulation rules.
+
+## Public offering extraction feedback
+
+`broadcast-premature-extraction.replay.json` is the unchanged submission
+`amortization-broadcast-won-52011baa.replay.json`, recorded against simulation
+fingerprint `1a2e5da7f430f443455bd2dfc1e0801d4690ecb2c4cbe86a1a4548cade35cbbf`.
+It verifies every checkpoint and wins at tick **5851**, with **4 survivors**, no
+site alarm, the audit published, and optional LOG extracted.
+
+The note reads: “Being able to rally for the exit without being allowed to leave
+is annoying.” LOG pickup exposed an enabled rally button with less than one
+second of the 24-second upload complete. The first VAN order is at tick 1012;
+another at tick 3723 interrupts an active uploader at 2.2 seconds of progress.
+The audit finishes before the final VAN order at tick 4918.
+
+Live input now rejects premature extraction before recording or dispatching an
+order, explains the missing objective and opens its locator. Sidebar actions and
+map markers use the same readiness rule. This changes the input affordance, not
+the replay command format or simulation: previously recorded orders still play
+back exactly. The new recording is retained as completion evidence; separate
+browser regressions verify that new early exit clicks preserve standing orders
+and that completing the audit enables a rally which actually ends the mission.
 
 ## Retired recordings
 

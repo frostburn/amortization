@@ -10,6 +10,7 @@ import {
   waitEscort,
 } from './orders';
 import type { ObjectKind, Vec, World } from './types';
+import { updateBroadcast } from './broadcast';
 
 /** Resolved gameplay intent, independent of selection, camera, and input device. */
 export type Command =
@@ -50,4 +51,7 @@ export function applyCommand(world: World, command: Command) {
       waitEscort(world);
       break;
   }
+  // Orders can be issued while paused. Release cancelled station work now so
+  // the HUD reflects those orders without advancing upload or trace time.
+  updateBroadcast(world, 0);
 }

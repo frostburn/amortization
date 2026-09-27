@@ -82,6 +82,9 @@ export function createWorld(mission: Mission = depot): World {
     courier: mission.transfer
       ? { guardId: 'courier', phase: 'ready', diverted: false, wait: 0, clearance: null }
       : null,
+    ...(mission.broadcast
+      ? { broadcast: { progress: 0, trace: 0, traced: false, maskBy: null, uploadBy: null } }
+      : {}),
     alarm: false,
     alarmTime: 0,
     waves: 0,

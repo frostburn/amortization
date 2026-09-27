@@ -13,6 +13,7 @@ import { shoot, WEAPON_RANGE } from './combat';
 import { notify } from './world';
 import { updateShutter } from './shutter';
 import { updateCourier } from './courier';
+import { updateBroadcast } from './broadcast';
 
 export const STEP = 1 / 30;
 function walk(world: World, p: Person, speed: number, dt: number) {
@@ -99,6 +100,8 @@ export function step(world: World, dt = STEP) {
       a.order.kind === 'interact' &&
       (a.order.target === 'override' ||
         a.order.target === 'breach' ||
+        a.order.target === 'mask' ||
+        a.order.target === 'upload' ||
         a.order.target === 'release');
     if (a.weapon && !a.carrying && !working) {
       const order = a.order;
@@ -118,6 +121,7 @@ export function step(world: World, dt = STEP) {
   }
   updateAwareness(world, dt);
   updateCourier(world, dt);
+  updateBroadcast(world, dt);
   for (const g of world.guards.filter(living)) walk(world, g, g.mode === 'combat' ? 2.25 : 1.2, dt);
   const v = world.escort;
   if (v?.recruited && living(v)) {
