@@ -57,9 +57,16 @@ no such restriction. Individual map orders remain under player control.
 
 ## Visual system
 
-Near-black green chrome, slate industrial surfaces, mint selection and health, amber objectives and suspicion, coral combat alerts. Arial/Helvetica with spaced uppercase labels; monospace for clocks and shortcuts. A narrow command sidebar and persistent portrait strip frame the map.
+Near-black green chrome, slate industrial surfaces, mint selection and health, amber objectives and suspicion, coral combat alerts. Arial/Helvetica with spaced uppercase labels; monospace for clocks and shortcuts. A left crew/command panel and right mission/status panel frame the map. Orders
+remain anchored at the bottom of the left panel; roster and selected-operative
+information sit above them. A disabled drop button reserves its place even
+without cargo. Secondary field notes and records open within the right panel,
+without pushing controls or changing the map rectangle. Long COMMS text can
+scroll independently; it cannot displace mission actions or orders.
 
-The generated concept established composition and palette. Intentional differences: code-drawn architecture keeps displayed geometry exact; initial scenery is simpler; functional field dressing, evidence drop, and camera controls supplement the concept. Decorative stealth and mobility statistics were omitted because they have no gameplay counterpart. On narrow screens the sidebar moves below the map and crew.
+The generated concept established composition and palette. Intentional differences: code-drawn architecture keeps displayed geometry exact; initial scenery is simpler; functional field dressing, evidence drop, and camera controls supplement the concept. Decorative stealth and mobility statistics were omitted because they have no gameplay counterpart. At widths up to 900 px, panels stack below the map, with orders first. There is
+no nested panel scrolling in that layout. Objective locators bring the map into
+view at the same breakpoint.
 
 Generated portrait and person atlases supply character art. Architecture, sight cones, bullets, and markers come from game state. Generated map artwork never defines collisions.
 
@@ -101,8 +108,8 @@ Wait/follow orders make it possible to clear a route without pulling the witness
 The transport reuses the van geometry with a grey body, security stripe, and barred side window. Its collision footprint remains explicit mission content. The HUD exposes escort health and orders only after recruitment; both extraction rings and the service corridor are visible on the map.
 
 Witness and extraction actions sit beside their corresponding goals in the
-sidebar; COMMS lives there too. Crew dressing buttons occupy reserved space in
-the portrait strip. None of these updates changes the map rectangle or covers
+right panel; COMMS lives there too. Crew dressing buttons occupy reserved space
+in each portrait in the left panel. None of these updates changes the map rectangle or covers
 its input surface, including on short laptop screens. Danger feedback is
 independent of the single COMMS message: visible, in-range targeting or a recent
 health drop keeps the warning active. The hit grace period uses simulation time,

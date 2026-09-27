@@ -139,7 +139,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     // Mission help is keyboard-navigable; gameplay shortcuts keep working after squad clicks.
     const buttonTarget = (e.target as HTMLElement).closest('button');
     if (
-      ((e.target as HTMLElement).closest('.objective-actions, .crew-aid') &&
+      ((e.target as HTMLElement).closest('.objective-actions, .crew-aid, summary') &&
         [' ', 'Enter', 'Tab'].includes(e.key)) ||
       (buttonTarget && e.key === 'Tab' && hud.guideOpen) ||
       ((e.target as HTMLElement).closest('[data-goal], .objective-guide') &&

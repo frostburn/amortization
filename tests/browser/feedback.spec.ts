@@ -164,12 +164,54 @@ async function aidFlow(page: Page, touch = false) {
 test('keeps witness danger visible and supports aid, locate and keyboard wait without cancelling orders', async ({
   page,
 }, testInfo) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (message) => {
     if (message.type() === 'error') errors.push(message.text());
   });
   await mountFeedback(page);
+  const controlsVisible = async () => {
+    for (const selector of [
+      '[data-action="interact"]',
+      '[data-action="weapons"]',
+      '#heal-button',
+      '#drop-button',
+      '#escort-wait-button',
+      '#exit-button-extract',
+      '#exit-button-alternate',
+      '.intel-section summary',
+    ]) {
+      await expect(page.locator(selector)).toBeInViewport({ ratio: 1 });
+      expect(
+        await page.locator(selector).evaluate((el) => {
+          const r = el.getBoundingClientRect();
+          return el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+        }),
+      ).toBe(true);
+    }
+    expect(
+      await page
+        .locator('.sidebar')
+        .evaluateAll((panels) =>
+          panels.every((p) => p.scrollTop === 0 && p.scrollHeight <= p.clientHeight),
+        ),
+    ).toBe(true);
+  };
+  await controlsVisible();
+  const interact = await page.locator('[data-action="interact"]').boundingBox();
+  const map = await page.locator('canvas').boundingBox();
+  expect(interact!.x + interact!.width).toBeLessThan(map!.x);
+  expect((await page.locator('#objective-primary').boundingBox())!.x).toBeGreaterThan(
+    map!.x + map!.width,
+  );
+  await page.locator('.intel-section summary').focus();
+  await page.keyboard.press('Space');
+  await expect(page.locator('#best')).toBeVisible();
+  expect(await page.locator('[data-action="interact"]').boundingBox()).toEqual(interact);
+  expect(await page.locator('canvas').boundingBox()).toEqual(map);
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#best')).toBeHidden();
   await page.screenshot({ path: testInfo.outputPath('desktop-feedback.png') });
   await aidFlow(page);
   // No nearby dressing: a disabled action explains what is missing.
@@ -181,6 +223,8 @@ test('keeps witness danger visible and supports aid, locate and keyboard wait wi
   });
   await expect(page.locator('#escort-aid-button')).toBeDisabled();
   await expect(page.locator('#escort-aid-hint')).toContainText('free hands and a dressing');
+  await controlsVisible();
+  expect(await page.locator('[data-action="interact"]').boundingBox()).toEqual(interact);
   await page.evaluate(() => {
     window.feedback.world.time += 4;
     window.feedback.update();
@@ -218,6 +262,7 @@ test('keeps witness and first-aid actions usable by touch on a phone', async ({
     if (message.type() === 'error') errors.push(message.text());
   });
   await mountFeedback(page);
+  await expect(page.locator('[data-action="interact"]')).toBeInViewport({ ratio: 1 });
   await page.screenshot({ path: testInfo.outputPath('phone-feedback.png'), fullPage: true });
   await expect(page.locator('#objective-group-primary #escort-controls')).toBeVisible();
   await expect(page.locator('#objective-group-extract #extraction-controls')).toBeVisible();

@@ -135,6 +135,7 @@ test('routes a courier transfer, distinguishes CASE from its carrier, and resets
 test('loads art, accepts individual orders while paused, and restarts cleanly', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
@@ -148,6 +149,12 @@ test('loads art, accepts individual orders while paused, and restarts cleanly', 
     'aria-pressed',
     'false',
   );
+  // Use physical coordinates so Playwright cannot silently scroll Interact into view.
+  const interact = (await page.locator('[data-action="interact"]').boundingBox())!;
+  expect(interact.y + interact.height).toBeLessThan(720);
+  await page.mouse.click(interact.x + interact.width / 2, interact.y + interact.height / 2);
+  await expect(page.locator('#message')).toContainText('Selected crew heading to VAN');
+  await expect(page.locator('#condition-0')).toHaveText('Moving');
   await page.getByRole('button', { name: 'Draw weapons' }).click();
   await expect(page.locator('#condition-0')).toHaveText('Weapon drawn');
   await expect(page.locator('#condition-1')).toHaveText('Concealed');

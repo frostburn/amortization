@@ -106,7 +106,7 @@ kbd {
 }
 .game-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: 224px minmax(0, 1fr) 280px;
   height: calc(100% - 58px);
 }
 .map-column {
@@ -167,6 +167,9 @@ kbd {
   border-color: #526155;
   font-size: 11px;
 }
+.map-controls [data-action='vision'] {
+  margin-right: 8px;
+}
 .map-caption {
   position: absolute;
   bottom: 20px;
@@ -193,7 +196,7 @@ kbd {
   display: none;
 }
 .objective-actions {
-  padding: 8px;
+  padding: 6px;
   border: 1px solid #35483e;
   border-top: 0;
   background: #13231c;
@@ -202,16 +205,13 @@ kbd {
 .exit-row[hidden] {
   display: none;
 }
-.extraction-controls .section-label {
-  margin: 0 0 6px;
-  color: var(--mint);
-  font-size: 8px;
-  letter-spacing: 1px;
-}
 .exit-row {
   display: grid;
   gap: 4px;
-  margin-top: 8px;
+  margin-top: 6px;
+}
+.exit-row:first-child {
+  margin-top: 0;
 }
 .exit-row button,
 #courier-call-button {
@@ -305,9 +305,6 @@ kbd {
 .wounded .health-track > span {
   background: var(--red);
 }
-.sidebar > .dispatch {
-  padding: 14px 0;
-}
 .dispatch > span {
   display: block;
   margin-bottom: 6px;
@@ -324,11 +321,8 @@ kbd {
 }
 .squad {
   flex-shrink: 0;
-  padding: 10px 16px;
-  background: #0e1814;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 .agent-card {
   width: 100%;
@@ -336,8 +330,8 @@ kbd {
   border: 1px solid #2f4235;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 6px 52px 6px 6px;
+  gap: 8px;
+  padding: 4px 50px 4px 4px;
   text-align: left;
   min-width: 0;
   border-radius: 0;
@@ -353,8 +347,8 @@ kbd {
   background-size: 200% 200%;
   background-repeat: no-repeat;
   background-color: #171f1a;
-  width: 56px;
-  height: 62px;
+  width: 40px;
+  height: 44px;
   filter: saturate(0.65);
 }
 .portrait-0 {
@@ -371,15 +365,14 @@ kbd {
 }
 .agent-copy {
   display: grid;
-  gap: 8px;
+  gap: 3px;
   min-width: 0;
   flex: 1;
-  padding-right: 5px;
 }
 .agent-heading {
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.4px;
   white-space: nowrap;
 }
 .agent-heading b {
@@ -387,7 +380,7 @@ kbd {
     11px 'Courier New',
     monospace;
   color: var(--mint);
-  margin-right: 6px;
+  margin-right: 3px;
   font-weight: 400;
 }
 .agent-condition {
@@ -436,22 +429,67 @@ kbd {
   font-size: 10px;
 }
 .sidebar {
-  border-left: 1px solid #586257;
   background: #101817;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #405b48 #101817;
-  padding: 0 22px;
+  padding: 0 12px;
 }
 .sidebar > section {
-  padding: 22px 0;
+  flex-shrink: 0;
+  padding: 12px 0;
   border-bottom: 1px solid var(--line);
+}
+.crew-sidebar {
+  border-right: 1px solid #586257;
+}
+.mission-sidebar {
+  border-left: 1px solid #586257;
+}
+.mission-sidebar > section {
+  padding: 10px 0;
+}
+.mission-sidebar > .mission-section {
+  padding: 8px 0;
+}
+.crew-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.crew-heading .section-label {
+  margin: 0;
+}
+.crew-heading button {
+  min-height: 28px;
+  padding: 4px 8px;
+  font-size: 10px;
+}
+.crew-sidebar > .selection-section {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.sidebar > .orders-section {
+  border-bottom: 0;
+}
+.mission-sidebar > .dispatch {
+  flex: 1;
+  min-height: 48px;
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 .section-label {
   font-size: 10px;
   letter-spacing: 2px;
   color: #8ea094;
-  margin-bottom: 15px;
+  margin-bottom: 8px;
 }
 .sidebar h2 {
   font-size: 15px;
@@ -469,7 +507,7 @@ kbd {
 .objectives {
   display: grid;
   gap: 6px;
-  padding-top: 18px;
+  padding-top: 12px;
   font-size: 12px;
   letter-spacing: 0.4px;
 }
@@ -660,14 +698,7 @@ kbd {
   color: var(--mint);
 }
 .selected-info {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-}
-.selected-info .portrait {
-  width: 63px;
-  height: 72px;
-  border: 1px solid #586557;
+  min-width: 0;
 }
 .selected-info h3 {
   font-size: 12px;
@@ -688,26 +719,26 @@ kbd {
 .assessment {
   font-size: 10px;
   line-height: 1.7;
-  margin-top: 15px;
+  margin-top: 8px;
   color: #a0b0a3;
 }
 .orders {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 9px;
+  gap: 6px;
 }
 .orders button {
-  height: 69px;
+  min-height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   position: relative;
 }
 .orders button svg {
-  width: 22px;
-  height: 22px;
+  width: 17px;
+  height: 17px;
   color: #b7c2b4;
 }
 .orders button span {
@@ -723,45 +754,51 @@ kbd {
   font-size: 9px;
 }
 .utility {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin-top: 12px;
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
 }
 .utility button {
-  font-size: 9px;
-  border: 0;
-  padding: 4px 0;
-  text-align: left;
+  font-size: 10px;
+  min-height: 38px;
+  padding: 6px;
   color: #9db4a3;
-  flex: 1;
-  white-space: nowrap;
 }
 .utility kbd {
   margin-left: 4px;
   font-size: 9px;
 }
-#escort-controls .utility button {
-  border: 1px solid #35473e;
-  padding: 8px 10px;
-  font-size: 10px;
-  line-height: 1.4;
-  min-height: 34px;
-  white-space: normal;
-}
 .intel-section {
-  border: 0 !important;
+  position: relative;
+  flex-shrink: 0;
 }
-.intel-section > p:not(.section-label) {
+.intel-section summary {
+  cursor: pointer;
+  padding: 12px 0;
+  min-height: 40px;
+  font-size: 10px;
+  color: var(--mint);
+}
+.intel-content {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  z-index: 6;
+  padding: 14px;
+  max-height: 50dvh;
+  overflow-y: auto;
+  border: 1px solid #739a85;
+  background: #0e1b18;
+  box-shadow: 0 0 24px #06110e88;
+}
+.intel-content p {
   font-size: 11px;
   color: #9aaf9f;
   line-height: 1.75;
 }
-.intel-section button {
-  font-size: 9px;
-  padding: 7px 10px;
-  color: #9bb4a1;
-  margin-top: 15px;
+.intel-content .description {
+  margin: 0 0 12px;
 }
 .best {
   font:
@@ -888,20 +925,17 @@ dialog h2 {
 }
 @media (min-width: 1600px) {
   .game-layout {
-    grid-template-columns: minmax(0, 1fr) 305px;
+    grid-template-columns: 240px minmax(0, 1fr) 300px;
   }
   .sidebar {
-    padding: 0 26px;
-  }
-  .sidebar > section {
-    padding: 26px 0;
+    padding: 0 16px;
   }
   .portrait {
-    width: 66px;
-    height: 70px;
+    width: 44px;
+    height: 48px;
   }
   .agent-heading {
-    font-size: 12px;
+    font-size: 11px;
   }
   .agent-condition {
     font-size: 10px;
@@ -922,17 +956,10 @@ dialog h2 {
     padding: 0 15px;
   }
   .game-layout {
-    grid-template-columns: minmax(0, 1fr) 250px;
+    grid-template-columns: 204px minmax(0, 1fr) 248px;
   }
   .sidebar {
-    padding: 0 17px;
-  }
-  .sidebar > section {
-    padding: 18px 0;
-  }
-  .portrait {
-    width: 39px;
-    height: 50px;
+    padding: 0 10px;
   }
   .agent-card {
     gap: 7px;
@@ -947,10 +974,6 @@ dialog h2 {
   .agent-heading b {
     margin-right: 3px;
   }
-  .squad {
-    gap: 5px;
-    padding: 9px;
-  }
   .controls-hint {
     font-size: 9px;
     padding: 0 10px;
@@ -960,7 +983,7 @@ dialog h2 {
     margin-left: 4px;
   }
 }
-@media (max-width: 750px) {
+@media (max-width: 900px) {
   #app {
     height: auto;
     min-height: 100dvh;
@@ -993,13 +1016,16 @@ dialog h2 {
     flex-direction: column;
     height: auto;
   }
+  .map-column {
+    order: -1;
+  }
   .stage {
     height: 52dvh;
     min-height: 330px;
     flex: none;
   }
   .map-caption {
-    bottom: 15px;
+    bottom: 55px;
     left: 12px;
   }
   .map-top {
@@ -1017,7 +1043,7 @@ dialog h2 {
     font-size: 10px;
   }
   .squad {
-    padding: 8px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 5px;
   }
   .agent-card {
@@ -1052,39 +1078,39 @@ dialog h2 {
   }
   .sidebar {
     border-left: 0;
+    border-right: 0;
     border-top: 1px solid #586257;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    column-gap: 24px;
-    padding: 0 18px;
+    padding: 0 12px;
     overflow: visible;
   }
   .sidebar > section {
-    padding: 19px 0;
+    padding: 12px 0;
   }
-  .mission-section {
-    grid-column: 1/-1;
+  .crew-sidebar > .selection-section,
+  .mission-sidebar > .dispatch {
+    flex: none;
+    overflow: visible;
   }
-  .objectives {
-    display: grid;
-    gap: 6px;
-    padding-top: 15px;
+  .crew-heading button,
+  .utility button {
+    min-height: 44px;
   }
-  .selection-section {
-    border-bottom: 0 !important;
+  .utility {
+    grid-template-columns: 1fr 1fr;
   }
-  .dispatch,
-  .orders-section {
-    grid-column: 1/-1;
+  .crew-sidebar > .orders-section {
+    order: -1;
+    border-bottom: 1px solid var(--line);
   }
   .orders {
     grid-template-columns: repeat(4, 1fr);
   }
   .orders button {
-    height: 64px;
+    min-height: 54px;
   }
-  .intel-section {
-    grid-column: 1/-1;
+  .intel-content {
+    position: static;
+    max-height: none;
   }
   .sidebar h2 {
     font-size: 17px;

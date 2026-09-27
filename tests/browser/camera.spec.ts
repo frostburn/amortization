@@ -94,7 +94,7 @@ test('keeps the map usable through objective controls, injuries, COMMS, and view
     update();
     await settle();
     const comms = snapshot();
-    hud.stage.parentElement!.style.width = '840px';
+    hud.stage.parentElement!.style.width = `${hud.stage.clientWidth - 120}px`;
     await settle();
     const resized = snapshot();
     const hit = scene.toWorld(initial.point.x, initial.point.y);

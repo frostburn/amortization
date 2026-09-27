@@ -6,7 +6,7 @@ This checks a route's continued viability; it does not claim that an older
 simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All thirteen retained files are byte-for-byte copies of submissions provided in chat
+All fifteen retained files are byte-for-byte copies of submissions provided in chat
 on 2026-09-27, including their `unversioned` / local-changes metadata.
 
 ## Earlier routes
@@ -113,8 +113,8 @@ Depot, archive and custody criticize intrusive full-width panels; custody says
 they made map clicks impossible. At 1280×720, replaying custody to tick 2000
 reduced the map from 475 to 206 pixels high. Witness and extraction actions now
 sit beside the corresponding objectives, COMMS is in the sidebar, and dressing
-buttons fit inside the portrait strip. The map stays 530 pixels high throughout
-the same replay. Browser regressions check stable geometry and actual map input
+buttons fit inside the portrait strip. That layout kept the map 530 pixels high throughout
+the same replay; the later split-panel layout below raises it to 626 pixels. Browser regressions check stable geometry and actual map input
 with recovery, injuries, long messages and touch/keyboard actions.
 
 Transfer's note asks whether the alarm prevented diversion. It did not: the alarm
@@ -129,6 +129,29 @@ Rook takes KIT at tick 874 with 4 HP, after being identified and reported; the
 uniform does not erase that knowledge. The selected-operative summary now
 explicitly labels a compromised uniform. The loss still verifies at tick 2149;
 it is diagnostic feedback, not a required losing route in the completion corpus.
+
+## Separate crew and mission panels
+
+Two more submissions verify every checkpoint against the same `5d872cfa…`
+fingerprint and join the completion corpus unchanged:
+
+| Fixture                               | Original submission                             | Exact outcome          |
+| ------------------------------------- | ----------------------------------------------- | ---------------------- |
+| `archive-interact-access.replay.json` | `amortization-archive-won-57019494.replay.json` | Tick 1517; 3 survivors |
+| `depot-loaded-extraction.replay.json` | `amortization-depot-won-f9cf0217.replay.json`   | Tick 1097; 4 survivors |
+
+Archive reports having to scroll to access Interact. Depot's note is “Bang
+bang.” At archive tick 1400 on a 1280×720 laptop, Interact began at y=1015 in a
+1288-pixel-tall sidebar. Moving crew and orders to the left, with mission actions
+and status on the right, puts Interact at y=572 without scrolling. The map is
+776×626 and does not change during either replay. The custody replay also fits
+both panels, including its two exits, on the same laptop viewport.
+
+Browser regressions use a physical click on Interact, check both panels before
+any automatic scrolling, and cover witness injuries, unavailable aid, records
+opened by keyboard, and phone controls. Notes and records no longer compete
+with active orders for space; cargo-drop availability does not move the buttons.
+These are layout and input changes only, with no changes to simulation rules.
 
 ## Retired recordings
 
