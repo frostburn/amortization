@@ -114,7 +114,9 @@ test('routes a courier transfer, distinguishes CASE from its carrier, and resets
     timeout: 10_000,
   });
   await page.getByRole('button', { name: 'Select Vale', exact: true }).click();
-  await order(4.8, 16);
+  await expect(page.locator('#courier-status')).toHaveText('DIVERT set · CALL still needed');
+  await page.getByRole('button', { name: 'Send selected to CALL', exact: true }).click();
+  await expect(page.locator('#courier-call-button')).toHaveText('Vale heading to CALL');
   await expect(page.locator('#courier-status')).toContainText('moving to inspection', {
     timeout: 8_000,
   });

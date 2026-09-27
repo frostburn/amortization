@@ -7,7 +7,7 @@ import { custody } from '../src/content/custody';
 import { createWorld } from '../src/sim/world';
 import { completeInteraction, dropEvidence, landmark } from '../src/sim/orders';
 import { courierGuard } from '../src/sim/courier';
-import { guideLocation, missionGoals } from '../src/ui/objectives';
+import { guideLocation, missionGoals, transferFeedback } from '../src/ui/objectives';
 import type { GoalId } from '../src/ui/objectives';
 import type { World } from '../src/sim/types';
 
@@ -73,6 +73,39 @@ describe('mission guidance', () => {
     courierGuard(w)!.mode = 'combat';
     expect(goal(w).detail).toContain('will not accept a signature');
     expect(goal(w).targets).toEqual(['evidence']);
+  });
+
+  it('distinguishes an uncalled diversion from a courier interrupted by combat or scrutiny', () => {
+    const w = createWorld(transfer),
+      a = w.agents[0],
+      courier = courierGuard(w)!;
+    // The 76590a8c run diverted after the alarm, but never issued CALL.
+    w.alarm = true;
+    completeInteraction(w, a, 'divert');
+    expect(transferFeedback(w)).toMatchObject({
+      status: 'DIVERT set · CALL still needed',
+      needsCall: true,
+      interrupted: false,
+    });
+    expect(goal(w).detail).toContain('alarm has not cancelled');
+    expect(goal(w).detail).toContain('CALL has not been requested');
+    completeInteraction(w, a, 'dispatch');
+    expect(transferFeedback(w)).toMatchObject({ needsCall: false, interrupted: false });
+    courier.mode = 'combat';
+    expect(transferFeedback(w)?.status).toContain('in combat');
+    expect(goal(w).detail).toContain('transfer is paused');
+    courier.mode = 'challenge';
+    expect(transferFeedback(w)?.status).toContain('checking an intruder');
+    expect(goal(w).detail).not.toContain('will not accept a signature');
+    courier.mode = 'patrol';
+    expect(transferFeedback(w)?.status).toBe('Courier: moving to inspection');
+    w.courier!.phase = 'inspection';
+    courier.mode = 'challenge';
+    expect(goal(w).label).toContain('Collect CASE');
+    w.evidence = 'available';
+    w.courier!.phase = 'secured';
+    courier.mode = 'combat';
+    expect(transferFeedback(w)?.status).toBe('Courier: CASE on the ground');
   });
 
   it('tracks carried evidence and a later drop without pointing back at its original shelf', () => {

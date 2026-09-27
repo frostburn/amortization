@@ -192,6 +192,9 @@ async function boot() {
       case 'drop':
         issue({ kind: type, agents: selected });
         break;
+      case 'call-transfer':
+        issue({ kind: 'interact', agents: selected, target: 'dispatch' });
+        break;
       case 'escort-aid':
         issue({ kind: 'escort-aid', agents: world.agents.filter(living).map((p) => p.id) });
         break;

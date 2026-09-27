@@ -14,6 +14,42 @@ export interface Goal {
   targets: GuideTarget[];
 }
 
+/** Dispatch and route choice are independent; alarms do not cancel either. */
+export function transferFeedback(w: World) {
+  const c = w.courier;
+  if (!c) return null;
+  const guard = courierGuard(w),
+    active = w.evidence === 'courier',
+    interrupted =
+      active &&
+      !!guard &&
+      (guard.mode === 'combat' || (guard.mode === 'challenge' && c.phase !== 'inspection')),
+    needsCall = active && c.diverted && c.phase === 'ready';
+  const route = c.diverted ? 'INSPECTION' : 'the east checkpoint';
+  const diversion = c.diverted ? 'DIVERT set to INSPECTION.' : 'The east route is selected.';
+  const state = {
+    ready: c.diverted ? 'DIVERT set · CALL still needed' : 'Courier: awaiting CALL · east route',
+    transit: `Courier: moving to ${c.diverted ? 'inspection' : 'east checkpoint'}`,
+    checkpoint: `Courier: checkpoint · returns in ${Math.ceil(c.wait)}s`,
+    returning: 'Courier: returning · CALL available on arrival',
+    inspection: 'Courier: awaiting signature at INSPECTION',
+    secured: w.evidence === 'available' ? 'Courier: CASE on the ground' : 'Courier: CASE recovered',
+  };
+  const reason = guard?.mode === 'combat' ? 'in combat' : 'checking an intruder';
+  return {
+    interrupted,
+    needsCall,
+    status: interrupted
+      ? `Courier ${reason} · ${c.phase === 'ready' ? 'CALL not requested' : 'transfer paused'}`
+      : state[c.phase],
+    detail: interrupted
+      ? `The courier is ${reason}${guard?.mode === 'combat' ? ' and will not accept a signature' : ''}. ${diversion} ${c.phase === 'ready' ? 'CALL has not been requested yet.' : `The transfer is paused; the courier resumes ${c.phase === 'returning' ? 'returning to the depot' : `the route to ${route}`} after contact clears.`} Break contact, or defeat the courier and recover CASE.`
+      : c.phase === 'ready'
+        ? `${diversion} CALL has not been requested: diversion sets the route, it does not dispatch the courier. Send an operative to CALL to start the transfer.${w.alarm ? ' The site alarm has not cancelled the route.' : ''}`
+        : state[c.phase],
+  };
+}
+
 /** Resolve people and cargo when drawing, so a pinned locator follows its subject. */
 export function guideLocation(
   world: World,
@@ -46,12 +82,13 @@ export function missionGoals(w: World): Goal[] {
   const evidenceInArchive = !!m.archive && inside(w.evidencePosition, m.secure);
   let primary: Goal;
   if (c && w.evidence === 'courier') {
-    const inContact = courierGuard(w)?.mode === 'combat';
+    const feedback = transferFeedback(w)!;
+    const inContact = feedback.interrupted;
     primary = {
       id: 'primary',
       complete: false,
       label: inContact
-        ? '○ Intercept the courier'
+        ? '○ Courier interrupted · break contact or ambush'
         : c.phase === 'inspection'
           ? '○ Collect CASE at inspection'
           : c.diverted && c.phase === 'ready'
@@ -60,11 +97,11 @@ export function missionGoals(w: World): Goal[] {
               ? '○ Meet the courier at inspection'
               : '○ Divert or ambush the courier',
       detail: inContact
-        ? 'The courier is in combat and will not accept a signature. Break contact to resume the transfer, or defeat the courier and recover CASE.'
+        ? feedback.detail
         : c.phase === 'inspection'
           ? 'The courier is waiting. Order a disguised, unrecognized operative with weapons concealed to interact with CASE. An armed ambush is also possible.'
           : c.diverted && c.phase === 'ready'
-            ? 'The inspection route is set. Send an operative to CALL to start the transfer; another can wait at INSPECTION to receive CASE.'
+            ? feedback.detail
             : c.diverted
               ? 'The courier is heading to INSPECTION. Wait there with a disguised operative and concealed weapons, then interact with CASE when the courier stops.'
               : 'Watch the west patrol: changing DIVERT takes three seconds and raises suspicion if seen, even in disguise. Wait for their back to turn, set the inspection route, then use CALL. You can also ambush the patrolling courier and recover CASE. A returning courier must reach the depot before CALL works again.',
@@ -202,7 +239,7 @@ export function missionGoals(w: World): Goal[] {
         : exits.length > 1
           ? '○ Extract at STREET or SERVICE'
           : '○ Extract at the van',
-    detail: `Use the extraction controls below the map to rally every survivor and leave. Or select the crew and right-click or tap the van or its diamond. The order waits for ${v ? `${v.name} and ` : `the ${tag} carrier and `}every surviving operative inside the same extraction ring.${v?.waiting ? ` ${v.name} is waiting: ask them to follow.` : ''}${exits.length > 1 ? ' STREET is short and exposed; SERVICE is longer, via the screened corridor.' : ''}${eastGate ? ' Open GATE from inside for the east exit.' : ''} ${counts}.`,
+    detail: `Use the controls beside the extraction goal to rally every survivor and leave. Or select the crew and right-click or tap the van or its diamond. The order waits for ${v ? `${v.name} and ` : `the ${tag} carrier and `}every surviving operative inside the same extraction ring.${v?.waiting ? ` ${v.name} is waiting: ask them to follow.` : ''}${exits.length > 1 ? ' STREET is short and exposed; SERVICE is longer, via the screened corridor.' : ''}${eastGate ? ' Open GATE from inside for the east exit.' : ''} ${counts}.`,
     targets: [...exits.map((o) => o.id), ...(eastGate ? ['gate' as const] : [])],
   };
   return [primary, evidence, extraction];

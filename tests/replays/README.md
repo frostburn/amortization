@@ -6,7 +6,7 @@ This checks a route's continued viability; it does not claim that an older
 simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All nine retained files are byte-for-byte copies of submissions provided in chat
+All thirteen retained files are byte-for-byte copies of submissions provided in chat
 on 2026-09-27, including their `unversioned` / local-changes metadata.
 
 ## Earlier routes
@@ -94,6 +94,41 @@ The other five submissions were diagnostic input, not added as completion tests:
 - Custody `24c932cf`: Mara takes five shots and dies while the crew is unharmed;
   this still loses at tick 1271. The warning, nearby Wait/Follow and named treatment
   controls make the danger and available responses visible without reducing it.
+
+## Objective layout and dispatch feedback
+
+Five follow-up submissions verify every original checkpoint against fingerprint
+`5d872cfaeb8278d03194bc3b70afaf9faefc9d923b5e67f05142d9e88e29c349`.
+These fixes only change UI and input; the simulation fingerprint and all five
+recorded outcomes remain exact. The four wins are retained unchanged:
+
+| Fixture                                       | Original submission                              | Exact outcome          |
+| --------------------------------------------- | ------------------------------------------------ | ---------------------- |
+| `depot-east-rescue.replay.json`               | `amortization-depot-won-a906dd5e.replay.json`    | Tick 965; 4 survivors  |
+| `archive-radio-assault.replay.json`           | `amortization-archive-won-ea26e016.replay.json`  | Tick 1456; 3 survivors |
+| `transfer-diversion-without-call.replay.json` | `amortization-transfer-won-76590a8c.replay.json` | Tick 1615; 3 survivors |
+| `custody-street-rescue.replay.json`           | `amortization-custody-won-dd8fd0f4.replay.json`  | Tick 2103; 4 survivors |
+
+Depot, archive and custody criticize intrusive full-width panels; custody says
+they made map clicks impossible. At 1280×720, replaying custody to tick 2000
+reduced the map from 475 to 206 pixels high. Witness and extraction actions now
+sit beside the corresponding objectives, COMMS is in the sidebar, and dressing
+buttons fit inside the portrait strip. The map stays 530 pixels high throughout
+the same replay. Browser regressions check stable geometry and actual map input
+with recovery, injuries, long messages and touch/keyboard actions.
+
+Transfer's note asks whether the alarm prevented diversion. It did not: the alarm
+starts at tick 250, RADIO is disabled at 336, and DIVERT succeeds at 515. No CALL
+command is issued. The courier remains ready until combat starts at 1040, then
+falls at 1120. Persistent feedback now states “DIVERT set · CALL still needed,”
+provides a direct order to the CALL post, and separately explains interrupted
+movement. The shortcut still requires travel and uses the normal command recorder.
+
+Archive loss `a1c5da30` says “Tried to recover using stealth but got caught...”
+Rook takes KIT at tick 874 with 4 HP, after being identified and reported; the
+uniform does not erase that knowledge. The selected-operative summary now
+explicitly labels a compromised uniform. The loss still verifies at tick 2149;
+it is diagnostic feedback, not a required losing route in the completion corpus.
 
 ## Retired recordings
 

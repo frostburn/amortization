@@ -192,64 +192,54 @@ kbd {
   z-index: 4;
   display: none;
 }
-.dispatch {
-  min-height: 49px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 10px 20px;
-  background: #131e1a;
-  border-top: 1px solid #3a4b40;
+.objective-actions {
+  padding: 8px;
+  border: 1px solid #35483e;
+  border-top: 0;
+  background: #13231c;
 }
-.extraction-controls {
-  padding: 10px 16px;
-  border-top: 1px solid #547865;
-  background: #182f27;
-}
-.extraction-controls[hidden] {
+.objective-actions[hidden],
+.exit-row[hidden] {
   display: none;
 }
 .extraction-controls .section-label {
   margin: 0 0 6px;
   color: var(--mint);
+  font-size: 8px;
+  letter-spacing: 1px;
 }
 .exit-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 6px;
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
 }
-.exit-row[hidden] {
-  display: none;
-}
-.exit-row button {
+.exit-row button,
+#courier-call-button {
   min-height: 44px;
-  padding: 8px 12px;
-  flex: 0 0 156px;
-  font-size: 12px;
+  padding: 6px;
+  width: 100%;
+  font-size: 11px;
   border-color: var(--mint);
 }
 .exit-row.ready button {
   background: var(--mint);
   color: #13271e;
 }
-.exit-row p {
-  font-size: 11px;
+.exit-row p,
+#courier-status {
+  font-size: 10px;
   line-height: 1.5;
   margin: 0;
 }
+#courier-call-button {
+  margin-top: 6px;
+}
+#courier-status.danger {
+  color: var(--red);
+}
 .escort-panel {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) auto;
-  align-items: center;
-  gap: 8px 16px;
-  padding: 10px 16px;
-  border-top: 1px solid #547865;
-  background: #182820;
-}
-.escort-panel[hidden],
-.crew-aid[hidden] {
-  display: none;
+  gap: 6px;
 }
 .escort-panel.under-fire {
   background: #39211f;
@@ -259,47 +249,48 @@ kbd {
   display: grid;
   gap: 4px;
   text-align: left;
-  padding: 6px 10px;
+  padding: 4px;
   min-height: 44px;
 }
 #escort-alert {
-  font-size: 12px;
+  font-size: 11px;
 }
 .under-fire #escort-alert {
   color: var(--red);
 }
 #escort-status,
-#escort-focus small,
 #escort-aid-hint {
   font-size: 10px;
   line-height: 1.5;
 }
-#escort-focus small {
-  color: var(--mint);
-}
-.escort-actions,
-.crew-aid {
-  display: flex;
-  flex-wrap: wrap;
+.escort-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
 }
-.escort-actions button,
-.crew-aid button {
+.escort-actions button {
   min-height: 44px;
-  padding: 8px 12px;
-  font-size: 11px;
+  padding: 6px;
+  font-size: 10px;
 }
 #escort-aid-hint {
-  grid-column: 1 / -1;
   margin: 0;
   color: #d6b991;
 }
-.crew-aid {
-  padding: 0 16px 10px;
-  background: #0e1814;
+.crew-slot {
+  position: relative;
+  min-width: 0;
 }
-.crew-aid button {
-  border-color: var(--mint);
+.crew-aid {
+  position: absolute;
+  right: 5px;
+  bottom: 8px;
+  width: 44px;
+  height: 44px;
+  font-size: 11px;
+  color: var(--mint);
+  border-color: #587b66;
+  background: #10241e;
 }
 .health-label {
   font-size: 9px;
@@ -314,7 +305,12 @@ kbd {
 .wounded .health-track > span {
   background: var(--red);
 }
+.sidebar > .dispatch {
+  padding: 14px 0;
+}
 .dispatch > span {
+  display: block;
+  margin-bottom: 6px;
   font:
     9px 'Courier New',
     monospace;
@@ -327,6 +323,7 @@ kbd {
   color: #b6c9ba;
 }
 .squad {
+  flex-shrink: 0;
   padding: 10px 16px;
   background: #0e1814;
   display: grid;
@@ -334,11 +331,13 @@ kbd {
   gap: 8px;
 }
 .agent-card {
+  width: 100%;
+  height: 100%;
   border: 1px solid #2f4235;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 6px;
+  padding: 6px 52px 6px 6px;
   text-align: left;
   min-width: 0;
   border-radius: 0;
@@ -444,7 +443,7 @@ kbd {
   scrollbar-color: #405b48 #101817;
   padding: 0 22px;
 }
-.sidebar section {
+.sidebar > section {
   padding: 22px 0;
   border-bottom: 1px solid var(--line);
 }
@@ -474,7 +473,8 @@ kbd {
   font-size: 12px;
   letter-spacing: 0.4px;
 }
-.objectives button {
+.objectives [data-goal] {
+  width: 100%;
   position: relative;
   min-height: 35px;
   padding: 7px 25px 7px 8px;
@@ -483,7 +483,7 @@ kbd {
   font-size: 11px;
   line-height: 1.4;
 }
-.objectives button::after {
+.objectives [data-goal]::after {
   content: '';
   position: absolute;
   right: 8px;
@@ -893,7 +893,7 @@ dialog h2 {
   .sidebar {
     padding: 0 26px;
   }
-  .sidebar section {
+  .sidebar > section {
     padding: 26px 0;
   }
   .portrait {
@@ -927,7 +927,7 @@ dialog h2 {
   .sidebar {
     padding: 0 17px;
   }
-  .sidebar section {
+  .sidebar > section {
     padding: 18px 0;
   }
   .portrait {
@@ -1008,21 +1008,10 @@ dialog h2 {
     top: 10px;
     font-size: 8px;
   }
-  .dispatch {
-    padding: 8px 12px;
-    min-height: 55px;
-    gap: 9px;
-  }
-  .escort-panel {
-    grid-template-columns: 1fr;
-    padding: 8px;
-    gap: 6px;
-  }
-  .escort-actions button {
-    flex: 1;
-  }
   .crew-aid {
-    padding: 0 8px 8px;
+    top: 5px;
+    right: 5px;
+    bottom: auto;
   }
   .dispatch p {
     font-size: 10px;
@@ -1070,7 +1059,7 @@ dialog h2 {
     padding: 0 18px;
     overflow: visible;
   }
-  .sidebar section {
+  .sidebar > section {
     padding: 19px 0;
   }
   .mission-section {
@@ -1084,7 +1073,7 @@ dialog h2 {
   .selection-section {
     border-bottom: 0 !important;
   }
-  #escort-controls,
+  .dispatch,
   .orders-section {
     grid-column: 1/-1;
   }

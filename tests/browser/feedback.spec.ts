@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { World, Rect } from '../../src/sim/types';
 import type { Hud } from '../../src/ui/hud';
-import type { Scene } from '../../src/render/scene';
+import type { Scene, Hit } from '../../src/render/scene';
 import type { Action } from '../../src/ui/hud';
 import type { GuideTarget } from '../../src/ui/objectives';
 
@@ -76,7 +76,11 @@ async function mountFeedback(page: Page) {
       world: () => world,
       selection: () => selected,
       select: () => {},
-      order: () => {},
+      order: (hit: Hit) => {
+        if (hit.kind === 'ground')
+          applyCommand(world, { kind: 'move', agents: selected, point: hit.point });
+        update();
+      },
       action,
       slow: () => {},
     });
@@ -115,7 +119,7 @@ async function aidFlow(page: Page, touch = false) {
   await expect(page.locator('#health-label-1')).toHaveText('20 / 100 HP');
   await use('#aid-2');
   await expect(page.locator('#health-label-2')).toHaveText('100 / 100 HP');
-  await expect(page.locator('#crew-aid')).toBeHidden();
+  await expect(page.locator('.crew-aid:visible')).toHaveCount(0);
   if (touch) await use('#escort-wait-button');
   else {
     await page.locator('#escort-wait-button').focus();
@@ -137,6 +141,24 @@ async function aidFlow(page: Page, touch = false) {
   expect(result.dressings).toEqual([true, false, false, true]);
   expect(result.actions).not.toContain('pause');
   expect(result.overflow).toBe(false);
+  // The relocated controls and injury state leave ordinary map orders accessible.
+  await page.locator('canvas').scrollIntoViewIfNeeded();
+  const ground = await page.evaluate(async () => {
+    const { scene, world } = window.feedback;
+    scene.home();
+    scene.render(
+      world.agents.map((a) => a.id),
+      1,
+    );
+    await new Promise(requestAnimationFrame);
+    const p = scene.screen({ x: 6, y: 11 }),
+      r = scene.app.canvas.getBoundingClientRect();
+    return { x: r.x + p.x, y: r.y + p.y, kind: scene.hit(p.x, p.y).kind };
+  });
+  expect(ground.kind).toBe('ground');
+  if (touch) await page.touchscreen.tap(ground.x, ground.y);
+  else await page.mouse.click(ground.x, ground.y, { button: 'right' });
+  expect(await page.evaluate(() => window.feedback.world.agents[3].order.kind)).toBe('move');
 }
 
 test('keeps witness danger visible and supports aid, locate and keyboard wait without cancelling orders', async ({
@@ -197,7 +219,8 @@ test('keeps witness and first-aid actions usable by touch on a phone', async ({
   });
   await mountFeedback(page);
   await page.screenshot({ path: testInfo.outputPath('phone-feedback.png'), fullPage: true });
-  await expect(page.locator('#escort-wait-button')).toBeInViewport();
+  await expect(page.locator('#objective-group-primary #escort-controls')).toBeVisible();
+  await expect(page.locator('#objective-group-extract #extraction-controls')).toBeVisible();
   for (const id of ['escort-focus', 'escort-wait-button', 'escort-aid-button', 'aid-1', 'aid-2'])
     expect((await page.locator(`#${id}`).boundingBox())!.height).toBeGreaterThanOrEqual(44);
   await aidFlow(page, true);

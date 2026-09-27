@@ -83,7 +83,12 @@ The courier is an armed guard with the same sight, identity memory, combat, and 
 
 A disguised operative can obtain a signed handover at inspection if their weapon is concealed and the courier and radio network do not know their identity. Clearance protects only that disguised carrier's possession of the case; it does not grant secure-area access or erase guard memories. Dropping or transferring the case voids it. The armed route uses the same required-cargo extraction rules as the ledger.
 
-The map exposes the active route, both handover bays, and a live transfer status including the checkpoint countdown. CASE interaction and courier targeting are distinct even when their hit areas overlap at low zoom. Existing missions retain their own independent records; mission three fits the current record format without a migration or new dependency.
+The map exposes the active route and both handover bays. Persistent feedback by
+the courier objective separates route choice, an unissued CALL, active movement,
+and interruption by combat or scrutiny. The CALL shortcut issues the ordinary
+selected-crew interaction command and shows who is heading to the post; the
+operative must still travel and finish the interaction. Alarm alone never cancels
+a diversion or dispatch. The checkpoint countdown remains visible. CASE interaction and courier targeting are distinct even when their hit areas overlap at low zoom. Existing missions retain their own independent records; mission three fits the current record format without a migration or new dependency.
 
 ## Protective custody
 
@@ -95,7 +100,10 @@ Wait/follow orders make it possible to clear a route without pulling the witness
 
 The transport reuses the van geometry with a grey body, security stripe, and barred side window. Its collision footprint remains explicit mission content. The HUD exposes escort health and orders only after recruitment; both extraction rings and the service corridor are visible on the map.
 
-The Witness panel sits below the map on desktop and phone. Danger feedback is
+Witness and extraction actions sit beside their corresponding goals in the
+sidebar; COMMS lives there too. Crew dressing buttons occupy reserved space in
+the portrait strip. None of these updates changes the map rectangle or covers
+its input surface, including on short laptop screens. Danger feedback is
 independent of the single COMMS message: visible, in-range targeting or a recent
 health drop keeps the warning active. The hit grace period uses simulation time,
 so pause and slow time behave consistently. Locating uses the existing guide and
