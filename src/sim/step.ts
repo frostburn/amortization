@@ -1,4 +1,4 @@
-import { distance, living, people } from './types';
+import { distance, isCharge, living, people } from './types';
 import type { Person, World } from './types';
 import { canWalk, findPath, lineClear } from './navigation';
 import {
@@ -102,6 +102,7 @@ export function step(world: World, dt = STEP) {
         a.order.target === 'breach' ||
         a.order.target === 'mask' ||
         a.order.target === 'upload' ||
+        isCharge(a.order.target) ||
         a.order.target === 'release');
     if (a.weapon && !a.carrying && !working) {
       const order = a.order;

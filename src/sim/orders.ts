@@ -1,4 +1,4 @@
-import { distance, inside, isExtraction, living, EXTRACTION_RADIUS } from './types';
+import { distance, inside, isCharge, isExtraction, living, EXTRACTION_RADIUS } from './types';
 import type { Landmark, ObjectKind, Operative, Vec, World } from './types';
 import { findPath, lineClear } from './navigation';
 import { formationTargets } from './formation';
@@ -7,6 +7,7 @@ import { investigateNoise, raiseAlarm } from './awareness';
 import { updateShutter } from './shutter';
 import { courierGuard, routeCourier } from './courier';
 import { BROADCAST_SETUP_TIME, published, workBroadcast } from './broadcast';
+import { demolished, detonationStatus } from './demolition';
 
 export function landmark(world: World, id: ObjectKind): Landmark {
   const source = world.mission.landmarks.find((o) => o.id === id)!;
@@ -38,6 +39,7 @@ export function available(world: World, id: ObjectKind) {
       (id === 'override' && world.shutterBreached) ||
       (id === 'upload' && published(world)) ||
       (id === 'mask' && (published(world) || world.broadcast?.traced)) ||
+      (isCharge(id) && (!world.demolition || world.demolition.armed.includes(id))) ||
       (id === 'breach' && (world.mission.archive ? world.shutterOpen : !world.escortLocked))
     )
   );
@@ -54,6 +56,7 @@ export function interactionDuration(world: World, agent: Operative, id: ObjectKi
   if (id === 'release') return 3;
   if (id === 'gate' && !inside(agent, world.mission.restricted)) return 3;
   if (id === 'mask' || id === 'upload') return BROADCAST_SETUP_TIME;
+  if (isCharge(id)) return world.mission.demolition!.armTime;
   return id === 'relay' ? 1.5 : id === 'override' ? 0.8 : 0.65;
 }
 export function moveAgents(world: World, ids: string[], target: Vec) {
@@ -71,7 +74,17 @@ export function moveAgents(world: World, ids: string[], target: Vec) {
 function interactionRefusal(world: World, a: Operative, id: ObjectKind): string | null {
   if (
     a.carrying &&
-    ['override', 'breach', 'divert', 'dispatch', 'release', 'mask', 'upload'].includes(id)
+    [
+      'override',
+      'breach',
+      'divert',
+      'dispatch',
+      'release',
+      'mask',
+      'upload',
+      'charge-west',
+      'charge-east',
+    ].includes(id)
   )
     return 'Set the cargo down before working these controls.';
   if (id === 'release' && (!a.disguised || a.weapon || a.exposed))
@@ -93,6 +106,13 @@ function interactionRefusal(world: World, a: Operative, id: ObjectKind): string 
 }
 export function interact(world: World, ids: string[], id: ObjectKind) {
   if (!available(world, id)) {
+    if (isCharge(id) && world.demolition)
+      notify(
+        world,
+        demolished(world)
+          ? 'Both backups are destroyed. Bring the crew to VAN.'
+          : `${landmark(world, id).tag} is already armed. ${detonationStatus(world).reason ?? 'Crew clear. Use Detonate to destroy both backups.'}`,
+      );
     if (id === 'escort' && world.escortLocked)
       notify(
         world,
@@ -257,20 +277,22 @@ export function extractionStatus(world: World, id: 'extract' | 'alternate') {
     carrier = survivors.find((p) => p.carrying),
     v = world.escort;
   const waiting =
-    world.mission.broadcast && !published(world)
-      ? "Publish Mara's audit at UPLINK before requesting extraction."
-      : ['ledger', 'case'].includes(world.mission.objective) &&
-          (!carrier || distance(carrier, van) > EXTRACTION_RADIUS)
-        ? `Bring the ${world.mission.evidenceName.toLowerCase()} to ${van.tag}. It is required for this contract.`
-        : v && (!v.recruited || !living(v))
-          ? `Bring ${v.name} out alive before requesting extraction.`
-          : v && distance(v, van) > EXTRACTION_RADIUS
-            ? v.waiting
-              ? `Waiting for ${v.name}. Use the Escort controls to ask them to follow.`
-              : `Waiting for ${v.name} at ${van.tag}. Bring their escort to the van.`
-            : missing.length
-              ? `Waiting for ${missing.map((p) => p.name).join(', ')}. Bring every survivor inside the extraction ring.`
-              : null;
+    world.demolition && !demolished(world)
+      ? 'Destroy both debt backups before requesting extraction.'
+      : world.mission.broadcast && !published(world)
+        ? "Publish Mara's audit at UPLINK before requesting extraction."
+        : ['ledger', 'case'].includes(world.mission.objective) &&
+            (!carrier || distance(carrier, van) > EXTRACTION_RADIUS)
+          ? `Bring the ${world.mission.evidenceName.toLowerCase()} to ${van.tag}. It is required for this contract.`
+          : v && (!v.recruited || !living(v))
+            ? `Bring ${v.name} out alive before requesting extraction.`
+            : v && distance(v, van) > EXTRACTION_RADIUS
+              ? v.waiting
+                ? `Waiting for ${v.name}. Use the Escort controls to ask them to follow.`
+                : `Waiting for ${v.name} at ${van.tag}. Bring their escort to the van.`
+              : missing.length
+                ? `Waiting for ${missing.map((p) => p.name).join(', ')}. Bring every survivor inside the extraction ring.`
+                : null;
   return {
     ready: survivors.length > 0 && !waiting,
     waiting,
@@ -324,6 +346,14 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
   if (!available(world, id)) return;
   world.sounds.push({ kind: 'interact', x: a.x });
   switch (id) {
+    case 'charge-west':
+    case 'charge-east':
+      world.demolition!.armed.push(id);
+      notify(
+        world,
+        `${landmark(world, id).tag} armed (${world.demolition!.armed.length}/2). No timer: the charge stays planted. Clear both marked blast areas before using Detonate.`,
+      );
+      break;
     case 'disguise':
       world.disguiseTaken = true;
       a.disguised = true;
@@ -433,11 +463,13 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
       if (world.evidence === 'carried') world.evidence = 'extracted';
       notify(
         world,
-        world.mission.objective === 'broadcast'
-          ? "Contract fulfilled. Mara's audit is public. The crew is clear."
-          : world.mission.objective === 'escort'
-            ? `Contract fulfilled. ${world.escort!.name} is out. The crew is clear.`
-            : `Contract fulfilled. The ${world.mission.evidenceName.toLowerCase()} is secured. The crew is clear.`,
+        world.mission.objective === 'demolition'
+          ? 'Contract fulfilled. The debt backups are destroyed. The crew is clear.'
+          : world.mission.objective === 'broadcast'
+            ? "Contract fulfilled. Mara's audit is public. The crew is clear."
+            : world.mission.objective === 'escort'
+              ? `Contract fulfilled. ${world.escort!.name} is out. The crew is clear.`
+              : `Contract fulfilled. The ${world.mission.evidenceName.toLowerCase()} is secured. The crew is clear.`,
       );
       break;
     }

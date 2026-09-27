@@ -38,7 +38,8 @@ not reveal an identity or permit shooting through a wall. Killing callers or
 disabling RADIO still interrupts escalation. Support arrives 6 and 30 seconds
 after the alarm, with countdowns shown in the HUD.
 
-The extraction panel shares its readiness calculation with boarding. It appears
+Live extraction first requires the contract objective to be secured; optional cargo cannot unlock it. A locked vehicle click explains and locates the missing task without replacing orders.
+The extraction panel shares its boarding readiness calculation with the simulation. It appears
 after objective recovery or an early extraction order and lists crew counts,
 missing people or cargo, and an explicit rally/extract action for each exit.
 Panel orders include every survivor and enter the ordinary replay command path.
@@ -103,7 +104,7 @@ The fourth contract separates unlocking a captive's transport from starting the 
 
 The new escort metadata replaces Voss-specific simulation fields. Voss keeps her existing health, movement speed, and non-targetable behavior. Mara is slower and is recognized by guards after a short visual identification, independently of the operative escort's disguise. Local recognition and the delayed radio report follow the same rules as operative identification. Losing Mara ends the mission, while losing her assigned operative transfers leadership to a survivor.
 
-Wait/follow orders make it possible to clear a route without pulling the witness into the fight. A nearby operative with free hands can spend their one field dressing on Mara instead of themselves. The short east extraction crosses a patrolled road; the longer west route uses physical screen walls and the service entrance. Both exits are available throughout, but all survivors and Mara must gather at the same one. The result shows which exit was used.
+Wait/follow orders make it possible to clear a route without pulling the witness into the fight. A nearby operative with free hands can spend their one field dressing on Mara instead of themselves. The short east extraction crosses a patrolled road; the longer west route uses physical screen walls and the service entrance. Both exit locations are visible throughout; boarding controls unlock after recruitment, and all survivors and Mara must gather at the same one. The result shows which exit was used.
 
 The transport reuses the van geometry with a grey body, security stripe, and barred side window. Its collision footprint remains explicit mission content. The HUD exposes escort health and orders only after recruitment; both extraction rings and the service corridor are visible on the map.
 
@@ -154,6 +155,32 @@ same world projection, collision footprints and occlusion order as other props.
 Older worlds do not gain a broadcast-state property; retained human recordings
 are unchanged and checked under current rules. A new synthetic full-route replay
 also verifies every checkpoint for the publication objective.
+
+## Severance
+
+The sixth contract is a demolition job following publication of the audit. Two
+separate backup halls provide two preparation tasks and a shared withdrawal.
+Each charge needs five uninterrupted seconds with free hands. Planting blocks
+firing and is suspicious even in uniform; the room patrols and occluding racks
+create timing windows. A completed charge belongs to the mission, persists across
+orders and deaths, and has no automatic timer. A lone surviving operative can
+still finish both placements.
+
+The remote trigger is an ordinary replay command. The simulation rejects it
+until both charges are armed and every living operative is outside both marked
+circles, regardless of selection or intervening walls. Refusal never cancels
+orders. The HUD uses the same status helper to disable the button and name anyone
+still inside. Primary guidance moves from planting to withdrawal to detonation;
+extraction unlocks only once both cores are destroyed. The optional register never
+unlocks the exit.
+
+Detonation kills guards inside the marked circles, attracts nearby survivors and
+requests the usual radio response. Disabling RADIO still prevents reinforcements.
+Core graphics switch to broken racks with a brief flash and low filtered noise;
+the wreckage keeps the original collision footprint. Damage, planting and the
+blast flash use simulation time. Only this mission gains demolition state, so
+older replay worlds retain their original shape. Completion reports destruction
+and optional register recovery, with separate records and the standard crew rally.
 
 ## Objective guidance
 

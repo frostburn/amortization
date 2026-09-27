@@ -8,7 +8,15 @@ import {
   Text,
   Texture,
 } from 'pixi.js';
-import { distance, inside, isExtraction, living, people, EXTRACTION_RADIUS } from '../sim/types';
+import {
+  distance,
+  inside,
+  isCharge,
+  isExtraction,
+  living,
+  people,
+  EXTRACTION_RADIUS,
+} from '../sim/types';
 import type { ObjectKind, Person, Rect, Solid, Vec, World } from '../sim/types';
 import { available, landmark } from '../sim/orders';
 import { findPath, lineClear } from '../sim/navigation';
@@ -20,6 +28,7 @@ import { courierGuard } from '../sim/courier';
 import { guideLocation } from '../ui/objectives';
 import type { GuideTarget } from '../ui/objectives';
 import { extractionRequirement } from '../ui/extraction';
+import { demolished } from '../sim/demolition';
 
 const markerHeight = (world: World, id: ObjectKind) =>
   id === 'evidence' && world.evidence === 'courier' ? 2.1 : 1.45;
@@ -114,6 +123,7 @@ export class Scene {
   private effects = new Graphics();
   private views = new Map<string, PersonView>();
   private scenery: { root: Container; footprint: Rect }[] = [];
+  private cores: { intact: Graphics; wreck: Graphics }[] = [];
   private icons = new Map<ObjectKind, Container>();
   private transferRoutes: Graphics[] = [];
   private textures: Texture[] = [];
@@ -181,6 +191,7 @@ export class Scene {
     this.showGuidance([], { x: 0, y: 0, w: 0, h: 0 });
     this.views.clear();
     this.scenery = [];
+    this.cores = [];
     this.shutter = null;
     this.coneTime = -1;
     this.icons.clear();
@@ -309,6 +320,12 @@ export class Scene {
       label.skew.y = Math.atan(TILE_Y / TILE_X);
       this.addScenery(label, { x: 15, y: 22.7, w: 0, h: 0 });
     }
+    if (mission.demolition) {
+      plane(g, 10.35, 3.35, 9.65, 8.3, 0x53655f, 0, 0.5);
+      plane(g, 20.35, 3.35, 13.65, 8.3, 0x53655f, 0, 0.5);
+      plane(g, 8.35, 12.1, 25.65, 0.4, 0xb8a06d, 0, 0.6);
+      for (let y = 7; y < 28; y += 2.5) plane(g, 37, y, 0.12, 1.2, 0xb4af8e);
+    }
     if (mission.escort?.locked) {
       plane(g, 6.5, 0, 1, 29, 0x59645e);
       plane(g, 33, 3, 3.5, 23, 0x35423e);
@@ -340,15 +357,17 @@ export class Scene {
       this.addScenery(this.shutter, d);
     }
     const office = text(
-      mission.broadcast
-        ? 'RESTRICTED / UPLINK'
-        : mission.escort?.locked
-          ? 'TRANSFER RECORDS'
-          : mission.transfer
-            ? 'CUSTOMS'
-            : mission.archive
-              ? 'SECURE ARCHIVE'
-              : 'SECURE OFFICE',
+      mission.demolition
+        ? 'RECOVERY CORES / RESTRICTED'
+        : mission.broadcast
+          ? 'RESTRICTED / UPLINK'
+          : mission.escort?.locked
+            ? 'TRANSFER RECORDS'
+            : mission.transfer
+              ? 'CUSTOMS'
+              : mission.archive
+                ? 'SECURE ARCHIVE'
+                : 'SECURE OFFICE',
       10,
       0xf0c68b,
     );
@@ -360,15 +379,17 @@ export class Scene {
     office.anchor.set(0.5, 1);
     this.marks.addChild(office);
     const road = text(
-      mission.broadcast
-        ? 'MUNICIPAL COMMUNICATIONS / 11'
-        : mission.escort?.locked
-          ? 'REMAND TRANSFERS / 04'
-          : mission.transfer
-            ? 'BONDED TRANSFER / 09'
-            : mission.id === 'depot'
-              ? 'MUNICIPAL TRANSIT / 06'
-              : 'CIVIC RECORDS / NO PUBLIC ACCESS',
+      mission.demolition
+        ? 'DEBT RECOVERY / 12'
+        : mission.broadcast
+          ? 'MUNICIPAL COMMUNICATIONS / 11'
+          : mission.escort?.locked
+            ? 'REMAND TRANSFERS / 04'
+            : mission.transfer
+              ? 'BONDED TRANSFER / 09'
+              : mission.id === 'depot'
+                ? 'MUNICIPAL TRANSIT / 06'
+                : 'CIVIC RECORDS / NO PUBLIC ACCESS',
       10,
       0x718277,
     );
@@ -381,7 +402,7 @@ export class Scene {
       const mark = new Graphics();
       const color = isExtraction(o.id)
         ? COLORS.mint
-        : o.id === 'escort' || o.id === 'evidence' || o.id === 'upload'
+        : o.id === 'escort' || o.id === 'evidence' || o.id === 'upload' || isCharge(o.id)
           ? COLORS.amber
           : 0xa8c2b3;
       mark
@@ -454,6 +475,18 @@ export class Scene {
           const light = project({ x, y: s.y + s.h + 0.01 }, z + 0.03);
           g.circle(light.x, light.y, 1).fill(COLORS.mint);
         }
+      }
+      if (this.world.mission.demolition) {
+        const wreck = new Graphics();
+        box(wreck, s.x, s.y, s.w, s.h, 0.45, 0x39332d, 0x272523, 0x1d2220);
+        for (let i = 0; i < 5; i++) {
+          const x = s.x + 0.15 + i * 0.75;
+          box(wreck, x, s.y + 0.2, 0.3, s.h - 0.4, i % 2 ? 0.7 : 1.1, 0x64594c, 0x413d37, 0x292e2b);
+          plane(wreck, x + 0.32, s.y + 0.3, 0.3, s.h - 0.6, 0x6c6251, 0.5);
+        }
+        wreck.visible = false;
+        root.addChild(wreck);
+        this.cores.push({ intact: g, wreck });
       }
     } else if (s.kind === 'container') {
       // Paired sealed cargo containers share one collision footprint.
@@ -750,6 +783,7 @@ export class Scene {
       .filter(
         (o) =>
           (available(this.world, o.id) ||
+            isCharge(o.id) ||
             (o.id === 'escort' && this.world.escortLocked) ||
             (o.id === 'evidence' && this.world.evidence === 'courier')) &&
           distance(p, this.screen(landmark(this.world, o.id), markerHeight(this.world, o.id))) < 19,
@@ -897,6 +931,7 @@ export class Scene {
     for (const [id, icon] of this.icons) {
       icon.visible =
         available(w, id) ||
+        isCharge(id) ||
         (id === 'escort' && w.escortLocked) ||
         (id === 'evidence' && w.evidence === 'courier');
       icon.alpha = id === 'override' && w.overrideBy ? 0.6 : 1;
@@ -908,8 +943,33 @@ export class Scene {
         label.style.fill = exitLocked ? 0x9aa69f : COLORS.mint;
         icon.children[0].tint = exitLocked ? 0x9aa69f : 0xffffff;
       }
+      if (isCharge(id)) {
+        const label = icon.children[1] as Text;
+        label.text = `${landmark(w, id).tag}${demolished(w) ? ' · DESTROYED' : w.demolition?.armed.includes(id) ? ' · ARMED' : ''}`;
+        icon.alpha = demolished(w) ? 0.55 : 1;
+      }
     }
     this.effects.clear();
+    for (const core of this.cores) {
+      core.intact.visible = !demolished(w);
+      core.wreck.visible = demolished(w);
+    }
+    if (w.demolition) {
+      const done = demolished(w),
+        radius = w.mission.demolition!.blastRadius;
+      const age = w.time - (w.demolition.detonatedAt ?? -10);
+      for (const site of w.mission.landmarks.filter((o) => isCharge(o.id))) {
+        const p = project(site);
+        this.effects
+          .ellipse(p.x, p.y, radius * Math.SQRT2 * TILE_X, radius * Math.SQRT2 * TILE_Y)
+          .fill({ color: done ? 0x100f0d : COLORS.amber, alpha: done ? 0.2 : 0.035 });
+        if (!done) this.effects.stroke({ color: COLORS.amber, width: 1.5, alpha: 0.55 });
+        if (done && age < 0.7)
+          this.effects
+            .ellipse(p.x, p.y, radius * Math.SQRT2 * TILE_X, radius * Math.SQRT2 * TILE_Y)
+            .fill({ color: 0xffd7a0, alpha: 0.7 * (1 - age / 0.7) });
+      }
+    }
     for (const exit of w.mission.landmarks.filter((o) => isExtraction(o.id))) {
       const vp = project(exit);
       this.effects

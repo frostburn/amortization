@@ -214,6 +214,7 @@ kbd {
   margin-top: 0;
 }
 .exit-row button,
+#detonate-button,
 #courier-call-button {
   min-height: 44px;
   padding: 6px;
@@ -1190,14 +1191,25 @@ dialog h2 {
   display: none;
 }
 .broadcast-actions button {
+  width: 100%;
   min-height: 44px;
   padding: 6px;
   font-size: 11px;
 }
-#broadcast-status.danger {
+#broadcast-status.danger,
+#detonation-status.danger {
   color: var(--red);
 }
-#broadcast-controls p {
+#detonate-button {
+  margin-bottom: 6px;
+}
+#detonate-button:not(:disabled) {
+  color: var(--amber);
+  border-color: var(--amber);
+  background: #352b19;
+}
+#broadcast-controls p,
+#demolition-controls p {
   font-size: 10px;
   line-height: 1.5;
   margin: 0 0 6px;

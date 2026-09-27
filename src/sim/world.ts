@@ -85,6 +85,7 @@ export function createWorld(mission: Mission = depot): World {
     ...(mission.broadcast
       ? { broadcast: { progress: 0, trace: 0, traced: false, maskBy: null, uploadBy: null } }
       : {}),
+    ...(mission.demolition ? { demolition: { armed: [], detonatedAt: null } } : {}),
     alarm: false,
     alarmTime: 0,
     waves: 0,

@@ -46,6 +46,9 @@ describe('extraction orders', () => {
       if (w.escort) {
         w.escortLocked = false;
         Object.assign(w.escort, { x: 6.5, y: 14, recruited: true, leader: w.agents[3].id });
+      } else if (w.demolition) {
+        w.demolition.armed = ['charge-west', 'charge-east'];
+        w.demolition.detonatedAt = 0;
       } else if (w.broadcast) {
         w.broadcast.progress = mission.broadcast!.duration;
       } else {
@@ -62,7 +65,7 @@ describe('extraction orders', () => {
       expect(w.extractedAt).toBe(exit.id);
       expect(w.agents.every((a) => distance(a, exit) <= 4)).toBe(true);
       if (w.escort) expect(distance(w.escort, exit)).toBeLessThanOrEqual(4);
-      else if (!w.broadcast) expect(w.evidence).toBe('extracted');
+      else if (!w.broadcast && !w.demolition) expect(w.evidence).toBe('extracted');
     },
   );
 

@@ -1,4 +1,5 @@
 import { published } from '../sim/broadcast';
+import { demolished, detonationStatus } from '../sim/demolition';
 import { landmark } from '../sim/orders';
 import { living } from '../sim/types';
 import type { World } from '../sim/types';
@@ -10,6 +11,12 @@ export function extractionRequirement(
   world: World,
 ): { label: string; detail: string; goal: 'primary' | 'evidence' } | null {
   if (world.status === 'won') return null;
+  if (world.demolition && !demolished(world))
+    return {
+      label: 'Destroy both backups',
+      detail: `Extraction locked: ${detonationStatus(world).reason || 'both charges are ready and the crew is clear.'} Use Detonate after everyone is clear. REGISTER is optional.`,
+      goal: 'primary',
+    };
   if (world.mission.broadcast && !published(world)) {
     const percent = Math.floor(
       (100 * world.broadcast!.progress) / world.mission.broadcast.duration,

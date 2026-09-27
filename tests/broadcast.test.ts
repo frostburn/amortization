@@ -48,7 +48,7 @@ function controlsFixture() {
 describe('Public offering', () => {
   it('connects the campaign and has reachable controls, patrol points and cover edges', () => {
     expect(nextMission('custody')).toBe(broadcast);
-    expect(nextMission('broadcast')).toBeUndefined();
+    expect(nextMission('broadcast')?.id).toBe('severance');
     const w = createWorld(broadcast);
     const positions = [
       ...broadcast.landmarks,
