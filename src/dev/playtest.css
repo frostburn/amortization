@@ -1,3 +1,17 @@
+.playtest-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.playtest-recording-dot {
+  flex: 0 0 9px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ff5c67;
+  box-shadow: 0 0 0 3px #ff5c671c;
+}
 .playtest-dialog {
   width: min(680px, calc(100vw - 24px));
   max-height: calc(100dvh - 24px);
@@ -19,6 +33,25 @@
 }
 .playtest-dialog p {
   line-height: 1.5;
+}
+.playtest-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 18px 0;
+  padding: 4px;
+  background: #101c18;
+  border: 1px solid #394b40;
+}
+.playtest-tabs button {
+  padding: 11px 8px;
+  border-color: transparent;
+  background: transparent;
+}
+.playtest-tabs button[aria-selected='true'] {
+  background: #294536;
+  border-color: var(--mint);
+  color: var(--mint);
 }
 .playtest-dialog label {
   display: block;
@@ -44,11 +77,32 @@
   outline: 2px solid var(--mint);
   outline-offset: 2px;
 }
-#playtest-summary {
+#playtest-summary,
+#playtest-replay-summary {
   margin-top: 12px;
 }
-#playtest-build {
+.playtest-build {
   overflow-wrap: anywhere;
+}
+#playtest-import {
+  border-style: dashed;
+  padding: 14px;
+}
+#playtest-import::file-selector-button {
+  font: inherit;
+  color: var(--mint);
+  background: #294536;
+  border: 1px solid #526156;
+  padding: 7px 10px;
+  margin-right: 10px;
+  cursor: pointer;
+}
+#playtest-replay-note {
+  margin: 16px 0;
+  padding: 8px 14px;
+  border-left: 2px solid var(--mint);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 .playtest-actions {
   display: flex;
@@ -59,14 +113,19 @@
 .playtest-actions button {
   padding: 10px 14px;
 }
-#playtest-download {
+.playtest-primary {
   background: #294536;
   border-color: var(--mint);
 }
-#playtest-feedback,
+.playtest-feedback,
 #playtest-storage {
   color: var(--amber);
   margin: 10px 0;
+}
+.playtest-footer {
+  margin-top: 18px;
+  padding-top: 8px;
+  border-top: 1px solid #394b40;
 }
 .playtest-transport {
   display: flex;

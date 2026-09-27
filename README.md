@@ -29,18 +29,25 @@ To play from another device on your local network, use `npm run dev -- --host 0.
 ## Playtesting and replay bundles
 
 Run `npm run dev` and use **Playtest · REC** in the top bar. The briefing and result
-dialogs also have **Playtest / export attempt**, so a loss or victory never blocks
-export. Recording starts automatically for every mission and restart. This panel,
+dialogs also have **Export attempt**, so a loss or victory never blocks export.
+A red circle beside **REC** means the current attempt is recording, including
+orders issued while paused. It disappears during playback, after the mission ends,
+or when recording reaches its limit. Recording starts automatically for every
+mission and restart. These tools,
 recording, and replay playback are excluded from the production build.
 
 1. Play normally. Paused orders and slow time are supported.
-2. Open **Playtest**, add an optional note, and choose **Download attempt**. Attach
+2. Open **Playtest → Export attempt**, add an optional note, and choose **Download attempt**. Attach
    the `.replay.json` file in the chat. Wins, defeats, and unfinished attempts are
    all useful; mention what felt trivial, unfair, or confusing.
 3. After restarting or changing missions, select the previous attempt in the
    dropdown. Up to four recent attempts are autosaved locally when browser storage
    allows. Download important runs before clearing storage or changing browsers.
-4. Import a bundle and choose **Watch replay**. Use the replay bar to play/pause,
+4. Switch to **Replay viewer**, import a bundle, and choose **Watch replay**. The
+   viewer also lets you select a recent recording; **Open in replay viewer** opens
+   the attempt selected in the export view. Imported bundles and their read-only
+   notes stay in the viewer and do not replace the attempt being exported.
+   Use the replay bar to play/pause,
    select 1×/4×/16× speed, or **Return to attempt**. Playback preserves the live
    world's orders and progress and never awards completions or best times.
    Restart and mission switching are disabled during playback; return to the live
@@ -85,7 +92,8 @@ npm run replay:verify -- --current --expect-win attempt.replay.json
 The first command verifies compatible code and every state checkpoint. The second
 tests completion under current rules. Both exit nonzero on failure. Selected player
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
-distinct routes. That fixture check is skipped until player recordings are added.
+distinct routes. The corpus currently includes a player-recorded depot squad-assault
+victory; see `tests/replays/README.md` for its provenance and coverage.
 
 ## Controls
 

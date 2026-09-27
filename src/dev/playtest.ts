@@ -8,6 +8,7 @@ import { compatibility, MAX_FILE_SIZE, parseReplay, Recorder, ReplayPlayer } fro
 import type { ReplayBundle } from '../replay/core';
 
 const STORAGE_KEY = 'amortization.playtests.v1';
+type View = 'export' | 'viewer';
 const clock = (seconds: number) =>
   `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 interface Host {
@@ -24,6 +25,7 @@ export class Playtest {
   private history: ReplayBundle[] = [];
   private imported: ReplayBundle | null = null;
   private player: ReplayPlayer | null = null;
+  private view: View = 'export';
   private dialog = document.createElement('dialog');
   private button = document.createElement('button');
   private transport = document.createElement('div');
@@ -47,32 +49,66 @@ export class Playtest {
       this.storageWarning = 'Browser storage is unavailable. Download attempts before leaving.';
     }
     this.button.dataset.playtest = '';
-    this.button.textContent = 'Playtest · REC';
+    this.button.className = 'playtest-button';
+    this.button.innerHTML =
+      '<span class="playtest-recording-dot" aria-hidden="true"></span><span class="playtest-button-label"></span>';
+    this.paintRecording();
     this.button.addEventListener('click', () => this.open());
     document.querySelector('.top-actions')!.prepend(this.button);
     this.dialog.className = 'playtest-dialog';
     this.dialog.dataset.playtest = '';
     this.dialog.setAttribute('aria-labelledby', 'playtest-title');
     this.dialog.innerHTML = `
-      <div class="playtest-heading"><p class="section-label">DEVELOPMENT / FLIGHT RECORDER</p><button data-close aria-label="Close playtesting">×</button></div>
+      <div class="playtest-heading"><p class="section-label">DEVELOPMENT TOOLS</p><button data-close aria-label="Close playtesting">×</button></div>
       <h2 id="playtest-title">Playtesting</h2>
-      <p>Every attempt records automatically from mission start. Download wins, failures, or unfinished runs to share.</p>
-      <label for="playtest-attempt">Attempt</label><select id="playtest-attempt"></select>
-      <p id="playtest-summary"></p><p class="fine" id="playtest-build"></p>
-      <label for="playtest-note">Player note <span class="fine">optional</span></label>
-      <textarea id="playtest-note" rows="3" maxlength="4000" placeholder="What felt easy, unfair, confusing, or satisfying?"></textarea>
-      <div class="playtest-actions"><button id="playtest-download">Download attempt</button><button id="playtest-watch">Watch replay</button><button id="playtest-current">Try current rules</button><button id="playtest-return" hidden>Return to attempt</button></div>
-      <p id="playtest-compatibility" class="fine"></p>
-      <label for="playtest-import">Import a replay bundle</label><input id="playtest-import" type="file" accept=".json,application/json">
-      <p id="playtest-feedback" role="status"></p><p id="playtest-storage" class="fine"></p>
-      <p class="fine">Recent attempts are saved locally when storage allows (up to four). Downloads are the durable copy. Planning time includes foreground pauses, briefings, and this panel; background time is excluded. Playback never changes your live attempt or completion records.</p>
-      <p class="fine">Close this panel to return to the paused game. Source edits reload the game and preserve the latest autosave.</p>`;
+      <div class="playtest-tabs" role="tablist" aria-label="Playtesting tools">
+        <button id="playtest-export-tab" role="tab" aria-controls="playtest-export" aria-selected="true">Export attempt</button>
+        <button id="playtest-viewer-tab" role="tab" aria-controls="playtest-viewer" aria-selected="false" tabindex="-1">Replay viewer</button>
+      </div>
+      <section id="playtest-export" role="tabpanel" aria-labelledby="playtest-export-tab">
+        <p>Every attempt records automatically. Add a note and download a win, failure, or unfinished run to share.</p>
+        <label for="playtest-attempt">Attempt</label><select id="playtest-attempt"></select>
+        <p id="playtest-summary"></p><p class="fine playtest-build" id="playtest-build"></p>
+        <label for="playtest-note">Player note <span class="fine">optional</span></label>
+        <textarea id="playtest-note" rows="3" maxlength="4000" placeholder="What felt easy, unfair, confusing, or satisfying?"></textarea>
+        <div class="playtest-actions"><button id="playtest-download" class="playtest-primary">Download attempt</button><button id="playtest-preview">Open in replay viewer</button></div>
+        <p id="playtest-export-feedback" class="playtest-feedback" role="status"></p><p id="playtest-storage" class="fine"></p>
+        <p class="fine">Up to four recent attempts are saved in this browser when storage allows. Download important runs to keep them.</p>
+      </section>
+      <section id="playtest-viewer" role="tabpanel" aria-labelledby="playtest-viewer-tab" hidden>
+        <p>Watch a downloaded bundle or an attempt recorded in this browser. Playback preserves your live attempt.</p>
+        <label for="playtest-import">Import a replay bundle</label><input id="playtest-import" type="file" accept=".json,application/json">
+        <p id="playtest-viewer-feedback" class="playtest-feedback" role="status"></p>
+        <label for="playtest-replay">Replay source</label><select id="playtest-replay"></select>
+        <div id="playtest-replay-details" hidden>
+          <p id="playtest-replay-summary"></p><p class="fine playtest-build" id="playtest-replay-build"></p>
+          <blockquote id="playtest-replay-note"></blockquote>
+          <p id="playtest-compatibility" class="fine"></p>
+          <div class="playtest-actions"><button id="playtest-watch" class="playtest-primary">Watch replay</button><button id="playtest-current">Try current rules</button></div>
+        </div>
+      </section>
+      <div class="playtest-footer"><button id="playtest-return" hidden>Return to attempt</button><p class="fine">Close to return to the paused game.</p></div>`;
     document.body.append(this.dialog);
     this.dialog.querySelector('[data-close]')!.addEventListener('click', () => this.dialog.close());
     this.dialog.addEventListener('close', () => {
       this.persist();
       document.querySelector<HTMLCanvasElement>('canvas')?.focus();
     });
+    for (const view of ['export', 'viewer'] as const) {
+      const tab = this.field(`playtest-${view}-tab`);
+      tab.addEventListener('click', () => this.showView(view));
+      tab.addEventListener('keydown', (event) => {
+        let next: View;
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight')
+          next = view === 'export' ? 'viewer' : 'export';
+        else if (event.key === 'Home') next = 'export';
+        else if (event.key === 'End') next = 'viewer';
+        else return;
+        event.preventDefault();
+        this.showView(next);
+        this.field(`playtest-${next}-tab`).focus();
+      });
+    }
     this.field<HTMLSelectElement>('playtest-attempt').addEventListener('change', () =>
       this.details(),
     );
@@ -80,13 +116,20 @@ export class Playtest {
       const note = (event.target as HTMLTextAreaElement).value;
       const id = this.field<HTMLSelectElement>('playtest-attempt').value;
       if (id === 'live') this.recorder.note = note;
-      else if (id === 'imported' && this.imported) this.imported.note = note;
       else {
         const run = this.history.find((r) => r.id === id);
         if (run) run.note = note;
       }
     });
     this.field('playtest-download').addEventListener('click', () => this.download());
+    this.field('playtest-preview').addEventListener('click', () => {
+      this.listReplays(this.field<HTMLSelectElement>('playtest-attempt').value);
+      this.showView('viewer');
+      this.field('playtest-viewer-tab').focus();
+    });
+    this.field<HTMLSelectElement>('playtest-replay').addEventListener('change', () =>
+      this.replayDetails(),
+    );
     this.field('playtest-watch').addEventListener('click', () => this.watch(false));
     this.field('playtest-current').addEventListener('click', () => this.watch(true));
     this.field('playtest-return').addEventListener('click', () => {
@@ -141,6 +184,8 @@ export class Playtest {
     this.transport.hidden = true;
     this.recorder = this.makeRecorder(world);
     this.savedEnd = false;
+    this.view = 'export';
+    this.paintRecording();
     this.persist();
   }
   advance() {
@@ -152,15 +197,20 @@ export class Playtest {
     this.transport.hidden = true;
     this.host.showWorld(this.recorder.world);
     this.host.pause(true);
-    this.button.textContent = this.recorder.stopped ? 'Playtest · saved' : 'Playtest · REC';
+    this.view = 'export';
+    this.paintRecording();
   }
   private selection() {
     const id = this.field<HTMLSelectElement>('playtest-attempt').value;
+    return id === 'live' ? this.recorder.bundle() : this.history.find((r) => r.id === id)!;
+  }
+  private replaySelection() {
+    const id = this.field<HTMLSelectElement>('playtest-replay').value;
     return id === 'imported'
-      ? this.imported!
+      ? this.imported
       : id === 'live'
         ? this.recorder.bundle()
-        : this.history.find((r) => r.id === id)!;
+        : (this.history.find((r) => r.id === id) ?? null);
   }
   private label(run: ReplayBundle) {
     const mission = missions.find((m) => m.id === run.mission.id)!;
@@ -178,31 +228,65 @@ export class Playtest {
       new Option(`Current attempt — ${this.label(this.recorder.bundle())}`, 'live'),
     );
     for (const run of this.history) select.add(new Option(this.label(run), run.id));
-    if (this.imported)
-      select.add(new Option(`Imported — ${this.label(this.imported)}`, 'imported'));
     select.value = selected;
     if (!select.value) select.value = 'live';
     this.details();
   }
   private details() {
     const b = this.selection();
-    this.field('playtest-return').hidden = !this.player;
-    const issues = compatibility(b, build);
-    this.field('playtest-summary').textContent =
-      `${b.commands.length} orders · ${clock(b.ticks * STEP)} mission · ${clock(b.timing.activeSeconds)} active · ${clock(b.timing.planningSeconds)} planning · ${clock(b.timing.slowSeconds)} using slow time · ${b.result.alive}/4 survived`;
-    this.field('playtest-build').textContent =
-      `Recorded ${b.startedAt} · revision ${b.build.revision.slice(0, 12)}${b.build.dirty ? ' + local changes' : ''} · simulation ${b.build.simulationHash.slice(0, 12)}`;
+    this.describe(b, 'playtest');
     this.field<HTMLTextAreaElement>('playtest-note').value = b.note;
+    this.field('playtest-storage').textContent = this.storageWarning;
+  }
+  private describe(b: ReplayBundle, prefix: string) {
+    this.field(`${prefix}-summary`).textContent =
+      `${b.commands.length} orders · ${clock(b.ticks * STEP)} mission · ${clock(b.timing.activeSeconds)} active · ${clock(b.timing.planningSeconds)} planning · ${clock(b.timing.slowSeconds)} using slow time · ${b.result.alive}/4 survived`;
+    this.field(`${prefix}-build`).textContent =
+      `Recorded ${b.startedAt} · revision ${b.build.revision.slice(0, 12)}${b.build.dirty ? ' + local changes' : ''} · simulation ${b.build.simulationHash.slice(0, 12)}`;
+  }
+  private listReplays(selected = this.field<HTMLSelectElement>('playtest-replay').value) {
+    const select = this.field<HTMLSelectElement>('playtest-replay');
+    select.replaceChildren(new Option('Choose a replay…', ''));
+    if (this.imported)
+      select.add(new Option(`Imported — ${this.label(this.imported)}`, 'imported'));
+    select.add(new Option(`Current attempt — ${this.label(this.recorder.bundle())}`, 'live'));
+    for (const run of this.history) select.add(new Option(this.label(run), run.id));
+    select.value = selected;
+    if (!select.value) select.value = '';
+    this.replayDetails();
+  }
+  private replayDetails() {
+    const b = this.replaySelection();
+    this.field('playtest-replay-details').hidden = !b;
+    if (!b) return;
+    this.describe(b, 'playtest-replay');
+    this.field('playtest-replay-note').textContent = b.note;
+    this.field('playtest-replay-note').hidden = !b.note;
+    const issues = compatibility(b, build);
     this.field<HTMLButtonElement>('playtest-watch').disabled = issues.length > 0;
     this.field('playtest-compatibility').textContent = issues.length
       ? `${issues.join(' ')} Try current rules reuses the orders without asserting the recorded state checks.`
       : 'Watch replay checks the recorded simulation state. Try current rules checks only whether the recorded outcome is reached.';
-    this.field('playtest-storage').textContent = this.storageWarning;
   }
-  private open() {
+  private showView(view: View) {
+    this.view = view;
+    for (const name of ['export', 'viewer'] as const) {
+      const active = name === view;
+      const tab = this.field(`playtest-${name}-tab`);
+      tab.setAttribute('aria-selected', String(active));
+      tab.tabIndex = active ? 0 : -1;
+      this.field(`playtest-${name}`).hidden = !active;
+    }
+    if (view === 'viewer') this.replayDetails();
+  }
+  private open(view = this.view, selected?: string) {
     this.host.pause(true);
-    this.list();
-    this.field('playtest-feedback').textContent = '';
+    this.list(selected);
+    this.listReplays();
+    this.showView(view);
+    this.field('playtest-return').hidden = !this.player;
+    this.field('playtest-export-feedback').textContent = '';
+    this.field('playtest-viewer-feedback').textContent = '';
     if (!this.dialog.open) this.dialog.showModal();
   }
   private download() {
@@ -216,7 +300,7 @@ export class Playtest {
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     this.persist();
-    this.field('playtest-feedback').textContent =
+    this.field('playtest-export-feedback').textContent =
       'Replay bundle downloaded. You can attach it in the chat.';
   }
   private async importFile(input: HTMLInputElement) {
@@ -225,17 +309,20 @@ export class Playtest {
     try {
       if (file.size > MAX_FILE_SIZE) throw new Error('Replay is larger than 4 MiB.');
       this.imported = parseReplay(await file.text());
-      this.list('imported');
-      this.field('playtest-feedback').textContent =
+      this.listReplays('imported');
+      this.field('playtest-viewer-feedback').textContent =
         'Imported. Choose Watch replay or Try current rules.';
     } catch (error) {
-      this.field('playtest-feedback').textContent = (error as Error).message;
+      this.listReplays('');
+      this.field('playtest-viewer-feedback').textContent = (error as Error).message;
     }
     input.value = '';
   }
   private watch(currentRules: boolean) {
     try {
-      const bundle = parseReplay(JSON.stringify(this.selection()));
+      const selected = this.replaySelection();
+      if (!selected) return;
+      const bundle = parseReplay(JSON.stringify(selected));
       const player = new ReplayPlayer(bundle, build, currentRules);
       this.persist();
       this.player = player;
@@ -243,11 +330,27 @@ export class Playtest {
       this.host.showWorld(player.world);
       this.host.pause(true);
       this.transport.hidden = false;
-      this.button.textContent = 'Playtest · replay';
+      this.paintRecording();
       this.paintPlayback();
     } catch (error) {
-      this.field('playtest-feedback').textContent = (error as Error).message;
+      this.field('playtest-viewer-feedback').textContent = (error as Error).message;
     }
+  }
+  private paintRecording() {
+    const recording = !this.player && !this.recorder.stopped;
+    this.button.dataset.recording = String(recording);
+    this.button.querySelector<HTMLElement>('.playtest-recording-dot')!.hidden = !recording;
+    const status = this.player
+      ? 'replay'
+      : this.recorder.limited
+        ? 'limit'
+        : this.recorder.stopped
+          ? 'saved'
+          : 'REC';
+    this.button.querySelector('.playtest-button-label')!.textContent = `Playtest · ${status}`;
+    this.button.title = recording
+      ? 'Recording this attempt, including orders while paused. Open playtesting tools.'
+      : 'Open playtesting tools.';
   }
   private paintPlayback() {
     const p = this.player;
@@ -301,18 +404,13 @@ export class Playtest {
     ))
       button.disabled = this.isPlayback;
     if (this.player) this.paintPlayback();
-    else
-      this.button.textContent = this.recorder.limited
-        ? 'Playtest · limit'
-        : this.recorder.stopped
-          ? 'Playtest · saved'
-          : 'Playtest · REC';
+    this.paintRecording();
     if (this.host.modal.open && !this.host.modal.querySelector('[data-playtest]')) {
       const button = document.createElement('button');
       button.dataset.playtest = '';
       button.className = 'dialog-secondary';
-      button.textContent = 'Playtest / export attempt';
-      button.addEventListener('click', () => this.open());
+      button.textContent = 'Export attempt';
+      button.addEventListener('click', () => this.open('export', 'live'));
       this.host.modal.append(button);
     }
   }
