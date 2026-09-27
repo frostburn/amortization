@@ -4,6 +4,7 @@ import { RESPONSE_TIMES, suspicionRate } from '../sim/awareness';
 import { WEAPON_RANGE } from '../sim/combat';
 import { lineClear } from '../sim/navigation';
 import { clearedCargo } from '../sim/courier';
+import { published } from '../sim/broadcast';
 import {
   extractionRallyBlocker,
   extractionStatus,
@@ -39,6 +40,8 @@ export type Action =
   | 'escort-wait'
   | 'escort-aid'
   | 'call-transfer'
+  | 'work:mask'
+  | 'work:upload'
   | 'drop'
   | 'vision'
   | 'home'
@@ -96,6 +99,7 @@ export class Hud {
     const escortControls = `<section id="escort-controls" class="objective-actions escort-panel" aria-label="Witness" hidden><button data-action="locate-escort" id="escort-focus" title="Locate the witness without changing squad orders"><strong id="escort-alert" role="status"></strong><span id="escort-status"></span></button><div class="escort-actions"><button data-action="escort-wait" id="escort-wait-button"></button><button data-action="escort-aid" id="escort-aid-button" hidden></button></div><p id="escort-aid-hint" hidden></p></section>`;
     const extractionControls = `<section id="extraction-controls" class="objective-actions extraction-controls" aria-label="Extraction" hidden>${(['extract', 'alternate'] as const).map((id) => `<div id="exit-${id}" class="exit-row"><button data-action="extract:${id}" id="exit-button-${id}" aria-describedby="exit-status-${id}"></button><p id="exit-status-${id}"></p></div>`).join('')}</section>`;
     const courierControls = `<section id="courier-controls" class="objective-actions" aria-label="Courier transfer" hidden><p id="courier-status" role="status"></p><button data-action="call-transfer" id="courier-call-button" hidden>Send selected to CALL</button></section>`;
+    const broadcastControls = `<section id="broadcast-controls" class="objective-actions" aria-label="Audit transmission" hidden><p id="broadcast-progress-label"></p><progress id="broadcast-progress" value="0" max="1" aria-label="Audit upload progress"></progress><p id="broadcast-status" role="status"></p><div id="broadcast-actions" class="broadcast-actions"><button data-action="work:mask" id="mask-button" title="Send a selected operative with free hands to hold LOOP. Moving or Hold releases it.">Hold LOOP</button><button data-action="work:upload" id="upload-button" title="Send a selected operative with free hands to UPLINK. Moving or Hold pauses the upload; progress is saved.">Work UPLINK</button></div></section>`;
     this.app.innerHTML = `
       <header class="topbar"><h1>AMORTIZATION</h1><span class="operation" id="operation-title"></span><div class="top-actions"><button data-action="operations">Operations</button><button data-action="briefing" title="Mission briefing and controls">Briefing</button><button data-action="pause" id="pause-button">${icon('play')}<span id="pause-label">Resume</span></button><button data-action="sound" id="sound-button">Sound off</button></div></header>
       <main class="game-layout">
@@ -111,7 +115,7 @@ export class Hud {
           <footer class="controls-hint"><span><kbd>1–4</kbd> operative <kbd>Q</kbd> squad <kbd>RMB</kbd> order <kbd>Space</kbd> pause <kbd>Tab</kbd> slow</span><button data-action="restart" title="Restart operation (Shift+R)">Restart</button></footer>
         </section>
         <aside class="sidebar mission-sidebar" aria-label="Mission and status">
-          <section class="mission-section"><h2 id="mission-title"></h2><div class="objectives">${(['primary', 'evidence', 'extract'] as const).map((id) => `<div class="objective-group" id="objective-group-${id}"><button id="objective-${id}" data-goal="${id}" aria-controls="objective-guide" aria-describedby="objective-help" title="Locate relevant mission items"></button>${id === 'primary' ? escortControls + courierControls : id === 'extract' ? extractionControls : ''}</div>`).join('')}</div><p id="objective-help">Hover or tap goals to locate · <kbd>?</kbd> help</p></section>
+          <section class="mission-section"><h2 id="mission-title"></h2><div class="objectives">${(['primary', 'evidence', 'extract'] as const).map((id) => `<div class="objective-group" id="objective-group-${id}"><button id="objective-${id}" data-goal="${id}" aria-controls="objective-guide" aria-describedby="objective-help" title="Locate relevant mission items"></button>${id === 'primary' ? escortControls + courierControls + broadcastControls : id === 'extract' ? extractionControls : ''}</div>`).join('')}</div><p id="objective-help">Hover or tap goals to locate · <kbd>?</kbd> help</p></section>
           <section class="alert-section" aria-label="Alert status"><p class="alert" id="alert">● Site quiet</p><p class="fine" id="radio-status">Radio network online</p><p class="fine" id="archive-status" hidden></p></section>
           <section class="dispatch" aria-label="Comms"><span>COMMS</span><p id="message" role="status">Preparing the operation…</p></section>
           <details class="intel-section"><summary>Field notes &amp; records</summary><div class="intel-content"><p class="description" id="mission-description"></p><p id="intel"></p><p class="best" id="best"></p></div></details>
@@ -243,7 +247,7 @@ export class Hud {
   }
   private briefing() {
     const m = this.mission;
-    return `<div class="dialog-number">${m.number} / ${m.location}</div><h2 id="dialog-title">${m.title}</h2><p class="dialog-lead">${m.briefing.lead}</p><p class="dialog-body">${m.briefing.body}</p><div class="briefing-routes">${m.briefing.routes.map((route) => `<div><b>${route.title}</b><p>${route.body}</p></div>`).join('')}</div><p class="dialog-body">Guards can return an opening volley. Gunfire can be reported through walls. Use cover and field dressings; disable RADIO to stop support.</p><p class="briefing-controls"><kbd>1–4</kbd> select one · <kbd>Q</kbd> select all<br><kbd>RMB</kbd> move / interact / attack · <kbd>Space</kbd> pause<br><kbd>F</kbd> draw / conceal · <kbd>S</kbd> hold / release shunt<br>Drag to select · Wheel to zoom · Arrows / middle-drag to pan</p><button class="primary" data-action="begin">Begin operation <span>→</span></button><button class="dialog-secondary" data-action="operations">Choose operation</button><p class="dialog-foot">Orders remain active while paused. Selection changes preserve orders.</p>`;
+    return `<div class="dialog-number">${m.number} / ${m.location}</div><h2 id="dialog-title">${m.title}</h2><p class="dialog-lead">${m.briefing.lead}</p><p class="dialog-body">${m.briefing.body}</p><div class="briefing-routes">${m.briefing.routes.map((route) => `<div><b>${route.title}</b><p>${route.body}</p></div>`).join('')}</div><p class="dialog-body">Guards can return an opening volley. Gunfire can be reported through walls. Use cover and field dressings; disable RADIO to stop support.</p><p class="briefing-controls"><kbd>1–4</kbd> select one · <kbd>Q</kbd> select all<br><kbd>RMB</kbd> move / interact / attack · <kbd>Space</kbd> pause<br><kbd>F</kbd> draw / conceal · <kbd>S</kbd> hold / pause work<br>Drag to select · Wheel to zoom · Arrows / middle-drag to pan</p><button class="primary" data-action="begin">Begin operation <span>→</span></button><button class="dialog-secondary" data-action="operations">Choose operation</button><p class="dialog-foot">Orders remain active while paused. Selection changes preserve orders.</p>`;
   }
   showBriefing() {
     this.modal.innerHTML = this.briefing();
@@ -282,6 +286,7 @@ export class Hud {
     this.field('objective-evidence').classList.toggle('optional', mission.objective === 'escort');
     this.field('archive-status').hidden = !mission.archive;
     this.field('courier-controls').hidden = !mission.transfer;
+    this.field('broadcast-controls').hidden = !mission.broadcast;
     this.field('escort-controls').hidden = true;
     this.app.querySelector<HTMLDetailsElement>('.intel-section')!.open = false;
   }
@@ -290,7 +295,7 @@ export class Hud {
     this.endShown = true;
     const won = world.status === 'won',
       alive = world.agents.filter(living).length;
-    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? (world.mission.objective === 'escort' ? `${world.escort!.name} is free.` : world.mission.objective === 'case' ? 'The account keys are ours.' : 'The original is in our hands.') : world.escort && !living(world.escort) ? `${world.escort.name} was killed.` : 'The crew is down.'}</p><p class="dialog-body">${won ? 'The van crosses the district line before anyone agrees who should pay for this.' : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results"><div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div><div><dt>Evidence</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div>${won && world.mission.landmarks.some((o) => o.id === 'alternate') && world.extractedAt ? `<div><dt>Extraction</dt><dd>${landmark(world, world.extractedAt).tag}</dd></div>` : ''}</dl>${record.best !== null ? `<p class="fine">${recordTimes(record.best, record.fullCrewBest)}</p>` : ''}<button class="primary" data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Run it again'} <span>→</span></button><button class="dialog-secondary" data-action="operations">Operations</button>`;
+    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? (world.mission.objective === 'escort' ? `${world.escort!.name} is free.` : world.mission.objective === 'broadcast' ? 'The audit is public.' : world.mission.objective === 'case' ? 'The account keys are ours.' : 'The original is in our hands.') : world.escort && !living(world.escort) ? `${world.escort.name} was killed.` : 'The crew is down.'}</p><p class="dialog-body">${won ? 'The van crosses the district line before anyone agrees who should pay for this.' : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results"><div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div>${world.broadcast ? `<div><dt>Audit</dt><dd>${published(world) ? 'Published' : 'Incomplete'}</dd></div>` : ''}<div><dt>${world.broadcast ? 'Optional LOG' : 'Evidence'}</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div>${won && world.mission.landmarks.some((o) => o.id === 'alternate') && world.extractedAt ? `<div><dt>Extraction</dt><dd>${landmark(world, world.extractedAt).tag}</dd></div>` : ''}</dl>${record.best !== null ? `<p class="fine">${recordTimes(record.best, record.fullCrewBest)}</p>` : ''}<button class="primary" data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Run it again'} <span>→</span></button><button class="dialog-secondary" data-action="operations">Operations</button>`;
     if (!this.modal.open) this.modal.showModal();
   }
   update(world: World, state: HudState) {
@@ -321,7 +326,7 @@ export class Hud {
     );
     this.field('extraction-controls').hidden =
       world.status !== 'playing' ||
-      !(world.escort?.recruited || world.evidence === 'carried' || extracting);
+      !(world.escort?.recruited || world.evidence === 'carried' || published(world) || extracting);
     this.field('exit-alternate').hidden = !exits.some((o) => o.id === 'alternate');
     const rallyBlocker = extractionRallyBlocker(world);
     for (const exit of exits) {
@@ -396,23 +401,27 @@ export class Hud {
         ? 'Select an operative to issue orders.'
         : all
           ? 'Map clicks keep this group selected. Use a portrait or 1–4 to select one.'
-          : world.overrideBy === a.id
-            ? 'Holding the shutter open. Select a teammate; moving or Hold releases the shunt.'
-            : a.exposed
-              ? 'Identity compromised. Break sight and prepare an exit.'
-              : a.carrying
-                ? clearedCargo(world, a)
-                  ? 'Signed cargo clearance. Keep the uniform; dropping CASE voids clearance. Both hands occupied.'
-                  : world.mission.objective !== 'escort'
-                    ? 'This cargo attracts suspicion even in uniform. Both hands occupied; X sets it down.'
-                    : 'Both hands occupied. Set the cargo down to fire.'
-                : a.weapon
-                  ? 'Visible weapon. Guards will challenge you.'
-                  : suspicionRate(world, a) > 0
-                    ? 'Restricted area. Stay out of sight.'
-                    : a.disguised
-                      ? 'Maintenance access. Keep your weapon concealed.'
-                      : 'Civilian access. The compound is restricted.',
+          : world.broadcast?.maskBy === a.id
+            ? 'Holding LOOP. Select a teammate for UPLINK. Moving or Hold releases the loop.'
+            : world.broadcast?.uploadBy === a.id
+              ? 'Uploading; cannot fire while working. Moving or Hold pauses it and saves progress.'
+              : world.overrideBy === a.id
+                ? 'Holding the shutter open. Select a teammate; moving or Hold releases the shunt.'
+                : a.exposed
+                  ? 'Identity compromised. Break sight and prepare an exit.'
+                  : a.carrying
+                    ? clearedCargo(world, a)
+                      ? 'Signed cargo clearance. Keep the uniform; dropping CASE voids clearance. Both hands occupied.'
+                      : world.mission.objective !== 'escort'
+                        ? 'This cargo attracts suspicion even in uniform. Both hands occupied; X sets it down.'
+                        : 'Both hands occupied. Set the cargo down to fire.'
+                    : a.weapon
+                      ? 'Visible weapon. Guards will challenge you.'
+                      : suspicionRate(world, a) > 0
+                        ? 'Restricted area. Stay out of sight.'
+                        : a.disguised
+                          ? 'Maintenance access. Keep your weapon concealed.'
+                          : 'Civilian access. The compound is restricted.',
     );
     this.set(
       'weapons-label',
@@ -424,17 +433,50 @@ export class Hud {
     const work = worker?.order.kind === 'interact' ? worker.order.target : null;
     this.field('work-status').hidden = !worker;
     if (worker && work) {
-      const duration = interactionDuration(world, worker, work);
+      const uploading = work === 'upload' && world.broadcast?.uploadBy === worker.id;
+      const duration = uploading
+        ? world.mission.broadcast!.duration
+        : interactionDuration(world, worker, work);
+      const progress = uploading ? world.broadcast!.progress : worker.interaction;
       this.set(
         'work-label',
-        world.overrideBy === worker.id
-          ? `${worker.name}: holding SHUNT · S releases`
-          : `${worker.name}: ${landmark(world, work).tag} · ${Math.min(worker.interaction, duration).toFixed(1)} / ${duration}s`,
+        world.broadcast?.maskBy === worker.id
+          ? `${worker.name}: holding LOOP · S releases`
+          : world.overrideBy === worker.id
+            ? `${worker.name}: holding SHUNT · S releases`
+            : `${worker.name}: ${landmark(world, work).tag} · ${Math.min(progress, duration).toFixed(1)} / ${duration}s`,
       );
-      (this.field('work-progress') as HTMLProgressElement).value = Math.min(
-        1,
-        worker.interaction / duration,
+      (this.field('work-progress') as HTMLProgressElement).value = Math.min(1, progress / duration);
+    }
+    if (world.broadcast) {
+      const b = world.broadcast,
+        config = world.mission.broadcast!;
+      const uploader = world.agents.find((p) => p.id === b.uploadBy);
+      const operator = world.agents.find((p) => p.id === b.maskBy);
+      const done = published(world);
+      this.set(
+        'broadcast-progress-label',
+        done
+          ? 'Audit published · 100%'
+          : `${Math.floor((b.progress / config.duration) * 100)}% · ${uploader ? `${uploader.name} uploading` : b.progress > 0 ? 'Paused · progress saved' : 'Awaiting UPLINK'}`,
       );
+      (this.field('broadcast-progress') as HTMLProgressElement).value =
+        b.progress / config.duration;
+      this.set(
+        'broadcast-status',
+        done
+          ? 'Both stations released · rally crew'
+          : b.traced
+            ? 'Signal traced · defend UPLINK'
+            : operator
+              ? `LOOP held by ${operator.name}`
+              : `LOOP open · trace in ${Math.ceil(config.traceTime - b.trace)}s of upload`,
+      );
+      this.field('broadcast-status').classList.toggle('danger', b.traced && !done);
+      this.field('broadcast-actions').hidden = done || world.status !== 'playing';
+      const freeHands = selected.some((p) => !p.carrying);
+      (this.field('mask-button') as HTMLButtonElement).disabled = !freeHands || b.traced;
+      (this.field('upload-button') as HTMLButtonElement).disabled = !freeHands;
     }
     if (world.mission.archive) {
       const operator = world.agents.find((p) => p.id === world.overrideBy);
@@ -497,19 +539,23 @@ export class Hud {
         `condition-${p.index}`,
         !living(p)
           ? 'Down'
-          : world.overrideBy === p.id
-            ? 'Holding shunt'
-            : p.carrying
-              ? `Carrying ${landmark(world, 'evidence').tag.toLowerCase()}`
-              : p.exposed
-                ? 'Compromised'
-                : p.disguised
-                  ? 'Maintenance'
-                  : p.weapon
-                    ? 'Weapon drawn'
-                    : p.path.length
-                      ? 'Moving'
-                      : 'Concealed',
+          : world.broadcast?.maskBy === p.id
+            ? 'Holding loop'
+            : world.broadcast?.uploadBy === p.id
+              ? 'Uploading audit'
+              : world.overrideBy === p.id
+                ? 'Holding shunt'
+                : p.carrying
+                  ? `Carrying ${landmark(world, 'evidence').tag.toLowerCase()}`
+                  : p.exposed
+                    ? 'Compromised'
+                    : p.disguised
+                      ? 'Maintenance'
+                      : p.weapon
+                        ? 'Weapon drawn'
+                        : p.path.length
+                          ? 'Moving'
+                          : 'Concealed',
       );
     }
     const escort = world.escort;

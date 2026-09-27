@@ -120,6 +120,41 @@ command across the living crew. If nobody is eligible, a disabled button explain
 the requirement. Crew portraits show health and offer individual dressing actions,
 also through ordinary replay commands. Combat and healing values are unchanged.
 
+## Public offering
+
+The fifth contract changes the objective from carrying something out to publishing
+information before withdrawing. Two separated workstations reward splitting the
+crew: LOOP is on the public west street, UPLINK is in a restricted server room.
+One maintenance identity helps the uploader reach the room; its moving patrol
+still challenges that identity. Racks break sight, creating a reason to withdraw
+and resume work instead of leaving the operative unattended.
+
+The upload requires 24 seconds of active work with free hands. Progress belongs
+to the mission, so moving, issuing Hold, dying or handing off never resets it.
+There is only one upload owner and one loop owner; repeated orders preserve work,
+and handoffs release the previous operator. Working agents cannot fire. Owner
+validation runs after awareness so a worker killed this tick cannot contribute.
+Completion frees both stations and enables an all-survivor extraction without
+physical cargo. The optional suppression log remains suspicious and occupies
+both hands.
+
+An unmasked upload accumulates five seconds of trace. Pausing preserves this
+counter, preventing stop/start orders from evading discovery. Holding LOOP clears
+an incomplete trace. Once traced, the terminal attracts nearby security through
+the existing investigation behavior; the normal radio rule controls reinforcement
+calls. LOOP never hides a person from sight and cannot undo a completed trace.
+There is no failure timer, and a lone survivor can still finish through combat.
+
+The HUD keeps progress, the uploader or paused state, loop ownership, and trace
+status beside the objective. Its two work buttons use recorded interaction
+commands with the current selection. The progress display stays visible across
+selection changes. Locators, results, the operation picker and independent records
+include the new mission. Masts and server racks are code-drawn scenery using the
+same world projection, collision footprints and occlusion order as other props.
+Older worlds do not gain a broadcast-state property; retained human recordings
+are unchanged and checked under current rules. A new synthetic full-route replay
+also verifies every checkpoint for the publication objective.
+
 ## Objective guidance
 
 Mission goals expose the current requirements and point to their map locations. Hover previews without moving the camera; clicking or tapping frames the relevant items and keeps a short guide open. Each named location can be focused separately. Inspection never issues an operative order or changes selection.

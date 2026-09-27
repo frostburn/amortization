@@ -127,6 +127,15 @@ async function boot() {
       updateHud();
       return;
     }
+    if (type === 'work:mask' || type === 'work:upload') {
+      issue({
+        kind: 'interact',
+        agents: selected,
+        target: type === 'work:mask' ? 'mask' : 'upload',
+      });
+      updateHud();
+      return;
+    }
     if (type === 'extract:extract' || type === 'extract:alternate') {
       const blocker = extractionRallyBlocker(world);
       if (blocker) {

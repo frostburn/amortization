@@ -153,5 +153,7 @@ test('picks the nearest overlapping marker and maps both custody vehicles to the
     'alternate',
     'alternate',
     'extract', // custody markers, service van, street van
+    'extract',
+    'extract', // broadcast marker and vehicle
   ]);
 });

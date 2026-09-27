@@ -2,6 +2,7 @@ import { distance, EXTRACTION_RADIUS, inside, isExtraction, living } from '../si
 import type { ObjectKind, Vec, World } from '../sim/types';
 import { landmark } from '../sim/orders';
 import { clearedCargo, courierGuard } from '../sim/courier';
+import { published } from '../sim/broadcast';
 
 export type GoalId = 'primary' | 'evidence' | 'extract';
 export type GuideTarget = ObjectKind | 'inspection';
@@ -81,7 +82,25 @@ export function missionGoals(w: World): Goal[] {
   const kit: GuideTarget[] = w.disguiseTaken ? [] : ['disguise'];
   const evidenceInArchive = !!m.archive && inside(w.evidencePosition, m.secure);
   let primary: Goal;
-  if (c && w.evidence === 'courier') {
+  if (w.broadcast) {
+    const b = w.broadcast;
+    const operator = w.agents.find((a) => a.id === b.maskBy);
+    primary = {
+      id: 'primary',
+      label: published(w) ? '✓ Audit published' : '○ Publish Mara’s audit',
+      complete: published(w),
+      detail: published(w)
+        ? 'The audit is public. Both workstations are released. Bring everyone to VAN, including the operative on the west street. LOG is optional.'
+        : b.traced
+          ? 'The terminal has been traced; LOOP can no longer hide it. Defend an operative working UPLINK to finish the upload. Progress is saved when interrupted. RADIO stops reinforcements, but nearby guards still investigate.'
+          : `${operator ? `${operator.name} holds LOOP. Select another operative for UPLINK.` : 'Assign one operative to Hold LOOP on the west street, then select a second to Work UPLINK.'} UPLINK needs 24 seconds with free hands; the operator cannot fire while working. Moving or Hold pauses work and saves progress. Without LOOP, five seconds of uploading draws guards. KIT helps outside the server room. Its patrol challenges uniforms: withdraw behind the racks when challenged, then resume.`,
+      targets: published(w)
+        ? ['extract']
+        : b.traced
+          ? ['upload', ...(!w.relayOff ? ['relay' as const] : [])]
+          : ['mask', 'upload', ...kit],
+    };
+  } else if (c && w.evidence === 'courier') {
     const feedback = transferFeedback(w)!;
     const inContact = feedback.interrupted;
     primary = {
@@ -192,15 +211,16 @@ export function missionGoals(w: World): Goal[] {
 
   const carrier = w.agents.find((a) => living(a) && a.carrying);
   const tag = landmark(w, 'evidence').tag;
+  const optionalEvidence = m.objective === 'escort' || m.objective === 'broadcast';
   const evidence: Goal = {
     id: 'evidence',
-    optional: m.objective === 'escort',
+    optional: optionalEvidence,
     complete: w.evidence === 'carried' || w.evidence === 'extracted',
     label:
       w.evidence === 'courier'
         ? '○ Access case · with courier'
         : w.evidence === 'available'
-          ? `${m.objective === 'escort' ? '◇' : '○'} ${m.evidenceName} · ${m.objective === 'escort' ? 'optional' : 'required'}`
+          ? `${optionalEvidence ? '◇' : '○'} ${m.evidenceName} · ${optionalEvidence ? 'optional' : 'required'}`
           : w.evidence === 'carried'
             ? `✓ ${m.evidenceName} carried`
             : '✓ Evidence secured',
@@ -212,7 +232,7 @@ export function missionGoals(w: World): Goal[] {
           ? 'CASE travels with the courier. Use DIVERT and CALL for an inspection handover in disguise, or defeat the courier and collect the dropped case.'
           : evidenceInArchive && !w.shutterOpen
             ? 'LEDGER is inside the locked archive. Keep one operative at SHUNT while another collects it, or force the lock with CUT. The ledger is required for extraction.'
-            : `Interact with ${tag} to collect it. It slows its carrier and needs both hands.${m.objective === 'escort' ? ' This evidence is optional; you can complete the rescue without it.' : ' Bring its carrier to VAN; extraction requires the evidence.'}`,
+            : `Interact with ${tag} to collect it. It slows its carrier and needs both hands.${optionalEvidence ? ' This evidence is optional; you can complete the operation without it.' : ' Bring its carrier to VAN; extraction requires the evidence.'}${m.broadcast ? ' The log attracts suspicion, even in uniform. Set it down before working LOOP or UPLINK.' : ''}`,
     targets:
       w.evidence === 'extracted'
         ? ['extract']
@@ -239,7 +259,7 @@ export function missionGoals(w: World): Goal[] {
         : exits.length > 1
           ? '○ Extract at STREET or SERVICE'
           : '○ Extract at the van',
-    detail: `Use the controls beside the extraction goal to rally every survivor and leave. Or select the crew and right-click or tap the van or its diamond. The order waits for ${v ? `${v.name} and ` : `the ${tag} carrier and `}every surviving operative inside the same extraction ring.${v?.waiting ? ` ${v.name} is waiting: ask them to follow.` : ''}${exits.length > 1 ? ' STREET is short and exposed; SERVICE is longer, via the screened corridor.' : ''}${eastGate ? ' Open GATE from inside for the east exit.' : ''} ${counts}.`,
+    detail: `Use the controls beside the extraction goal to rally every survivor and leave. Or select the crew and right-click or tap the van or its diamond. The order waits for ${v ? `${v.name} and ` : m.broadcast ? 'the audit to be published and ' : `the ${tag} carrier and `}every surviving operative inside the same extraction ring.${v?.waiting ? ` ${v.name} is waiting: ask them to follow.` : ''}${exits.length > 1 ? ' STREET is short and exposed; SERVICE is longer, via the screened corridor.' : ''}${eastGate ? ' Open GATE from inside for the east exit.' : ''}${m.broadcast ? ' Bring the LOOP operator along the public south street; LOG is optional.' : ''} ${counts}.`,
     targets: [...exits.map((o) => o.id), ...(eastGate ? ['gate' as const] : [])],
   };
   return [primary, evidence, extraction];

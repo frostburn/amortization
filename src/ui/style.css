@@ -1175,10 +1175,36 @@ dialog h2 {
 #work-status {
   margin-top: 12px;
 }
-#work-progress {
+#work-progress,
+#broadcast-progress {
   width: 100%;
   height: 5px;
   accent-color: var(--mint);
+}
+.broadcast-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.broadcast-actions[hidden] {
+  display: none;
+}
+.broadcast-actions button {
+  min-height: 44px;
+  padding: 6px;
+  font-size: 11px;
+}
+#broadcast-status.danger {
+  color: var(--red);
+}
+#broadcast-controls p {
+  font-size: 10px;
+  line-height: 1.5;
+  margin: 0 0 6px;
+}
+#broadcast-progress {
+  display: block;
+  margin-bottom: 6px;
 }
 #archive-status {
   color: var(--amber);

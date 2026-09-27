@@ -290,6 +290,24 @@ export class Scene {
         this.addScenery(route, { x: 0, y: 0, w: 0, h: 0 });
       }
     }
+    if (mission.broadcast) {
+      plane(g, 5.3, 2, 1.7, 25, 0x53615b);
+      plane(g, 35, 3, 3.5, 24, 0x35423e);
+      const s = mission.secure;
+      plane(g, s.x, s.y, s.w, s.h, 0x6b604c, 0, 0.65);
+      // Cable trays connect the aerial bases to the server room.
+      for (const y of [6.2, 11]) {
+        plane(g, 20, y, 4.9, 0.2, 0x23322e);
+        plane(g, 20, y + 0.07, 4.9, 0.04, 0x9ca98d);
+      }
+      for (let x = 27.5; x < 30.8; x += 0.5) plane(g, x, 11.7, 0.25, 0.15, COLORS.amber);
+      for (let y = 4; y < 27; y += 2.5) plane(g, 37.6, y, 0.12, 1.2, 0xb4af8e);
+      plane(g, 9, 13, 15.5, 1.3, 0x53625a, 0, 0.4);
+      const label = text('EXCHANGE / 11', 10, 0x9bb5ab);
+      label.position.copyFrom(project({ x: 15, y: 22.7 }));
+      label.skew.y = Math.atan(TILE_Y / TILE_X);
+      this.addScenery(label, { x: 15, y: 22.7, w: 0, h: 0 });
+    }
     if (mission.escort?.locked) {
       plane(g, 6.5, 0, 1, 29, 0x59645e);
       plane(g, 33, 3, 3.5, 23, 0x35423e);
@@ -321,13 +339,15 @@ export class Scene {
       this.addScenery(this.shutter, d);
     }
     const office = text(
-      mission.escort?.locked
-        ? 'TRANSFER RECORDS'
-        : mission.transfer
-          ? 'CUSTOMS'
-          : mission.archive
-            ? 'SECURE ARCHIVE'
-            : 'SECURE OFFICE',
+      mission.broadcast
+        ? 'RESTRICTED / UPLINK'
+        : mission.escort?.locked
+          ? 'TRANSFER RECORDS'
+          : mission.transfer
+            ? 'CUSTOMS'
+            : mission.archive
+              ? 'SECURE ARCHIVE'
+              : 'SECURE OFFICE',
       10,
       0xf0c68b,
     );
@@ -339,13 +359,15 @@ export class Scene {
     office.anchor.set(0.5, 1);
     this.marks.addChild(office);
     const road = text(
-      mission.escort?.locked
-        ? 'REMAND TRANSFERS / 04'
-        : mission.transfer
-          ? 'BONDED TRANSFER / 09'
-          : mission.id === 'depot'
-            ? 'MUNICIPAL TRANSIT / 06'
-            : 'CIVIC RECORDS / NO PUBLIC ACCESS',
+      mission.broadcast
+        ? 'MUNICIPAL COMMUNICATIONS / 11'
+        : mission.escort?.locked
+          ? 'REMAND TRANSFERS / 04'
+          : mission.transfer
+            ? 'BONDED TRANSFER / 09'
+            : mission.id === 'depot'
+              ? 'MUNICIPAL TRANSIT / 06'
+              : 'CIVIC RECORDS / NO PUBLIC ACCESS',
       10,
       0x718277,
     );
@@ -358,7 +380,7 @@ export class Scene {
       const mark = new Graphics();
       const color = isExtraction(o.id)
         ? COLORS.mint
-        : o.id === 'escort' || o.id === 'evidence'
+        : o.id === 'escort' || o.id === 'evidence' || o.id === 'upload'
           ? COLORS.amber
           : 0xa8c2b3;
       mark
@@ -383,6 +405,55 @@ export class Scene {
     root.addChild(g);
     if (s.kind === 'van' || s.kind === 'transport') {
       drawVan(g, s);
+    } else if (s.kind === 'mast') {
+      box(g, s.x, s.y, s.w, s.h, 0.3, 0x77867b, 0x52645d, 0x3a4d47);
+      const center = { x: s.x + s.w / 2, y: s.y + s.h / 2 };
+      const peak = project(center, s.height);
+      const line = (a: Vec, b: Vec, color = 0x9baea1, width = 2) =>
+        g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ color, width });
+      for (const dx of [-0.75, 0.75]) {
+        for (const dy of [-0.75, 0.75]) {
+          const foot = { x: center.x + dx, y: center.y + dy };
+          line(project(foot, 0.3), peak);
+          line(
+            project(foot, 0.3),
+            project({ x: center.x - dx * 0.5, y: center.y - dy * 0.5 }, 2.1),
+            0x5d786c,
+            1.3,
+          );
+        }
+      }
+      for (const z of [2.5, 3.2]) {
+        line(
+          project({ x: center.x - 0.8, y: center.y }, z),
+          project({ x: center.x + 0.8, y: center.y }, z),
+          0xb4c3b7,
+          3,
+        );
+        line(
+          project({ x: center.x, y: center.y - 0.8 }, z),
+          project({ x: center.x, y: center.y + 0.8 }, z),
+          0x7d9d90,
+          3,
+        );
+      }
+      g.circle(peak.x, peak.y, 2.5).fill(COLORS.amber);
+    } else if (s.kind === 'server') {
+      box(g, s.x, s.y, s.w, s.h, s.height, 0x4a6260, 0x294343, 0x1e3639);
+      for (let x = s.x + 0.15; x < s.x + s.w - 0.1; x += 0.55) {
+        for (let z = 0.35; z < s.height - 0.1; z += 0.27) {
+          panel(
+            g,
+            { x, y: s.y + s.h },
+            { x: Math.min(x + 0.35, s.x + s.w - 0.1), y: s.y + s.h },
+            z,
+            z + 0.06,
+            0x58736d,
+          );
+          const light = project({ x, y: s.y + s.h + 0.01 }, z + 0.03);
+          g.circle(light.x, light.y, 1).fill(COLORS.mint);
+        }
+      }
     } else if (s.kind === 'container') {
       // Paired sealed cargo containers share one collision footprint.
       for (let i = 0; i < 2; i++) {
@@ -574,9 +645,9 @@ export class Scene {
     if (!points.length) return;
     const wide = this.host.clientWidth > 800;
     const left = wide ? this.guidePanel.x + this.guidePanel.w + 45 : 45;
-    const top = wide ? 80 : this.guidePanel.y + this.guidePanel.h + 50;
     const right = this.host.clientWidth - 45,
       bottom = this.host.clientHeight - 60;
+    const top = Math.min(wide ? 80 : this.guidePanel.y + this.guidePanel.h + 50, bottom);
     const minX = Math.min(...points.map((p) => p.x)),
       maxX = Math.max(...points.map((p) => p.x));
     const minY = Math.min(...points.map((p) => p.y)),
@@ -593,7 +664,9 @@ export class Scene {
     const scale = this.fit * this.zoom;
     this.panBy(
       (left + right) / 2 - (((minX + maxX) / 2) * scale + this.offset.x),
-      (Math.min(top, bottom - 50) + bottom) / 2 - (((minY + maxY) / 2) * scale + this.offset.y),
+      // Even a narrow strip must be centered below the guide. Reserving a
+      // minimum height here used to push a single focused marker behind it.
+      (top + bottom) / 2 - (((minY + maxY) / 2) * scale + this.offset.y),
     );
     this.drawGuidance();
   }
