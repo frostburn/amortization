@@ -1,0 +1,164 @@
+.playtest-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.playtest-recording-dot {
+  flex: 0 0 9px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ff5c67;
+  box-shadow: 0 0 0 3px #ff5c671c;
+}
+.playtest-dialog {
+  width: min(680px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 26px;
+  overflow-y: auto;
+}
+.playtest-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.playtest-heading button {
+  font-size: 24px;
+  min-width: 36px;
+}
+.playtest-dialog h2 {
+  margin: 12px 0;
+}
+.playtest-dialog p {
+  line-height: 1.5;
+}
+.playtest-dialog label {
+  display: block;
+  margin: 18px 0 6px;
+  color: var(--mint);
+}
+.playtest-dialog select,
+.playtest-dialog textarea,
+.playtest-dialog input {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  background: #101c18;
+  padding: 9px;
+  border: 1px solid #526156;
+  border-radius: 2px;
+}
+.playtest-dialog textarea {
+  resize: vertical;
+}
+.playtest-dialog :is(select, textarea, input):focus-visible,
+.playtest-transport select:focus-visible {
+  outline: 2px solid var(--mint);
+  outline-offset: 2px;
+}
+#playtest-summary,
+#playtest-replay-summary {
+  margin-top: 12px;
+}
+.playtest-build {
+  overflow-wrap: anywhere;
+}
+#playtest-import {
+  border-style: dashed;
+  padding: 14px;
+}
+#playtest-import::file-selector-button {
+  font: inherit;
+  color: var(--mint);
+  background: #294536;
+  border: 1px solid #526156;
+  padding: 7px 10px;
+  margin-right: 10px;
+  cursor: pointer;
+}
+#playtest-replay-note {
+  margin: 16px 0;
+  padding: 8px 14px;
+  border-left: 2px solid var(--mint);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.playtest-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 10px;
+}
+.playtest-actions button {
+  padding: 10px 14px;
+}
+.playtest-primary {
+  background: #294536;
+  border-color: var(--mint);
+}
+.playtest-feedback,
+#playtest-storage {
+  color: var(--amber);
+  margin: 10px 0;
+}
+.playtest-footer {
+  margin-top: 18px;
+  padding-top: 8px;
+  border-top: 1px solid #394b40;
+}
+.playtest-transport {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #1f3029;
+  border-bottom: 1px solid var(--mint);
+  font-size: 12px;
+}
+.playtest-transport[hidden] {
+  display: none;
+}
+.playtest-transport span {
+  flex: 1 1 250px;
+}
+.playtest-transport button,
+.playtest-transport select {
+  padding: 6px 9px;
+}
+.playtest-transport select {
+  background: #101c18;
+  color: inherit;
+  border: 1px solid #526156;
+}
+@media (max-width: 600px) {
+  .playtest-dialog {
+    padding: 18px;
+  }
+  .playtest-actions button {
+    flex: 1 1 140px;
+  }
+}
+.playtest-enabled {
+  display: flex;
+  flex-direction: column;
+}
+.playtest-enabled .topbar {
+  height: auto;
+  min-height: 58px;
+  flex: none;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.playtest-enabled .top-actions {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+.playtest-enabled .game-layout {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}

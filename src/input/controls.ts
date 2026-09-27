@@ -122,7 +122,8 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
       e.ctrlKey ||
       e.metaKey ||
       e.altKey ||
-      (e.target as HTMLElement).matches('input,textarea')
+      (e.target as HTMLElement).matches('input,textarea,select') ||
+      (e.target as HTMLElement).closest('[data-playtest]')
     )
       return;
     if (e.key === 'Escape' && hud.guideOpen) {

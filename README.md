@@ -26,6 +26,76 @@ npm run preview    # serve the production build
 
 To play from another device on your local network, use `npm run dev -- --host 0.0.0.0`.
 
+## Playtesting and replay bundles
+
+Run `npm run dev`. The top bar, briefing, and result screens have two direct entry
+buttons: **Export attempt** opens the recording export dialog, and **Import replay**
+opens the replay viewer. These are independent dialogs with no tabs.
+A red circle beside **REC** means the current attempt is recording, including
+orders issued while paused. It disappears during playback, after the mission ends,
+or when recording reaches its limit. Recording starts automatically for every
+mission and restart. These tools,
+recording, and replay playback are excluded from the production build.
+
+1. Play normally. Paused orders and slow time are supported.
+2. Choose **Export attempt**, add an optional note, and choose **Download attempt**. Attach
+   the `.replay.json` file in the chat. Wins, defeats, and unfinished attempts are
+   all useful; mention what felt trivial, unfair, or confusing.
+3. After restarting or changing missions, select the previous attempt in the
+   dropdown. Up to four recent attempts are autosaved locally when browser storage
+   allows. Download important runs before clearing storage or changing browsers.
+4. Choose **Import replay** to open the replay viewer, import a bundle, and choose
+   **Watch replay**. You can also select the current attempt or a recent recording
+   in **Replay source**. Imported bundles and their read-only notes stay in the
+   viewer and do not replace the attempt selected in the export dialog.
+   Use the replay bar to play/pause,
+   select 1×/4×/16× speed, or **Return to attempt**. Playback preserves the live
+   world's orders and progress and never awards completions or best times.
+   Restart and mission switching are disabled during playback; return to the live
+   attempt first.
+
+Bundles contain the source revision and simulation fingerprint, mission definition,
+ordered commands at 30 Hz simulation ticks, periodic state checks, outcome, player
+note, and approximate foreground active/planning/slow-time durations. Planning
+includes briefings and this panel; time spent in another tab/window is excluded.
+They contain no screen recording, mouse coordinates, account information, or network
+upload. Selection and camera movement are not reproduced: orders name their actual
+recipients and world targets. A snapshot taken mid-mission ends at that point.
+
+**Watch replay** requires matching simulation and mission fingerprints and reports
+the first mismatched state check. Revision changes limited to UI or documentation
+do not invalidate a compatible recording. Source edits reload the dev game so an
+attempt cannot silently span different simulation code; its latest autosave becomes
+a recent attempt. A dirty revision is marked `+ local changes`; reproducing it may
+require the original source changes as well as the recorded revision. The archived
+mission definition is diagnostic data, never executable imported game content.
+
+**Try current rules** explicitly runs the same orders against the current mission
+without comparing the old state checks. It reports whether the recorded outcome
+is reached, which helps distinguish deliberate balance changes from replay bugs.
+Successful playback demonstrates one solution, not that a mission's difficulty is
+appropriate. Both this mode and the verifier stop at the recorded duration; they do
+not invent new orders or wait indefinitely for a changed route to succeed.
+
+The browser accepts files up to 4 MiB. Recording is capped at one hour of simulation
+or 20,000 commands; a capped bundle contains the recorded prefix and is marked
+`limit`. Foreground planning time does not consume simulation ticks. Autosaving is
+best effort, normally every five seconds and on restart/export/page exit; downloads
+are the durable copy.
+
+For fast verification without a browser:
+
+```sh
+npm run replay:verify -- attempt.replay.json
+npm run replay:verify -- --current --expect-win attempt.replay.json
+```
+
+The first command verifies compatible code and every state checkpoint. The second
+tests completion under current rules. Both exit nonzero on failure. Selected player
+victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
+distinct routes. The corpus currently includes player-recorded depot, archive, and transfer
+victories; see `tests/replays/README.md` for provenance and coverage.
+
 ## Controls
 
 | Input                          | Action                                                             |
@@ -128,6 +198,9 @@ Results track time, crew survival, evidence, and alarm status. Best times and co
 | `src/input/`   | Selection and input-to-command translation                                             |
 | `src/ui/`      | HTML interface, briefings, results, versioned local records                            |
 | `src/audio/`   | Gesture-activated synthesized effects                                                  |
+| `src/replay/`  | Browser-independent command recording, validation, checksums, and playback             |
+| `src/dev/`     | Development-only playtest panel, recent attempts, import/export                        |
+| `scripts/`     | Build identity and headless replay verification                                        |
 | `tests/`       | Simulation scenarios and browser checks                                                |
 
 Simulation runs at 30 Hz with interpolated rendering. All gameplay uses world coordinates; isometric projection only affects presentation. Map geometry drives collision, pathfinding, and sight, including the extraction van. A half-metre A* grid uses a binary heap; its connections, smoothing, destinations, and movement share one body-clearance rule. Isometric draw order respects entire scenery footprints and the characters' interpolated foot positions. Wall-mounted details inherit their wall's order.

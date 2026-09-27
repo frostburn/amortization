@@ -1,19 +1,9 @@
 import './ui/style.css';
 import { createWorld, notify } from './sim/world';
 import { step, STEP } from './sim/step';
-import {
-  attack,
-  available,
-  dropEvidence,
-  heal,
-  hold,
-  interact,
-  landmark,
-  moveAgents,
-  toggleWeapons,
-  treatEscort,
-  waitEscort,
-} from './sim/orders';
+import { available, landmark } from './sim/orders';
+import { applyCommand } from './sim/commands';
+import type { Command } from './sim/commands';
 import { distance, living } from './sim/types';
 import type { Mission, World } from './sim/types';
 import { Scene } from './render/scene';
@@ -56,6 +46,29 @@ async function boot() {
   );
   const scene = new Scene(hud.stage, world);
   await scene.init();
+  // Vite removes the entire dev import (including its CSS and recorder) from production builds.
+  const playtest = import.meta.env.DEV
+    ? new (await import('./dev/playtest')).Playtest({
+        world: () => world,
+        showWorld(next) {
+          world = next;
+          selected = world.agents.filter(living).map((a) => a.id);
+          accumulator = 0;
+          scene.reset(world);
+          hud.close();
+          hud.reset(world.mission);
+          hud.vision(scene.showVision);
+          updateHud();
+        },
+        pause(value) {
+          paused = value;
+          accumulator = 0;
+          updateHud();
+        },
+        isPaused: () => paused,
+        modal: hud.modal,
+      })
+    : undefined;
   function select(ids: string[]) {
     const alive = ids.filter((id) => world.agents.some((a) => a.id === id && living(a)));
     if (alive.length) selected = [...new Set(alive)];
@@ -71,21 +84,38 @@ async function boot() {
     scene.reset(world);
     hud.close();
     hud.reset(mission);
+    playtest?.newAttempt(world, briefing ? 'mission-change' : 'restart');
     hud.vision(scene.showVision);
     if (briefing) hud.showBriefing();
     updateHud();
   }
+  function issue(command: Command) {
+    if (world.status !== 'playing' || playtest?.isPlayback) return;
+    playtest?.command(command);
+    applyCommand(world, command);
+  }
   function order(hit: Hit) {
     if (world.status !== 'playing') return;
-    if (hit.kind === 'ground') moveAgents(world, selected, hit.point);
-    if (hit.kind === 'object') interact(world, selected, hit.id);
-    if (hit.kind === 'guard') attack(world, selected, hit.id);
+    if (hit.kind === 'ground') issue({ kind: 'move', agents: selected, point: hit.point });
+    if (hit.kind === 'object') issue({ kind: 'interact', agents: selected, target: hit.id });
+    if (hit.kind === 'guard') issue({ kind: 'attack', agents: selected, target: hit.id });
     if (hit.kind === 'agent') {
       const a = world.agents.find((a) => a.id === hit.id)!;
-      moveAgents(world, selected, a);
+      issue({ kind: 'move', agents: selected, point: { x: a.x, y: a.y } });
     }
   }
   function action(type: Action) {
+    if (
+      playtest?.isPlayback &&
+      (type === 'restart' ||
+        type === 'operations' ||
+        type === 'next' ||
+        type.startsWith('mission:'))
+    ) {
+      notify(world, 'Return to the live attempt before starting or restarting an operation.');
+      updateHud();
+      return;
+    }
     if (type.startsWith('mission:')) {
       const mission = missions.find((m) => type === `mission:${m.id}`);
       if (mission) startMission(mission, true);
@@ -131,27 +161,19 @@ async function boot() {
         const lead = world.agents.find((a) => selected.includes(a.id) && living(a));
         if (lead) {
           selected = world.agents.filter(living).map((a) => a.id);
-          moveAgents(world, selected, lead);
+          issue({ kind: 'move', agents: selected, point: { x: lead.x, y: lead.y } });
         }
         break;
       }
       case 'hold':
-        hold(world, selected);
-        break;
       case 'weapons':
-        toggleWeapons(world, selected);
-        break;
       case 'heal':
-        heal(world, selected);
+      case 'escort-aid':
+      case 'drop':
+        issue({ kind: type, agents: selected });
         break;
       case 'escort-wait':
-        waitEscort(world);
-        break;
-      case 'escort-aid':
-        treatEscort(world, selected);
-        break;
-      case 'drop':
-        dropEvidence(world, selected);
+        issue({ kind: 'escort-wait' });
         break;
       case 'interact': {
         const agents = world.agents.filter((a) => selected.includes(a.id) && living(a));
@@ -162,7 +184,8 @@ async function boot() {
             d: Math.min(...agents.map((a) => distance(a, landmark(world, o.id)))),
           }))
           .sort((a, b) => a.d - b.d);
-        if (objects[0]?.d < 3) interact(world, selected, objects[0].o.id);
+        if (objects[0]?.d < 3)
+          issue({ kind: 'interact', agents: selected, target: objects[0].o.id });
         else
           notify(
             world,
@@ -222,18 +245,23 @@ async function boot() {
   window.addEventListener('blur', autoPause);
   scene.app.ticker.add(() => {
     const now = performance.now(),
-      elapsed = Math.min((now - last) / 1000, 0.15);
+      wallElapsed = (now - last) / 1000,
+      elapsed = Math.min(wallElapsed, 0.15);
     last = now;
     if (!paused && !hud.modal.open) {
-      accumulator += elapsed * (slow ? 0.2 : 1);
+      accumulator += elapsed * (playtest?.isPlayback ? playtest.speed : slow ? 0.2 : 1);
       while (accumulator >= STEP) {
-        step(world);
         accumulator -= STEP;
+        if (playtest?.isPlayback) playtest.advance();
+        else if (world.status === 'playing') {
+          step(world);
+          playtest?.afterStep();
+        }
       }
     } else accumulator = 0;
     scene.render(selected, paused ? 1 : accumulator / STEP);
     for (const event of world.sounds.splice(0)) sound.play(event);
-    if (world.status !== 'playing') {
+    if (world.status !== 'playing' && !playtest?.isPlayback) {
       paused = true;
       if (world.status === 'won' && !saved) {
         records = recordWin(world.mission.id, world.time);
@@ -241,6 +269,7 @@ async function boot() {
       }
       hud.showEnd(world, missionRecord(records, world.mission.id).best);
     }
+    playtest?.update(now, wallElapsed, paused || hud.modal.open, slow);
     if (now - lastHud > 90) {
       updateHud();
       lastHud = now;

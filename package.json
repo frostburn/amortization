@@ -12,6 +12,7 @@
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "replay:verify": "node scripts/verify-replay.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
     "check": "npm run lint && npm test && npm run build"
