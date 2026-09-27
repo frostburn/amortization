@@ -1,4 +1,4 @@
-import { distance, living, EXTRACTION_RADIUS } from '../sim/types';
+import { distance, isExtraction, living, EXTRACTION_RADIUS } from '../sim/types';
 import type { Mission, World } from '../sim/types';
 import { suspicionRate } from '../sim/awareness';
 import { clearedCargo, courierGuard } from '../sim/courier';
@@ -22,6 +22,8 @@ export type Action =
   | 'weapons'
   | 'interact'
   | 'heal'
+  | 'escort-wait'
+  | 'escort-aid'
   | 'drop'
   | 'vision'
   | 'home'
@@ -75,7 +77,7 @@ export class Hud {
           <section class="mission-section"><p class="section-label">MISSION</p><h2 id="mission-title"></h2><p class="description" id="mission-description"></p><div class="objectives"><p id="objective-primary">○ Locate Voss</p><p id="objective-extract">○ Extract at the van</p><p class="optional" id="objective-evidence">◇ Diagnostic unit <span>optional</span></p></div></section>
           <section class="alert-section"><p class="section-label">ALERT STATUS</p><p class="alert" id="alert">● Site quiet</p><p class="fine" id="radio-status">Radio network online</p><p class="fine" id="archive-status" hidden></p><p class="fine" id="courier-status" hidden></p></section>
           <section class="selection-section"><p class="section-label">SELECTED OPERATIVE<span id="selected-count">4 / 4</span></p><div class="selected-info"><span id="selected-portrait" class="portrait portrait-0" aria-hidden="true"></span><div><h3 id="selected-name">Full crew</h3><p id="selected-role">Four operatives</p><p id="selected-cover">Weapons concealed</p></div></div><p class="assessment" id="assessment">Move together. Split when it matters.</p><div id="work-status" hidden><p class="fine" id="work-label"></p><progress id="work-progress" value="0" max="1" aria-label="Interaction progress"></progress></div></section>
-          <section class="orders-section"><p class="section-label">ORDERS</p><div class="orders">${(['regroup', 'hold', 'weapons', 'interact'] as const).map((id, i) => `<button data-action="${id}" title="${['Regroup at the lead selected operative (G)', 'Hold position (S)', 'Draw or conceal weapons (F)', 'Interact with nearest object (E)'][i]}">${icon(id)}<span id="${id}-label">${['Regroup', 'Hold', 'Draw weapons', 'Interact'][i]}</span><kbd>${['G', 'S', 'F', 'E'][i]}</kbd></button>`).join('')}</div><div class="utility"><button data-action="all">Select all <kbd>Q</kbd></button><button data-action="heal">Field dressing <kbd>H</kbd></button><button data-action="drop" id="drop-button" hidden>Set unit down <kbd>X</kbd></button></div></section>
+          <section id="escort-controls" hidden><p class="section-label">ESCORT</p><p id="escort-status" class="fine"></p><div class="utility"><button data-action="escort-wait" id="escort-wait-button"></button><button data-action="escort-aid" id="escort-aid-button" hidden></button></div></section><section class="orders-section"><p class="section-label">ORDERS</p><div class="orders">${(['regroup', 'hold', 'weapons', 'interact'] as const).map((id, i) => `<button data-action="${id}" title="${['Regroup at the lead selected operative (G)', 'Hold position (S)', 'Draw or conceal weapons (F)', 'Interact with nearest object (E)'][i]}">${icon(id)}<span id="${id}-label">${['Regroup', 'Hold', 'Draw weapons', 'Interact'][i]}</span><kbd>${['G', 'S', 'F', 'E'][i]}</kbd></button>`).join('')}</div><div class="utility"><button data-action="all">Select all <kbd>Q</kbd></button><button data-action="heal">Field dressing <kbd>H</kbd></button><button data-action="drop" id="drop-button" hidden>Set unit down <kbd>X</kbd></button></div></section>
           <section class="intel-section"><p class="section-label">FIELD NOTES</p><p id="intel">A maintenance kit was left outside the west entrance. One person can enter under cover.</p><button data-action="vision" id="vision-button" aria-pressed="true">Sight cones: on</button><p class="best" id="best"></p></section>
         </aside>
       </main>
@@ -142,13 +144,14 @@ export class Hud {
     this.field('objective-evidence').classList.toggle('optional', mission.objective === 'escort');
     this.field('archive-status').hidden = !mission.archive;
     this.field('courier-status').hidden = !mission.transfer;
+    this.field('escort-controls').hidden = true;
   }
   showEnd(world: World, best: number | null, force = false) {
     if (this.endShown && !force) return;
     this.endShown = true;
     const won = world.status === 'won',
       alive = world.agents.filter(living).length;
-    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? (world.mission.objective === 'escort' ? 'Voss is free.' : world.mission.objective === 'case' ? 'The account keys are ours.' : 'The original is in our hands.') : 'The crew is down.'}</p><p class="dialog-body">${won ? 'The van crosses the district line before anyone agrees who should pay for this.' : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results"><div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div><div><dt>Evidence</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div></dl>${best !== null ? `<p class="fine">Best extraction: ${time(best)}</p>` : ''}<button class="primary" data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Run it again'} <span>→</span></button><button class="dialog-secondary" data-action="operations">Operations</button>`;
+    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? (world.mission.objective === 'escort' ? `${world.escort!.name} is free.` : world.mission.objective === 'case' ? 'The account keys are ours.' : 'The original is in our hands.') : world.escort && !living(world.escort) ? `${world.escort.name} was killed.` : 'The crew is down.'}</p><p class="dialog-body">${won ? 'The van crosses the district line before anyone agrees who should pay for this.' : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results"><div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div><div><dt>Evidence</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div>${won && world.mission.landmarks.some((o) => o.id === 'alternate') && world.extractedAt ? `<div><dt>Extraction</dt><dd>${landmark(world, world.extractedAt).tag}</dd></div>` : ''}</dl>${best !== null ? `<p class="fine">Best extraction: ${time(best)}</p>` : ''}<button class="primary" data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Run it again'} <span>→</span></button><button class="dialog-secondary" data-action="operations">Operations</button>`;
     if (!this.modal.open) this.modal.showModal();
   }
   update(world: World, state: HudState) {
@@ -181,13 +184,19 @@ export class Hud {
             : world.shutterOpen
               ? '✓ Archive shutter open'
               : '○ Open archive shutter'
-          : world.engineer?.recruited
-            ? '✓ Voss following escort'
-            : '○ Locate Voss',
+          : world.escortLocked
+            ? '○ Unlock the transport'
+            : world.escort?.recruited
+              ? `✓ ${world.escort.name} ${world.escort.waiting ? 'waiting for escort' : 'following escort'}`
+              : `○ Locate ${world.escort?.name || 'the witness'}`,
     );
     this.set(
       'objective-extract',
-      world.status === 'won' ? '✓ Extracted at the van' : '○ Extract at the van',
+      world.status === 'won'
+        ? `✓ Extracted${world.extractedAt ? ` at ${landmark(world, world.extractedAt).tag}` : ''}`
+        : world.mission.landmarks.some((o) => o.id === 'alternate')
+          ? '○ Extract at STREET or SERVICE'
+          : '○ Extract at the van',
     );
     this.field('objective-primary').classList.toggle(
       'complete',
@@ -195,7 +204,7 @@ export class Hud {
         ? world.courier.diverted || world.evidence !== 'courier'
         : world.mission.archive
           ? world.shutterOpen
-          : !!world.engineer?.recruited,
+          : !!world.escort?.recruited,
     );
     this.set(
       'objective-evidence',
@@ -259,7 +268,7 @@ export class Hud {
                   ? 'Signed cargo clearance. Keep the uniform; dropping CASE voids clearance. Both hands occupied.'
                   : world.mission.objective !== 'escort'
                     ? 'This cargo attracts suspicion even in uniform. Both hands occupied; X sets it down.'
-                    : 'Both hands occupied. Set the unit down to fire.'
+                    : 'Both hands occupied. Set the cargo down to fire.'
                 : a.weapon
                   ? 'Visible weapon. Guards will challenge you.'
                   : suspicionRate(world, a) > 0
@@ -273,10 +282,7 @@ export class Hud {
       selected.some((a) => !a.weapon && !a.carrying) ? 'Draw weapons' : 'Conceal weapons',
     );
     this.field('drop-button').hidden = !selected.some((a) => a.carrying);
-    this.set(
-      'drop-button',
-      `Set ${world.mission.objective === 'case' ? 'case' : world.mission.objective === 'ledger' ? 'ledger' : 'unit'} down · X`,
-    );
+    this.set('drop-button', `Set ${landmark(world, 'evidence').tag.toLowerCase()} down · X`);
     const worker = selected.find((p) => p.order.kind === 'interact' && p.interaction > 0);
     const work = worker?.order.kind === 'interact' ? worker.order.target : null;
     this.field('work-status').hidden = !worker;
@@ -352,11 +358,7 @@ export class Hud {
           : world.overrideBy === p.id
             ? 'Holding shunt'
             : p.carrying
-              ? world.mission.objective === 'case'
-                ? 'Carrying case'
-                : world.mission.objective === 'ledger'
-                  ? 'Carrying ledger'
-                  : 'Carrying unit'
+              ? `Carrying ${landmark(world, 'evidence').tag.toLowerCase()}`
               : p.exposed
                 ? 'Compromised'
                 : p.disguised
@@ -368,14 +370,35 @@ export class Hud {
                       : 'Concealed',
       );
     }
-    const engineer = world.engineer;
-    if (engineer?.recruited) {
-      const near = world.agents.filter(
-        (p) => living(p) && distance(p, landmark(world, 'extract')) <= EXTRACTION_RADIUS,
-      ).length;
+    const escort = world.escort;
+    this.field('escort-controls').hidden = !escort?.recruited;
+    if (escort?.recruited) {
+      this.set(
+        'escort-status',
+        `${escort.name} · ${Math.ceil(escort.hp)} / ${escort.maxHp} health · ${escort.waiting ? 'waiting' : 'following'}`,
+      );
+      this.field('escort-status').classList.toggle('danger', escort.hp < 30);
+      this.set(
+        'escort-wait-button',
+        `${escort.waiting ? 'Ask' : 'Tell'} ${escort.name} to ${escort.waiting ? 'follow' : 'wait'}`,
+      );
+      this.set('escort-aid-button', `Treat ${escort.name} · 1 dressing`);
+      this.field('escort-aid-button').hidden =
+        !world.mission.escort?.vulnerable || escort.hp >= escort.maxHp;
+      (this.field('escort-wait-button') as HTMLButtonElement).disabled = !living(escort);
+      (this.field('escort-aid-button') as HTMLButtonElement).disabled = !living(escort);
+      const exits = world.mission.landmarks
+        .filter((o) => isExtraction(o.id))
+        .map((exit) => {
+          const near = world.agents.filter(
+            (p) => living(p) && distance(p, exit) <= EXTRACTION_RADIUS,
+          ).length;
+          return `${exit.tag}: ${near} crew${distance(escort, exit) <= EXTRACTION_RADIUS ? ` + ${escort.name}` : ''}`;
+        })
+        .join(' · ');
       this.set(
         'intel',
-        `Voss follows ${world.agents.find((a) => a.id === engineer.leader)?.name || 'the crew'}. ${near} operatives at the van. Right-click VAN to extract.`,
+        `${escort.name} ${escort.waiting ? 'waits in place' : `follows ${world.agents.find((a) => a.id === escort.leader)?.name || 'the crew'}`}. ${exits}. Bring everyone to the same ring, then right-click its marker.`,
       );
     }
     this.set('best', state.best === null ? '' : `Best extraction ${time(state.best)}`);

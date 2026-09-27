@@ -31,7 +31,7 @@ export function readRecords(): Records {
     const data = JSON.parse(raw ?? 'null');
     const records = empty();
     if (data?.version === 2 && data.missions && typeof data.missions === 'object') {
-      for (const id of ['depot', 'archive', 'transfer'] as const)
+      for (const id of ['depot', 'archive', 'transfer', 'custody'] as const)
         if (valid(data.missions[id])) records.missions[id] = { ...data.missions[id] };
     } else if (raw === null) {
       const legacy = JSON.parse(localStorage.getItem('amortization.records.v1') ?? 'null');

@@ -34,7 +34,7 @@ export function makeGuard(id: string, position: Vec, patrol: Vec[], angle = Math
 export function createWorld(mission: Mission = depot): World {
   const names = ['Morrow', 'Vale', 'Rook', 'Sable'];
   const roles = ['Field lead', 'Systems', 'Security', 'Recon'];
-  const engineerPosition = mission.landmarks.find((o) => o.id === 'engineer');
+  const escortPosition = mission.landmarks.find((o) => o.id === 'escort');
   return {
     mission,
     agents: mission.spawns.map((p, i) => ({
@@ -56,14 +56,18 @@ export function createWorld(mission: Mission = depot): World {
         ? [makeGuard('courier', mission.transfer.start, [mission.transfer.start])]
         : []),
     ],
-    engineer: engineerPosition
+    escort: escortPosition
       ? {
-          ...body('voss', engineerPosition, 75),
+          ...body(mission.escort!.id, escortPosition, mission.escort!.hp),
+          name: mission.escort!.name,
+          waiting: false,
           leader: null,
           recruited: false,
           repath: 0,
         }
       : null,
+    escortLocked: mission.escort?.locked ?? false,
+    extractedAt: null,
     time: 0,
     status: 'playing',
     gateOpen: false,

@@ -46,6 +46,16 @@ A disguised operative can obtain a signed handover at inspection if their weapon
 
 The map exposes the active route, both handover bays, and a live transfer status including the checkpoint countdown. CASE interaction and courier targeting are distinct even when their hit areas overlap at low zoom. Existing missions retain their own independent records; mission three fits the current record format without a migration or new dependency.
 
+## Protective custody
+
+The fourth contract separates unlocking a captive's transport from starting the escort. Forged release papers require an unexposed maintenance identity and a concealed weapon; cutting the lock takes time and causes local noise. Mara remains protected until collected, so the player can finish preparations without a failure timer.
+
+The new escort metadata replaces Voss-specific simulation fields. Voss keeps her existing health, movement speed, and non-targetable behavior. Mara is slower and is recognized by guards after a short visual identification, independently of the operative escort's disguise. Local recognition and the delayed radio report follow the same rules as operative identification. Losing Mara ends the mission, while losing her assigned operative transfers leadership to a survivor.
+
+Wait/follow orders make it possible to clear a route without pulling the witness into the fight. A nearby operative with free hands can spend their one field dressing on Mara instead of themselves. The short east extraction crosses a patrolled road; the longer west route uses physical screen walls and the service entrance. Both exits are available throughout, but all survivors and Mara must gather at the same one. The result shows which exit was used.
+
+The transport reuses the van geometry with a grey body, security stripe, and barred side window. Its collision footprint remains explicit mission content. The HUD exposes escort health and orders only after recruitment; both extraction rings and the service corridor are visible on the map.
+
 ## Next useful work
 
 Tune whether splitting the crew earns its cognitive cost. Then extend civilian responses and challenges, spatial equipment choices, full directional character art, route variety, and missions built from these systems.

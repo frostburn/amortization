@@ -6,6 +6,7 @@ type Point = [number, number, number];
 
 /** Cargo van with a cab, raked glass and wheel openings, inside the mission footprint. */
 export function drawVan(g: Graphics, s: Solid) {
+  const custody = s.kind === 'transport';
   const point = ([x, y, z]: Point) => project({ x: s.x + x * s.w, y: s.y + y * s.h }, z * s.height);
   const shape = (vertices: Point[], color: number, alpha = 1) =>
     g
@@ -92,7 +93,7 @@ export function drawVan(g: Graphics, s: Solid) {
     edge.push(...arch);
     arches.push(arch);
   }
-  shape(edge, 0x34665e);
+  shape(edge, custody ? 0x666d70 : 0x34665e);
   for (const arch of arches) line(arch, 0x1d3934, 1.6);
   // Rear, roof and its folded edge.
   shape(
@@ -102,7 +103,7 @@ export function drawVan(g: Graphics, s: Solid) {
       [0.94, 0.04, 0.88],
       [0.06, 0.04, 0.88],
     ],
-    0x284c45,
+    custody ? 0x444e54 : 0x284c45,
   );
   shape(
     [
@@ -111,7 +112,7 @@ export function drawVan(g: Graphics, s: Solid) {
       [0.94, 0.66, 1],
       [0.06, 0.66, 1],
     ],
-    0x568e7e,
+    custody ? 0x929996 : 0x568e7e,
   );
   shape(
     [
@@ -120,7 +121,7 @@ export function drawVan(g: Graphics, s: Solid) {
       [0.94, 0.1, 1],
       [0.06, 0.1, 1],
     ],
-    0x487b6d,
+    custody ? 0x737d7d : 0x487b6d,
   );
   for (const x of [0.18, 0.81])
     line(
@@ -140,7 +141,7 @@ export function drawVan(g: Graphics, s: Solid) {
       [0.94, 0.85, 0.65],
       [0.06, 0.85, 0.65],
     ],
-    0x467b6c,
+    custody ? 0x737d7d : 0x467b6c,
   );
   shape(
     [
@@ -181,9 +182,9 @@ export function drawVan(g: Graphics, s: Solid) {
       [0.94, 0.97, 0.58],
       [0.06, 0.97, 0.58],
     ],
-    0x578b77,
+    custody ? 0x929996 : 0x578b77,
   );
-  front(0.06, 0.88, 0.22, 0.58, 0x42796a);
+  front(0.06, 0.88, 0.22, 0.58, custody ? 0x6e7a7e : 0x42796a);
   front(0.02, 0.96, 0.2, 0.3, 0x243731, 0.985);
   front(0.37, 0.26, 0.35, 0.5, 0x1b302c);
   for (const z of [0.38, 0.43, 0.48]) front(0.39, 0.22, z, z + 0.014, 0x77938a);
@@ -237,6 +238,12 @@ export function drawVan(g: Graphics, s: Solid) {
   side(0.4, 0.065, 0.65, 0.68, 0x16352e);
   side(0.55, 0.065, 0.56, 0.59, 0x172f29);
   side(0.06, 0.032, 0.39, 0.61, 0xa36c53);
+  if (custody) {
+    side(0.12, 0.36, 0.48, 0.55, 0x273e55);
+    side(0.18, 0.24, 0.7, 0.86, 0x172a2e);
+    for (const y of [0.2, 0.26, 0.32, 0.38]) side(y, 0.014, 0.7, 0.86, 0xa0a9a2);
+    side(0.2, 0.05, 0.36, 0.43, 0xd8b778);
+  }
   line(
     [
       [0.946, 0.76, 0.7],

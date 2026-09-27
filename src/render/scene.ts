@@ -1,5 +1,5 @@
 import { Application, Assets, Container, Graphics, Rectangle, Text, Texture } from 'pixi.js';
-import { distance, inside, living, people, EXTRACTION_RADIUS } from '../sim/types';
+import { distance, inside, isExtraction, living, people, EXTRACTION_RADIUS } from '../sim/types';
 import type { ObjectKind, Person, Rect, Solid, Vec, World } from '../sim/types';
 import { available, landmark } from '../sim/orders';
 import { findPath, lineClear } from '../sim/navigation';
@@ -268,6 +268,25 @@ export class Scene {
         this.addScenery(route, { x: 0, y: 0, w: 0, h: 0 });
       }
     }
+    if (mission.escort?.locked) {
+      plane(g, 6.5, 0, 1, 29, 0x59645e);
+      plane(g, 33, 3, 3.5, 23, 0x35423e);
+      plane(g, 8.5, 13.55, 20.8, 2.9, 0x344b48);
+      plane(g, 24, 16, 6.8, 6.8, 0x605b4a, 0, 0.45);
+      plane(g, 10.35, 4.35, 5.3, 5.15, 0x746752, 0, 0.6);
+      for (let y = 4; y < 27; y += 2.5) plane(g, 35.7, y, 0.12, 1.2, 0xb4af8e);
+      for (let x = 24; x < 30.8; x += 0.5) plane(g, x, 21.6, 0.25, 0.15, COLORS.amber);
+      for (let x = 10; x < 23; x += 3) {
+        const label = text('‹', 16, 0x8fa89a);
+        label.position.copyFrom(project({ x, y: 14.6 }));
+        label.skew.y = Math.atan(TILE_Y / TILE_X);
+        this.addScenery(label, { x, y: 14.6, w: 0, h: 0 });
+      }
+      const label = text('SERVICE CORRIDOR', 9, 0x9db5a6);
+      label.position.copyFrom(project({ x: 12, y: 14 }));
+      label.skew.y = Math.atan(TILE_Y / TILE_X);
+      this.addScenery(label, { x: 12, y: 14, w: 0, h: 0 });
+    }
     for (const solid of world.mission.solids) this.addSolid(solid);
     this.gate = new Graphics();
     const gate = world.mission.gate;
@@ -280,7 +299,13 @@ export class Scene {
       this.addScenery(this.shutter, d);
     }
     const office = text(
-      mission.transfer ? 'CUSTOMS' : mission.archive ? 'SECURE ARCHIVE' : 'SECURE OFFICE',
+      mission.escort?.locked
+        ? 'TRANSFER RECORDS'
+        : mission.transfer
+          ? 'CUSTOMS'
+          : mission.archive
+            ? 'SECURE ARCHIVE'
+            : 'SECURE OFFICE',
       10,
       0xf0c68b,
     );
@@ -292,11 +317,13 @@ export class Scene {
     office.anchor.set(0.5, 1);
     this.marks.addChild(office);
     const road = text(
-      mission.transfer
-        ? 'BONDED TRANSFER / 09'
-        : mission.id === 'depot'
-          ? 'MUNICIPAL TRANSIT / 06'
-          : 'CIVIC RECORDS / NO PUBLIC ACCESS',
+      mission.escort?.locked
+        ? 'REMAND TRANSFERS / 04'
+        : mission.transfer
+          ? 'BONDED TRANSFER / 09'
+          : mission.id === 'depot'
+            ? 'MUNICIPAL TRANSIT / 06'
+            : 'CIVIC RECORDS / NO PUBLIC ACCESS',
       10,
       0x718277,
     );
@@ -307,12 +334,11 @@ export class Scene {
     for (const o of world.mission.landmarks) {
       const root = new Container();
       const mark = new Graphics();
-      const color =
-        o.id === 'extract'
-          ? COLORS.mint
-          : o.id === 'engineer' || o.id === 'evidence'
-            ? COLORS.amber
-            : 0xa8c2b3;
+      const color = isExtraction(o.id)
+        ? COLORS.mint
+        : o.id === 'escort' || o.id === 'evidence'
+          ? COLORS.amber
+          : 0xa8c2b3;
       mark
         .poly([0, -9, 7, 0, 0, 9, -7, 0])
         .fill({ color: 0x162722, alpha: 0.9 })
@@ -333,7 +359,7 @@ export class Scene {
     const root = new Container(),
       g = new Graphics();
     root.addChild(g);
-    if (s.kind === 'van') {
+    if (s.kind === 'van' || s.kind === 'transport') {
       drawVan(g, s);
     } else if (s.kind === 'container') {
       // Paired sealed cargo containers share one collision footprint.
@@ -498,6 +524,7 @@ export class Scene {
     const object = this.world.mission.landmarks.find(
       (o) =>
         (available(this.world, o.id) ||
+          (o.id === 'escort' && this.world.escortLocked) ||
           (o.id === 'evidence' && this.world.evidence === 'courier')) &&
         distance(p, this.screen(landmark(this.world, o.id), markerHeight(this.world, o.id))) < 19,
     );
@@ -516,8 +543,8 @@ export class Scene {
       .sort((a, b) => a.distance - b.distance)[0];
     if (agent && agent.distance < 20) return { kind: 'agent', id: agent.a.id };
     if (object) return { kind: 'object', id: object.id };
-    if (this.world.engineer && distance(p, this.screen(this.world.engineer, 0.5)) < 18)
-      return { kind: 'object', id: 'engineer' };
+    if (this.world.escort && distance(p, this.screen(this.world.escort, 0.5)) < 18)
+      return { kind: 'object', id: 'escort' };
     for (const g of this.world.guards.filter(living))
       if (distance(p, this.screen(g, 0.5)) < 18) return { kind: 'guard', id: g.id };
     return { kind: 'ground', point: this.toWorld(x, y) };
@@ -553,6 +580,7 @@ export class Scene {
     this.cones.visible = this.showVision;
     const depthItems = this.scenery.filter((item) => item.root.visible);
     for (const p of people(w)) {
+      if (p === w.escort && w.mission.escort?.locked && !w.escort.recruited) continue;
       const a = w.agents.find((a) => a.id === p.id),
         guard = w.guards.find((g) => g.id === p.id);
       const type = a ? (a.disguised ? 1 : 0) : guard ? 2 : 3;
@@ -604,21 +632,25 @@ export class Scene {
       item.root.zIndex = index;
     });
     for (const [id, icon] of this.icons) {
-      icon.visible = available(w, id) || (id === 'evidence' && w.evidence === 'courier');
+      icon.visible =
+        available(w, id) ||
+        (id === 'escort' && w.escortLocked) ||
+        (id === 'evidence' && w.evidence === 'courier');
       icon.alpha = id === 'override' && w.overrideBy ? 0.6 : 1;
       icon.position.copyFrom(project(landmark(w, id), markerHeight(w, id)));
     }
     this.effects.clear();
-    const van = landmark(w, 'extract');
-    const vp = project(van);
-    this.effects
-      .ellipse(
-        vp.x,
-        vp.y,
-        EXTRACTION_RADIUS * Math.SQRT2 * TILE_X,
-        EXTRACTION_RADIUS * Math.SQRT2 * TILE_Y,
-      )
-      .stroke({ color: COLORS.mint, width: 1, alpha: 0.3 });
+    for (const exit of w.mission.landmarks.filter((o) => isExtraction(o.id))) {
+      const vp = project(exit);
+      this.effects
+        .ellipse(
+          vp.x,
+          vp.y,
+          EXTRACTION_RADIUS * Math.SQRT2 * TILE_X,
+          EXTRACTION_RADIUS * Math.SQRT2 * TILE_Y,
+        )
+        .stroke({ color: COLORS.mint, width: 1, alpha: 0.3 });
+    }
     for (const a of w.agents.filter((a) => selected.includes(a.id) && living(a))) {
       if (a.path.length) {
         const points = [a, ...a.path].map((p) => project(p));

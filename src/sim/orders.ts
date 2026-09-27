@@ -1,6 +1,6 @@
-import { distance, inside, living, EXTRACTION_RADIUS } from './types';
+import { distance, inside, isExtraction, living, EXTRACTION_RADIUS } from './types';
 import type { Landmark, ObjectKind, Operative, Vec, World } from './types';
-import { findPath, nearestFree } from './navigation';
+import { findPath, lineClear, nearestFree } from './navigation';
 import { notify } from './world';
 import { investigateNoise, raiseAlarm } from './awareness';
 import { updateShutter } from './shutter';
@@ -8,8 +8,7 @@ import { courierGuard, routeCourier } from './courier';
 
 export function landmark(world: World, id: ObjectKind): Landmark {
   const source = world.mission.landmarks.find((o) => o.id === id)!;
-  if (id === 'engineer' && world.engineer)
-    return { ...source, x: world.engineer.x, y: world.engineer.y };
+  if (id === 'escort' && world.escort) return { ...source, x: world.escort.x, y: world.escort.y };
   if (id === 'evidence') {
     const courier = world.evidence === 'courier' ? courierGuard(world) : null;
     return {
@@ -27,13 +26,15 @@ export function available(world: World, id: ObjectKind) {
       (id === 'disguise' && world.disguiseTaken) ||
       (id === 'gate' && world.gateOpen) ||
       (id === 'relay' && world.relayOff) ||
+      (id === 'escort' && (!world.escort || !living(world.escort) || world.escortLocked)) ||
+      (id === 'release' && !world.escortLocked) ||
       (id === 'evidence' &&
         world.evidence !== 'available' &&
         !(world.evidence === 'courier' && world.courier?.phase === 'inspection')) ||
       (id === 'divert' && (world.courier?.diverted || world.evidence !== 'courier')) ||
       (id === 'dispatch' && (world.courier?.phase !== 'ready' || world.evidence !== 'courier')) ||
       (id === 'override' && world.shutterBreached) ||
-      (id === 'breach' && world.shutterOpen)
+      (id === 'breach' && (world.mission.archive ? world.shutterOpen : !world.escortLocked))
     )
   );
 }
@@ -45,6 +46,7 @@ export function interactionPoint(world: World, agent: Operative, id: ObjectKind)
 }
 export function interactionDuration(world: World, agent: Operative, id: ObjectKind) {
   if (id === 'breach') return 8;
+  if (id === 'release') return 3;
   if (id === 'gate' && !inside(agent, world.mission.restricted)) return 3;
   return id === 'relay' ? 1.5 : id === 'override' ? 0.8 : 0.65;
 }
@@ -65,6 +67,11 @@ export function moveAgents(world: World, ids: string[], target: Vec) {
 }
 export function interact(world: World, ids: string[], id: ObjectKind) {
   if (!available(world, id)) {
+    if (id === 'escort' && world.escortLocked)
+      notify(
+        world,
+        'Transport locked. File a release at WARRANT in disguise, or use CUT at the transport.',
+      );
     if (id === 'evidence' && world.evidence === 'courier')
       notify(
         world,
@@ -78,7 +85,11 @@ export function interact(world: World, ids: string[], id: ObjectKind) {
   if (!a) return;
   if (
     a.carrying &&
-    (id === 'override' || id === 'breach' || id === 'divert' || id === 'dispatch')
+    (id === 'override' ||
+      id === 'breach' ||
+      id === 'divert' ||
+      id === 'dispatch' ||
+      id === 'release')
   ) {
     notify(world, 'Set the cargo down before working these controls.');
     return;
@@ -123,6 +134,45 @@ export function heal(world: World, ids: string[]) {
       world.sounds.push({ kind: 'interact', x: a.x });
     }
 }
+export function waitEscort(world: World) {
+  const escort = world.escort;
+  if (!escort?.recruited || !living(escort)) return;
+  escort.waiting = !escort.waiting;
+  escort.path = [];
+  escort.repath = 0;
+  notify(
+    world,
+    escort.waiting
+      ? `${escort.name} will wait here. Clear the route before asking them to follow.`
+      : `${escort.name} is following their escort again.`,
+  );
+}
+export function treatEscort(world: World, ids: string[]) {
+  const escort = world.escort;
+  if (!escort?.recruited || !living(escort) || escort.hp >= escort.maxHp) return;
+  const medic = world.agents
+    .filter(
+      (a) =>
+        ids.includes(a.id) &&
+        living(a) &&
+        a.medkit &&
+        !a.carrying &&
+        distance(a, escort) < 2 &&
+        lineClear(world, a, escort),
+    )
+    .sort((a, b) => distance(a, escort) - distance(b, escort))[0];
+  if (!medic) {
+    notify(
+      world,
+      `Bring a selected operative with a field dressing and free hands next to ${escort.name}.`,
+    );
+    return;
+  }
+  medic.medkit = false;
+  escort.hp = Math.min(escort.maxHp, escort.hp + 55);
+  world.sounds.push({ kind: 'interact', x: medic.x });
+  notify(world, `${medic.name} used their field dressing to treat ${escort.name}.`);
+}
 export function dropEvidence(world: World, ids: string[]) {
   for (const a of world.agents)
     if (ids.includes(a.id) && a.carrying) {
@@ -151,17 +201,17 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
     updateShutter(world);
     return;
   }
-  if (id === 'extract') {
-    const van = landmark(world, 'extract');
+  if (isExtraction(id)) {
+    const van = landmark(world, id);
     const carrier = world.agents.find((p) => living(p) && p.carrying);
     const waiting =
       world.mission.objective !== 'escort' &&
       (!carrier || distance(carrier, van) > EXTRACTION_RADIUS)
         ? `Bring the ${world.mission.evidenceName.toLowerCase()} to the van. It is required for this contract.`
-        : world.engineer && !world.engineer.recruited
-          ? 'Recruit Voss before requesting extraction.'
-          : world.engineer && distance(world.engineer, van) > EXTRACTION_RADIUS
-            ? 'Waiting for Voss at the van. Keep her escort nearby.'
+        : world.escort && (!world.escort.recruited || !living(world.escort))
+          ? `Bring ${world.escort.name} out alive before requesting extraction.`
+          : world.escort && distance(world.escort, van) > EXTRACTION_RADIUS
+            ? `Waiting for ${world.escort.name} at ${van.tag}. Keep their escort nearby.`
             : world.agents.some((p) => living(p) && distance(p, van) > EXTRACTION_RADIUS)
               ? 'Waiting for the crew. Bring every survivor inside the extraction ring.'
               : null;
@@ -169,8 +219,8 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
       a.interaction = 0;
       a.path = [];
       a.order =
-        world.engineer?.recruited || (world.mission.objective !== 'escort' && !!carrier)
-          ? { kind: 'interact', target: 'extract' }
+        world.escort?.recruited || (world.mission.objective !== 'escort' && !!carrier)
+          ? { kind: 'interact', target: id }
           : { kind: 'hold' };
       if (world.message !== waiting) notify(world, waiting);
       return;
@@ -202,14 +252,30 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
       world.relayOff = true;
       notify(world, 'Radio relay disabled. No further reinforcements can be called.');
       break;
-    case 'engineer':
-      if (!world.engineer) break;
-      world.engineer.recruited = true;
-      world.engineer.leader = a.id;
-      world.engineer.path = [];
+    case 'escort':
+      if (!world.escort) break;
+      world.escort.recruited = true;
+      world.escort.waiting = false;
+      world.escort.leader = a.id;
+      world.escort.path = [];
       notify(
         world,
-        `Voss is following ${a.name}. The diagnostic unit is optional. Bring everyone to the van.`,
+        `${world.escort.name} is following ${a.name}.${world.mission.escort?.vulnerable ? ' Guards will attack if they spot the escape. Use cover, or clear a route first.' : ' The diagnostic unit is optional. Bring everyone to the van.'}`,
+      );
+      break;
+    case 'release':
+      if (!a.disguised || a.weapon || a.exposed) {
+        notify(
+          world,
+          'Release refused. WARRANT requires a maintenance identity that has not been exposed, with weapons concealed.',
+          'warning',
+        );
+        break;
+      }
+      world.escortLocked = false;
+      notify(
+        world,
+        'Release filed. The transport is unlocked. Collect MARA when the escape route is ready; the forged paperwork will not fool a guard who sees her.',
       );
       break;
     case 'evidence':
@@ -271,6 +337,17 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
       }
       break;
     case 'breach':
+      if (world.mission.escort?.locked) {
+        world.escortLocked = false;
+        investigateNoise(world, a);
+        raiseAlarm(world);
+        notify(
+          world,
+          'Transport lock cut. Collect MARA; nearby guards heard the breach.',
+          'warning',
+        );
+        break;
+      }
       world.shutterBreached = true;
       world.overrideBy = null;
       updateShutter(world);
@@ -282,13 +359,15 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
         'warning',
       );
       break;
-    case 'extract': {
+    case 'extract':
+    case 'alternate': {
       world.status = 'won';
+      world.extractedAt = id;
       if (world.evidence === 'carried') world.evidence = 'extracted';
       notify(
         world,
         world.mission.objective === 'escort'
-          ? 'Contract fulfilled. Voss is out. The crew is clear.'
+          ? `Contract fulfilled. ${world.escort!.name} is out. The crew is clear.`
           : `Contract fulfilled. The ${world.mission.evidenceName.toLowerCase()} is secured. The crew is clear.`,
       );
       break;

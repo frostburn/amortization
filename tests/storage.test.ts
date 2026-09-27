@@ -19,6 +19,9 @@ it('migrates depot records and keeps mission times independent', () => {
   recordWin('transfer', 82);
   expect(missionRecord(readRecords(), 'transfer')).toEqual({ best: 82, completions: 1 });
   expect(missionRecord(readRecords(), 'archive')).toEqual({ best: 65, completions: 2 });
+  recordWin('custody', 95);
+  expect(missionRecord(readRecords(), 'custody')).toEqual({ best: 95, completions: 1 });
+  expect(missionRecord(readRecords(), 'transfer')).toEqual({ best: 82, completions: 1 });
 });
 it('ignores malformed records and survives unavailable storage', () => {
   data.set('amortization.records.v2', '{');

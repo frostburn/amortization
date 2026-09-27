@@ -380,7 +380,8 @@ kbd {
   letter-spacing: 2px;
   text-transform: uppercase;
 }
-.alert.danger {
+.alert.danger,
+#escort-status.danger {
   color: #f57869;
 }
 .fine {
@@ -478,6 +479,14 @@ kbd {
 .utility kbd {
   margin-left: 4px;
   font-size: 9px;
+}
+#escort-controls .utility button {
+  border: 1px solid #35473e;
+  padding: 8px 10px;
+  font-size: 10px;
+  line-height: 1.4;
+  min-height: 34px;
+  white-space: normal;
 }
 .intel-section {
   border: 0 !important;
@@ -804,6 +813,7 @@ dialog h2 {
   .selection-section {
     border-bottom: 0 !important;
   }
+  #escort-controls,
   .orders-section {
     grid-column: 1/-1;
   }
