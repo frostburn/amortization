@@ -63,6 +63,12 @@ test('routes a courier transfer, distinguishes CASE from its carrier, and resets
   await page.getByRole('button', { name: /03 .*Adverse possession/ }).click();
   await expect(page.getByRole('dialog')).toContainText('A signature in someone else');
   await page.getByRole('button', { name: 'Begin operation' }).click();
+  // Let the patrol leave its spawn before testing the moving CASE marker.
+  await expect
+    .poll(async () => Number((await page.locator('#clock').innerText()).split(':')[1]), {
+      timeout: 15_000,
+    })
+    .toBeGreaterThanOrEqual(2);
   await page.getByRole('button', { name: 'Pause', exact: true }).click();
   await expect(page.locator('#objective-evidence')).toHaveText('○ Access case · with courier');
   await expect(page.locator('#archive-status')).toBeHidden();
@@ -75,10 +81,18 @@ test('routes a courier transfer, distinguishes CASE from its carrier, and resets
       { button: 'right' },
     );
   await page.getByRole('button', { name: 'Select Morrow', exact: true }).click();
-  await order(27, 6, 2.1);
+  await page.locator('#objective-evidence').hover();
+  const locator = page.locator('[data-target="evidence"]');
+  await expect(locator).toHaveCount(1);
+  await expect(locator).not.toHaveClass(/is-offscreen/);
+  const casePoint = await locator.evaluate((el) => {
+    const { x, y } = el.getBoundingClientRect();
+    return { x, y };
+  });
+  await page.mouse.click(casePoint.x, casePoint.y, { button: 'right' });
   await expect(page.locator('#message')).toContainText('The courier holds CASE');
   await expect(page.locator('#condition-0')).toHaveText('Concealed');
-  await order(27, 6, 0.5);
+  await page.mouse.click(casePoint.x, casePoint.y + (2.1 - 0.5) * 25 * scale, { button: 'right' });
   await expect(page.locator('#condition-0')).toHaveText('Weapon drawn');
   await page.getByRole('button', { name: 'Conceal weapons' }).click();
   await order(4.8, 19.5);

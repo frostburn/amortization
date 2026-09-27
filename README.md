@@ -93,8 +93,7 @@ npm run replay:verify -- --current --expect-win attempt.replay.json
 The first command verifies compatible code and every state checkpoint. The second
 tests completion under current rules. Both exit nonzero on failure. Selected player
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
-distinct routes. The corpus currently includes player-recorded depot and archive
-victories; see `tests/replays/README.md` for provenance and coverage.
+distinct routes. The corpus currently includes player-recorded victories for all four missions; see `tests/replays/README.md` for provenance and coverage.
 
 ## Controls
 
