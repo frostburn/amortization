@@ -8,6 +8,7 @@
   --muted: #89998d;
   --line: #36443d;
   --amber: #efbd73;
+  --red: #ef867b;
 }
 * {
   box-sizing: border-box;
@@ -221,8 +222,7 @@ kbd {
 .exit-row[hidden] {
   display: none;
 }
-.exit-row button,
-#extraction-follow {
+.exit-row button {
   min-height: 44px;
   padding: 8px 12px;
   flex: 0 0 156px;
@@ -238,8 +238,81 @@ kbd {
   line-height: 1.5;
   margin: 0;
 }
-#extraction-follow {
-  margin-top: 8px;
+.escort-panel {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 10px 16px;
+  border-top: 1px solid #547865;
+  background: #182820;
+}
+.escort-panel[hidden],
+.crew-aid[hidden] {
+  display: none;
+}
+.escort-panel.under-fire {
+  background: #39211f;
+  border-color: var(--red);
+}
+#escort-focus {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  padding: 6px 10px;
+  min-height: 44px;
+}
+#escort-alert {
+  font-size: 12px;
+}
+.under-fire #escort-alert {
+  color: var(--red);
+}
+#escort-status,
+#escort-focus small,
+#escort-aid-hint {
+  font-size: 10px;
+  line-height: 1.5;
+}
+#escort-focus small {
+  color: var(--mint);
+}
+.escort-actions,
+.crew-aid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.escort-actions button,
+.crew-aid button {
+  min-height: 44px;
+  padding: 8px 12px;
+  font-size: 11px;
+}
+#escort-aid-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #d6b991;
+}
+.crew-aid {
+  padding: 0 16px 10px;
+  background: #0e1814;
+}
+.crew-aid button {
+  border-color: var(--mint);
+}
+.health-label {
+  font-size: 9px;
+  color: #aec7b9;
+}
+.agent-card.wounded {
+  border-color: var(--red);
+}
+.wounded .health-label {
+  color: var(--red);
+}
+.wounded .health-track > span {
+  background: var(--red);
 }
 .dispatch > span {
   font:
@@ -939,6 +1012,17 @@ dialog h2 {
     padding: 8px 12px;
     min-height: 55px;
     gap: 9px;
+  }
+  .escort-panel {
+    grid-template-columns: 1fr;
+    padding: 8px;
+    gap: 6px;
+  }
+  .escort-actions button {
+    flex: 1;
+  }
+  .crew-aid {
+    padding: 0 8px 8px;
   }
   .dispatch p {
     font-size: 10px;

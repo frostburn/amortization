@@ -115,6 +115,7 @@ test('exports real inputs, verifies playback, preserves the live attempt, and re
   expect(preserved.checkpoints).toEqual(bundle.checkpoints);
   expect(preserved.id).toBe(bundle.id);
   expect(await page.evaluate(() => localStorage.getItem('amortization.records.v2'))).toBeNull();
+  expect(await page.evaluate(() => localStorage.getItem('amortization.records.v3'))).toBeNull();
   await page.getByRole('button', { name: 'Close export', exact: true }).click();
   await page.getByRole('button', { name: 'Restart', exact: true }).click();
   await page.reload();

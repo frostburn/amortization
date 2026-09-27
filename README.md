@@ -93,8 +93,8 @@ npm run replay:verify -- --current --expect-win attempt.replay.json
 The first command verifies compatible code and every state checkpoint. The second
 tests completion under current rules. Both exit nonzero on failure. Selected player
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
-distinct routes. Seven retained recordings cover all four missions, including four
-new completions after the balance changes. Invalidated recordings were removed;
+distinct routes. Nine retained recordings cover all four missions, including three
+new completions from the latest playtests. Invalidated recordings were removed;
 all four missions also retain synthetic quiet and armed completion tests. See
 `tests/replays/README.md` for provenance, current outcomes, and retired routes.
 
@@ -135,6 +135,19 @@ Map clicks on an already selected operative keep the group selected. Use a portr
 Dragging across a character's body deliberately replaces the selection, even if
 their feet fall outside the box. Thin or short drags get a minimum 12-pixel box,
 shown while dragging. Shift-drag adds the hit operatives.
+
+Group destinations stay on one connected patch around the clicked point. Near a
+wall or doorway the formation tightens instead of sending half the crew around
+the building. An explicit click beyond the wall still orders a route there.
+
+Squad interactions choose an operative who can reach the item and meets its
+requirements: a free pair of hands for CUT, or an unexposed disguise for WARRANT
+and a courier signature. Repeating an interaction keeps the current worker and
+their progress. If nobody can do it, the reason appears without replacing orders.
+
+Injured portraits show numerical health, with a red warning at low health. A
+**Treat [name]** button below the portraits spends that operative’s dressing
+without changing selection or orders. **H** still treats the selected crew.
 
 ## Mission guidance
 
@@ -207,13 +220,19 @@ The access keys lead to auditor **Mara Quill**, held in a security transport at 
 - **KIT** provides the identity needed for **WARRANT**, a three-second forged release in the records office. Conceal the weapon and keep that operative unexposed. Unlocking the transport does not start the escape: right-click **MARA** when the route is ready.
 - **CUT** at the transport is the armed alternative. It takes eight seconds and attracts nearby guards, even after **RADIO** is disabled. Mara stays protected inside until collected.
 - **STREET**, beyond the east **GATE**, offers a short but exposed exit. **SERVICE** on the west street is farther away; the walled service corridor provides cover. Order the selected crew to either van or its marker. Extraction waits for Mara and every survivor in the **same** ring. If Mara was told to wait, ask her to follow before leaving.
-- The **Escort** controls let Mara wait in place or resume following. Right-click her marker to transfer her escort; a surviving operative takes over if her leader falls. She has no disguise, so the runner's uniform does not protect her.
-- **Treat Mara** spends one selected operative's field dressing to restore up to 55 health. That operative needs free hands and must stand within two metres with clear sight. The same dressing can otherwise be used for their own wounds.
+- The **Witness** controls directly below the map let Mara wait in place or resume following. Right-click her marker to transfer her escort; a surviving operative takes over if her leader falls. She has no disguise, so the runner's uniform does not protect her.
+- **Treat Mara** names the nearest eligible operative and spends their field dressing to restore up to 55 health, without changing selection. They need free hands and must stand within two metres with clear sight. The same dressing can otherwise be used for their own wounds.
+- A red **Mara under fire** warning appears while a guard can shoot her and for three simulation seconds after a hit, independently of COMMS. Click or tap it to locate her without issuing an order. Low health stays red after contact breaks.
 - The **REGISTER** is optional evidence. Carrying it occupies both hands and slows the operative.
 
 For a quiet escape, take KIT, disable RADIO, file WARRANT, and collect Mara. Lead her north of the lower cargo containers, west through the service corridor, and out the west entrance to SERVICE. Send the rest of the crew up the public street. For an armed extraction, clear the transport bay before cutting the lock, leave Mara waiting behind cover while the crew secures the gate, then bring her to STREET.
 
-Results track time, crew survival, evidence, and alarm status. Best times and completion counts are stored separately for each operation. Existing first-mission records migrate automatically. Play remains available when browser storage is disabled.
+Results track time, crew survival, evidence, and alarm status. Each operation keeps
+separate **Full crew** (all four survive) and **Any crew** best times, plus its
+completion count. A faster run with casualties cannot replace the full-crew
+record. Earlier records migrate into Any crew; their survivor count was never
+stored, so Full crew starts empty. Play remains available when browser storage
+is disabled.
 
 ## Structure
 

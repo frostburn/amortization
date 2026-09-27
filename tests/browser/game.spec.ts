@@ -45,7 +45,10 @@ test('releases Mara, preserves her wait order across selection, and resets the e
   await expect(
     extraction.getByRole('button', { name: 'Rally crew to SERVICE', exact: true }),
   ).toBeVisible();
-  await extraction.getByRole('button', { name: 'Ask Mara to follow', exact: true }).click();
+  await page
+    .getByRole('region', { name: 'Witness', exact: true })
+    .getByRole('button', { name: 'Ask Mara to follow', exact: true })
+    .click();
   await expect(page.locator('#escort-status')).toContainText('following');
   await page.getByRole('button', { name: 'Restart', exact: true }).click();
   await expect(page.locator('#mission-title')).toHaveText('Protective custody');

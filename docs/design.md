@@ -9,6 +9,18 @@ points. A minimum 12-pixel rectangle is both drawn and used for selection. This
 makes small body drags useful for isolating a person while preserving missed-box
 protection.
 
+Formation slots share a walkable anchor. Every slot needs a body-clear connection
+to that anchor; blocked offsets are fitted nearby with body spacing. If the click
+lands on a wall, the closest free ring is biased toward the approaching crew.
+This prevents a small offset from causing a long detour around the far side.
+Deliberate destinations across a wall still use ordinary pathfinding.
+
+Interaction assignment filters prerequisites and checks that the route actually
+reaches working range with clear sight. A selected current worker keeps the job
+and progress; otherwise the nearest eligible, reachable operative takes it.
+Refusal leaves existing orders intact, and prerequisites are rechecked when work
+finishes. Cargo and disguise restrictions are shared by assignment and completion.
+
 Reaching the engineer changes entry into escort. Physical evidence removes one gun from the fight and can change hands. A blown disguise creates a combat problem rather than immediate mission failure.
 
 ## Boundaries
@@ -31,7 +43,7 @@ after objective recovery or an early extraction order and lists crew counts,
 missing people or cargo, and an explicit rally/extract action for each exit.
 Panel orders include every survivor and enter the ordinary replay command path.
 Map extraction orders still affect only the selection. Waiting witnesses keep
-their wait order and can resume from the panel; arriving in a ring alone never
+their wait order and can resume from the adjacent Witness panel; arriving in a ring alone never
 silently ends the mission.
 Whole-crew rally is blocked while someone remains inside an archive that depends
 on a held SHUNT. The panel names who must cross first; a breached shutter needs
@@ -39,7 +51,9 @@ no such restriction. Individual map orders remain under player control.
 
 - Cover is physical occlusion. This release has no numerical cover bonus or cover snapping.
 - Moving people are not permanent navigation obstacles. Destination slots spread the crew; future local avoidance can improve crowd flow.
-- Local records have a version and validation. Browser storage failure must not prevent play.
+- Local records have a version and validation. Version 3 separates full-crew and
+  any-crew times, preserves completion counts, and treats v1/v2 survivor counts as
+  unknown. Browser storage failure must not prevent play.
 
 ## Visual system
 
@@ -80,6 +94,16 @@ The new escort metadata replaces Voss-specific simulation fields. Voss keeps her
 Wait/follow orders make it possible to clear a route without pulling the witness into the fight. A nearby operative with free hands can spend their one field dressing on Mara instead of themselves. The short east extraction crosses a patrolled road; the longer west route uses physical screen walls and the service entrance. Both exits are available throughout, but all survivors and Mara must gather at the same one. The result shows which exit was used.
 
 The transport reuses the van geometry with a grey body, security stripe, and barred side window. Its collision footprint remains explicit mission content. The HUD exposes escort health and orders only after recruitment; both extraction rings and the service corridor are visible on the map.
+
+The Witness panel sits below the map on desktop and phone. Danger feedback is
+independent of the single COMMS message: visible, in-range targeting or a recent
+health drop keeps the warning active. The hit grace period uses simulation time,
+so pause and slow time behave consistently. Locating uses the existing guide and
+does not select or order anyone. Wait/Follow and treatment are adjacent; treatment
+names the nearest available medic and uses the ordinary recorded escort-aid
+command across the living crew. If nobody is eligible, a disabled button explains
+the requirement. Crew portraits show health and offer individual dressing actions,
+also through ordinary replay commands. Combat and healing values are unchanged.
 
 ## Objective guidance
 

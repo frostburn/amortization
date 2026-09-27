@@ -58,16 +58,21 @@ export const lineClear = (world: World, a: Vec, b: Vec, margin = 0) =>
 export const canWalk = (world: World, a: Vec, b: Vec) =>
   passable(world, a) && passable(world, b) && lineClear(world, a, b, BODY_RADIUS - EPSILON);
 
-export function nearestFree(world: World, target: Vec): Vec {
+export function nearestFree(world: World, target: Vec, toward?: Vec): Vec {
   if (passable(world, target)) return { ...target };
   for (let radius = 0.4; radius <= 4; radius += 0.4) {
+    let best: Vec | undefined;
     for (let i = 0; i < 16; i++) {
       const p = {
         x: target.x + Math.cos((i * Math.PI) / 8) * radius,
         y: target.y + Math.sin((i * Math.PI) / 8) * radius,
       };
-      if (passable(world, p)) return p;
+      if (passable(world, p)) {
+        if (!toward) return p;
+        if (!best || distance(p, toward) < distance(best, toward)) best = p;
+      }
     }
+    if (best) return best;
   }
   return { ...target };
 }
