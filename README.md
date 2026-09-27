@@ -340,6 +340,6 @@ CI uses one Ubuntu job, Node 24, and Chromium. The simulation suite includes com
 
 ## Current scope
 
-Six ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, full directional character art, and mid-mission saves remain future work. In-world operatives share animated art and use numbered selection markers; their portraits are distinct.
+Six ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, and mid-mission saves remain future work. Each operative has a distinct on-map model with 32 facings, a distance-driven walk, an armed stance, and a grounded fallen pose. Hair, skin, clothing, and build correspond to their portraits; disguises preserve their identity. Voss and Mara have their own models and portraits beside the wait/follow control.
 
 See [design notes](docs/design.md) and [art provenance](docs/art.md). Distributed under the repository's [MIT license](LICENSE).

@@ -1,13 +1,4 @@
-import {
-  Application,
-  Assets,
-  Container,
-  Graphics,
-  Polygon,
-  Rectangle,
-  Text,
-  Texture,
-} from 'pixi.js';
+import { Application, Container, Graphics, Polygon, Text } from 'pixi.js';
 import {
   distance,
   inside,
@@ -22,6 +13,7 @@ import { available, landmark } from '../sim/orders';
 import { findPath, lineClear } from '../sim/navigation';
 import { depthOrder } from './depth';
 import { PersonSprite } from './person';
+import type { Appearance } from './person';
 import { project, TILE_X, TILE_Y } from './isometric';
 import { drawVan } from './van';
 import { courierGuard } from '../sim/courier';
@@ -29,9 +21,6 @@ import { guideLocation } from '../ui/objectives';
 import type { GuideTarget } from '../ui/objectives';
 import { extractionRequirement } from '../ui/extraction';
 import { demolished } from '../sim/demolition';
-
-const markerHeight = (world: World, id: ObjectKind) =>
-  id === 'evidence' && world.evidence === 'courier' ? 2.1 : 1.45;
 
 const COLORS = {
   ground: 0x263331,
@@ -126,7 +115,8 @@ export class Scene {
   private cores: { intact: Graphics; wreck: Graphics }[] = [];
   private icons = new Map<ObjectKind, Container>();
   private transferRoutes: Graphics[] = [];
-  private textures: Texture[] = [];
+  private labels = new Set<Text>();
+  private labelResolution = 2;
   private gate: Graphics | null = null;
   private shutter: Graphics | null = null;
   private world: World;
@@ -169,17 +159,6 @@ export class Scene {
       'Tactical map. Select operatives with 1 to 4; right-click to order.',
     );
     this.app.canvas.setAttribute('role', 'img');
-    const atlas = await Assets.load<Texture>(`${import.meta.env.BASE_URL}assets/people.webp`);
-    const w = atlas.width / 2,
-      h = atlas.height / 2;
-    this.textures = Array.from(
-      { length: 4 },
-      (_, i) =>
-        new Texture({
-          source: atlas.source,
-          frame: new Rectangle((i % 2) * w, Math.floor(i / 2) * h, w, h),
-        }),
-    );
     this.camera.addChild(this.floor, this.cones, this.objects, this.marks, this.effects);
     this.objects.sortableChildren = true;
     this.app.stage.addChild(this.camera);
@@ -190,6 +169,7 @@ export class Scene {
     this.world = world;
     this.showGuidance([], { x: 0, y: 0, w: 0, h: 0 });
     this.views.clear();
+    this.labels.clear();
     this.scenery = [];
     this.cores = [];
     this.shutter = null;
@@ -273,7 +253,7 @@ export class Scene {
         plane(g, bay.x - 1.5, bay.y - 1.6, 3, 3.2, 0x766746, 0, 0.3);
         for (let x = bay.x - 1.5; x < bay.x + 1.5; x += 0.5)
           plane(g, x, bay.y + 1.5, 0.25, 0.16, COLORS.amber);
-        const label = text(
+        const label = this.label(
           bay === mission.transfer.inspection ? 'INSPECTION' : 'CHECKPOINT',
           9,
           COLORS.amber,
@@ -315,7 +295,7 @@ export class Scene {
       for (let x = 27.5; x < 30.8; x += 0.5) plane(g, x, 11.7, 0.25, 0.15, COLORS.amber);
       for (let y = 4; y < 27; y += 2.5) plane(g, 37.6, y, 0.12, 1.2, 0xb4af8e);
       plane(g, 9, 13, 15.5, 1.3, 0x53625a, 0, 0.4);
-      const label = text('EXCHANGE / 11', 10, 0x9bb5ab);
+      const label = this.label('EXCHANGE / 11', 10, 0x9bb5ab);
       label.position.copyFrom(project({ x: 15, y: 22.7 }));
       label.skew.y = Math.atan(TILE_Y / TILE_X);
       this.addScenery(label, { x: 15, y: 22.7, w: 0, h: 0 });
@@ -335,12 +315,12 @@ export class Scene {
       for (let y = 4; y < 27; y += 2.5) plane(g, 35.7, y, 0.12, 1.2, 0xb4af8e);
       for (let x = 24; x < 30.8; x += 0.5) plane(g, x, 21.6, 0.25, 0.15, COLORS.amber);
       for (let x = 10; x < 23; x += 3) {
-        const label = text('‹', 16, 0x8fa89a);
+        const label = this.label('‹', 16, 0x8fa89a);
         label.position.copyFrom(project({ x, y: 14.6 }));
         label.skew.y = Math.atan(TILE_Y / TILE_X);
         this.addScenery(label, { x, y: 14.6, w: 0, h: 0 });
       }
-      const label = text('SERVICE CORRIDOR', 9, 0x9db5a6);
+      const label = this.label('SERVICE CORRIDOR', 9, 0x9db5a6);
       label.position.copyFrom(project({ x: 12, y: 14 }));
       label.skew.y = Math.atan(TILE_Y / TILE_X);
       this.addScenery(label, { x: 12, y: 14, w: 0, h: 0 });
@@ -356,7 +336,7 @@ export class Scene {
       box(this.shutter, d.x, d.y, d.w, d.h, 1.6, 0x9b8e70, 0x695d47, 0x4e554b);
       this.addScenery(this.shutter, d);
     }
-    const office = text(
+    const office = this.label(
       mission.demolition
         ? 'RECOVERY CORES / RESTRICTED'
         : mission.broadcast
@@ -378,7 +358,7 @@ export class Scene {
     );
     office.anchor.set(0.5, 1);
     this.marks.addChild(office);
-    const road = text(
+    const road = this.label(
       mission.demolition
         ? 'DEBT RECOVERY / 12'
         : mission.broadcast
@@ -409,13 +389,19 @@ export class Scene {
         .poly([0, -9, 7, 0, 0, 9, -7, 0])
         .fill({ color: 0x162722, alpha: 0.9 })
         .stroke({ color, width: 1.5 });
-      const label = text(o.tag, 10, color);
+      const label = this.label(o.tag, 10, color);
       label.anchor.set(0.5, 1);
       label.y = -12;
-      root.addChild(mark, label);
+      root.addChild(mark, label, new Graphics());
       this.icons.set(o.id, root);
       this.marks.addChild(root);
     }
+  }
+  private label(value: string, size = 12, color = 0xd4ded6) {
+    const label = text(value, size, color);
+    label.resolution = this.labelResolution;
+    this.labels.add(label);
+    return label;
   }
   private addScenery(root: Container, footprint: Rect) {
     this.scenery.push({ root, footprint });
@@ -581,13 +567,38 @@ export class Scene {
     // Wall-mounted details must inherit their wall's occlusion, too.
     if (s.id === 'north') {
       for (let x = 10.5; x < 27; x += 3) {
-        const p = project({ x, y: 4.3 }, 1.3);
-        g.ellipse(p.x, p.y + 16, 26, 9).fill({ color: 0xe8ba76, alpha: 0.08 });
-        g.circle(p.x, p.y, 3).fill(0xf3c58a);
+        const y = s.y + s.h + 0.012;
+        // Downward spill lies on the vertical wall face, with nested pools of light.
+        for (const [width, bottom, opacity] of [
+          [0.64, 0.12, 0.05],
+          [0.47, 0.3, 0.07],
+          [0.26, 0.64, 0.09],
+        ]) {
+          polygon(
+            g,
+            [
+              project({ x: x - 0.07, y }, 1.28),
+              project({ x: x + 0.07, y }, 1.28),
+              project({ x: x + width, y }, bottom),
+              project({ x: x - width, y }, bottom),
+            ],
+            0xe8ba76,
+            opacity,
+          );
+        }
+        panel(g, { x: x - 0.12, y }, { x: x + 0.12, y }, 1.26, 1.43, 0x353f37);
+        panel(
+          g,
+          { x: x - 0.085, y: y + 0.005 },
+          { x: x + 0.085, y: y + 0.005 },
+          1.28,
+          1.34,
+          0xf3c58a,
+        );
       }
     }
     if (s.id === 'south-a' || s.id === 'annex-front') {
-      const label = text(s.id === 'south-a' ? 'DEPOT 06' : 'RECORDS / 02', 22, 0xc3c4a8);
+      const label = this.label(s.id === 'south-a' ? 'DEPOT 06' : 'RECORDS / 02', 22, 0xc3c4a8);
       label.position.copyFrom(project({ x: s.x + 1, y: s.y + s.h + 0.1 }, 1.3));
       label.skew.y = Math.atan(TILE_Y / TILE_X);
       root.addChild(label);
@@ -609,6 +620,13 @@ export class Scene {
   private updateCamera() {
     const scale = this.fit * this.zoom;
     this.camera.scale.set(scale);
+    // Text is rasterized for the current physical pixel scale, including high-DPI zoom.
+    // Half-step buckets avoid rebuilding glyph textures on every small wheel event.
+    const resolution = Math.max(2, Math.ceil(scale * this.app.renderer.resolution * 2) / 2);
+    if (resolution !== this.labelResolution) {
+      this.labelResolution = resolution;
+      for (const label of this.labels) label.resolution = resolution;
+    }
     this.offset = {
       x:
         this.app.screen.width / 2 -
@@ -695,12 +713,16 @@ export class Scene {
       ),
     );
     this.updateCamera();
-    const scale = this.fit * this.zoom;
+    const screenPoints = [...this.guideMarkers.keys()]
+      .map((id) => this.markerScreen(id)!)
+      .filter(Boolean);
     this.panBy(
-      (left + right) / 2 - (((minX + maxX) / 2) * scale + this.offset.x),
+      (left + right) / 2 -
+        (Math.min(...screenPoints.map((p) => p.x)) + Math.max(...screenPoints.map((p) => p.x))) / 2,
       // Even a narrow strip must be centered below the guide. Reserving a
       // minimum height here used to push a single focused marker behind it.
-      (top + bottom) / 2 - (((minY + maxY) / 2) * scale + this.offset.y),
+      (top + bottom) / 2 -
+        (Math.min(...screenPoints.map((p) => p.y)) + Math.max(...screenPoints.map((p) => p.y))) / 2,
     );
     this.drawGuidance();
   }
@@ -712,7 +734,7 @@ export class Scene {
     for (const [id, marker] of this.guideMarkers) {
       const p = guideLocation(this.world, id);
       if (!p) continue;
-      const actual = this.screen(p, p.z);
+      const actual = this.markerScreen(id)!;
       let x = Math.max(45, Math.min(width - 45, actual.x));
       let y = Math.max(80, Math.min(height - 60, actual.y));
       // Keep a locator visible when its subject is off screen or underneath the help panel.
@@ -769,6 +791,19 @@ export class Scene {
       scale = this.fit * this.zoom;
     return { x: q.x * scale + this.offset.x, y: q.y * scale + this.offset.y };
   }
+  markerScreen(id: GuideTarget): Vec | null {
+    const p = guideLocation(this.world, id);
+    if (!p) return null;
+    if (
+      id === 'escort' ||
+      (id === 'evidence' && ['courier', 'carried'].includes(this.world.evidence))
+    ) {
+      const head = this.screen(p, 1.6);
+      // A screen-space gap also clears the pulsing guide ring at minimum zoom.
+      return { x: head.x, y: head.y - Math.max(32, 14 * this.camera.scale.x) };
+    }
+    return this.screen(p, p.z);
+  }
   agentBounds(p: Vec): Rect {
     const foot = this.screen(p),
       scale = this.fit * this.zoom;
@@ -786,12 +821,10 @@ export class Scene {
             isCharge(o.id) ||
             (o.id === 'escort' && this.world.escortLocked) ||
             (o.id === 'evidence' && this.world.evidence === 'courier')) &&
-          distance(p, this.screen(landmark(this.world, o.id), markerHeight(this.world, o.id))) < 19,
+          distance(p, this.markerScreen(o.id)!) < 19,
       )
       .sort(
-        (a, b) =>
-          distance(p, this.screen(landmark(this.world, a.id), markerHeight(this.world, a.id))) -
-          distance(p, this.screen(landmark(this.world, b.id), markerHeight(this.world, b.id))),
+        (a, b) => distance(p, this.markerScreen(a.id)!) - distance(p, this.markerScreen(b.id)!),
       )[0];
     // Use the projected vehicle silhouette, not just the tiny floating marker.
     const van = this.world.mission.solids.find(
@@ -814,7 +847,7 @@ export class Scene {
     const courier = this.world.evidence === 'courier' ? courierGuard(this.world) : null;
     if (prioritizeObjects && object?.id === 'evidence' && courier && living(courier)) {
       const bodyDistance = distance(p, this.screen(courier, 0.5));
-      if (bodyDistance < 18 && bodyDistance < distance(p, this.screen(courier, 2.1)))
+      if (bodyDistance < 18 && bodyDistance < distance(p, this.markerScreen('evidence')!))
         return { kind: 'guard', id: courier.id };
     }
     // An order aimed at a diamond must still reach it when the crew crowds it.
@@ -834,13 +867,13 @@ export class Scene {
       if (distance(p, this.screen(g, 0.5)) < 18) return { kind: 'guard', id: g.id };
     return { kind: 'ground', point: this.toWorld(x, y) };
   }
-  private person(p: Person, type: number, label: string): PersonView {
+  private person(p: Person, label: string): PersonView {
     let v = this.views.get(p.id);
     if (!v) {
       const root = new Container(),
         ink = new Graphics(),
-        sprite = new PersonSprite(this.textures[type], type);
-      const name = text(label, 11);
+        sprite = new PersonSprite();
+      const name = this.label(label, 11);
       name.anchor.set(0.5, 1);
       name.y = -40;
       root.addChild(ink, sprite, name);
@@ -848,7 +881,6 @@ export class Scene {
       v = { root, ink, sprite, label: name };
       this.views.set(p.id, v);
     }
-    v.sprite.setArt(this.textures[type], type);
     return v;
   }
   render(selected: string[], alpha: number) {
@@ -879,15 +911,28 @@ export class Scene {
       if (p === w.escort && w.escortLocked && !w.escort.recruited) continue;
       const a = w.agents.find((a) => a.id === p.id),
         guard = w.guards.find((g) => g.id === p.id);
-      const type = a ? (a.disguised ? 1 : 0) : guard ? 2 : 3;
-      const v = this.person(p, type, a ? String(a.index + 1) : '');
+      const appearance: Appearance = a
+        ? (['morrow', 'vale', 'rook', 'sable'] as const)[a.index]
+        : guard
+          ? 'guard'
+          : w.mission.escort?.id === 'voss'
+            ? 'voss'
+            : 'mara';
+      const v = this.person(p, a ? String(a.index + 1) : '');
       const pos = {
         x: p.previous.x + (p.x - p.previous.x) * alpha,
         y: p.previous.y + (p.y - p.previous.y) * alpha,
       };
       v.root.position.copyFrom(project(pos));
       depthItems.push({ root: v.root, footprint: { ...pos, w: 0, h: 0 } });
-      v.sprite.pose(p, alpha);
+      const cargo = !!a?.carrying || (p.id === w.courier?.guardId && w.evidence === 'courier');
+      v.sprite.pose(p, alpha, {
+        appearance,
+        uniform: a?.disguised,
+        weapon: cargo ? undefined : guard ? 'rifle' : a?.weapon ? 'pistol' : undefined,
+        carrying: cargo,
+        flash: living(p) && w.traces.some((t) => distance(t.from, p) < 0.2),
+      });
       const color = a
         ? a.exposed
           ? COLORS.red
@@ -907,7 +952,8 @@ export class Scene {
       }
       v.label.visible = !!a && living(p);
       v.label.style.fill = color;
-      if (a && selected.includes(a.id)) v.ink.ellipse(0, 0, 12, 6).stroke({ color, width: 2 });
+      if (a && living(a) && selected.includes(a.id))
+        v.ink.ellipse(0, 0, 12, 6).stroke({ color, width: 2 });
       if (living(p) && p.hp < p.maxHp) {
         v.ink.rect(-12, -38, 24, 3).fill(0x182522);
         v.ink.rect(-12, -38, (24 * p.hp) / p.maxHp, 3).fill(color);
@@ -921,8 +967,6 @@ export class Scene {
           .fill(color);
         if (guard.radio > 0) v.ink.circle(14, -35, 4).stroke({ color: COLORS.red, width: 2 });
       }
-      if (a?.carrying || (p.id === w.courier?.guardId && w.evidence === 'courier' && living(p)))
-        v.ink.rect(8, -14, 10, 9).fill(COLORS.amber).stroke({ color: 0x2b352d, width: 1 });
     }
     depthOrder(depthItems).forEach((item, index) => {
       item.root.zIndex = index;
@@ -936,7 +980,18 @@ export class Scene {
         (id === 'evidence' && w.evidence === 'courier');
       icon.alpha = id === 'override' && w.overrideBy ? 0.6 : 1;
       icon.children[1].visible = !this.guideMarkers.has(id);
-      icon.position.copyFrom(project(landmark(w, id), markerHeight(w, id)));
+      const marker = this.markerScreen(id)!,
+        scale = this.camera.scale.x;
+      icon.position.set((marker.x - this.offset.x) / scale, (marker.y - this.offset.y) / scale);
+      const leader = icon.children[2] as Graphics;
+      leader.clear();
+      if (id === 'escort' || (id === 'evidence' && w.evidence === 'courier')) {
+        const head = this.screen(landmark(w, id), 1.6);
+        leader
+          .moveTo(0, 10)
+          .lineTo(0, (head.y - marker.y - 5) / scale)
+          .stroke({ color: COLORS.amber, width: 1, alpha: 0.4 });
+      }
       if (isExtraction(id)) {
         const label = icon.children[1] as Text;
         label.text = `${landmark(w, id).tag}${exitLocked ? ' · LOCKED' : ''}`;
@@ -995,8 +1050,12 @@ export class Scene {
       }
     }
     for (const t of w.traces) {
-      const a = project(t.from, 0.6),
-        b = project(t.to, 0.6);
+      const angle = Math.atan2(t.to.y - t.from.y, t.to.x - t.from.x);
+      const a = project(
+          { x: t.from.x + Math.cos(angle) * 0.73, y: t.from.y + Math.sin(angle) * 0.73 },
+          1.05,
+        ),
+        b = project(t.to, 1.0);
       this.effects
         .moveTo(a.x, a.y)
         .lineTo(b.x, b.y)

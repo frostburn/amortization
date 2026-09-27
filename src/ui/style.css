@@ -274,6 +274,24 @@ kbd {
   padding: 6px;
   font-size: 10px;
 }
+.escort-actions:has(#escort-aid-button[hidden]) {
+  grid-template-columns: 1fr;
+}
+#escort-wait-button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  text-align: left;
+}
+.witness-portrait {
+  flex: 0 0 28px;
+  height: 28px;
+  background: url('/assets/witnesses.webp') left center / 200% 100%;
+  border: 1px solid #637969;
+}
+[data-witness='quill'] .witness-portrait {
+  background-position: right center;
+}
 #escort-aid-hint {
   margin: 0;
   color: #d6b991;
