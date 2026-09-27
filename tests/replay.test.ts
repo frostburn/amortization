@@ -183,4 +183,23 @@ describe('playtest replays', () => {
     expect(player.error).toBeNull();
     expect(player.world.agents[0].weapon).toBe(false);
   });
+
+  it('imports interactions with removed landmarks for explicit current-rules playback', () => {
+    const { recorder, send, advance } = attempt();
+    send({ kind: 'interact', agents: ['agent-0'], target: 'disguise' });
+    advance(10);
+    const bundle = recorder.bundle();
+    const archived = structuredClone(depot);
+    // A historical mission used this ID; it is no longer present in current mission code.
+    const oldId = 'old-disguise' as 'disguise';
+    archived.landmarks.find((item) => item.id === 'disguise')!.id = oldId;
+    bundle.mission.definition = archived;
+    bundle.mission.hash = fingerprint(archived);
+    bundle.commands[0].command = { kind: 'interact', agents: ['agent-0'], target: oldId };
+    const parsed = parseReplay(JSON.stringify(bundle));
+    expect(() => verifyReplay(parsed, build)).toThrow('Mission configuration differs');
+    expect(verifyReplay(parsed, build, true).error).toBeNull();
+    bundle.commands[0].command = { kind: 'interact', agents: ['agent-0'], target: 'disguise' };
+    expect(() => parseReplay(JSON.stringify(bundle))).toThrow('Unknown recorded mission item');
+  });
 });

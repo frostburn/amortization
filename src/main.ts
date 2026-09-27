@@ -105,6 +105,17 @@ async function boot() {
     }
   }
   function action(type: Action) {
+    if (
+      playtest?.isPlayback &&
+      (type === 'restart' ||
+        type === 'operations' ||
+        type === 'next' ||
+        type.startsWith('mission:'))
+    ) {
+      notify(world, 'Return to the live attempt before starting or restarting an operation.');
+      updateHud();
+      return;
+    }
     if (type.startsWith('mission:')) {
       const mission = missions.find((m) => type === `mission:${m.id}`);
       if (mission) startMission(mission, true);

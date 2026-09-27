@@ -43,6 +43,8 @@ recording, and replay playback are excluded from the production build.
 4. Import a bundle and choose **Watch replay**. Use the replay bar to play/pause,
    select 1×/4×/16× speed, or **Return to attempt**. Playback preserves the live
    world's orders and progress and never awards completions or best times.
+   Restart and mission switching are disabled during playback; return to the live
+   attempt first.
 
 Bundles contain the source revision and simulation fingerprint, mission definition,
 ordered commands at 30 Hz simulation ticks, periodic state checks, outcome, player

@@ -208,6 +208,14 @@ export function parseReplay(raw: string): ReplayBundle {
       mission && hash(b.mission.hash) && fingerprint(b.mission.definition) === b.mission.hash,
       'Invalid mission definition or checksum.',
     );
+    const archived = b.mission.definition as Partial<Mission> | null;
+    requireValue(
+      archived?.id === b.mission.id &&
+        Array.isArray(archived.landmarks) &&
+        archived.landmarks.length <= 100 &&
+        archived.landmarks.every((item) => item && text(item.id, 64)),
+      'Invalid archived mission items.',
+    );
     requireValue(
       b.step === STEP && integer(b.ticks, MAX_TICKS),
       'Invalid simulation duration or step.',
@@ -277,8 +285,8 @@ export function parseReplay(raw: string): ReplayBundle {
         );
       if (c.kind === 'interact')
         requireValue(
-          mission.landmarks.some((o) => o.id === c.target),
-          'Unknown mission item.',
+          archived.landmarks.some((o) => o.id === c.target),
+          'Unknown recorded mission item.',
         );
       if (c.kind === 'attack')
         requireValue(

@@ -296,6 +296,10 @@ export class Playtest {
     }
     if (now - this.lastPaint < 150) return;
     this.lastPaint = now;
+    for (const button of document.querySelectorAll<HTMLButtonElement>(
+      '[data-action="restart"], [data-action="operations"], [data-action="next"], [data-action^="mission:"]',
+    ))
+      button.disabled = this.isPlayback;
     if (this.player) this.paintPlayback();
     else
       this.button.textContent = this.recorder.limited

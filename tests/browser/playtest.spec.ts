@@ -53,7 +53,13 @@ test('exports real inputs, verifies playback, preserves the live attempt, and re
   await page.keyboard.press('f'); // Live gameplay commands must not alter the replay.
   await page.getByRole('button', { name: 'Play replay', exact: true }).click();
   await expect(page.locator('#replay-status')).toContainText('Replay verified');
+  await expect(page.getByRole('button', { name: 'Restart', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Operations', exact: true })).toBeDisabled();
+  await page.locator('canvas').focus();
+  await page.keyboard.press('Shift+R');
+  await expect(page.locator('#replay-status')).toContainText('Replay verified');
   await page.getByRole('button', { name: 'Return to attempt', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Restart', exact: true })).toBeEnabled();
   await expect(page.locator('#pause-label')).toHaveText('Resume');
   await page.getByRole('button', { name: /Playtest ·/ }).click();
   const again = page.waitForEvent('download');
@@ -62,6 +68,7 @@ test('exports real inputs, verifies playback, preserves the live attempt, and re
   expect(preserved.commands).toEqual(bundle.commands);
   expect(preserved.ticks).toBe(bundle.ticks);
   expect(preserved.checkpoints).toEqual(bundle.checkpoints);
+  expect(preserved.id).toBe(bundle.id);
   expect(await page.evaluate(() => localStorage.getItem('amortization.records.v2'))).toBeNull();
   await page.getByRole('button', { name: 'Close playtesting' }).click();
   await page.getByRole('button', { name: 'Restart', exact: true }).click();
