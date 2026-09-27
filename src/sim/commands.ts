@@ -11,6 +11,7 @@ import {
 } from './orders';
 import type { ObjectKind, Vec, World } from './types';
 import { updateBroadcast } from './broadcast';
+import { detonate } from './demolition';
 
 /** Resolved gameplay intent, independent of selection, camera, and input device. */
 export type Command =
@@ -18,7 +19,8 @@ export type Command =
   | { kind: 'interact'; agents: string[]; target: ObjectKind }
   | { kind: 'attack'; agents: string[]; target: string }
   | { kind: 'hold' | 'weapons' | 'heal' | 'drop' | 'escort-aid'; agents: string[] }
-  | { kind: 'escort-wait' };
+  | { kind: 'escort-wait' }
+  | { kind: 'detonate' };
 
 export function applyCommand(world: World, command: Command) {
   if (world.status !== 'playing') return;
@@ -49,6 +51,9 @@ export function applyCommand(world: World, command: Command) {
       break;
     case 'escort-wait':
       waitEscort(world);
+      break;
+    case 'detonate':
+      detonate(world);
       break;
   }
   // Orders can be issued while paused. Release cancelled station work now so

@@ -147,6 +147,15 @@ async function boot() {
       updateHud();
       return;
     }
+    if (type === 'plant:charge-west' || type === 'plant:charge-east') {
+      issue({
+        kind: 'interact',
+        agents: selected,
+        target: type === 'plant:charge-west' ? 'charge-west' : 'charge-east',
+      });
+      updateHud();
+      return;
+    }
     if (type === 'extract:extract' || type === 'extract:alternate') {
       const blocker = extractionRallyBlocker(world);
       if (blocker) {
@@ -223,6 +232,9 @@ async function boot() {
         break;
       case 'escort-wait':
         issue({ kind: 'escort-wait' });
+        break;
+      case 'detonate':
+        issue({ kind: 'detonate' });
         break;
       case 'interact': {
         const agents = world.agents.filter((a) => selected.includes(a.id) && living(a));

@@ -1,4 +1,4 @@
-import { distance, inside, living } from './types';
+import { distance, inside, isCharge, living } from './types';
 import type { Guard, Operative, Person, Vec, World } from './types';
 import { findPath, lineClear } from './navigation';
 import { shoot, WEAPON_RANGE } from './combat';
@@ -17,7 +17,11 @@ export function sees(world: World, guard: Guard, person: Vec): boolean {
 export function suspicionRate(world: World, agent: Operative): number {
   if (world.known.includes(agent.id)) return 130;
   if (agent.weapon) return 95;
-  if (agent.order.kind === 'interact' && agent.order.target === 'divert' && agent.interaction > 0)
+  if (
+    agent.order.kind === 'interact' &&
+    (agent.order.target === 'divert' || isCharge(agent.order.target)) &&
+    agent.interaction > 0
+  )
     return 95;
   if (agent.carrying && world.mission.objective !== 'escort' && !clearedCargo(world, agent))
     return 95;

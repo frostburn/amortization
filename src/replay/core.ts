@@ -263,10 +263,11 @@ export function parseReplay(raw: string): ReplayBundle {
             'drop',
             'escort-aid',
             'escort-wait',
+            'detonate',
           ].includes(c.kind),
         'Unknown command.',
       );
-      if (c.kind !== 'escort-wait')
+      if (c.kind !== 'escort-wait' && c.kind !== 'detonate')
         requireValue(
           Array.isArray(c.agents) &&
             c.agents.length <= 4 &&

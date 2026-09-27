@@ -33,6 +33,12 @@ it('migrates depot records and keeps mission times independent', () => {
   });
   recordWin('custody', 95, 4);
   recordWin('broadcast', 108, 4);
+  recordWin('severance', 120, 4);
+  expect(missionRecord(readRecords(), 'severance')).toEqual({
+    best: 120,
+    fullCrewBest: 120,
+    completions: 1,
+  });
   expect(missionRecord(readRecords(), 'broadcast')).toEqual({
     best: 108,
     fullCrewBest: 108,

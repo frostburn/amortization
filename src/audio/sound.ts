@@ -22,10 +22,20 @@ export class Sound {
     pan.pan.value = Math.max(-0.75, Math.min(0.75, (event.x - 16) / 24));
     gain.connect(pan);
     pan.connect(ctx.destination);
-    const duration = event.kind === 'shot' ? 0.12 : event.kind === 'alarm' ? 0.55 : 0.16;
-    gain.gain.setValueAtTime(event.kind === 'shot' ? 0.09 : 0.035, now);
+    const duration =
+      event.kind === 'blast'
+        ? 0.85
+        : event.kind === 'shot'
+          ? 0.12
+          : event.kind === 'alarm'
+            ? 0.55
+            : 0.16;
+    gain.gain.setValueAtTime(
+      event.kind === 'blast' ? 0.18 : event.kind === 'shot' ? 0.09 : 0.035,
+      now,
+    );
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    if (event.kind === 'shot') {
+    if (event.kind === 'shot' || event.kind === 'blast') {
       const buffer = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * duration), ctx.sampleRate),
         data = buffer.getChannelData(0);
       for (let i = 0; i < data.length; i++)
@@ -34,7 +44,7 @@ export class Sound {
       source.buffer = buffer;
       const filter = ctx.createBiquadFilter();
       filter.type = 'lowpass';
-      filter.frequency.value = 2400;
+      filter.frequency.value = event.kind === 'blast' ? 650 : 2400;
       source.connect(filter);
       filter.connect(gain);
       source.start();

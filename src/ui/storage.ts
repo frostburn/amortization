@@ -38,7 +38,14 @@ export function readRecords(): Records {
       data.missions &&
       typeof data.missions === 'object'
     ) {
-      for (const id of ['depot', 'archive', 'transfer', 'custody', 'broadcast'] as const)
+      for (const id of [
+        'depot',
+        'archive',
+        'transfer',
+        'custody',
+        'broadcast',
+        'severance',
+      ] as const)
         if (valid(data.missions[id])) {
           const prior = data.missions[id];
           records.missions[id] = {

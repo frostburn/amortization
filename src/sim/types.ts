@@ -37,7 +37,12 @@ export type ObjectKind =
   | 'divert'
   | 'dispatch'
   | 'mask'
-  | 'upload';
+  | 'upload'
+  | 'charge-west'
+  | 'charge-east';
+export type ChargeTarget = 'charge-west' | 'charge-east';
+export const isCharge = (id: ObjectKind): id is ChargeTarget =>
+  id === 'charge-west' || id === 'charge-east';
 export interface Landmark extends Vec {
   id: ObjectKind;
   tag: string;
@@ -45,11 +50,11 @@ export interface Landmark extends Vec {
   detail: string;
 }
 export interface Mission {
-  id: 'depot' | 'archive' | 'transfer' | 'custody' | 'broadcast';
+  id: 'depot' | 'archive' | 'transfer' | 'custody' | 'broadcast' | 'severance';
   number: string;
   title: string;
   location: string;
-  objective: 'escort' | 'ledger' | 'case' | 'broadcast';
+  objective: 'escort' | 'ledger' | 'case' | 'broadcast' | 'demolition';
   description: string;
   briefing: { lead: string; body: string; routes: { title: string; body: string }[] };
   intro: string;
@@ -58,6 +63,7 @@ export interface Mission {
   response: { spawns: Vec[]; patrol: Vec[] };
   archive?: { door: Rect; inside: Vec };
   broadcast?: { duration: number; traceTime: number };
+  demolition?: { armTime: number; blastRadius: number };
   transfer?: { start: Vec; patrol: Vec[]; checkpoint: Vec; inspection: Vec; junction: Vec };
   escort?: {
     id: string;
@@ -136,7 +142,7 @@ export interface Notice {
   kind: 'info' | 'warning';
 }
 export interface SoundEvent {
-  kind: 'shot' | 'alarm' | 'interact' | 'hit';
+  kind: 'shot' | 'alarm' | 'interact' | 'hit' | 'blast';
   x: number;
 }
 export interface World {
@@ -170,6 +176,7 @@ export interface World {
     maskBy: string | null;
     uploadBy: string | null;
   };
+  demolition?: { armed: ChargeTarget[]; detonatedAt: number | null };
   alarm: boolean;
   alarmTime: number;
   waves: number;

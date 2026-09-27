@@ -150,7 +150,12 @@ describe('mission guidance', () => {
     // Optional evidence in rescue/broadcast missions must never enable the end action.
     w.evidence = 'carried';
     w.agents[0].carrying = true;
-    if (w.broadcast) {
+    if (w.demolition) {
+      expect(extractionRequirement(w)?.detail).toContain('Detonate');
+      w.demolition.armed = ['charge-west', 'charge-east'];
+      expect(extractionRequirement(w)).not.toBeNull();
+      w.demolition.detonatedAt = 0;
+    } else if (w.broadcast) {
       w.broadcast.progress = 0.9333333333333332; // First exit attempt in replay 52011baa.
       expect(extractionRequirement(w)?.detail).toContain('3% uploaded');
       expect(goal(w, 'extract').targets).toContain('upload');
@@ -161,7 +166,7 @@ describe('mission guidance', () => {
     }
     expect(extractionRequirement(w)).toBeNull();
     expect(goal(w, 'extract').targets).toContain('extract');
-    if (!w.broadcast && !w.escort) {
+    if (!w.broadcast && !w.escort && !w.demolition) {
       dropEvidence(w, [w.agents[0].id]);
       expect(extractionRequirement(w)?.goal).toBe('evidence');
       expect(goal(w, 'extract').targets).toContain('evidence');

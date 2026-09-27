@@ -4,6 +4,7 @@ import { landmark } from '../sim/orders';
 import { clearedCargo, courierGuard } from '../sim/courier';
 import { published } from '../sim/broadcast';
 import { extractionRequirement } from './extraction';
+import { demolished, detonationStatus } from '../sim/demolition';
 
 export type GoalId = 'primary' | 'evidence' | 'extract';
 export type GuideTarget = ObjectKind | 'inspection';
@@ -83,7 +84,34 @@ export function missionGoals(w: World): Goal[] {
   const kit: GuideTarget[] = w.disguiseTaken ? [] : ['disguise'];
   const evidenceInArchive = !!m.archive && inside(w.evidencePosition, m.secure);
   let primary: Goal;
-  if (w.broadcast) {
+  if (w.demolition) {
+    const done = demolished(w),
+      status = detonationStatus(w);
+    const remaining = (['charge-west', 'charge-east'] as const).filter(
+      (id) => !w.demolition!.armed.includes(id),
+    );
+    primary = {
+      id: 'primary',
+      complete: done,
+      label: done
+        ? '✓ Debt backups destroyed'
+        : remaining.length
+          ? `○ Plant charges · ${w.demolition.armed.length} / 2`
+          : status.unsafe.length
+            ? '○ Clear both blast areas'
+            : '○ Charges ready · crew clear',
+      detail: done
+        ? 'Both backups are gone. Bring every surviving operative to the north-east VAN. The recovery REGISTER is optional.'
+        : remaining.length
+          ? 'Plant WEST and EAST: five seconds each with free hands. A planter cannot fire; moving or Hold cancels unfinished placement. Completed charges stay armed without a timer. The maintenance disguise helps you reach the halls, but planting is conspicuous. Watch patrols and hide behind the racks. Then move everyone outside the marked blast circles and use Detonate in the mission panel.'
+          : `${status.reason || 'Everyone is clear. Use Detonate in the mission panel to destroy both cores.'} The control checks every survivor, including unselected operatives. Blast areas ignore walls. RADIO prevents reinforcement calls, but nearby guards hear the explosion.`,
+      targets: done
+        ? ['extract']
+        : remaining.length
+          ? [...remaining, ...kit]
+          : ['charge-west', 'charge-east', ...(!w.gateOpen ? ['gate' as const] : [])],
+    };
+  } else if (w.broadcast) {
     const b = w.broadcast;
     const operator = w.agents.find((a) => a.id === b.maskBy);
     primary = {
@@ -212,7 +240,7 @@ export function missionGoals(w: World): Goal[] {
 
   const carrier = w.agents.find((a) => living(a) && a.carrying);
   const tag = landmark(w, 'evidence').tag;
-  const optionalEvidence = m.objective === 'escort' || m.objective === 'broadcast';
+  const optionalEvidence = !['ledger', 'case'].includes(m.objective);
   const evidence: Goal = {
     id: 'evidence',
     optional: optionalEvidence,
@@ -265,7 +293,7 @@ export function missionGoals(w: World): Goal[] {
             : '○ Extract at the van',
     detail: requirement
       ? `${requirement.detail} Complete the highlighted objective to unlock the exit. Clicking a locked van leaves current orders in place.`
-      : `Use the controls beside the extraction goal to rally every survivor and leave. Or select the crew and right-click or tap the van or its diamond. The order waits for ${v ? `${v.name} and ` : m.broadcast ? '' : `the ${tag} carrier and `}every surviving operative inside the same extraction ring.${v?.waiting ? ` ${v.name} is waiting: ask them to follow.` : ''}${exits.length > 1 ? ' STREET is short and exposed; SERVICE is longer, via the screened corridor.' : ''}${eastGate ? ' Open GATE from inside for the east exit.' : ''}${m.broadcast ? ' Bring the LOOP operator along the public south street; LOG is optional.' : ''} ${counts}.`,
+      : `Use the controls beside the extraction goal to rally every survivor and leave. Or select the crew and right-click or tap the van or its diamond. The order waits for ${v ? `${v.name} and ` : optionalEvidence ? '' : `the ${tag} carrier and `}every surviving operative inside the same extraction ring.${v?.waiting ? ` ${v.name} is waiting: ask them to follow.` : ''}${exits.length > 1 ? ' STREET is short and exposed; SERVICE is longer, via the screened corridor.' : ''}${eastGate ? ' Open GATE from inside for the east exit.' : ''}${m.broadcast ? ' Bring the LOOP operator along the public south street; LOG is optional.' : ''} ${counts}.`,
     targets: requirement
       ? (requirement.goal === 'primary' ? primary : evidence).targets
       : [...exits.map((o) => o.id), ...(eastGate ? ['gate' as const] : [])],
