@@ -6,7 +6,7 @@ viability; it does not claim that an older simulation's state checksums still ma
 Never rewrite a player's commands, checkpoints, note, or build metadata to make a
 recording pass. Deliberate gameplay changes can require new recordings.
 
-## Retained routes
+## Earlier routes
 
 These three submissions remain byte-for-byte unchanged. All were provided in chat
 on 2026-09-27 with `unversioned` / local-changes build metadata. Their original
@@ -29,6 +29,34 @@ collects both. Transfer attacks the courier directly without CALL or DIVERT.
 The depot recording also reproduces the extraction regression: a separate test
 stops issuing commands after its first VAN order and requires the crew and Voss
 to finish without later corrective clicks.
+
+## New balance recordings
+
+Four more submissions from 2026-09-27 are also retained byte-for-byte, including
+their `unversioned` / local-changes metadata. Every original checkpoint and win
+verifies exactly with simulation fingerprint
+`a7adbb3fa75940755122fd673f7ea454e547105731180b24c62823ecd4c87deb`.
+The camera and Mara visibility fixes do not change simulation state.
+
+| Fixture | Original submission | Original and current win |
+| --- | --- | --- |
+| `depot-running-assault.replay.json` | `amortization-depot-won-3da29c8c.replay.json` | Tick 897; 4 survivors; 37 shots; alarm |
+| `archive-breach-assault.replay.json` | `amortization-archive-won-860040c5.replay.json` | Tick 1522; 3 survivors; 70 shots; alarm |
+| `transfer-contested-recovery.replay.json` | `amortization-transfer-won-7f79741d.replay.json` | Tick 1199; 3 survivors; 49 shots; alarm |
+| `custody-radio-breach.replay.json` | `amortization-custody-won-37456874.replay.json` | Tick 2318; 4 survivors; 46 shots; no alarm |
+
+- Depot: “Bam bam, but like I needed to run.” The crew rescues Voss and leaves the
+  optional unit behind.
+- Archive: “Fair.” The crew breaches the shutter and extracts the ledger.
+- Transfer: “I think there was a one-frame glitch when picking up the thing. Had
+  to interact to use van.” Picking up CASE shows the extraction controls and
+  resizes the map. Resizing now happens just before drawing, without changing
+  camera scale or position. Boarding still requires an extraction order.
+- Custody: “Random zooms as the mission progressed. Don't know why Mara wouldn't
+  appear initially.” Extraction controls, Follow, and wrapped COMMS text used to
+  refit the camera whenever they changed the map's size. Mara also stayed hidden
+  after CUT finished at tick 1534, until recruitment at tick 2150. She now appears
+  as soon as either unlock method succeeds.
 
 ## Retired recordings and feedback
 
@@ -55,8 +83,8 @@ earlier response teams. Transfer now receives seven enemy shots instead of zero.
 All four missions still have command-driven quiet and armed completion tests.
 The revised archive and custody assault tests prioritize RADIO and first aid;
 the transfer ambush focuses nearby guards before working DIVERT. These are
-synthetic verification routes, not replacement human recordings. Fresh human
-archive and custody completions are welcome for the new balance.
+synthetic verification routes, not replacement human recordings. The new human
+recordings above restore completion coverage across all four missions.
 
 ```sh
 npm run replay:verify -- attempt.replay.json

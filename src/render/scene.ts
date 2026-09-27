@@ -125,6 +125,8 @@ export class Scene {
   private pan = { x: 0, y: 0 };
   private coneTime = -1;
   private resizeObserver: ResizeObserver;
+  private resizePending = true;
+  private homePending = true;
   private guideLayer = document.createElement('div');
   private guideMarkers = new Map<GuideTarget, HTMLElement>();
   private guidePanel: Rect = { x: 0, y: 0, w: 0, h: 0 };
@@ -134,11 +136,12 @@ export class Scene {
     world: World,
   ) {
     this.world = world;
-    this.resizeObserver = new ResizeObserver(() => this.resize());
+    this.resizeObserver = new ResizeObserver(() => {
+      this.resizePending = true;
+    });
   }
   async init() {
     await this.app.init({
-      resizeTo: this.host,
       background: 0x1a2626,
       antialias: true,
       autoDensity: true,
@@ -171,7 +174,6 @@ export class Scene {
     this.app.stage.addChild(this.camera);
     this.build();
     this.resizeObserver.observe(this.host);
-    this.resize();
   }
   reset(world: World) {
     this.world = world;
@@ -185,8 +187,9 @@ export class Scene {
     this.objects.removeChildren().forEach((c) => c.destroy({ children: true }));
     this.marks.removeChildren().forEach((c) => c.destroy({ children: true }));
     this.build();
-    this.resize();
-    this.home();
+    // Fit once the new mission's HUD has replaced the previous layout.
+    this.resizePending = true;
+    this.homePending = true;
   }
   private build() {
     const world = this.world,
@@ -487,14 +490,15 @@ export class Scene {
     this.addScenery(root, s);
   }
   private resize() {
-    if (!this.app.renderer) return;
-    this.app.renderer.resize(this.host.clientWidth, this.host.clientHeight);
-    this.fit = Math.min(
-      this.host.clientWidth /
-        ((this.world.mission.width + this.world.mission.height) * TILE_X + 80),
-      this.host.clientHeight /
-        ((this.world.mission.width + this.world.mission.height) * TILE_Y + 110),
-    );
+    const width = this.host.clientWidth,
+      height = this.host.clientHeight;
+    if (!width || !height) return;
+    const previous = this.app.screen;
+    if (width === previous.width && height === previous.height) return;
+    // HUD panels and wrapped COMMS text change the viewport, not the player's camera.
+    this.pan.x += (previous.width - width) / 2;
+    this.pan.y += (previous.height - height) / 2;
+    this.app.renderer.resize(width, height);
     this.updateCamera();
   }
   private updateCamera() {
@@ -502,11 +506,11 @@ export class Scene {
     this.camera.scale.set(scale);
     this.offset = {
       x:
-        this.host.clientWidth / 2 -
+        this.app.screen.width / 2 -
         ((this.world.mission.width - this.world.mission.height) / 2) * TILE_X * scale +
         this.pan.x,
       y:
-        this.host.clientHeight / 2 -
+        this.app.screen.height / 2 -
         ((this.world.mission.width + this.world.mission.height) / 2) * TILE_Y * scale +
         this.pan.y +
         25 * scale,
@@ -514,6 +518,12 @@ export class Scene {
     this.camera.position.set(this.offset.x, this.offset.y);
   }
   home() {
+    this.fit = Math.min(
+      this.app.screen.width /
+        ((this.world.mission.width + this.world.mission.height) * TILE_X + 80),
+      this.app.screen.height /
+        ((this.world.mission.width + this.world.mission.height) * TILE_Y + 110),
+    );
     this.zoom = 1;
     this.pan = { x: 0, y: 0 };
     this.updateCamera();
@@ -734,6 +744,16 @@ export class Scene {
     return v;
   }
   render(selected: string[], alpha: number) {
+    // Resize only immediately before drawing, so a ResizeObserver cannot clear
+    // the WebGL canvas between frames (e.g. when picking up the mission item).
+    if (this.resizePending) {
+      this.resizePending = false;
+      this.resize();
+    }
+    if (this.homePending) {
+      this.homePending = false;
+      this.home();
+    }
     const w = this.world;
     this.drawGuidance();
     this.transferRoutes.forEach((route, i) => {
@@ -748,7 +768,7 @@ export class Scene {
     this.cones.visible = this.showVision;
     const depthItems = this.scenery.filter((item) => item.root.visible);
     for (const p of people(w)) {
-      if (p === w.escort && w.mission.escort?.locked && !w.escort.recruited) continue;
+      if (p === w.escort && w.escortLocked && !w.escort.recruited) continue;
       const a = w.agents.find((a) => a.id === p.id),
         guard = w.guards.find((g) => g.id === p.id);
       const type = a ? (a.disguised ? 1 : 0) : guard ? 2 : 3;

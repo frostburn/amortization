@@ -93,10 +93,10 @@ npm run replay:verify -- --current --expect-win attempt.replay.json
 The first command verifies compatible code and every state checkpoint. The second
 tests completion under current rules. Both exit nonzero on failure. Selected player
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
-distinct routes. After the balance changes, three retained recordings cover depot
-and transfer; invalidated archive and custody runs were removed. All four missions
-retain synthetic quiet and armed completion tests. See `tests/replays/README.md`
-for provenance, current outcomes, and retired routes.
+distinct routes. Seven retained recordings cover all four missions, including four
+new completions after the balance changes. Invalidated recordings were removed;
+all four missions also retain synthetic quiet and armed completion tests. See
+`tests/replays/README.md` for provenance, current outcomes, and retired routes.
 
 ## Controls
 
@@ -125,6 +125,10 @@ for provenance, current outcomes, and retired routes.
 | V                              | Toggle guard sight cones                                            |
 
 On touch screens, tap portraits to select, tap ground or a landmark to order, and drag to pan. The sidebar provides the main actions. Desktop mouse and keyboard offer the most precise control. Losing tab focus pauses play.
+
+Changes to COMMS, extraction controls, or viewport size preserve the camera's
+scale and position. **Fit map** / **Home** frames the mission in the available
+space; starting or restarting a mission also fits its map.
 
 Map clicks on an already selected operative keep the group selected. Use a portrait or number key to isolate someone deliberately. If the last selected operative falls, selection transfers to the survivors without changing their orders.
 
