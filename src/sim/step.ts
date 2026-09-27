@@ -78,7 +78,10 @@ export function step(world: World, dt = STEP) {
         a.path = [];
         a.interaction += dt;
         const duration = interactionDuration(world, a, id);
-        if (a.interaction >= duration) completeInteraction(world, a, id);
+        if (a.interaction >= duration) {
+          completeInteraction(world, a, id);
+          if (world.status !== 'playing') return;
+        }
       } else if (!a.path.length) {
         a.path = findPath(world, a, p);
         if (!a.path.length) {

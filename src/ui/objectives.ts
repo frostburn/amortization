@@ -67,7 +67,7 @@ export function missionGoals(w: World): Goal[] {
             ? 'The inspection route is set. Send an operative to CALL to start the transfer; another can wait at INSPECTION to receive CASE.'
             : c.diverted
               ? 'The courier is heading to INSPECTION. Wait there with a disguised operative and concealed weapons, then interact with CASE when the courier stops.'
-              : 'Use DIVERT to send the courier to INSPECTION, then CALL to start the transfer. You can also ambush the courier and recover CASE. A returning courier must reach the depot before CALL works again.',
+              : 'Watch the west patrol: changing DIVERT takes three seconds and raises suspicion if seen, even in disguise. Wait for their back to turn, set the inspection route, then use CALL. You can also ambush the patrolling courier and recover CASE. A returning courier must reach the depot before CALL works again.',
       targets: inContact
         ? ['evidence']
         : c.phase === 'inspection'
@@ -202,7 +202,7 @@ export function missionGoals(w: World): Goal[] {
         : exits.length > 1
           ? '○ Extract at STREET or SERVICE'
           : '○ Extract at the van',
-    detail: `Bring ${v ? `${v.name} and ` : `the ${tag} carrier and `}every surviving operative inside the same extraction ring, then interact with its diamond.${exits.length > 1 ? ' STREET is short and exposed; SERVICE is longer, via the screened corridor.' : ''}${eastGate ? ' Open GATE from inside for the east exit.' : ''} ${counts}.`,
+    detail: `Select the crew and right-click or tap the van or its diamond to approach and extract. The order waits for ${v ? `${v.name} and ` : `the ${tag} carrier and `}every surviving operative inside the same extraction ring.${v?.waiting ? ` ${v.name} is waiting: use the Escort controls to ask them to follow.` : ''}${exits.length > 1 ? ' STREET is short and exposed; SERVICE is longer, via the screened corridor.' : ''}${eastGate ? ' Open GATE from inside for the east exit.' : ''} ${counts}.`,
     targets: [...exits.map((o) => o.id), ...(eastGate ? ['gate' as const] : [])],
   };
   return [primary, evidence, extraction];

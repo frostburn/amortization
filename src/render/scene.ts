@@ -1,4 +1,13 @@
-import { Application, Assets, Container, Graphics, Rectangle, Text, Texture } from 'pixi.js';
+import {
+  Application,
+  Assets,
+  Container,
+  Graphics,
+  Polygon,
+  Rectangle,
+  Text,
+  Texture,
+} from 'pixi.js';
 import { distance, inside, isExtraction, living, people, EXTRACTION_RADIUS } from '../sim/types';
 import type { ObjectKind, Person, Rect, Solid, Vec, World } from '../sim/types';
 import { available, landmark } from '../sim/orders';
@@ -645,13 +654,37 @@ export class Scene {
   }
   hit(x: number, y: number, prioritizeObjects = false): Hit {
     const p = { x, y };
-    const object = this.world.mission.landmarks.find(
-      (o) =>
-        (available(this.world, o.id) ||
-          (o.id === 'escort' && this.world.escortLocked) ||
-          (o.id === 'evidence' && this.world.evidence === 'courier')) &&
-        distance(p, this.screen(landmark(this.world, o.id), markerHeight(this.world, o.id))) < 19,
+    const object = this.world.mission.landmarks
+      .filter(
+        (o) =>
+          (available(this.world, o.id) ||
+            (o.id === 'escort' && this.world.escortLocked) ||
+            (o.id === 'evidence' && this.world.evidence === 'courier')) &&
+          distance(p, this.screen(landmark(this.world, o.id), markerHeight(this.world, o.id))) < 19,
+      )
+      .sort(
+        (a, b) =>
+          distance(p, this.screen(landmark(this.world, a.id), markerHeight(this.world, a.id))) -
+          distance(p, this.screen(landmark(this.world, b.id), markerHeight(this.world, b.id))),
+      )[0];
+    // Use the projected vehicle silhouette, not just the tiny floating marker.
+    const van = this.world.mission.solids.find(
+      (s) =>
+        s.kind === 'van' &&
+        new Polygon([
+          this.screen(s, s.height),
+          this.screen({ x: s.x + s.w, y: s.y }, s.height),
+          this.screen({ x: s.x + s.w, y: s.y }),
+          this.screen({ x: s.x + s.w, y: s.y + s.h }),
+          this.screen({ x: s.x, y: s.y + s.h }),
+          this.screen({ x: s.x, y: s.y + s.h }, s.height),
+        ]).contains(x, y),
     );
+    const exit =
+      van &&
+      this.world.mission.landmarks
+        .filter((o) => isExtraction(o.id))
+        .sort((a, b) => distance(a, van) - distance(b, van))[0];
     const courier = this.world.evidence === 'courier' ? courierGuard(this.world) : null;
     if (prioritizeObjects && object?.id === 'evidence' && courier && living(courier)) {
       const bodyDistance = distance(p, this.screen(courier, 0.5));
@@ -660,12 +693,14 @@ export class Scene {
     }
     // An order aimed at a diamond must still reach it when the crew crowds it.
     // Ordinary left-click selection keeps operatives first.
+    if (prioritizeObjects && exit) return { kind: 'object', id: exit.id };
     if (prioritizeObjects && object) return { kind: 'object', id: object.id };
     const agent = this.world.agents
       .filter(living)
       .map((a) => ({ a, distance: distance(p, this.screen(a, 0.5)) }))
       .sort((a, b) => a.distance - b.distance)[0];
     if (agent && agent.distance < 20) return { kind: 'agent', id: agent.a.id };
+    if (exit) return { kind: 'object', id: exit.id };
     if (object) return { kind: 'object', id: object.id };
     if (this.world.escort && distance(p, this.screen(this.world.escort, 0.5)) < 18)
       return { kind: 'object', id: 'escort' };

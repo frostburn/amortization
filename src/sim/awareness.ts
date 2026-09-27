@@ -15,6 +15,8 @@ export function sees(world: World, guard: Guard, person: Vec): boolean {
 export function suspicionRate(world: World, agent: Operative): number {
   if (world.known.includes(agent.id)) return 130;
   if (agent.weapon) return 95;
+  if (agent.order.kind === 'interact' && agent.order.target === 'divert' && agent.interaction > 0)
+    return 95;
   if (agent.carrying && world.mission.objective !== 'escort' && !clearedCargo(world, agent))
     return 95;
   if (inside(agent, world.mission.restricted)) {
@@ -137,7 +139,10 @@ export function updateAwareness(world: World, dt: number) {
           : world.agents.find((a) => (g.suspicion[a.id] || 0) === highest);
       if (suspect) g.angle = Math.atan2(suspect.y - g.y, suspect.x - g.x);
       g.path = [];
-    } else if (!g.path.length && g.id !== world.courier?.guardId) {
+    } else if (
+      !g.path.length &&
+      (g.id !== world.courier?.guardId || world.courier.phase === 'ready')
+    ) {
       const destination = g.patrol[g.waypoint];
       if (distance(g, destination) < 0.5) g.waypoint = (g.waypoint + 1) % g.patrol.length;
       g.path = findPath(world, g, g.patrol[g.waypoint]);
