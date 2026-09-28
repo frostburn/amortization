@@ -42,7 +42,7 @@ export function detonate(w: World) {
   }
   for (const site of sites) {
     investigateNoise(w, site);
-    w.sounds.push({ kind: 'blast', x: site.x });
+    w.sounds.push({ kind: 'blast', x: site.x, y: site.y });
   }
   raiseAlarm(w);
   notify(

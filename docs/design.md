@@ -36,6 +36,10 @@ Reaching the engineer changes entry into escort. Physical evidence removes one g
 
 ## Boundaries
 
+The [sound palette](audio.md) gives weapons and equipment distinct identities.
+Its audio director observes the simulation without changing it. Charge and
+tracking sounds follow current progress, and panning follows the isometric camera.
+
 - Serializable simulation data and plain TypeScript functions. No framework objects in gameplay state.
 - Mission geometry and patrols belong to content. Substantial props are solids; lights and lettering are decoration.
 - Guards own suspicion, remembered identities, last seen positions, and delayed radio reports. Site-wide identity knowledge follows a completed report.

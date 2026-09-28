@@ -90,8 +90,33 @@ kbd {
 }
 .top-actions {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   margin-left: auto;
+}
+.audio-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.volume-control input {
+  width: 64px;
+  height: 25px;
+  margin: 0;
+  accent-color: var(--mint);
+}
+.volume-control input:focus-visible {
+  outline: 2px solid var(--mint);
+  outline-offset: 2px;
 }
 .top-actions button {
   display: flex;

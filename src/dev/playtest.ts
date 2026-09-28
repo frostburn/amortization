@@ -183,7 +183,7 @@ export class Playtest {
     this.persist();
   }
   advance() {
-    this.player?.advance();
+    this.player?.advance(this.speed === 1);
     if (this.player?.done) this.host.pause(true);
   }
   private returnToAttempt() {

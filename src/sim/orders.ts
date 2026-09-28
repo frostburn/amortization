@@ -240,7 +240,7 @@ export function heal(world: World, ids: string[]) {
       a.hp = Math.min(a.maxHp, a.hp + 55);
       a.medkit = false;
       notify(world, `${a.name} used a field dressing.`);
-      world.sounds.push({ kind: 'interact', x: a.x });
+      world.sounds.push({ kind: 'interact', action: 'heal', x: a.x, y: a.y });
     }
 }
 export function waitEscort(world: World) {
@@ -284,7 +284,7 @@ export function treatEscort(world: World, ids: string[]) {
   }
   medic.medkit = false;
   escort.hp = Math.min(escort.maxHp, escort.hp + 55);
-  world.sounds.push({ kind: 'interact', x: medic.x });
+  world.sounds.push({ kind: 'interact', action: 'heal', x: medic.x, y: medic.y });
   notify(world, `${medic.name} used their field dressing to treat ${escort.name}.`);
 }
 export function dropEvidence(world: World, ids: string[]) {
@@ -293,6 +293,7 @@ export function dropEvidence(world: World, ids: string[]) {
       a.carrying = false;
       world.evidence = 'available';
       world.evidencePosition = { x: a.x, y: a.y };
+      world.sounds.push({ kind: 'interact', action: 'drop', x: a.x, y: a.y });
       if (world.courier) world.courier.clearance = null;
       notify(world, `${world.mission.evidenceName} set down. Another operative can collect it.`);
     }
@@ -356,11 +357,13 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
       previous.order = { kind: 'hold' };
       previous.interaction = 0;
     }
-    if (world.overrideBy !== a.id)
+    if (world.overrideBy !== a.id) {
+      world.sounds.push({ kind: 'interact', action: 'override', x: a.x, y: a.y });
       notify(
         world,
         `${a.name} is holding the archive shutter open. Move or Hold releases the shunt.`,
       );
+    }
     world.overrideBy = a.id;
     a.order = { kind: 'interact', target: id };
     a.path = [];
@@ -381,7 +384,7 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
   a.path = [];
   a.interaction = 0;
   if (!available(world, id)) return;
-  world.sounds.push({ kind: 'interact', x: a.x });
+  world.sounds.push({ kind: 'interact', action: id, x: a.x, y: a.y });
   switch (id) {
     case 'authorise':
       world.security!.inspectionUsed = true;
