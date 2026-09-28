@@ -1,5 +1,6 @@
 import { Application, Container, Graphics, Polygon, Text } from 'pixi.js';
 import {
+  controllable,
   distance,
   inside,
   isCharge,
@@ -124,6 +125,7 @@ export class Scene {
   private labelResolution = 2;
   private gate: Graphics | null = null;
   private shutter: Graphics | null = null;
+  private detentionGates: { root: Graphics; id: ObjectKind }[] = [];
   private world: World;
   private fit = 1;
   zoom = 1;
@@ -188,6 +190,7 @@ export class Scene {
     this.scenery = [];
     this.cores = [];
     this.shutter = null;
+    this.detentionGates = [];
     this.coneTime = -1;
     this.icons.clear();
     this.transferRoutes = [];
@@ -385,20 +388,43 @@ export class Scene {
       box(this.shutter, d.x, d.y, d.w, d.h, 1.6, 0x9b8e70, 0x695d47, 0x4e554b);
       this.addScenery(this.shutter, d);
     }
+    if (mission.detention) {
+      for (const { id, door: d } of [...mission.detention.gates, ...mission.detention.cells]) {
+        const root = new Graphics();
+        const color =
+          id === 'access-intake' ? 0xe2b369 : id === 'access-cells' ? 0x78becd : 0x9faaa1;
+        box(root, d.x, d.y, d.w, d.h, 1.4, color, 0x485e55, 0x344a42);
+        this.addScenery(root, d);
+        this.detentionGates.push({ root, id });
+        plane(g, d.x - 0.7, d.y, 1.7, d.h, color, 0, 0.22);
+        if (id === 'access-intake' || id === 'access-cells') {
+          const label = this.label(id === 'access-intake' ? 'INTAKE' : 'CELLS', 10, color);
+          label.position.copyFrom(project({ x: d.x, y: d.y + d.h / 2 }, 1.65));
+          label.anchor.set(0.5, 1);
+          this.marks.addChild(label);
+        }
+      }
+      const consoleLabel = this.label('REMOTE GATE CONSOLE', 9, 0xb8d4c5);
+      consoleLabel.position.copyFrom(project({ x: 12.7, y: 20.5 }, 1.5));
+      consoleLabel.anchor.set(0.5, 1);
+      this.marks.addChild(consoleLabel);
+    }
     const office = this.label(
-      mission.security
-        ? 'RECORDS / 08'
-        : mission.demolition
-          ? 'RECOVERY CORES / RESTRICTED'
-          : mission.broadcast
-            ? 'RESTRICTED / UPLINK'
-            : mission.escort?.locked
-              ? 'TRANSFER RECORDS'
-              : mission.transfer
-                ? 'CUSTOMS'
-                : mission.archive
-                  ? 'SECURE ARCHIVE'
-                  : 'SECURE OFFICE',
+      mission.detention
+        ? 'PERSONNEL RETENTION / 09'
+        : mission.security
+          ? 'RECORDS / 08'
+          : mission.demolition
+            ? 'RECOVERY CORES / RESTRICTED'
+            : mission.broadcast
+              ? 'RESTRICTED / UPLINK'
+              : mission.escort?.locked
+                ? 'TRANSFER RECORDS'
+                : mission.transfer
+                  ? 'CUSTOMS'
+                  : mission.archive
+                    ? 'SECURE ARCHIVE'
+                    : 'SECURE OFFICE',
       10,
       0xf0c68b,
     );
@@ -410,19 +436,21 @@ export class Scene {
     office.anchor.set(0.5, 1);
     this.marks.addChild(office);
     const road = this.label(
-      mission.demolition
-        ? 'DEBT RECOVERY / 12'
-        : mission.broadcast
-          ? 'MUNICIPAL COMMUNICATIONS / 11'
-          : mission.escort?.locked
-            ? 'REMAND TRANSFERS / 04'
-            : mission.transfer
-              ? 'BONDED TRANSFER / 09'
-              : mission.id === 'depot'
-                ? 'MUNICIPAL TRANSIT / 06'
-                : mission.id === 'clearing'
-                  ? 'BONDED FREIGHT / NO PUBLIC ACCESS'
-                  : 'CIVIC RECORDS / NO PUBLIC ACCESS',
+      mission.detention
+        ? 'VISITORS / WEST SERVICE STREET'
+        : mission.demolition
+          ? 'DEBT RECOVERY / 12'
+          : mission.broadcast
+            ? 'MUNICIPAL COMMUNICATIONS / 11'
+            : mission.escort?.locked
+              ? 'REMAND TRANSFERS / 04'
+              : mission.transfer
+                ? 'BONDED TRANSFER / 09'
+                : mission.id === 'depot'
+                  ? 'MUNICIPAL TRANSIT / 06'
+                  : mission.id === 'clearing'
+                    ? 'BONDED FREIGHT / NO PUBLIC ACCESS'
+                    : 'CIVIC RECORDS / NO PUBLIC ACCESS',
       10,
       0x718277,
     );
@@ -984,8 +1012,16 @@ export class Scene {
     // Ordinary left-click selection keeps operatives first.
     if (prioritizeObjects && exit) return { kind: 'object', id: exit.id };
     if (prioritizeObjects && object) return { kind: 'object', id: object.id };
+    const prisoner = this.world.agents.find(
+      (a) => a.captive && distance(p, this.screen(a, 0.5)) < 20,
+    );
+    if (prisoner)
+      return {
+        kind: 'object',
+        id: this.world.mission.detention!.cells.find((c) => c.agent === prisoner.index)!.id,
+      };
     const agent = this.world.agents
-      .filter(living)
+      .filter(controllable)
       .map((a) => ({ a, distance: distance(p, this.screen(a, 0.5)) }))
       .sort((a, b) => a.distance - b.distance)[0];
     if (agent && agent.distance < 20) return { kind: 'agent', id: agent.a.id };
@@ -1046,6 +1082,11 @@ export class Scene {
     });
     if (this.gate) this.gate.visible = !w.gateOpen;
     if (this.shutter) this.shutter.visible = !w.shutterOpen;
+    for (const gate of this.detentionGates)
+      gate.root.visible =
+        gate.id === 'access-intake' || gate.id === 'access-cells'
+          ? !w.detention!.open.includes(gate.id)
+          : !!w.agents[w.mission.detention!.cells.find((c) => c.id === gate.id)!.agent].captive;
     if (w.time - this.coneTime > 0.12 || w.time < this.coneTime) {
       this.drawVision();
       this.coneTime = w.time;
@@ -1076,15 +1117,17 @@ export class Scene {
         v.sprite.pose(p, alpha, {
           appearance,
           uniform: a?.disguised,
-          weapon: longGun(p)
-            ? p.armament!.kind
-            : cargo
-              ? undefined
-              : guard
-                ? p.armament?.kind || 'pistol'
-                : a?.weapon
-                  ? 'pistol'
-                  : undefined,
+          weapon: a?.disarmed
+            ? undefined
+            : longGun(p)
+              ? p.armament!.kind
+              : cargo
+                ? undefined
+                : guard
+                  ? p.armament?.kind || 'pistol'
+                  : a?.weapon
+                    ? 'pistol'
+                    : undefined,
           stowed: !!a && !a.weapon,
           specialist: guard?.tactics?.role,
           carrying: cargo,
@@ -1125,7 +1168,7 @@ export class Scene {
           .fill(color);
         if (guard.radio > 0) v.ink.circle(14, -35, 4).stroke({ color: COLORS.red, width: 2 });
       }
-      const gun = p.armament;
+      const gun = a?.disarmed ? undefined : p.armament;
       if (gun && living(p) && (guard || (a && selected.includes(a.id)))) {
         const spec = WEAPONS[gun.kind];
         const progress = gun.charging

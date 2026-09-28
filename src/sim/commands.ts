@@ -11,6 +11,7 @@ import {
 } from './orders';
 import type { ObjectKind, Vec, World } from './types';
 import { updateBroadcast } from './broadcast';
+import { updateDetention } from './detention';
 import { detonate } from './demolition';
 
 /** Resolved gameplay intent, independent of selection, camera, and input device. */
@@ -59,4 +60,5 @@ export function applyCommand(world: World, command: Command) {
   // Orders can be issued while paused. Release cancelled station work now so
   // the HUD reflects those orders without advancing upload or trace time.
   updateBroadcast(world, 0);
+  updateDetention(world);
 }

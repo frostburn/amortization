@@ -1,4 +1,4 @@
-import { distance, living } from '../sim/types';
+import { controllable, distance } from '../sim/types';
 import type { Vec, World } from '../sim/types';
 
 interface Focus extends Vec {
@@ -9,7 +9,7 @@ interface Focus extends Vec {
 /** Follow a compact selection; a widely split selection follows its largest local group. */
 export function selectionFocus(world: World, selected: string[], alpha: number): Focus | null {
   const points = selected.flatMap((id) => {
-    const p = world.agents.find((a) => a.id === id && living(a));
+    const p = world.agents.find((a) => a.id === id && controllable(a));
     return p
       ? [
           {

@@ -91,7 +91,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
         .agents.filter((a) => {
           const q = scene.agentBounds(a);
           return (
-            a.hp > 0 && q.x + q.w >= r.x && q.x <= r.x + r.w && q.y + q.h >= r.y && q.y <= r.y + r.h
+            !a.captive && a.hp > 0 && q.x + q.w >= r.x && q.x <= r.x + r.w && q.y + q.h >= r.y && q.y <= r.y + r.h
           );
         })
         .map((a) => a.id);

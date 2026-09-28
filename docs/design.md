@@ -359,6 +359,51 @@ requirements, issuing inspection and breaker orders, expiry and permanent isolat
 They stay outside the routine smoke gate. The full simulation checks continue on
 all PRs; no CI workers, retries, or matrix entries were added.
 
+## Key personnel and two-person detention access
+
+Operation 09 follows the successful mandate extraction. During later handover
+preparations, a safehouse raid captures Vale and Rook. Voss supplies the detention
+layout; Mara retains the mandate. Morrow and Sable start outside. Captivity is a
+mission state, not a retroactive penalty for the player's operation-08 result.
+
+A single remote console supplies either INTAKE (amber) or CELLS (blue). A living,
+free-handed operative must remain working it; movement, Hold, death or another
+order cuts power immediately, including while paused. The worker cannot shoot.
+The other operative crosses INTAKE, waits inside while the partner switches,
+then enters holding through CELLS. The two-second local prisoner releases also
+recheck a distinct operator holding CELLS at completion. A safety edge can keep
+an occupied doorway physically open, but it never substitutes for remote power.
+There is no CUT alternative or hidden radio bypass. The ordinary response road
+barrier is outside the detention perimeter.
+
+Freed prisoners become selectable operatives, with their original names, indices
+and portraits. They start disarmed and without dressings; GEAR restores each
+operative's own loadout and dressing. Commands, automatic fire, selection and
+camera tracking exclude captives; guards leave locked prisoners alone. Once free,
+they move, take damage and obey orders normally. The all-four-alive requirement
+is explicit in the briefing and defeat message. EXIT becomes useful after both
+are free: it permanently releases both gates and ends remote work, so the final
+rally cannot strand the console operator. Equipment and the register are optional.
+
+The gate buttons switch the current operator without changing selection or
+pulling the follow camera away from the infiltrator. Map controls and goal
+locators show INTAKE, CELLS, both local cell releases, GEAR and EXIT. Captive
+portraits remain visible with an explicit status, then unlock immediately.
+
+Navigation includes the two controlled gates and both cell doors. A bounded
+sixteen-state cache handles the extra combinations; old sites still use at most
+four. Detention and captivity fields exist only on missions that use them, so
+previous mission states and human replay inputs remain intact.
+
+Verification includes a full quiet rescue with live patrols, zero shots and no
+recovered weapons, plus a prepared armed withdrawal and equipment recovery. Both
+record and replay exact checkpoints. Focused checks cover outside bypasses,
+captive commands, interrupted releases, operator handoff, doorway occupancy,
+exposed identities, all-guards-dead cooperation, extraction prerequisites and
+failure. Desktop and touch checks use the real mission picker and gate controls,
+then real map hits, prisoner selection, equipment and final extraction in a
+stepped fixture. Those browser checks remain outside the routine smoke suite.
+
 ## Next useful work
 
 The first four human runs of operation 07 are analyzed in the [replay notes](../tests/replays/README.md#margin-call-human-assaults). They establish that direct assaults can win with casualties and that leaving RADIO active makes the forced shutter risky. They do not yet validate the human experience of the quiet route or establish that marksmen require deliberate flanking. Keep those questions open for further playtesting. The [future combat ideas](combat-expansion.md) retain flash grenades, loadout choice, and further equipment and security suggestions for later missions.

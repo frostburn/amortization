@@ -11,6 +11,16 @@ export function extractionRequirement(
   world: World,
 ): { label: string; detail: string; goal: 'primary' | 'evidence' } | null {
   if (world.status === 'won') return null;
+  if (
+    world.detention &&
+    (world.agents.some((a) => a.captive || !living(a)) || !world.detention.released)
+  )
+    return {
+      label: world.agents.some((a) => a.captive) ? 'Free Vale and Rook' : 'Release EXIT',
+      detail:
+        'Extraction locked: free both prisoners with a partner holding CELLS, then use EXIT inside to release the gates. All four must leave alive; GEAR and the register are optional.',
+      goal: 'primary',
+    };
   if (world.demolition && !demolished(world))
     return {
       label: 'Destroy both backups',

@@ -4,8 +4,8 @@ import { step, STEP } from './sim/step';
 import { available, extractionRallyBlocker, landmark } from './sim/orders';
 import { applyCommand } from './sim/commands';
 import type { Command } from './sim/commands';
-import { distance, isExtraction, living } from './sim/types';
-import type { Mission, World } from './sim/types';
+import { controllable, distance, isAccess, isExtraction, living } from './sim/types';
+import type { Mission, ObjectKind, World } from './sim/types';
 import { Scene } from './render/scene';
 import type { Hit } from './render/scene';
 import { Hud } from './ui/hud';
@@ -18,7 +18,7 @@ import { extractionRequirement } from './ui/extraction';
 
 async function boot() {
   let world: World = createWorld(),
-    selected = world.agents.map((a) => a.id),
+    selected = world.agents.filter(controllable).map((a) => a.id),
     paused = true,
     slow = false,
     records = readRecords(),
@@ -31,7 +31,7 @@ async function boot() {
     action,
     (index, add) => {
       const a = world.agents[index];
-      if (!living(a)) return;
+      if (!controllable(a)) return;
       select(
         add
           ? selected.includes(a.id)
@@ -54,7 +54,7 @@ async function boot() {
         showWorld(next) {
           world = next;
           sound.reset(world);
-          selected = world.agents.filter(living).map((a) => a.id);
+          selected = world.agents.filter(controllable).map((a) => a.id);
           accumulator = 0;
           scene.reset(world);
           hud.close();
@@ -72,7 +72,7 @@ async function boot() {
       })
     : undefined;
   function select(ids: string[]) {
-    const alive = ids.filter((id) => world.agents.some((a) => a.id === id && living(a)));
+    const alive = ids.filter((id) => world.agents.some((a) => a.id === id && controllable(a)));
     if (alive.length) selected = [...new Set(alive)];
     hud.clearGuide();
     scene.follow(selected);
@@ -81,7 +81,7 @@ async function boot() {
   function startMission(mission: Mission, briefing: boolean) {
     world = createWorld(mission);
     sound.reset(world);
-    selected = world.agents.map((a) => a.id);
+    selected = world.agents.filter(controllable).map((a) => a.id);
     paused = briefing;
     slow = false;
     saved = false;
@@ -141,6 +141,13 @@ async function boot() {
       if (mission) startMission(mission, true);
       return;
     }
+    if (type.startsWith('detention:')) {
+      const target = type.slice(10) as ObjectKind;
+      const operator = isAccess(target) ? world.detention?.operator : null;
+      issue({ kind: 'interact', agents: operator ? [operator] : selected, target });
+      updateHud();
+      return;
+    }
     if (type.startsWith('heal:')) {
       const medic = world.agents[Number(type.slice(5))];
       if (medic && living(medic)) issue({ kind: 'heal', agents: [medic.id] });
@@ -192,7 +199,7 @@ async function boot() {
       }
       issue({
         kind: 'interact',
-        agents: world.agents.filter(living).map((a) => a.id),
+        agents: world.agents.filter(controllable).map((a) => a.id),
         target: type === 'extract:extract' ? 'extract' : 'alternate',
       });
       updateHud();
@@ -232,12 +239,12 @@ async function boot() {
         break;
       }
       case 'all':
-        selected = world.agents.filter(living).map((a) => a.id);
+        selected = world.agents.filter(controllable).map((a) => a.id);
         break;
       case 'regroup': {
-        const lead = world.agents.find((a) => selected.includes(a.id) && living(a));
+        const lead = world.agents.find((a) => selected.includes(a.id) && controllable(a));
         if (lead) {
-          selected = world.agents.filter(living).map((a) => a.id);
+          selected = world.agents.filter(controllable).map((a) => a.id);
           issue({ kind: 'move', agents: selected, point: { x: lead.x, y: lead.y } });
         }
         break;
@@ -252,7 +259,7 @@ async function boot() {
         issue({ kind: 'interact', agents: selected, target: 'dispatch' });
         break;
       case 'escort-aid':
-        issue({ kind: 'escort-aid', agents: world.agents.filter(living).map((p) => p.id) });
+        issue({ kind: 'escort-aid', agents: world.agents.filter(controllable).map((p) => p.id) });
         break;
       case 'locate-escort':
         hud.focusObjectives();
@@ -264,7 +271,7 @@ async function boot() {
         issue({ kind: 'detonate' });
         break;
       case 'interact': {
-        const agents = world.agents.filter((a) => selected.includes(a.id) && living(a));
+        const agents = world.agents.filter((a) => selected.includes(a.id) && controllable(a));
         const objects = world.mission.landmarks
           .filter((o) => available(world, o.id))
           .map((o) => ({
@@ -303,8 +310,8 @@ async function boot() {
   }
   function updateHud() {
     // Keep a surviving crew actionable if the last selected operative falls.
-    selected = selected.filter((id) => world.agents.some((a) => a.id === id && living(a)));
-    if (!selected.length) selected = world.agents.filter(living).map((a) => a.id);
+    selected = selected.filter((id) => world.agents.some((a) => a.id === id && controllable(a)));
+    if (!selected.length) selected = world.agents.filter(controllable).map((a) => a.id);
     hud.update(world, {
       selected,
       paused,

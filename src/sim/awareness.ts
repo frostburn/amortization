@@ -1,4 +1,4 @@
-import { distance, inside, isCharge, isPower, living } from './types';
+import { controllable, distance, inside, isCharge, isPower, living } from './types';
 import type { Guard, Operative, Person, Vec, World } from './types';
 import { findPath, lineClear } from './navigation';
 import { shoot } from './combat';
@@ -100,7 +100,7 @@ export function updateAwareness(world: World, dt: number) {
     g.repath -= dt;
     let highest = 0;
     let visibleTarget: Person | undefined;
-    for (const a of world.agents.filter(living)) {
+    for (const a of world.agents.filter(controllable)) {
       const visible = sees(world, g, a);
       const rate = visible ? suspicionRate(world, a) : 0;
       const previous = g.suspicion[a.id] || 0;
@@ -161,7 +161,9 @@ export function updateAwareness(world: World, dt: number) {
     }
     if (g.mode === 'combat') {
       const target =
-        escort?.id === g.target ? escort : world.agents.find((a) => a.id === g.target && living(a));
+        escort?.id === g.target
+          ? escort
+          : world.agents.find((a) => a.id === g.target && controllable(a));
       if (maneuver(world, g, target)) {
         cancelCharge(g);
         g.searchTime -= dt;

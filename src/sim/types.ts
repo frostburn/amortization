@@ -42,7 +42,17 @@ export type ObjectKind =
   | 'power-west'
   | 'power-east'
   | 'charge-west'
-  | 'charge-east';
+  | 'charge-east'
+  | AccessTarget
+  | RescueTarget
+  | 'escape-release'
+  | 'equipment';
+export type AccessTarget = 'access-intake' | 'access-cells';
+export type RescueTarget = 'rescue-vale' | 'rescue-rook';
+export const isAccess = (id: ObjectKind): id is AccessTarget =>
+  id === 'access-intake' || id === 'access-cells';
+export const isRescue = (id: ObjectKind): id is RescueTarget =>
+  id === 'rescue-vale' || id === 'rescue-rook';
 export type ChargeTarget = 'charge-west' | 'charge-east';
 export type PowerTarget = 'power-west' | 'power-east';
 export const isPower = (id: ObjectKind): id is PowerTarget =>
@@ -76,11 +86,12 @@ export interface Mission {
     | 'broadcast'
     | 'severance'
     | 'clearing'
-    | 'mandate';
+    | 'mandate'
+    | 'personnel';
   number: string;
   title: string;
   location: string;
-  objective: 'escort' | 'ledger' | 'case' | 'broadcast' | 'demolition';
+  objective: 'escort' | 'ledger' | 'case' | 'broadcast' | 'demolition' | 'rescue';
   description: string;
   briefing: { lead: string; body: string; routes: { title: string; body: string }[] };
   intro: string;
@@ -90,6 +101,10 @@ export interface Mission {
   loadout?: [WeaponKind, WeaponKind, WeaponKind, WeaponKind];
   /** Large sites start near the crew at a readable scale, with an optional map overview. */
   trackingCamera?: boolean;
+  detention?: {
+    gates: { id: AccessTarget; door: Rect }[];
+    cells: { id: RescueTarget; agent: number; door: Rect }[];
+  };
   archive?: { door: Rect; inside: Vec };
   broadcast?: { duration: number; traceTime: number };
   demolition?: { armTime: number; blastRadius: number };
@@ -133,6 +148,8 @@ export interface Person extends Vec {
   armament?: Armament;
 }
 export interface Operative extends Person {
+  captive?: boolean;
+  disarmed?: boolean;
   name: string;
   role: string;
   index: number;
@@ -224,6 +241,12 @@ export interface World {
   };
   demolition?: { armed: ChargeTarget[]; detonatedAt: number | null };
   security?: { isolated: PowerTarget[]; inspectionUntil: number; inspectionUsed: boolean };
+  detention?: {
+    operator: string | null;
+    circuit: AccessTarget | null;
+    open: AccessTarget[];
+    released: boolean;
+  };
   alarm: boolean;
   alarmTime: number;
   waves: number;
@@ -239,6 +262,7 @@ export const distance = (a: Vec, b: Vec) => Math.hypot(a.x - b.x, a.y - b.y);
 export const inside = (p: Vec, r: Rect) =>
   p.x >= r.x && p.y >= r.y && p.x <= r.x + r.w && p.y <= r.y + r.h;
 export const living = (p: Person) => p.hp > 0;
+export const controllable = (p: Operative) => living(p) && !p.captive;
 export const isExtraction = (id: ObjectKind): id is 'extract' | 'alternate' =>
   id === 'extract' || id === 'alternate';
 export const people = (w: World): Person[] => [
