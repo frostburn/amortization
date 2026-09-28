@@ -12,11 +12,13 @@ export function footfall(phase: number): Footfall {
   const t = ((phase % 1) + 1) % 1;
   return t < 0.5
     ? { forward: WALK_STRIDE * (0.25 - t), lift: 0 }
-    : { forward: WALK_STRIDE * (t - 0.75), lift: Math.sin((t - 0.5) * Math.PI * 2) * 0.16 };
+    : { forward: WALK_STRIDE * (t - 0.75), lift: Math.sin((t - 0.5) * Math.PI * 2) * 0.055 };
 }
 
 export function hipHeight(phase: number | null) {
-  return phase === null ? 0.71 : 0.675 - Math.cos(phase * Math.PI * 4) * 0.035;
+  // Keep the supporting knee softly bent, with room to reach the ends of the
+  // stride. The returning boot clears the ground without pulling the thigh up.
+  return phase === null ? 0.71 : 0.693 - Math.cos(phase * Math.PI * 4) * 0.027;
 }
 
 /** Equal thigh and shin lengths, with the knee always bending forward. */

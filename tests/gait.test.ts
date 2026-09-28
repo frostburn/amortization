@@ -28,7 +28,7 @@ beforeAll(() =>
 afterAll(() => DOMAdapter.set(adapter));
 
 describe('directional character animation', () => {
-  it('bends the knees forward without stretching either leg segment through a full stride', () => {
+  it('walks upright with softly bent knees and fixed leg lengths through a full stride', () => {
     for (const phase of [null, ...Array.from({ length: 24 }, (_, i) => i / 24)]) {
       const hip = hipHeight(phase);
       for (const side of [0, 0.5]) {
@@ -40,12 +40,16 @@ describe('directional character animation', () => {
           LEG_SEGMENT,
         );
         expect(knee.forward).toBeGreaterThan(foot.forward / 2);
+        // Zero is a straight leg. The supporting knee stays nearly straight;
+        // the returning leg bends only enough to clear the ground.
+        const bend = Math.acos(
+          (knee.forward * (foot.forward - knee.forward) +
+            (hip - knee.height) * (knee.height - ankle)) /
+            LEG_SEGMENT ** 2,
+        );
+        expect(bend).toBeLessThan(((foot.lift === 0 ? 35 : 55) * Math.PI) / 180);
       }
     }
-    const hip = hipHeight(0.25);
-    expect(kneePosition(hip, 0, 0.25).forward).toBeGreaterThan(
-      kneePosition(hip, 0, 0.09).forward + 0.1,
-    );
   });
   it('reuses posed geometry without destroying another visible character during reset', () => {
     const p = walker(),
