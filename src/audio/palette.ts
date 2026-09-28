@@ -30,6 +30,7 @@ const durations = {
   failed: 1.25,
   charge: 1,
   tracking: 1,
+  objective: 0.3,
 } as const;
 export type SoundId = keyof typeof durations;
 export const SOUND_IDS = Object.keys(durations) as SoundId[];
@@ -230,6 +231,7 @@ export function synthesize(id: SoundId, sampleRate: number, variant = 0): Float3
       noise(0.2, 0.18, 300, 2100, 0.12, 2, { rate: 1700, modulation: 0.6 });
       tone(0.3, 0.12, 740, 740, 0.045);
       break;
+    case 'objective':
     case 'terminal':
       click(0, 0.09);
       tone(0.035, 0.12, 520, 520, 0.08);

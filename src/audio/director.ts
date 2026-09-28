@@ -25,6 +25,8 @@ export function eventCue(event: SoundEvent): Cue {
     };
   if (event.kind === 'alarm') return { id: 'alarm' };
   if (event.kind === 'blast') return { id: 'blast', position };
+  // Recruiting an escort is mission feedback, independent of camera distance.
+  if (event.action === 'escort') return { id: 'objective' };
   const id: SoundId =
     event.action === 'relay'
       ? 'relay'

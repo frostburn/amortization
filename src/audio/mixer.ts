@@ -33,13 +33,28 @@ export function placement(point: Vec, view: ListeningView): Placement {
 }
 
 const priority = (id: SoundId) =>
-  ['alarm', 'complete', 'failed', 'charge', 'tracking'].includes(id)
+  ['objective', 'alarm', 'complete', 'failed', 'charge', 'tracking'].includes(id)
     ? 4
     : ['blast', 'coil', 'wreck'].includes(id)
       ? 3
       : ['step', 'body', 'metal', 'fall'].includes(id)
         ? 0
         : 2;
+
+const combatSounds = new Set<SoundId>([
+  'pistol', 'carbine', 'shotgun', 'automatic', 'coil',
+  'body', 'metal', 'fall', 'wreck', 'blast',
+]);
+const COMBAT_LEVEL = 0.66;
+
+function hold(param: AudioParam, when: number) {
+  if (typeof param.cancelAndHoldAtTime === 'function') param.cancelAndHoldAtTime(when);
+  else {
+    const value = param.value;
+    param.cancelScheduledValues(when);
+    param.setValueAtTime(value, when);
+  }
+}
 
 export interface Voice {
   source: AudioBufferSourceNode;
@@ -57,7 +72,9 @@ export class Mixer {
   private bank = new Map<string, AudioBuffer>();
   private voices = new Set<Voice>();
   private master: GainNode;
-  private compressor: DynamicsCompressorNode;
+  private feedback: DynamicsCompressorNode;
+  private combat: DynamicsCompressorNode;
+  private combatGain: GainNode;
   private limiter: WaveShaperNode;
   private serial = 0;
   readonly maxVoices = 24;
@@ -67,20 +84,32 @@ export class Mixer {
   ) {
     this.master = context.createGain();
     this.master.gain.value = 0;
-    this.compressor = context.createDynamicsCompressor();
-    this.compressor.threshold.value = -16;
-    this.compressor.knee.value = 10;
-    this.compressor.ratio.value = 6;
-    this.compressor.attack.value = 0.003;
-    this.compressor.release.value = 0.18;
+    this.feedback = context.createDynamicsCompressor();
+    this.feedback.threshold.value = -16;
+    this.feedback.knee.value = 10;
+    this.feedback.ratio.value = 6;
+    this.feedback.attack.value = 0.003;
+    this.feedback.release.value = 0.18;
+    // Compress the sum of gunfire/impacts without pulling down mission cues.
+    this.combat = context.createDynamicsCompressor();
+    this.combat.threshold.value = -24;
+    this.combat.knee.value = 6;
+    this.combat.ratio.value = 16;
+    this.combat.attack.value = 0.001;
+    this.combat.release.value = 0.09;
+    this.combatGain = context.createGain();
+    this.combatGain.gain.value = COMBAT_LEVEL;
     this.limiter = context.createWaveShaper();
     this.limiter.curve = Float32Array.from({ length: 2049 }, (_, i) => {
       const x = i / 1024 - 1,
         a = Math.abs(x);
       return Math.sign(x) * (a < 0.65 ? a : 0.65 + 0.3 * Math.tanh((a - 0.65) / 0.3));
     });
-    this.master.connect(this.compressor);
-    this.compressor.connect(this.limiter);
+    this.combat.connect(this.combatGain);
+    this.combatGain.connect(this.master);
+    this.feedback.connect(this.master);
+    // Master volume follows dynamics, preserving the mix at low slider levels.
+    this.master.connect(this.limiter);
     this.limiter.connect(output);
   }
   get activeVoices() {
@@ -143,7 +172,7 @@ export class Mixer {
     source.connect(filter);
     filter.connect(gain);
     gain.connect(pan);
-    pan.connect(this.master);
+    pan.connect(combatSounds.has(id) ? this.combat : this.feedback);
     const voice: Voice = {
       source,
       gain,
@@ -169,7 +198,15 @@ export class Mixer {
       this.voices.delete(voice);
     };
     source.start(when);
+    if (['objective', 'complete', 'failed'].includes(id)) this.duckCombat(when);
     return voice;
+  }
+  private duckCombat(when: number) {
+    const gain = this.combatGain.gain;
+    hold(gain, when);
+    gain.setTargetAtTime(COMBAT_LEVEL * 0.35, when, 0.005);
+    gain.setValueAtTime(COMBAT_LEVEL * 0.35, when + 0.35);
+    gain.setTargetAtTime(COMBAT_LEVEL, when + 0.35, 0.12);
   }
   position(voice: Voice, where: Placement, level = 1, rate = 1) {
     if (voice.stopped) return;
@@ -189,14 +226,7 @@ export class Mixer {
     for (const key of ['gain', 'pan', 'cutoff', 'rate'] as const) {
       if (targets[key] === voice.targets[key]) continue;
       const param = parameters[key];
-      if (typeof param.cancelAndHoldAtTime === 'function') param.cancelAndHoldAtTime(now);
-      else {
-        // Some Web Audio implementations lack cancelAndHoldAtTime. Preserve
-        // the current rendered value before replacing their automation.
-        const value = param.value;
-        param.cancelScheduledValues(now);
-        param.setValueAtTime(value, now);
-      }
+      hold(param, now);
       param.setTargetAtTime(targets[key], now, 0.04);
     }
     voice.targets = targets;
@@ -211,11 +241,15 @@ export class Mixer {
   }
   silence() {
     for (const voice of this.voices) this.stop(voice);
+    this.combatGain.gain.cancelScheduledValues(this.context.currentTime);
+    this.combatGain.gain.setTargetAtTime(COMBAT_LEVEL, this.context.currentTime, 0.02);
   }
   dispose() {
     this.silence();
     this.master.disconnect();
-    this.compressor.disconnect();
+    this.feedback.disconnect();
+    this.combat.disconnect();
+    this.combatGain.disconnect();
     this.limiter.disconnect();
   }
 }

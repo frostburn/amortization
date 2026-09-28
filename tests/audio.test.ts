@@ -4,9 +4,11 @@ import { Director, eventCue } from '../src/audio/director';
 import { placement } from '../src/audio/mixer';
 import { clockedNoise } from '../src/audio/noise';
 import { loopSound, SOUND_IDS, synthesize } from '../src/audio/palette';
+import { depot } from '../src/content/depot';
 import { mandate } from '../src/content/mandate';
 import { parseReplay, ReplayPlayer, stateHash } from '../src/replay/core';
 import { shoot } from '../src/sim/combat';
+import { completeInteraction } from '../src/sim/orders';
 import { TURRET_LOCK } from '../src/sim/security';
 import { cancelCharge, COIL_CHARGE, equip } from '../src/sim/weapons';
 import { createWorld } from '../src/sim/world';
@@ -98,6 +100,18 @@ describe('sound palette and placement', () => {
 });
 
 describe('gameplay audio cues', () => {
+  it('announces recruiting Voss as centred mission feedback', () => {
+    const w = createWorld(depot),
+      a = w.agents[0];
+    a.x = w.escort!.x;
+    a.y = w.escort!.y;
+    completeInteraction(w, a, 'escort');
+    expect(w.escort!.recruited).toBe(true);
+    const event = w.sounds.find((s) => s.kind === 'interact' && s.action === 'escort')!;
+    // No world position: the cue remains clear with a distant/split-team camera.
+    expect(eventCue(event)).toEqual({ id: 'objective' });
+  });
+
   it('identifies the actual weapon and material hit, including fatal hits', () => {
     const w = createWorld(structuredClone(mandate));
     w.mission.solids = [];

@@ -31,6 +31,7 @@ const decibels: Record<SoundId, number> = {
   failed: -6.5,
   charge: -7,
   tracking: 8,
+  objective: 8,
 };
 
 const gains = Object.fromEntries(

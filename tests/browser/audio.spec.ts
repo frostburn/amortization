@@ -151,6 +151,119 @@ test('native audio mixing keeps stereo, limits a volley, and releases cancelled 
   expect(result.afterCancel).toBeLessThan(0.00001);
 });
 
+test('squad volleys leave room for Voss pickup, independently of master volume', async ({
+  page,
+}) => {
+  await page.route('**/squad-mix', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: '<!doctype html><meta charset="utf-8"><title>Squad mix fixture</title>',
+    }),
+  );
+  await page.goto('/squad-mix');
+  const result = await page.evaluate(async () => {
+    const paths = [
+      '/src/audio/mixer.ts',
+      '/src/audio/director.ts',
+      '/src/sim/world.ts',
+      '/src/sim/orders.ts',
+      '/src/content/depot.ts',
+    ];
+    const [{ Mixer, centred }, { eventCue }, { createWorld }, { completeInteraction }, { depot }] =
+      await Promise.all(paths.map((p) => import(p)));
+    const w = createWorld(depot),
+      a = w.agents[0];
+    a.x = w.escort.x;
+    a.y = w.escort.y;
+    completeInteraction(w, a, 'escort');
+    const cue = eventCue(w.sounds.find((s: { action?: string }) => s.action === 'escort'));
+    const rate = 48000;
+    const render = async (guns: number, notice: boolean, volume: number, weapon = 'pistol') => {
+      const context = new OfflineAudioContext(2, rate * 2.4, rate),
+        mixer = new Mixer(context);
+      mixer.volume(volume);
+      // The pickup coincides exactly with the middle volley. Include recovery.
+      for (const when of [0.2, 0.73, 1.8])
+        for (let i = 0; i < guns; i++)
+          mixer.play(
+            weapon,
+            { ...centred, pan: (i - (guns - 1) / 2) * 0.06 },
+            {
+              when,
+              variant: i % 3,
+            },
+          );
+      if (notice) mixer.play(cue.id, centred, { when: 0.73, variant: 0 });
+      const audio = await context.startRendering();
+      return [audio.getChannelData(0), audio.getChannelData(1)];
+    };
+    // Compare short-window signal energy, not sample peaks or authored faders.
+    const shortLevel = (channels: Float32Array[]) => {
+      const energy = new Float64Array(channels[0].length),
+        alpha = 1 - Math.exp((-2 * Math.PI * 100) / rate),
+        window = rate / 10;
+      for (const data of channels) {
+        let low = 0;
+        for (let i = 0; i < data.length; i++) {
+          low += alpha * (data[i] - low);
+          energy[i] += (data[i] - low) ** 2;
+        }
+      }
+      let sum = 0,
+        max = 0;
+      for (let i = 0; i < energy.length; i++) {
+        sum += energy[i];
+        if (i >= window) sum -= energy[i - window];
+        max = Math.max(max, sum / window);
+      }
+      return 10 * Math.log10(max);
+    };
+    const rms = (channels: Float32Array[], start: number, end: number) => {
+      let energy = 0;
+      for (const channel of channels)
+        for (let i = Math.round(start * rate); i < Math.round(end * rate); i++)
+          energy += channel[i] ** 2;
+      return Math.sqrt(energy / ((end - start) * rate));
+    };
+    const mixes = [];
+    for (const volume of [0.3, 1]) {
+      const single = await render(1, false, volume),
+        salvo = await render(4, false, volume),
+        notice = await render(0, true, volume),
+        together = await render(4, true, volume),
+        shotgun = await render(4, false, volume, 'shotgun');
+      // Separate paths let us recover the ducked combat signal by subtraction.
+      const ducked = together.map((channel, c) => channel.map((x, i) => x - notice[c][i]));
+      mixes.push({
+        soloToSquad: shortLevel(salvo) - shortLevel(single),
+        squadToNotice: shortLevel(salvo) - shortLevel(notice),
+        shotgunToNotice: shortLevel(shotgun) - shortLevel(notice),
+        duckRatio: rms(ducked, 0.76, 0.99) / rms(salvo, 0.76, 0.99),
+        recovery: rms(ducked, 1.83, 2.06) / rms(salvo, 1.83, 2.06),
+        peak: together.reduce(
+          (peak, data) => data.reduce((p, x) => Math.max(p, Math.abs(x)), peak),
+          0,
+        ),
+      });
+    }
+    return mixes;
+  });
+  for (const mix of result) {
+    expect(mix.soloToSquad).toBeGreaterThan(0);
+    expect(mix.soloToSquad).toBeLessThan(4);
+    expect(mix.squadToNotice).toBeGreaterThan(-3);
+    expect(mix.squadToNotice).toBeLessThan(3);
+    expect(mix.shotgunToNotice).toBeLessThan(4);
+    expect(mix.duckRatio).toBeGreaterThan(0.2);
+    expect(mix.duckRatio).toBeLessThan(0.55);
+    expect(mix.recovery).toBeGreaterThan(0.97);
+    expect(mix.recovery).toBeLessThan(1.01);
+    expect(mix.peak).toBeGreaterThan(0.01);
+    expect(mix.peak).toBeLessThan(0.5);
+  }
+  expect(Math.abs(result[0].squadToNotice - result[1].squadToNotice)).toBeLessThan(0.1);
+});
+
 test('muting, pausing, replay acceleration and world changes stop live sustained audio', async ({
   page,
 }) => {

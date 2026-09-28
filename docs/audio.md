@@ -20,6 +20,7 @@ Quiet work and movement need texture without making every click an announcement.
 | Footsteps | Very quiet, muffled boot and sole scuff, driven by the same travelled distance as the walking cycle |
 | Relay / feeds | Radio power-down versus a heavy breaker trip and electrical decay |
 | Access / cargo | Latch and sliding mechanism versus handling a case; cloth and dressing sounds for KIT and treatment |
+| Escort recruited | A clear, centred two-note indicator when Voss or another escort joins, with combat briefly lowered underneath |
 | Demolition / outcomes | Pressure and debris for blasts; restrained completion or defeat cues |
 
 The same weapon has the same identity on either side. Legacy operations use
@@ -43,35 +44,43 @@ the page starts muted even when a volume preference exists. Keyboard volume
 adjustments do not pan the map or change squad orders.
 
 Per-effect faders live in `src/audio/levels.ts`, separately from the synthesis
-recipes. They apply before spatial/context gain and the master compressor, both
+recipes. They apply before spatial/context gain and the group compressors, both
 when a voice starts and when a warning loop moves or changes intensity. They are
 fixed authored gains, with no per-clip loudness normalization.
 
 | Role | Balance |
 | --- | --- |
-| Weapons | Compare sustained firing at each weapon's actual cadence. Individual automatic rounds stay lighter; heavier reports receive small trims. |
-| Footsteps | Preserve the very quiet, low-passed level from the preceding pass. |
+| Weapons | Compare sustained firing at each weapon's actual cadence, and four guns firing together. A dedicated combat compressor controls their combined level. |
+| Footsteps | Keep the very quiet, low-passed source and cue gain from the preceding pass. |
 | Hits | Ordinary impacts sit below gunfire; damage to an operative retains its louder context gain. Falls and sentry wrecks receive a small trim. |
 | Reload and equipment | Bring reload/ready clicks up and doors, breakers and relay shutdown down, keeping pickups, clothing, healing and terminals in the same general range. |
 | Threats | Reduce the coil's sustained charge and raise turret acquisition so both warnings carry similar weight. Preserve the coil's increasing intensity as it charges. |
-| Radio and alarm | Radio onset remains above ordinary handling; the global alarm is distinct without reaching weapon-report level. |
+| Radio and alarm | Radio onset remains above ordinary handling; the global alarm carries similar weight to a squad volley. |
+| Objectives | Recruiting an escort uses a stronger, centred indicator rather than a local terminal effect. The combined squad volley and indicator have comparable short-window levels. |
 | Outcomes and blast | Bring success and failure cues together. Explosions stay heavier than gunfire with a smaller volume jump. |
 
 The balance pass compares all variations through the actual browser mixer at a
 common position and volume: peak level, a 100 ms RMS window after a 100 Hz
 high-pass, and energy over real firing sequences. These measurements expose
 outliers, but are not a perceptual loudness standard or a substitute for listening.
-The preview keeps these relative levels, including in overlapping fights.
+The preview keeps these relative levels, including the pickup cue exactly
+coinciding with four guns firing.
 
 Stereo follows horizontal screen position after isometric projection, including
 camera panning and split-team follow. Distance attenuation and high-frequency
-loss use the camera's ground position, independently of zoom. Site alarms and
-outcome cues stay centred. This is a readable tactical mix, not a wall-occlusion
-or room-acoustics simulation, and adds no new AI hearing rules.
+loss use the camera's ground position, independently of zoom. Site alarms,
+escort recruitment and outcome cues stay centred. This is a readable tactical
+mix, not a wall-occlusion or room-acoustics simulation, and adds no new AI hearing rules.
 
-The mixer limits active voices to 24 and favors threat/outcome cues over footsteps
-and impact tails. A compressor and final soft ceiling keep simultaneous volleys
-under control. Finished sources disconnect their entire voice graph. Sustained
+The mixer limits active voices to 24 and favors threat/objective/outcome cues over
+footsteps and impact tails. Gunfire, hits and explosions share a compressor and
+group gain; feedback has its own compressor so loud combat cannot pull down an
+objective cue. Recruitment, success and failure briefly lower combat by about
+9 dB, holding through the recruitment indicator and then smoothly recovering.
+Master volume follows both compressors, keeping their relative levels consistent
+across the slider. A final soft ceiling protects the combined output.
+
+Finished sources disconnect their entire voice graph. Sustained
 sources have short releases and their parameter automation is replaced as they
 move; stationary parameters do not accumulate per-frame automation.
 Engines without `cancelAndHoldAtTime` retain the current parameter value before
@@ -104,10 +113,12 @@ retains all 20 original checkpoints. Submitted bundles have not been rewritten.
 
 Unit checks cover finite/headroom-safe PCM, noise interpolation and clock rates,
 subdued and filtered footsteps, distinct reproducible weapon buffers,
-spatial placement, event metadata, transitions and replay sound consumption.
+spatial placement, actual escort recruitment, event metadata, transitions and
+replay sound consumption.
 On-demand Chromium checks render actual offline audio to test stereo, overlapping
-volleys and cancelled-loop silence, and exercise live mute, pause, accelerated
-playback and world changes. Desktop and touch checks cover the real Sound button,
+volleys, recruitment during a four-gun volley, combat recovery, balance at low and
+full master volume, and cancelled-loop silence. They also exercise live mute,
+pause, accelerated playback and world changes. Desktop and touch checks cover the real Sound button,
 volume gestures, keyboard adjustment, saved volume, no autoplay and clean consoles.
 Routine CI retains its existing ten browser smoke cases.
 
