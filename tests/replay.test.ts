@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildInfo } from '../scripts/build-info';
 import { depot } from '../src/content/depot';
+import { mandate } from '../src/content/mandate';
 import { missions } from '../src/content/missions';
 import { applyCommand } from '../src/sim/commands';
 import type { Command } from '../src/sim/commands';
@@ -103,6 +104,45 @@ describe('playtest replays', () => {
       expect(bundle.ticks * STEP).toBeCloseTo(world.time);
     },
   );
+
+  it('imports and exactly replays attack commands targeting every sentry mount', () => {
+    const { world, recorder, send, advance } = attempt(mandate);
+    for (const target of world.guards.filter((g) => g.turret))
+      send({ kind: 'attack', agents: ['agent-0'], target: target.id });
+    advance(90);
+    const bundle = parseReplay(JSON.stringify(recorder.bundle()));
+    expect(verifyReplay(bundle, build).error).toBeNull();
+  });
+
+  it('rejects malformed turret IDs and turrets absent from the recorded mission', () => {
+    const { recorder, send } = attempt(mandate);
+    send({ kind: 'attack', agents: ['agent-0'], target: 'turret-0' });
+    const bundle = recorder.bundle();
+    for (const target of ['turret-4', 'turret--1', 'turret-1x', 'turret-01']) {
+      bundle.commands[0].command = { kind: 'attack', agents: ['agent-0'], target };
+      expect(() => parseReplay(JSON.stringify(bundle))).toThrow('Invalid attack target');
+    }
+    const legacy = attempt(depot);
+    legacy.send({ kind: 'attack', agents: ['agent-0'], target: 'turret-0' });
+    expect(() => parseReplay(JSON.stringify(legacy.recorder.bundle()))).toThrow(
+      'Invalid attack target',
+    );
+  });
+
+  it('imports removed sentries from the archived definition for current-rules playback', () => {
+    const { recorder, send, advance } = attempt(mandate);
+    const archived = structuredClone(mandate);
+    const target = `turret-${archived.security!.turrets.length}`;
+    archived.security!.turrets.push(structuredClone(archived.security!.turrets[0]));
+    send({ kind: 'attack', agents: ['agent-0'], target });
+    advance(10);
+    const bundle = recorder.bundle();
+    bundle.mission.definition = archived;
+    bundle.mission.hash = fingerprint(archived);
+    const parsed = parseReplay(JSON.stringify(bundle));
+    expect(() => verifyReplay(parsed, build)).toThrow('Mission configuration differs');
+    expect(verifyReplay(parsed, build, true).error).toBeNull();
+  });
 
   it('stops at the first divergent checkpoint and reports its tick and command position', () => {
     const { recorder, send, advance } = attempt();

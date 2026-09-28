@@ -52,13 +52,16 @@ function run() {
     send({ kind: 'interact', agents, target });
     wait(predicate);
   };
-  const verify = () => {
+  const verifyRecording = () => {
     const bundle = parseReplay(JSON.stringify(recorder.bundle()));
     expect(verifyReplay(bundle, build).error).toBeNull();
+  };
+  const verify = () => {
+    verifyRecording();
     expect(w.status).toBe('won');
     expect(w.agents.filter(living)).toHaveLength(4);
   };
-  return { w, ids, send, wait, move, act, verify, tick };
+  return { w, ids, send, wait, move, act, verify, verifyRecording, tick };
 }
 
 describe('Adverse selection', () => {
@@ -113,7 +116,7 @@ describe('Adverse selection', () => {
   });
 
   it('makes a radio-jam rush costly even with focused fire and dressings', () => {
-    const { w, ids, send, move, act, wait, tick } = run();
+    const { w, ids, send, move, act, wait, tick, verifyRecording } = run();
     send({ kind: 'weapons', agents: ids });
     move(ids, { x: 10.5, y: 26 });
     send({ kind: 'attack', agents: ids, target: 'guard-0' });
@@ -138,6 +141,7 @@ describe('Adverse selection', () => {
     expect(w.security!.isolated).toHaveLength(0);
     expect(w.guards.filter(living)).toHaveLength(0);
     expect(w.agents.filter(living).length).toBeLessThanOrEqual(2);
+    verifyRecording();
   });
 
   it('supports a prepared assault without an inspection identity', () => {

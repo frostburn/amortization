@@ -1,4 +1,5 @@
 import type { Mission } from '../sim/types';
+import { missions } from '../content/missions';
 
 const KEY = 'amortization.records.v3';
 export interface MissionRecord {
@@ -38,15 +39,7 @@ export function readRecords(): Records {
       data.missions &&
       typeof data.missions === 'object'
     ) {
-      for (const id of [
-        'depot',
-        'archive',
-        'transfer',
-        'custody',
-        'broadcast',
-        'severance',
-        'clearing',
-      ] as const)
+      for (const { id } of missions)
         if (valid(data.missions[id])) {
           const prior = data.missions[id];
           records.missions[id] = {

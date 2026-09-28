@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { missions } from '../src/content/missions';
 import { missionRecord, readRecords, recordWin } from '../src/ui/storage';
 let data: Map<string, string>;
 beforeEach(() => {
@@ -9,6 +10,16 @@ beforeEach(() => {
   });
 });
 afterEach(() => vi.unstubAllGlobals());
+it.each(missions)('persists completions and separate full-crew records for $id', ({ id }) => {
+  recordWin(id, 100, 4);
+  recordWin(id, 90, 2);
+  recordWin(id, 110, 4);
+  expect(missionRecord(readRecords(), id)).toEqual({
+    best: 90,
+    fullCrewBest: 100,
+    completions: 3,
+  });
+});
 it('migrates depot records and keeps mission times independent', () => {
   data.set('amortization.records.v1', JSON.stringify({ version: 1, best: 40, completions: 2 }));
   expect(missionRecord(readRecords(), 'depot')).toEqual({
