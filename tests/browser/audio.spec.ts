@@ -199,6 +199,8 @@ test('muting, pausing, replay acceleration and world changes stop live sustained
       }
     ).lifecycle;
     await new Promise((r) => setTimeout(r, 100));
+    sound.update(world, view, true);
+    const idle = sound.loops.size;
     world.agents[3].armament.charging = { target: 'guard-0', remaining: 1 };
     sound.update(world, view, true);
     const charging = [...sound.loops.keys()];
@@ -225,6 +227,7 @@ test('muting, pausing, replay acceleration and world changes stop live sustained
     await sound.toggle();
     await new Promise((r) => setTimeout(r, 60));
     return {
+      idle,
       charging,
       paused,
       accelerated,
@@ -234,10 +237,11 @@ test('muting, pausing, replay acceleration and world changes stop live sustained
       voices: sound.mixer.activeVoices,
     };
   });
+  expect(result.idle).toBe(0);
   expect(result.charging).toContain('charge:agent-3:guard-0');
   expect(result.paused).toBe(0);
   expect(result.accelerated).toBe(0);
-  expect(result.cancelled).toEqual(['room']);
+  expect(result.cancelled).toEqual([]);
   expect(result.reset).toBe(0);
   expect(result.enabled).toBe(false);
   expect(result.voices).toBe(0);

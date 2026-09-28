@@ -36,7 +36,7 @@ const priority = (id: SoundId) =>
     ? 4
     : ['blast', 'coil', 'wreck'].includes(id)
       ? 3
-      : ['step', 'body', 'metal', 'fall', 'room'].includes(id)
+      : ['step', 'body', 'metal', 'fall'].includes(id)
         ? 0
         : 2;
 
@@ -98,7 +98,7 @@ export class Mixer {
     const key = `${id}:${variant}`;
     let buffer = this.bank.get(key);
     if (!buffer) {
-      const sampleRate = id === 'room' ? 12000 : this.context.sampleRate;
+      const sampleRate = this.context.sampleRate;
       const pcm = synthesize(id, sampleRate, variant);
       buffer = this.context.createBuffer(1, pcm.length, sampleRate);
       buffer.getChannelData(0).set(pcm);

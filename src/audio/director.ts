@@ -80,7 +80,7 @@ export class Director {
       if (running && living(p)) {
         if (prior) {
           if (Math.floor(p.step / (WALK_STRIDE / 2)) > Math.floor(prior.step / (WALK_STRIDE / 2)))
-            cues.push({ id: 'step', position: { x: p.x, y: p.y }, level: 0.6 });
+            cues.push({ id: 'step', position: { x: p.x, y: p.y }, level: 0.12 });
           if ((gun?.reload ?? 0) > prior.reload)
             cues.push({ id: 'reload', position: p, level: 0.5 });
           if (prior.reload > 0 && gun?.reload === 0)

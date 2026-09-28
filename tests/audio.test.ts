@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { Director, eventCue } from '../src/audio/director';
 import { placement } from '../src/audio/mixer';
+import { clockedNoise } from '../src/audio/noise';
 import { loopSound, SOUND_IDS, synthesize } from '../src/audio/palette';
 import { mandate } from '../src/content/mandate';
 import { parseReplay, ReplayPlayer, stateHash } from '../src/replay/core';
@@ -11,6 +12,50 @@ import { cancelCharge, COIL_CHARGE, equip } from '../src/sim/weapons';
 import { createWorld } from '../src/sim/world';
 
 describe('sound palette and placement', () => {
+  it('clocks held and interpolated noise in Hz independently of output sample rate', () => {
+    const render = (rate: number, interpolation: 'constant' | 'linear', frequency = 375) => {
+      let n = 0;
+      const noise = clockedNoise(() => Math.sin(++n * 1234), rate, interpolation);
+      return Array.from({ length: rate / 8 }, () => noise(frequency));
+    };
+    for (const mode of ['constant', 'linear'] as const) {
+      expect(render(24000, mode)).toEqual(render(48000, mode).filter((_, i) => i % 2 === 0));
+    }
+    const held = render(24000, 'constant'),
+      linear = render(24000, 'linear'),
+      faster = render(24000, 'constant', 750);
+    const changes = (samples: number[]) =>
+      samples.slice(1).filter((x, i) => x !== samples[i]).length;
+    expect(changes(held)).toBe(46);
+    expect(changes(faster)).toBe(93);
+    expect(Math.max(...linear.map(Math.abs))).toBeLessThanOrEqual(1);
+    expect(Math.max(...linear.slice(1).map((x, i) => Math.abs(x - linear[i])))).toBeLessThan(0.04);
+  });
+
+  it('keeps footsteps subdued and low-passed across sample rates and variants', () => {
+    const w = createWorld(mandate),
+      d = new Director();
+    d.reset(w);
+    w.agents[0].step = 0.6;
+    const level = d.update(w, true).cues.find((c) => c.id === 'step')!.level!;
+    const energy = (pcm: Float32Array) => pcm.reduce((sum, x) => sum + x * x, 0) / pcm.length;
+    for (const rate of [24000, 48000])
+      for (let variant = 0; variant < 3; variant++) {
+        const step = synthesize('step', rate, variant),
+          pistol = synthesize('pistol', rate, variant),
+          alpha = 1 - Math.exp((-2 * Math.PI * 1500) / rate);
+        let low = 0,
+          highEnergy = 0;
+        for (const sample of step) {
+          low += alpha * (sample - low);
+          highEnergy += (sample - low) ** 2;
+        }
+        // Check the rendered signal and actual cue level, not just filter settings.
+        expect(highEnergy / step.length / energy(step)).toBeLessThan(0.01);
+        expect(Math.sqrt(energy(step) / energy(pistol)) * level).toBeLessThan(0.05);
+      }
+  });
+
   it('renders finite, audible clips with headroom and quiet one-shot endings', () => {
     for (const id of SOUND_IDS) {
       const pcm = synthesize(id, 24000);

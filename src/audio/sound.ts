@@ -3,7 +3,7 @@ import { Director, eventCue } from './director';
 import type { Cue } from './director';
 import { centred, Mixer, placement } from './mixer';
 import type { ListeningView, Voice } from './mixer';
-import { SOUND_IDS } from './palette';
+import { loopSound, SOUND_IDS } from './palette';
 
 const VOLUME_KEY = 'amortization.volume.v1';
 export class Sound {
@@ -65,11 +65,11 @@ export class Sound {
   }
   private async warm(revision: number) {
     // Spread preparation across turns. Subsequent fire uses cached PCM even
-    // during busy fights; the room's low-frequency bed uses a smaller buffer.
+    // during busy fights.
     for (let variant = 0; variant < 3; variant++)
       for (const id of SOUND_IDS) {
         if (revision !== this.revision || !this.enabled || !this.mixer) return;
-        if (variant && ['room', 'charge', 'tracking'].includes(id)) continue;
+        if (variant && loopSound(id)) continue;
         this.mixer.buffer(id, variant);
         await new Promise((resolve) => setTimeout(resolve, 16));
       }
@@ -107,13 +107,6 @@ export class Sound {
       mixer.play(cue.id, where, { level: cue.level });
     }
     const desired = observed.loops;
-    if (running)
-      desired.push({
-        id: 'room',
-        key: 'room',
-        rate: 1,
-        level: world.guards.some((g) => g.hp > 0 && g.mode === 'combat') ? 0.14 : 0.4,
-      });
     const wanted = new Set(desired.map((loop) => loop.key));
     for (const [key, voice] of this.loops)
       if (!wanted.has(key) || voice.stopped) {
