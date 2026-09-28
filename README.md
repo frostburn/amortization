@@ -18,7 +18,8 @@ Open the URL Vite prints. Everything runs in the browser, with no account, backe
 ```sh
 npm run check       # lint, simulation tests, typecheck, production build
 npx playwright install chromium
-npm run test:e2e    # focused Chromium interaction checks
+npm run test:e2e:smoke # routine CI browser gate (10 checks)
+npm run test:e2e       # full Chromium regressions (28 checks)
 npm run preview    # serve the production build
 ```
 
@@ -423,7 +424,23 @@ Simulation runs at 30 Hz with interpolated rendering. All gameplay uses world co
 
 Characters use a small deformable mesh over the existing atlas for alternating steps, knee lift and arm motion. The walking cycle follows interpolated distance travelled, so idle characters stand still and pause/slow time also affect animation. Each character image is anchored between its soles, with contact shadows following the feet along the ground. Tram windscreens, lamps and trim are projected on their actual vertical face. The extraction van has a cab, sloped windscreen, cargo doors and tyres visible through open wheel arches; its original collision footprint is preserved.
 
-CI uses one Ubuntu job, Node 24, and Chromium. The simulation suite includes complete quiet and armed extractions for all seven missions and checks for navigation clearance, local identification, disguise permissions, radio disruption, evidence custody, demolition safety, and extraction requirements.
+CI uses one Ubuntu job, Node 24, and Chromium. Every pull request and main-branch
+push runs the full lint, typecheck, build and simulation suite, followed by the
+10 browser checks tagged `@smoke`. These cover desktop startup and restart,
+squad/individual selection, touch orders, objective guides, locked extraction,
+stable layout, camera follow and replay export/playback/restore.
+
+The full 28-test browser suite remains available with `npm run test:e2e`, or in
+GitHub Actions via **Check → Run workflow → Run the full browser regression suite**.
+That option replaces the smoke run rather than running both. Use it for mission
+UI, renderer, or broader input changes; extended mission journeys and detailed
+graphics checks are not part of the routine gate. Keep `@smoke` for shared player
+flows so each new mission does not add another real-time browser journey to CI.
+
+The full simulation suite still runs on every change, including all 18 retained
+human completions, complete quiet and armed extractions for all seven missions,
+navigation clearance, local identification, disguise permissions, radio disruption,
+evidence custody, demolition safety, and extraction requirements.
 Playwright launches Vite with `VITE_BROWSER_TEST=true`, capping its renderer at
 15 FPS, and runs one browser at a time so software rendering leaves CPU time for input and assertions.
 The fixed-step simulation still follows elapsed time; ordinary dev and production

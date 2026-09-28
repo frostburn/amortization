@@ -134,7 +134,7 @@ test('routes a courier transfer, distinguishes CASE from its carrier, and resets
   expect(errors).toEqual([]);
 });
 
-test('loads art, accepts individual orders while paused, and restarts cleanly', async ({
+test('loads art, accepts individual orders while paused, and restarts cleanly @smoke', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
@@ -185,7 +185,7 @@ test('keeps the briefing and controls usable on a narrow viewport', async ({ pag
   expect(overflow).toBe(false);
 });
 
-test('keeps the squad selected through missed drags and map clicks, with deliberate individual selection', async ({
+test('keeps the squad selected through missed drags and map clicks, with deliberate individual selection @smoke', async ({
   page,
 }) => {
   await page.goto('/');
@@ -244,7 +244,7 @@ test('keeps the squad selected through missed drags and map clicks, with deliber
   await expect(page.locator('#selected-name')).toHaveText('Morrow');
 });
 
-test('touch map orders preserve the squad while portraits select individuals', async ({
+test('touch map orders preserve the squad while portraits select individuals @smoke', async ({
   browser,
 }) => {
   const context = await browser.newContext({

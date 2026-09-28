@@ -10,7 +10,7 @@ declare global {
 }
 
 for (const mobile of [false, true]) {
-  test(`operation seven: ${mobile ? 'touch' : 'desktop'} launch, readable framing and split-team follow`, async ({
+  test(`operation seven: ${mobile ? 'touch' : 'desktop'} launch, readable framing and split-team follow @smoke`, async ({
     browser,
   }) => {
     const context = await browser.newContext({

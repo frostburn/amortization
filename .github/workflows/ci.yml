@@ -3,6 +3,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      full_browser:
+        description: Run the full browser regression suite
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -21,4 +27,9 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npx playwright install --with-deps --only-shell chromium
-      - run: npm run test:e2e -- --reporter=list
+      - name: Browser smoke tests
+        if: ${{ !inputs.full_browser }}
+        run: npm run test:e2e:smoke -- --reporter=list
+      - name: Full browser regressions
+        if: ${{ inputs.full_browser }}
+        run: npm run test:e2e -- --reporter=list

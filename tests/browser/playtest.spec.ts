@@ -10,7 +10,7 @@ async function bundleFrom(download: Download) {
   return parseReplay(Buffer.concat(chunks).toString('utf8'));
 }
 
-test('exports real inputs, verifies playback, preserves the live attempt, and restores recent runs', async ({
+test('exports real inputs, verifies playback, preserves the live attempt, and restores recent runs @smoke', async ({
   page,
 }) => {
   test.setTimeout(90_000);
