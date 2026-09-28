@@ -8,7 +8,7 @@ import { updateShutter } from './shutter';
 import { courierGuard, routeCourier } from './courier';
 import { BROADCAST_SETUP_TIME, published, workBroadcast } from './broadcast';
 import { demolished, detonationStatus } from './demolition';
-import { longGun } from './weapons';
+import { cancelCharge, longGun } from './weapons';
 
 export function landmark(world: World, id: ObjectKind): Landmark {
   const source = world.mission.landmarks.find((o) => o.id === id)!;
@@ -67,6 +67,7 @@ export function moveAgents(world: World, ids: string[], target: Vec) {
     const destination = destinations[i];
     a.path = findPath(world, a, destination);
     a.order = { kind: 'move', target: destination };
+    cancelCharge(a);
     a.interaction = 0;
     if (!a.path.length && distance(a, destination) > 0.5)
       notify(world, 'No clear route. Open the loading gate or use the west entrance.');
@@ -136,6 +137,7 @@ export function interact(world: World, ids: string[], id: ObjectKind) {
     for (const a of agents) {
       if (a.order.kind === 'interact' && a.order.target === id) continue;
       a.order = { kind: 'interact', target: id };
+      cancelCharge(a);
       a.interaction = 0;
       a.path = findPath(world, a, target);
     }
@@ -160,6 +162,7 @@ export function interact(world: World, ids: string[], id: ObjectKind) {
     if (distance(end, point) >= 1.15 || !lineClear(world, end, point)) continue;
     if (assigned(a)) return; // Repeated squad clicks preserve the current worker's progress.
     a.order = { kind: 'interact', target: id };
+    cancelCharge(a);
     a.interaction = 0;
     a.path = path;
     if (id === 'disguise' && a.armament)
@@ -188,6 +191,7 @@ export function toggleWeapons(world: World, ids: string[]) {
   const draw = agents.some((a) => !a.weapon);
   for (const a of agents) {
     a.weapon = draw;
+    if (!draw) cancelCharge(a);
     if (!draw && a.order.kind === 'attack') {
       a.order = { kind: 'hold' };
       a.path = [];
@@ -198,6 +202,7 @@ export function attack(world: World, ids: string[], target: string) {
   for (const a of world.agents)
     if (ids.includes(a.id) && living(a) && !a.carrying) {
       a.weapon = true;
+      if (a.armament?.charging?.target !== target) cancelCharge(a);
       a.order = { kind: 'attack', target };
       a.path = [];
     }

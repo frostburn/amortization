@@ -80,6 +80,7 @@ export function missionGoals(w: World): Goal[] {
   const m = w.mission,
     v = w.escort,
     c = w.courier;
+  const cargoTag = landmark(w, 'evidence').tag;
   const cover = w.agents.find((a) => living(a) && a.disguised && !a.exposed);
   const kit: GuideTarget[] = w.disguiseTaken ? [] : ['disguise'];
   const evidenceInArchive = !!m.archive && inside(w.evidencePosition, m.secure);
@@ -190,14 +191,14 @@ export function missionGoals(w: World): Goal[] {
             ? '✓ Archive shutter open'
             : '○ Open archive shutter',
       detail: ledgerOutside
-        ? `${w.evidence === 'available' ? 'LEDGER was left outside the archive. Collect it where it lies.' : 'The ledger is recovered.'}${operator ? ' Bring the shunt operator along when you withdraw;' : ' The carrier and'} every survivor must reach VAN.`
+        ? `${w.evidence === 'available' ? `${cargoTag} was left outside the archive. Collect it where it lies.` : `${m.evidenceName} recovered. Keep SHUNT held until the carrier is outside the vault.`}${operator ? ' Bring the shunt operator along when you withdraw;' : ' The carrier and'} every survivor must reach VAN.`
         : w.shutterBreached
-          ? 'The cut lock stays open. Send an operative to LEDGER; carrying it needs both hands.'
+          ? `The cut lock stays open. Send an operative to ${cargoTag}; carrying it needs both hands.`
           : operator
-            ? `${operator.name} is holding SHUNT. Select a different operative and send them to LEDGER. Moving ${operator.name} or using Hold releases the shutter.`
+            ? `${operator.name} is holding SHUNT. Select a different operative and send them to ${cargoTag}. Moving ${operator.name} or using Hold releases the shutter.`
             : w.shutterOpen
-              ? 'The doorway is occupied. Assign someone to SHUNT to keep it open while another operative collects LEDGER, or use CUT once the shutter closes.'
-              : 'Leave one operative at SHUNT while a second enters for LEDGER. Changing selection keeps the shunt held. Alternatively, CUT forces the lock in eight noisy seconds.',
+              ? `The doorway is occupied. Assign someone to SHUNT to keep it open while another operative collects ${cargoTag}, or use CUT once the shutter closes.`
+              : `Leave one operative at SHUNT while a second enters for ${cargoTag}. Changing selection keeps the shunt held. Alternatively, CUT forces the lock in eight noisy seconds.`,
       targets: ledgerOutside
         ? [
             ...(operator ? ['override' as const] : []),
@@ -260,7 +261,7 @@ export function missionGoals(w: World): Goal[] {
         : w.evidence === 'courier'
           ? 'CASE travels with the courier. Use DIVERT and CALL for an inspection handover in disguise, or defeat the courier and collect the dropped case.'
           : evidenceInArchive && !w.shutterOpen
-            ? 'LEDGER is inside the locked archive. Keep one operative at SHUNT while another collects it, or force the lock with CUT. The ledger is required for extraction.'
+            ? `${tag} is inside the locked archive. Keep one operative at SHUNT while another collects it, or force the lock with CUT. The cargo is required for extraction.`
             : `Interact with ${tag} to collect it. It slows its carrier and needs both hands.${optionalEvidence ? ' This evidence is optional; you can complete the operation without it.' : ' Bring its carrier to VAN; extraction requires the evidence.'}${m.broadcast ? ' The log attracts suspicion, even in uniform. Set it down before working LOOP or UPLINK.' : ''}`,
     targets:
       w.evidence === 'extracted'

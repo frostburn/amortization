@@ -73,6 +73,8 @@ async function boot() {
   function select(ids: string[]) {
     const alive = ids.filter((id) => world.agents.some((a) => a.id === id && living(a)));
     if (alive.length) selected = [...new Set(alive)];
+    hud.clearGuide();
+    scene.follow(selected);
     updateHud();
   }
   function startMission(mission: Mission, briefing: boolean) {
@@ -258,6 +260,10 @@ async function boot() {
         scene.showVision = !scene.showVision;
         hud.vision(scene.showVision);
         break;
+      case 'follow':
+        hud.clearGuide();
+        scene.follow(selected, true);
+        break;
       case 'home':
         scene.home();
         break;
@@ -279,6 +285,7 @@ async function boot() {
       paused,
       slow,
       sound: sound.enabled,
+      following: scene.following,
       best: missionRecord(records, world.mission.id).best,
       fullCrewBest: missionRecord(records, world.mission.id).fullCrewBest,
     });
@@ -322,7 +329,7 @@ async function boot() {
       }
     } else accumulator = 0;
     scene.render(selected, paused ? 1 : accumulator / STEP);
-    for (const event of world.sounds.splice(0)) sound.play(event);
+    for (const event of world.sounds.splice(0)) sound.play(event, world.mission.width);
     if (world.status !== 'playing' && !playtest?.isPlayback) {
       paused = true;
       if (world.status === 'won' && !saved) {

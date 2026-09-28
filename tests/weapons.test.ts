@@ -23,7 +23,7 @@ function arena() {
 }
 
 describe('mission weapons', () => {
-  it('limits the new loadouts to operations five and six and gives sentries carbines', () => {
+  it('preserves legacy equipment and gives operations five and six their authored loadouts', () => {
     expect(createWorld().agents.every((p) => !p.armament)).toBe(true);
     expect(createWorld(broadcast).agents.map((p) => p.armament!.kind)).toEqual([
       'pistol',
@@ -44,7 +44,7 @@ describe('mission weapons', () => {
     ]);
   });
 
-  it.each(['pistol', 'carbine', 'shotgun'] as const)(
+  it.each(['pistol', 'carbine', 'shotgun', 'automatic'] as const)(
     'shares %s damage, range, magazine and recovery across both sides',
     (kind) => {
       const { w, a, g } = arena(),

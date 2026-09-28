@@ -1,4 +1,4 @@
-**Future combat ideas.** These are suggestions for later missions, not implemented features or commitments for operations 05 and 06. Current weapon rules and encounters are documented in [design notes](design.md).
+**Future combat ideas.** These are suggestions for later missions, not implemented features or commitments for a particular operation. Current weapon rules and encounters are documented in [design notes](design.md).
 
 The crew should usually move together, with occasional splits to cover a crossing, approach from another angle, or protect someone working. New equipment should earn that extra attention. A disguised solo operative can prepare access and escape trouble; sustained aggression remains a job for the crew.
 
@@ -20,8 +20,6 @@ Before introducing them, verify occlusion, friendly exposure, understandable tar
 
 | Idea                                | What it would add                                                                                                               |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Compact automatic                   | Mobile escort and close flanking, balanced by frequent reloads                                                                  |
-| Coil rifle and security marksman    | A long, visibly charged firing lane that rewards breaking sight or approaching elsewhere                                        |
 | Support gun and bounded suppression | Hold a firing arc while a partner moves; pressure delays firing preparation while movement stays responsive                     |
 | Shield officer                      | Strong frontal protection, limited turning speed, and an ordinary vulnerable body; a reason to establish two firing angles      |
 | Credential inspector                | A visible identity check that makes disguise routes depend on timing and positioning                                            |

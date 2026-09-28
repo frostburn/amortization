@@ -45,6 +45,7 @@ export function readRecords(): Records {
         'custody',
         'broadcast',
         'severance',
+        'clearing',
       ] as const)
         if (valid(data.missions[id])) {
           const prior = data.missions[id];

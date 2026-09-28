@@ -131,7 +131,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     x: 'drop',
     ' ': 'pause',
     v: 'vision',
-    Home: 'home',
+    Home: 'follow',
   };
   document.addEventListener('keydown', (e) => {
     if (

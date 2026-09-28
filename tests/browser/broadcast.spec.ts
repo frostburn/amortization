@@ -13,6 +13,9 @@ declare global {
 test('launches operation five and keeps LOOP held when a different operative receives UPLINK', async ({
   page,
 }) => {
+  // Keep this live-input test at laptop size so software rendering does not
+  // spend the arrival budget painting an unnecessarily large canvas.
+  await page.setViewportSize({ width: 1280, height: 720 });
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
@@ -25,7 +28,9 @@ test('launches operation five and keeps LOOP held when a different operative rec
   await page.getByRole('button', { name: 'Select Vale', exact: true }).click();
   await page.getByRole('button', { name: 'Hold LOOP', exact: true }).click();
   await expect(page.locator('#broadcast-status')).toHaveText('LOOP held by Vale', {
-    timeout: 10_000,
+    // Travel and setup take several simulation seconds; slow CI frames can
+    // stretch that wall-clock time without changing the order or simulation.
+    timeout: 15_000,
   });
   await page.getByRole('button', { name: 'Pause', exact: true }).click();
   await page.getByRole('button', { name: 'Select Morrow', exact: true }).click();

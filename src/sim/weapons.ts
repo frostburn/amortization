@@ -1,4 +1,6 @@
-import type { Armament, Operative, Person, WeaponKind } from './types';
+import type { Armament, GuardTactic, Operative, Person, WeaponKind } from './types';
+
+export const COIL_CHARGE = 1.25;
 
 export const WEAPONS = {
   pistol: {
@@ -28,6 +30,24 @@ export const WEAPONS = {
     reload: 1.8,
     settle: 0,
   },
+  automatic: {
+    name: 'Compact automatic',
+    range: 6.4,
+    damage: 12,
+    interval: 0.16,
+    magazine: 9,
+    reload: 1.65,
+    settle: 0,
+  },
+  coil: {
+    name: 'Coil rifle',
+    range: 13,
+    damage: 52,
+    interval: 0.75,
+    magazine: 3,
+    reload: 2.2,
+    settle: 0,
+  },
 } satisfies Record<
   WeaponKind,
   {
@@ -51,10 +71,23 @@ export const weaponRange = (person: Person) =>
   person.armament ? WEAPONS[person.armament.kind].range : 8;
 export const longGun = (person: Person) => !!person.armament && person.armament.kind !== 'pistol';
 export const visibleWeapon = (person: Operative) => person.weapon || longGun(person);
+export const guardWeapon = (tactic?: GuardTactic): WeaponKind =>
+  tactic?.role === 'marksman'
+    ? 'coil'
+    : tactic?.role === 'sentry'
+      ? 'carbine'
+      : tactic?.role === 'breacher'
+        ? 'shotgun'
+        : 'pistol';
+
+export function cancelCharge(person: Person) {
+  if (person.armament?.charging) delete person.armament.charging;
+}
 
 /** Simulation time owns readiness, even while a weapon is stowed or its owner works. */
 export function updateWeapon(person: Person, dt: number, moved: boolean) {
   const gun = person.armament;
+  if (moved || person.hp <= 0 || (gun?.reload ?? 0) > 0) cancelCharge(person);
   if (!gun || person.hp <= 0) return;
   const spec = WEAPONS[gun.kind];
   gun.settle = moved ? spec.settle : Math.max(0, gun.settle - dt);
@@ -68,6 +101,7 @@ export function weaponStatus(person: Person) {
   const gun = person.armament;
   if (!gun) return '';
   if (gun.reload > 0) return `Reloading ${gun.reload.toFixed(1)}s`;
+  if (gun.charging) return `Charging ${gun.charging.remaining.toFixed(1)}s`;
   if (gun.settle > 0) return person.path.length ? 'Stop to aim' : 'Steadying';
   return `${gun.rounds}/${WEAPONS[gun.kind].magazine}${person.cooldown > 0 ? ' · recovering' : ''}`;
 }
