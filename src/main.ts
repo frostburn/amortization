@@ -329,7 +329,7 @@ async function boot() {
       }
     } else accumulator = 0;
     scene.render(selected, paused ? 1 : accumulator / STEP);
-    for (const event of world.sounds.splice(0)) sound.play(event);
+    for (const event of world.sounds.splice(0)) sound.play(event, world.mission.width);
     if (world.status !== 'playing' && !playtest?.isPlayback) {
       paused = true;
       if (world.status === 'won' && !saved) {

@@ -13,13 +13,14 @@ export class Sound {
       });
     }
   }
-  play(event: SoundEvent) {
+  play(event: SoundEvent, mapWidth: number) {
     if (!this.enabled || !this.context || this.context.state !== 'running') return;
     const ctx = this.context,
       now = ctx.currentTime;
     const gain = ctx.createGain(),
       pan = ctx.createStereoPanner();
-    pan.pan.value = Math.max(-0.75, Math.min(0.75, (event.x - 16) / 24));
+    // Centre stereo on the current mission and preserve separation across its width.
+    pan.pan.value = Math.max(-0.75, Math.min(0.75, (event.x / mapWidth - 0.5) * 1.5));
     gain.connect(pan);
     pan.connect(ctx.destination);
     const duration =
