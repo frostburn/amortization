@@ -9,7 +9,8 @@ import {
   interactionPoint,
 } from './orders';
 import { reportGunfire, updateAwareness } from './awareness';
-import { shoot, WEAPON_RANGE } from './combat';
+import { shoot } from './combat';
+import { updateWeapon, weaponRange } from './weapons';
 import { notify } from './world';
 import { updateShutter } from './shutter';
 import { updateCourier } from './courier';
@@ -47,6 +48,7 @@ export function step(world: World, dt = STEP) {
   world.time += dt;
   updateShutter(world);
   for (const p of people(world)) {
+    updateWeapon(p, dt, distance(p, p.previous) > 1e-6);
     p.previous = { x: p.x, y: p.y };
     p.cooldown = Math.max(0, p.cooldown - dt);
   }
@@ -67,10 +69,12 @@ export function step(world: World, dt = STEP) {
       if (!target) {
         a.order = { kind: 'hold' };
         a.path = [];
-      } else if (distance(a, target) <= 7.5 && lineClear(world, a, target)) a.path = [];
+      } else if (distance(a, target) <= weaponRange(a) - 0.5 && lineClear(world, a, target))
+        a.path = [];
       else if (!a.path.length) a.path = findPath(world, a, target);
     }
     walk(world, a, a.carrying ? 2 : 3.2, dt);
+    if (distance(a, a.previous) > 1e-6) updateWeapon(a, 0, true);
     if (a.order.kind === 'move' && !a.path.length) a.order = { kind: 'hold' };
     if (a.order.kind === 'interact') {
       const id = a.order.target,
@@ -110,7 +114,7 @@ export function step(world: World, dt = STEP) {
         (g) =>
           living(g) &&
           (order.kind === 'attack' ? g.id === order.target : g.mode === 'combat') &&
-          distance(a, g) <= WEAPON_RANGE &&
+          distance(a, g) <= weaponRange(a) &&
           lineClear(world, a, g),
       );
       candidates.sort((g, h) => distance(a, g) - distance(a, h));

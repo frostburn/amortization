@@ -93,9 +93,10 @@ npm run replay:verify -- --current --expect-win attempt.replay.json
 The first command verifies compatible code and every state checkpoint. The second
 tests completion under current rules. Both exit nonzero on failure. Selected player
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
-distinct routes. Seventeen retained recordings cover all six missions, including
-the Public offering extraction-feedback run and a Severance squad assault. Invalidated recordings were removed;
-all six missions have synthetic quiet and armed completion tests. See
+distinct routes. Fifteen retained recordings cover operations 01–04. The two
+recordings for operations 05–06 no longer win with their new equipment and were
+retired without altering the submitted inputs. All six missions have synthetic
+quiet and armed completion tests; new human runs for 05–06 are welcome. See
 `tests/replays/README.md` for provenance, current outcomes, and retired routes.
 
 ## Controls
@@ -112,7 +113,7 @@ all six missions have synthetic quiet and armed completion tests. See
 | Right-click a guard            | Draw weapons and attack                                             |
 | G                              | Regroup everyone at the lead selected operative                     |
 | S                              | Hold position / release the archive shunt                           |
-| F                              | Draw / conceal selected weapons                                     |
+| F                              | Draw / stow selected weapons                                     |
 | E                              | Interact with a nearby landmark                                     |
 | H                              | Use a field dressing: one per operative, up to 55 health            |
 | X                              | Put down carried evidence                                           |
@@ -244,6 +245,43 @@ The access keys lead to auditor **Mara Quill**, held in a security transport at 
 
 For a quiet escape, take KIT, disable RADIO, file WARRANT, and collect Mara. Lead her north of the lower cargo containers, west through the service corridor, and out the west entrance to SERVICE. Send the rest of the crew up the public street. For an armed extraction, clear the transport bay before cutting the lock, leave Mara waiting behind cover while the crew secures the gate, then bring her to STREET.
 
+## Equipment in operations 05 and 06
+
+| Weapon | Range | Damage | Shots / magazine | Shot recovery | Automatic reload |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Pistol | 6 | 17 | 8 | 0.52s | 1.2s |
+| Carbine | 9 | 26 | 6 | 0.72s | 1.6s |
+| Shotgun | 3.8 | 44 | 2 | 1.05s | 1.8s |
+
+Both sides use these rules. A carbine needs 0.35 seconds stationary after moving
+before it can fire. Pistols and shotguns can fire while moving. Empty magazines
+reload automatically with unlimited reserve ammunition; movement, stowing, and
+new orders preserve the reload. Pause freezes readiness and slow time scales it.
+
+Morrow and Vale carry concealable pistols. Rook and Sable carry carbines in 05;
+Rook switches to a shotgun in 06. Long guns remain visible when stowed, including
+while carrying cargo. **KIT** assigns an eligible selected pistol carrier and
+names them before they start moving. Briefings show all assignments; portraits
+show ammunition and reloads, and the selected operative panel shows weapon,
+range and readiness. Hover an enemy to inspect its role and readiness; touch taps
+show that information while issuing the usual attack order. Small bars beneath
+characters show preparation and reload progress without obscuring faces.
+
+Enemy uniforms identify the role from any direction: **khaki site guards**,
+**blue carbine sentries**, and **red breach officers**. Officers also wear a
+dark chest plate and visor. Regular guards use the same pistol model in every
+operation. At close zoom, pistols have a compact slide and grip,
+carbines have a box magazine and short stock, and shotguns have a long barrel,
+wooden stock and ribbed pump. Those shapes remain visible at low ready or slung
+on the back; concealed pistols stay hidden.
+
+Carbine sentries defend lanes and seek nearby physical cover when hit or reloading.
+Breach officers use short-range shotguns and approach last-seen threats through
+screened positions. Nearby specialists can share a directly observed contact;
+hearing a shot supplies a location, not knowledge of an unseen person's movements.
+Operations 01–04 retain their existing combat rules. Further equipment ideas,
+including flash grenades, remain in [the future design notes](docs/combat-expansion.md).
+
 ## Public offering · Operation 05
 
 Mara's audit connects the recovered ledger and account keys. Publish it from the
@@ -259,7 +297,7 @@ Mara's audit connects the recovered ledger and account keys. Publish it from the
   A completed trace cannot be undone, but the upload can still finish.
 - The trace attracts nearby guards. **RADIO** prevents reinforcements, including
   after a trace, but does not stop local investigation or visual recognition.
-- **KIT** gives one operative maintenance access. The server room is restricted
+- **KIT** gives Morrow or Vale maintenance access. The server room is restricted
   even in uniform, and a patrol walks through it. Use the racks to break sight,
   wait for the patrol to leave, and resume the upload.
 - **Hold LOOP** and **Work UPLINK** beside the primary goal issue ordinary orders
@@ -271,12 +309,14 @@ Mara's audit connects the recovered ledger and account keys. Publish it from the
 - **LOG** is optional evidence of suppressed broadcasts. Carrying it is suspicious
   even in uniform and prevents work at either station. Drop it to free the hands.
 
-The quiet verification route times patrol windows with a disguised uploader and
-an operative holding LOOP. The armed route disables RADIO, advances together
-through cover, treats wounds, and completes a traced upload. These are synthetic
-completion checks, not a substitute for human difficulty feedback. The human
-`52011baa` completion is also retained; its premature exit feedback led to the
-shared extraction lock described above.
+A carbine sentry watches the server-room approach. Break its lane at the racks;
+let covering carbines settle while a teammate moves. The quiet verification route
+times patrol windows with a disguised uploader and a LOOP operator, keeping the
+long guns screened until withdrawal. The armed route disables RADIO, pauses for
+covering fire, treats wounds, and completes a traced upload. Both keep all four
+alive and verify replay checkpoints. These are synthetic completion checks;
+the old human run `52011baa` was retired because it loses under the new rules.
+Its early-extraction feedback remains covered by browser regressions.
 
 ## Severance · Operation 06
 
@@ -286,7 +326,7 @@ isolated debt backups. Destroy both cores, then get everyone to the north-east v
 - Plant charges at **WEST** and **EAST**. Each takes five uninterrupted seconds
   with free hands; the planter cannot fire. Moving or **Hold** cancels unfinished
   placement. Completed charges persist, including after their planter dies.
-- **KIT** gives one operative maintenance access. The two core halls remain
+- **KIT** gives Morrow or Vale maintenance access. The two core halls remain
   restricted, and planting is conspicuous even in uniform. Watch the room patrols
   and use the racks to break sight. A single infiltrator can plant both charges,
   or split the crew to work in parallel while teammates provide cover.
@@ -300,14 +340,18 @@ isolated debt backups. Destroy both cores, then get everyone to the north-east v
   locked until detonation, then the usual rally gathers every survivor and extracts.
   The recovery **REGISTER** is optional and occupies both hands.
 
-The quiet verification route waits for patrol windows, uses one disguised planter,
-and extracts all four without taking damage or firing. The armed route advances
-together, covers the planter, and secures the gate before the return. These are
-synthetic verification runs. A retained human squad assault also completes in
-56.1 seconds with all four operatives, the optional register, and no site alarm.
-Both its checkpoints and the synthetic quiet route verify exactly, including the
-remote detonation command. All seventeen human bundles remain unchanged and win
-under current rules; older builds require **Try current rules** because the
+The courtyard pairs a carbine sentry with a breach officer, replacing two existing
+patrols. If RADIO stays online, the second response wave brings another pair.
+Keep distance from the officer's shotgun and move during its recovery; break the
+sentry's lane before crossing. The core-room patrol windows remain available.
+
+The quiet verification route uses one disguised planter and a screened northern
+withdrawal for the long guns; all four finish without damage or shots. The armed
+route uses covering fire, closes shotgun attacks around corners, treats wounds,
+and secures the gate. It also extracts all four. The synthetic quiet route checks
+replay determinism including detonation. The older human assault `546bc6e8` now
+loses and was retired. All fifteen retained human bundles remain unchanged and
+win under current rules; older builds require **Try current rules** because the
 simulation fingerprint has changed.
 
 Results track time, crew survival, evidence, and alarm status. Operation five also reports publication; operation six reports backup destruction. Each operation keeps
@@ -337,6 +381,10 @@ Simulation runs at 30 Hz with interpolated rendering. All gameplay uses world co
 Characters use a small deformable mesh over the existing atlas for alternating steps, knee lift and arm motion. The walking cycle follows interpolated distance travelled, so idle characters stand still and pause/slow time also affect animation. Each character image is anchored between its soles, with contact shadows following the feet along the ground. Tram windscreens, lamps and trim are projected on their actual vertical face. The extraction van has a cab, sloped windscreen, cargo doors and tyres visible through open wheel arches; its original collision footprint is preserved.
 
 CI uses one Ubuntu job, Node 24, and Chromium. The simulation suite includes complete quiet and armed extractions for all six missions and checks for navigation clearance, local identification, disguise permissions, radio disruption, evidence custody, demolition safety, and extraction requirements.
+Playwright launches Vite with `VITE_BROWSER_TEST=true`, capping its renderer at
+15 FPS, and runs one browser at a time so software rendering leaves CPU time for input and assertions.
+The fixed-step simulation still follows elapsed time; ordinary dev and production
+rendering are uncapped. Local and CI browser tests use the same SwiftShader backend.
 
 ## Current scope
 

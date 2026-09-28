@@ -187,6 +187,17 @@ kbd {
   font-size: 10px;
   color: #71867c;
 }
+.map-caption.inspecting {
+  bottom: 55px;
+  max-width: min(280px, calc(100% - 44px));
+  padding: 9px;
+  background: #101b19ed;
+  border: 1px solid #526155;
+}
+.map-caption.inspecting small {
+  color: #b1c5b8;
+  line-height: 1.4;
+}
 .selection-box {
   position: absolute;
   border: 1px solid var(--mint);
@@ -734,6 +745,13 @@ kbd {
 #selected-cover {
   color: #aebaa1;
   font-size: 9px;
+}
+#selected-equipment,
+#selected-equipment:not([hidden]) ~ .assessment {
+  margin-top: 4px;
+}
+.selection-section:has(#selected-equipment:not([hidden])) {
+  padding-block: 8px;
 }
 .assessment {
   font-size: 10px;

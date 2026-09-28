@@ -10,6 +10,8 @@ import {
 } from '../sim/types';
 import type { ObjectKind, Person, Rect, Solid, Vec, World } from '../sim/types';
 import { available, landmark } from '../sim/orders';
+import { longGun, WEAPONS } from '../sim/weapons';
+import { sightRange } from '../sim/awareness';
 import { findPath, lineClear } from '../sim/navigation';
 import { depthOrder } from './depth';
 import { PersonSprite } from './person';
@@ -149,6 +151,10 @@ export class Scene {
       resolution: Math.min(devicePixelRatio, 2),
       preference: 'webgl',
     });
+    // Browser tests share a software GPU. Cap presentation work there while the
+    // fixed-step simulation and real input handling continue at their usual rates.
+    if (import.meta.env.DEV && import.meta.env.VITE_BROWSER_TEST === 'true')
+      this.app.ticker.maxFPS = 15;
     this.host.appendChild(this.app.canvas);
     this.app.canvas.tabIndex = 0;
     this.guideLayer.className = 'objective-locators';
@@ -929,7 +935,17 @@ export class Scene {
       v.sprite.pose(p, alpha, {
         appearance,
         uniform: a?.disguised,
-        weapon: cargo ? undefined : guard ? 'rifle' : a?.weapon ? 'pistol' : undefined,
+        weapon: longGun(p)
+          ? p.armament!.kind
+          : cargo
+            ? undefined
+            : guard
+              ? p.armament?.kind || 'pistol'
+              : a?.weapon
+                ? 'pistol'
+                : undefined,
+        stowed: !!a && !a.weapon,
+        specialist: guard?.tactics?.role,
         carrying: cargo,
         flash: living(p) && w.traces.some((t) => distance(t.from, p) < 0.2),
       });
@@ -966,6 +982,22 @@ export class Scene {
           .rect(-12, -44, (24 * suspicion) / 100, 3)
           .fill(color);
         if (guard.radio > 0) v.ink.circle(14, -35, 4).stroke({ color: COLORS.red, width: 2 });
+      }
+      const gun = p.armament;
+      if (gun && living(p) && (guard || (a && selected.includes(a.id)))) {
+        const spec = WEAPONS[gun.kind];
+        const progress =
+          gun.reload > 0
+            ? 1 - gun.reload / spec.reload
+            : gun.settle > 0 && !p.path.length
+              ? 1 - gun.settle / spec.settle
+              : null;
+        if (progress !== null)
+          v.ink
+            .rect(-9, 7, 18, 2)
+            .fill(0x182522)
+            .rect(-9, 7, 18 * progress, 2)
+            .fill(gun.reload > 0 ? COLORS.amber : COLORS.mint);
       }
     }
     depthOrder(depthItems).forEach((item, index) => {
@@ -1076,7 +1108,7 @@ export class Scene {
       for (let i = 0; i <= 22; i++) {
         const angle = guard.angle - Math.PI * 0.36 + (i / 22) * Math.PI * 0.72;
         let low = 0,
-          high = 7.5;
+          high = sightRange(guard);
         for (let j = 0; j < 7; j++) {
           const mid = (low + high) / 2;
           const p = { x: guard.x + Math.cos(angle) * mid, y: guard.y + Math.sin(angle) * mid };

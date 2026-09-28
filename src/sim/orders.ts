@@ -8,6 +8,7 @@ import { updateShutter } from './shutter';
 import { courierGuard, routeCourier } from './courier';
 import { BROADCAST_SETUP_TIME, published, workBroadcast } from './broadcast';
 import { demolished, detonationStatus } from './demolition';
+import { longGun } from './weapons';
 
 export function landmark(world: World, id: ObjectKind): Landmark {
   const source = world.mission.landmarks.find((o) => o.id === id)!;
@@ -72,6 +73,8 @@ export function moveAgents(world: World, ids: string[], target: Vec) {
   });
 }
 function interactionRefusal(world: World, a: Operative, id: ObjectKind): string | null {
+  if (id === 'disguise' && longGun(a))
+    return 'KIT needs a concealable pistol. Select Morrow or Vale; long guns remain visible when stowed.';
   if (
     a.carrying &&
     [
@@ -159,6 +162,8 @@ export function interact(world: World, ids: string[], id: ObjectKind) {
     a.order = { kind: 'interact', target: id };
     a.interaction = 0;
     a.path = path;
+    if (id === 'disguise' && a.armament)
+      notify(world, `${a.name} is heading to KIT with a concealable pistol.`);
     return;
   }
   notify(

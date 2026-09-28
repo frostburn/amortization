@@ -17,6 +17,7 @@ export const severance: Mission = {
   title: 'Severance',
   location: 'Recovery vault 12',
   objective: 'demolition',
+  loadout: ['pistol', 'pistol', 'shotgun', 'carbine'],
   demolition: { armTime: 5, blastRadius: 4.5 },
   description: 'Destroy the debt backups. Plant, withdraw, then make it permanent.',
   evidenceName: 'Recovery register',
@@ -32,7 +33,7 @@ export const severance: Mission = {
       },
       {
         title: 'Clear, plant, withdraw',
-        body: 'An armed crew can clear the courtyard and cover a planter who cannot shoot. Splitting lets two operatives plant at once. Open GATE from inside and get everyone clear before detonation. The blast areas ignore walls; the control names any operative still inside. The recovery REGISTER is optional and occupies both hands.',
+        body: 'An armed crew can clear the courtyard and cover a planter who cannot shoot. Splitting lets two operatives plant at once. Open GATE from inside and get everyone clear before detonation. The blast areas ignore walls; the control names any operative still inside. A carbine sentry covers the courtyard while a shotgun breach officer closes around the cooling blocks. Keep your distance from the officer, or use Rook’s shotgun at a corner while Sable covers the lane. The recovery REGISTER is optional and occupies both hands.',
       },
     ],
   },
@@ -43,6 +44,24 @@ export const severance: Mission = {
   gate: { x: 34, y: 19, w: 0.35, h: 3 },
   gateOutside: { x: 35.4, y: 20.5 },
   response: {
+    specialists: [
+      {
+        role: 'sentry',
+        posts: [
+          { x: 32, y: 18 },
+          { x: 29, y: 14.5 },
+          { x: 24, y: 20.5 },
+        ],
+      },
+      {
+        role: 'breacher',
+        posts: [
+          { x: 24, y: 14.5 },
+          { x: 24, y: 20.5 },
+          { x: 32, y: 22.5 },
+        ],
+      },
+    ],
     spawns: [
       { x: 37, y: 19 },
       { x: 37, y: 20 },
@@ -82,7 +101,8 @@ export const severance: Mission = {
       x: 5.6,
       y: 24,
       label: 'Vault maintenance kit',
-      detail: 'One maintenance identity. Core halls and planting remain suspicious.',
+      detail:
+        'Maintenance cover for Morrow or Vale: pistols conceal, long guns remain visible. Core halls and planting remain suspicious.',
     },
     {
       id: 'relay',
@@ -166,13 +186,24 @@ export const severance: Mission = {
       ],
       -Math.PI / 2,
     ),
-    patrol(
-      [
-        { x: 24, y: 14.5 },
-        { x: 32, y: 14.5 },
-      ],
-      0,
-    ),
+    {
+      ...patrol(
+        [
+          { x: 24, y: 14.5 },
+          { x: 32, y: 14.5 },
+        ],
+        0,
+      ),
+      tactic: {
+        role: 'sentry',
+        posts: [
+          { x: 24, y: 14.5 },
+          { x: 32, y: 14.5 },
+          { x: 24, y: 18 },
+          { x: 22, y: 20.5 },
+        ],
+      },
+    },
     patrol(
       [
         { x: 23, y: 13 },
@@ -184,13 +215,25 @@ export const severance: Mission = {
       ],
       -Math.PI / 2,
     ),
-    patrol(
-      [
-        { x: 24, y: 21 },
-        { x: 32.5, y: 21 },
-      ],
-      0,
-    ),
+    {
+      ...patrol(
+        [
+          { x: 24, y: 21 },
+          { x: 32.5, y: 21 },
+        ],
+        0,
+      ),
+      tactic: {
+        role: 'breacher',
+        posts: [
+          { x: 24, y: 14.5 },
+          { x: 24, y: 20.5 },
+          { x: 17, y: 20.5 },
+          { x: 17, y: 14.5 },
+          { x: 32.5, y: 22.5 },
+        ],
+      },
+    },
     patrol(
       [
         { x: 36.5, y: 9 },

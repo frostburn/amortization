@@ -30,13 +30,36 @@ Reaching the engineer changes entry into escort. Physical evidence removes one g
 - Guards own suspicion, remembered identities, last seen positions, and delayed radio reports. Site-wide identity knowledge follows a completed report.
 - The world clock drives patrols, interactions, weapons, radio calls, and reinforcements. Pause stops all; slow time scales all.
 
-Guards have 90 health, survive the crew's combined 68-damage opening volley, and
-share the crew's eight-unit weapon range. Their 16-damage shots have a 0.8-second
+In operations 01–04, guards have 90 health, survive the crew's combined 68-damage
+opening volley, and share the crew's eight-unit weapon range. Their 16-damage shots have a 0.8-second
 cooldown. Target choice uses distance to visible known threats, not squad-array
 order. Nearby gunfire starts a 2.5-second report even through cover; hearing does
 not reveal an identity or permit shooting through a wall. Killing callers or
 disabling RADIO still interrupts escalation. Support arrives 6 and 30 seconds
 after the alarm, with countdowns shown in the HUD.
+
+Operations 05–06 use explicit, shared weapon definitions. Pistols are concealable
+and mobile (range 6, damage 17, eight shots); carbines reach farther but need a
+0.35-second stationary preparation (range 9, damage 26, six shots); shotguns
+favour close encounters (range 3.8, damage 44, two shots). Automatic reloads take
+1.2, 1.6, and 1.8 seconds respectively, with unlimited reserve ammunition. Both
+sides use the same damage, preparation, firing recovery, and reload rules.
+Orders and weapon stowing never reset reload progress. Every timer belongs to
+the fixed-step simulation and is included in replay state.
+
+Morrow and Vale have pistols; the other two carry carbines, with Rook switching to
+a shotgun in operation 06. Stowed long guns remain visibly armed, including when
+carrying cargo. KIT filters to eligible pistol carriers and names the assigned
+operative. Briefings and the crew HUD show equipment, ammunition and readiness;
+enemy inspection explains role and recovery. Silhouettes distinguish long guns,
+and readiness bars sit below the feet.
+
+Carbine sentries use authored firing posts and break sight when hit or reloading.
+Breach officers prefer reachable screened posts nearer a last-seen threat, with
+covering retreats under pressure. Nearby specialists can pass an observed
+position through direct sight of one another; this does not reveal later unseen
+movement. Position choices use collision and sight checks and a bounded path
+search. Health stays at 90; specialist roles replace existing patrols.
 
 Live extraction first requires the contract objective to be secured; optional cargo cannot unlock it. A locked vehicle click explains and locates the missing task without replacing orders.
 The extraction panel shares its boarding readiness calculation with the simulation. It appears
@@ -78,6 +101,20 @@ Character triangles use GPU depth testing so intersecting sleeves, shoulders, ha
 Guard shoulder caps pivot at the shoulder and follow 40% of the upper arm's rotation, keeping their uniform shape during walking, aiming, and carrying. Each thigh and raised kneecap pushes its own side of the coat out; rounded sections blend between the legs so the trailing hem can hang back. The chest and belt stay fixed to the torso. Clothing follows the cached pose directly, so pausing and replaying cannot introduce cloth drift.
 
 Actual shot cooldowns raise the arms into a two-handed firing pose; active shot traces supply the muzzle flash. Carriers hold their cargo in both hands. Fallen characters have bent limbs and a face-down head on a low body, with their original colors and no transparency fade. Selection and scenery occlusion still use the world ground position. These are presentation rules and do not add simulation state or change replay fingerprints.
+
+Enemy roles use full uniform palettes: khaki for site guards, blue for carbine
+sentries, and red for breach officers. Coats, sleeves, caps and shoulder pads
+carry the color around the body; the officer's dark chest plate and visor provide
+another cue. Corpses retain their role colors. Alert state still uses the existing
+ground indicators and sight cones.
+
+Each weapon has one rigid model shared by lowered, aimed, slung and dropped poses.
+Pistols have a short slide and grip; carbines have a box magazine, short stock and
+upper sight; shotguns have a longer barrel, tubular magazine, wooden stock and
+ribbed pump. Long guns use both hands at low ready and remain visible on the back
+when stowed or carrying cargo. The lowered pistol follows the hand through the
+walk cycle; a concealed pistol stays hidden. Attachments use the same depth-tested
+character geometry as sleeves and shoulder pads.
 
 Map text is rasterized for the current camera scale and display pixel density. Character objective markers and guide rings share a screen-space anchor above the head, leaving at least 32 pixels for the ring and leader line; their hit targets use that same anchor. Voss and Mara's wait/follow controls include their own portrait without growing the compact action row. Vehicle details and wall-lamp spill use their actual world planes, including the vertical wall face beneath each lamp.
 
@@ -160,9 +197,11 @@ commands with the current selection. The progress display stays visible across
 selection changes. Locators, results, the operation picker and independent records
 include the new mission. Masts and server racks are code-drawn scenery using the
 same world projection, collision footprints and occlusion order as other props.
-Older worlds do not gain a broadcast-state property; retained human recordings
-are unchanged and checked under current rules. A new synthetic full-route replay
-also verifies every checkpoint for the publication objective.
+A carbine sentry watches the server-room approach, with the racks providing a
+screened crossing and a retreat. The quiet route keeps the long-gun carriers out
+of patrol sight until withdrawal; the armed route uses stationary covering fire.
+Both full-route checks include every live guard, finish with all four alive, and
+verify replay checkpoints. Older worlds do not gain a broadcast-state property.
 
 ## Severance
 
@@ -190,6 +229,12 @@ blast flash use simulation time. Only this mission gains demolition state, so
 older replay worlds retain their original shape. Completion reports destruction
 and optional register recovery, with separate records and the standard crew rally.
 
+A courtyard carbine sentry and breach officer coordinate using observed positions.
+The second radio response can reuse that pair. The core halls keep their patrol
+windows for a concealed pistol carrier. Full-route checks retain all guards and
+complete both a quiet demolition and an armed assault with four survivors. The
+quiet route verifies exact replay checkpoints, including remote detonation.
+
 ## Objective guidance
 
 Mission goals expose the current requirements and point to their map locations. Hover previews without moving the camera; clicking or tapping frames the relevant items and keeps a short guide open. Each named location can be focused separately. Inspection never issues an operative order or changes selection.
@@ -198,4 +243,4 @@ A read-only goal model supplies both the HUD labels and context-sensitive help. 
 
 ## Next useful work
 
-Tune whether splitting the crew earns its cognitive cost. Then extend civilian responses and challenges, spatial equipment choices, full directional character art, route variety, and missions built from these systems.
+Collect human runs of the new operation 05 and 06 encounters and tune whether splitting the crew earns its cognitive cost. The [future combat ideas](combat-expansion.md) retain flash grenades, loadout choice, and further equipment and security suggestions for later missions.

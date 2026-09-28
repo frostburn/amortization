@@ -54,6 +54,8 @@ describe('Public offering', () => {
       ...broadcast.landmarks,
       ...broadcast.spawns,
       ...broadcast.guards.flatMap((g) => g.patrol),
+      ...broadcast.guards.flatMap((g) => g.tactic?.posts ?? []),
+      ...(broadcast.response.specialists?.flatMap((tactic) => tactic.posts) ?? []),
       ...broadcast.solids
         .flatMap((s) => [
           { x: s.x - 0.205, y: s.y + s.h / 2 },
@@ -248,7 +250,6 @@ describe('Public offering', () => {
     };
     const wait = (predicate: () => boolean) => until(w, predicate, 70, () => recorder.afterStep());
     send({ kind: 'interact', agents: [ids[1]], target: 'mask' });
-    send({ kind: 'move', agents: ids.slice(2), point: { x: 37.2, y: 26 } });
     send({ kind: 'interact', agents: [a.id], target: 'disguise' });
     wait(() => a.disguised);
     send({ kind: 'interact', agents: [a.id], target: 'relay' });
@@ -278,6 +279,10 @@ describe('Public offering', () => {
     expect(w.agents[1].order).toEqual({ kind: 'hold' });
     send({ kind: 'move', agents: [ids[1]], point: { x: 6, y: 26 } });
     wait(() => !w.agents[1].path.length);
+    // Keep conspicuous long guns screened until the road patrol turns away.
+    send({ kind: 'move', agents: ids.slice(2), point: { x: 28, y: 28.5 } });
+    wait(() => w.agents.slice(2).every((p) => !p.path.length));
+    wait(() => w.guards[6].y < 14 && Math.sin(w.guards[6].angle) < -0.8);
     send({ kind: 'interact', agents: ids, target: 'extract' });
     wait(() => w.status === 'won');
     expect(w.shots).toBe(0);
@@ -295,33 +300,56 @@ describe('Public offering', () => {
     const w = createWorld(broadcast),
       a = w.agents[0],
       ids = w.agents.map((p) => p.id);
-    const send = (command: Command) => applyCommand(w, command);
-    send({ kind: 'weapons', agents: ids });
-    send({ kind: 'move', agents: ids, point: { x: 10.5, y: 17.8 } });
-    until(w, () => w.agents.filter(living).every((p) => !p.path.length));
-    send({ kind: 'interact', agents: ids, target: 'relay' });
-    until(w, () => w.relayOff);
-    for (const point of [
-      { x: 13, y: 12.8 },
-      { x: 23, y: 13.2 },
-      { x: 29, y: 12.7 },
-      { x: 29, y: 10.5 },
-    ]) {
+    const build = buildInfo(process.cwd());
+    const recorder = new Recorder(
+      w,
+      build,
+      'synthetic-broadcast-armed',
+      '2026-09-28T00:00:00.000Z',
+    );
+    const send = (command: Command) => {
+      recorder.command(command);
+      applyCommand(w, command);
+    };
+    const wait = (predicate: () => boolean) => until(w, predicate, 70, () => recorder.afterStep());
+    const coverAndTreat = () => {
+      const end = w.time + 4;
+      wait(() => w.time >= end);
+      send({ kind: 'heal', agents: w.agents.filter((p) => p.hp <= 60).map((p) => p.id) });
+    };
+    const move = (point: Vec) => {
       send({ kind: 'move', agents: ids, point });
-      until(w, () => w.agents.filter(living).every((p) => !p.path.length));
-      send({ kind: 'heal', agents: w.agents.filter((p) => p.hp <= 55).map((p) => p.id) });
+      wait(() => w.agents.filter(living).every((p) => !p.path.length));
+    };
+    send({ kind: 'weapons', agents: ids });
+    move({ x: 10.5, y: 17.8 });
+    coverAndTreat();
+    send({ kind: 'interact', agents: ids, target: 'relay' });
+    wait(() => w.relayOff);
+    move({ x: 13, y: 12.8 });
+    // Attack orders let each weapon establish its own firing distance. Hold
+    // between engagements so the carbines can cover reloads and the advance.
+    for (const index of [1, 4, 3, 2, 5]) {
+      const target = w.guards[index];
+      if (!living(target)) continue;
+      send({ kind: 'attack', agents: ids, target: target.id });
+      wait(() => !living(target));
+      coverAndTreat();
     }
+    move({ x: 29, y: 10.5 });
+    coverAndTreat();
     send({ kind: 'interact', agents: [a.id], target: 'upload' });
-    until(w, () => published(w));
+    wait(() => published(w));
     send({ kind: 'interact', agents: ids, target: 'gate' });
-    until(w, () => w.gateOpen);
+    wait(() => w.gateOpen);
     send({ kind: 'interact', agents: ids, target: 'extract' });
-    until(w, () => w.status === 'won');
+    wait(() => w.status === 'won');
     expect(w.broadcast!.traced).toBe(true);
     expect(w.shots).toBeGreaterThan(0);
     expect(w.agents.some((p) => !p.medkit)).toBe(true);
     expect(w.agents.filter(living)).toHaveLength(4);
     expect(w.waves).toBe(0);
     expect(w.extractedAt).toBe('extract');
+    expect(verifyReplay(parseReplay(JSON.stringify(recorder.bundle())), build).error).toBeNull();
   });
 });

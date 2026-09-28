@@ -1,5 +1,5 @@
 import type { Geometry, DestroyOptions } from 'pixi.js';
-import type { Person } from '../sim/types';
+import type { Person, WeaponKind } from '../sim/types';
 import { living } from '../sim/types';
 import { footfall, hipHeight, kneePosition, walkPhase } from './gait';
 import { coatRings, shoulderPadTransform } from './clothing';
@@ -10,7 +10,9 @@ export type Appearance = 'morrow' | 'vale' | 'rook' | 'sable' | 'guard' | 'voss'
 export interface Outfit {
   appearance: Appearance;
   uniform?: boolean;
-  weapon?: 'pistol' | 'rifle';
+  weapon?: WeaponKind;
+  stowed?: boolean;
+  specialist?: 'sentry' | 'breacher';
   carrying?: boolean;
   flash?: boolean;
 }
@@ -25,6 +27,8 @@ interface Profile {
   hairStyle: 'crop' | 'sweep' | 'bob' | 'bun' | 'bald';
   beard?: boolean;
   glasses?: boolean;
+  helmet?: number;
+  pads?: number;
 }
 const PROFILES: Record<Appearance, Profile> = {
   morrow: {
@@ -78,6 +82,8 @@ const PROFILES: Record<Appearance, Profile> = {
     waist: 0.17,
     hips: 0.175,
     hairStyle: 'crop',
+    helmet: 0x686b56,
+    pads: 0xc38d50,
   },
   voss: {
     skin: 0xc5a58d,
@@ -102,6 +108,24 @@ const PROFILES: Record<Appearance, Profile> = {
   },
 };
 
+// Read the role from either side of the coat, not just a tiny chest badge.
+const SPECIALISTS: Record<NonNullable<Outfit['specialist']>, Profile> = {
+  sentry: {
+    ...PROFILES.guard,
+    coat: 0x3e79a6,
+    shirt: 0x96c2d7,
+    helmet: 0x396d98,
+    pads: 0x91bdd5,
+  },
+  breacher: {
+    ...PROFILES.guard,
+    coat: 0xad4946,
+    shirt: 0xe2aa8a,
+    helmet: 0x9b3d3c,
+    pads: 0xe3937c,
+  },
+};
+
 type Point = Point3; // forward, right, height in character space
 const add = (a: Point, b: Point): Point => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const sub = (a: Point, b: Point): Point => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -117,6 +141,44 @@ function shade(color: number, amount: number) {
   return [16, 8, 0].reduce(
     (c, shift) => c | (Math.min(255, Math.round(((color >> shift) & 255) * amount)) << shift),
     0,
+  );
+}
+
+type Mount = (p: Point) => Point;
+function mount(origin: Point, forward: Point, right: Point): Mount {
+  const up = cross(forward, right);
+  return (p) => add(origin, add(mul(forward, p[0]), add(mul(right, p[1]), mul(up, p[2]))));
+}
+
+/** The same rigid weapon is attached to the hands or slung across the back. */
+function weaponMount(
+  outfit: Outfit,
+  aiming: boolean,
+  bob: number,
+  shoulder: number,
+  swing: number,
+) {
+  if (!outfit.weapon) return null;
+  const long = outfit.weapon !== 'pistol';
+  if (outfit.stowed || outfit.carrying) {
+    if (!long) return null; // A concealed pistol must remain concealed.
+    return mount([-0.195, 0.055, 0.96 + bob], [0, -0.44, Math.sqrt(1 - 0.44 ** 2)], [-1, 0, 0]);
+  }
+  if (aiming)
+    return mount(
+      [(long ? 0.27 : 0.42) - (outfit.flash ? 0.025 : 0), shoulder * 0.78, 1.015 + bob],
+      [1, 0, 0],
+      [0, 1, 0],
+    );
+  if (long) {
+    // Low ready: stock by the right shoulder, muzzle below the left hand.
+    const forward = unit([0.7, -0.45, -0.55]);
+    return mount([0.18, 0.14, 0.88 + bob], forward, unit([0.45, 0.7, 0]));
+  }
+  return mount(
+    [swing + 0.055, shoulder + 0.01, 0.67 + bob],
+    [Math.cos(1.15), 0, -Math.sin(1.15)],
+    [0, 1, 0],
   );
 }
 
@@ -249,7 +311,12 @@ export class PersonSprite extends ModelMesh {
       alive = living(p);
     const phase = walkPhase(p, alpha);
     const frame = phase === null ? -1 : Math.round((((phase % 1) + 1) % 1) * 24) % 24;
-    const aiming = alive && !!outfit.weapon && p.cooldown > 0;
+    const aiming =
+      alive &&
+      !!outfit.weapon &&
+      !outfit.stowed &&
+      (!!outfit.flash ||
+        (!p.armament?.reload && (p.cooldown > 0 || (!!p.armament?.settle && !p.path.length))));
     const key = [
       direction,
       alive,
@@ -258,6 +325,8 @@ export class PersonSprite extends ModelMesh {
       outfit.appearance,
       outfit.uniform,
       outfit.weapon,
+      outfit.stowed,
+      outfit.specialist,
       outfit.carrying,
       outfit.flash,
     ].join(':');
@@ -269,7 +338,10 @@ export class PersonSprite extends ModelMesh {
       return;
     }
     const f = new Figure((direction * Math.PI * 2) / FACING_COUNT);
-    const profile = PROFILES[outfit.appearance];
+    const profile =
+      outfit.appearance === 'guard' && outfit.specialist
+        ? SPECIALISTS[outfit.specialist]
+        : PROFILES[outfit.appearance];
     const coat = outfit.uniform ? 0x788574 : profile.coat;
     if (!alive) {
       this.fallen(f, profile, coat, outfit);
@@ -300,17 +372,27 @@ export class PersonSprite extends ModelMesh {
         f.block(add(foot, [0.025, 0, 0.047]), [0.22, 0.115, 0.094], 0x242d2b);
       }
       this.torso(f, profile, coat, bob, knees);
+      if (outfit.specialist === 'breacher') {
+        f.block([0.135, 0, 0.97 + bob], [0.05, 0.27, 0.2], 0x333e3c);
+        f.block([0.125, 0, 1.36 + bob], [0.04, 0.21, 0.065], 0x333e3c);
+      }
       this.head(f, profile, [0, 0, 1.31 + bob], !!outfit.uniform, outfit.appearance === 'guard');
+      const gun = weaponMount(outfit, aiming, bob, profile.shoulders, -feet[1][0] * 0.45);
+      const drawn = gun && !outfit.stowed && !outfit.carrying;
+      const long = outfit.weapon !== 'pistol';
       for (let i = 0; i < 2; i++) {
         const side = i ? 1 : -1;
         const shoulder: Point = [0, side * profile.shoulders, 1.055 + bob];
         let elbow: Point, hand: Point;
-        if (aiming) {
+        if (drawn && aiming) {
           elbow = [0.19, side * 0.18, 0.91 + bob];
-          hand = [i ? 0.42 : 0.47, i ? 0.05 : 0.015, 1.015 + bob];
+          hand = gun(i ? [0, 0, 0] : long ? [0.26, 0, -0.025] : [-0.005, -0.045, 0]);
         } else if (outfit.carrying) {
           elbow = [0.16, side * 0.19, 0.81 + bob];
           hand = [0.26, side * 0.14, 0.83 + bob];
+        } else if (drawn && long) {
+          elbow = [i ? 0.04 : 0.15, side * (profile.shoulders + 0.04), (i ? 0.86 : 0.79) + bob];
+          hand = gun(i ? [0, 0, 0] : [0.26, 0, -0.025]);
         } else {
           const swing = -feet[i][0] * 0.45;
           elbow = [swing - 0.015, side * (profile.shoulders + 0.015), 0.85 + bob];
@@ -323,12 +405,16 @@ export class PersonSprite extends ModelMesh {
         f.oval(hand, 0.049, 0.039, 0.045, profile.skin);
         if (outfit.appearance === 'guard') {
           f.transform = shoulderPadTransform(shoulder, elbow);
-          f.oval([0, side * 0.01, 0.036], 0.078, 0.078, 0.043, 0xc38d50);
+          f.oval([0, side * 0.01, 0.036], 0.078, 0.078, 0.043, profile.pads!);
           f.transform = null;
         }
       }
       if (outfit.carrying) f.block([0.26, 0, 0.79 + bob], [0.17, 0.37, 0.23], 0xbfa476);
-      if (outfit.weapon) this.gun(f, aiming, !!outfit.flash, outfit.weapon === 'rifle', bob);
+      if (gun && outfit.weapon) {
+        f.transform = gun;
+        this.gun(f, outfit.weapon, !!drawn && aiming && !!outfit.flash);
+        f.transform = null;
+      }
     }
     const geometry = modelGeometry(f.faces);
     this.useFrame(key, { geometry, contacts: this.contacts.slice(), users: 0 });
@@ -416,31 +502,53 @@ export class PersonSprite extends ModelMesh {
       if (p.glasses) f.block(add(c, [0.114, side * 0.048, 0.031]), [0.004, 0.048, 0.027], 0x9faca0);
     }
     if (helmet || guard) {
-      const color = helmet ? 0xcbad68 : 0x686b56;
+      const color = helmet ? 0xcbad68 : p.helmet!;
       f.oval(add(c, [0, 0, 0.145]), 0.145, 0.137, 0.074, color);
       f.block(add(c, [0.075, 0, 0.106]), [0.22, 0.27, 0.025], color);
     }
   }
-  private gun(f: Figure, aiming: boolean, flash: boolean, rifle: boolean, bob: number) {
-    const recoil = flash ? -0.035 : 0;
-    if (aiming) {
-      f.block([0.49 + recoil, 0.05, 1.05 + bob], [rifle ? 0.39 : 0.22, 0.055, 0.07], 0x25302e);
-      f.block([0.43 + recoil, 0.05, 0.99 + bob], [0.065, 0.055, 0.12], 0x202826);
-      f.tube(
-        [0.55 + recoil, 0.05, 1.063 + bob],
-        [0.73 + recoil, 0.05, 1.063 + bob],
-        rifle ? 0.023 : 0.014,
-        0x7a8780,
-      );
-      if (flash) f.oval([0.81, 0.05, 1.063 + bob], 0.105, 0.045, 0.055, 0xffd796);
+  private gun(f: Figure, kind: NonNullable<Outfit['weapon']>, flash = false) {
+    // Local origin is the firing hand, so the receiver, stock, magazine and barrel
+    // keep their silhouette in every pose (including carried cargo and casualties).
+    const steel = 0x778d96,
+      dark = 0x27343c,
+      wood = 0xb08350;
+    let muzzle: number;
+    if (kind === 'pistol') {
+      f.block([0.065, 0, 0.075], [0.25, 0.07, 0.075], steel);
+      f.block([-0.02, 0, -0.015], [0.07, 0.065, 0.14], dark);
+      f.block([0.06, 0, -0.013], [0.085, 0.046, 0.018], dark);
+      f.block([0.095, 0, 0.02], [0.016, 0.046, 0.065], dark);
+      f.block([0.14, 0, 0.12], [0.024, 0.023, 0.02], dark);
+      muzzle = 0.192;
+      f.tube([muzzle, 0, 0.075], [muzzle + 0.003, 0, 0.075], 0.018, 0x172323);
+    } else if (kind === 'shotgun') {
+      f.block([-0.18, 0, 0.005], [0.23, 0.085, 0.13], wood);
+      f.block([-0.292, 0, 0.005], [0.028, 0.095, 0.145], dark);
+      f.tube([-0.09, 0, 0.022], [0.025, 0, 0.067], 0.037, wood);
+      f.block([0.11, 0, 0.07], [0.24, 0.085, 0.1], dark);
+      f.tube([0.2, 0, 0.085], [0.71, 0, 0.085], 0.034, steel);
+      f.tube([0.19, 0, 0.02], [0.58, 0, 0.02], 0.027, dark);
+      f.block([0.315, 0, 0.02], [0.19, 0.11, 0.085], wood);
+      for (const x of [0.25, 0.295, 0.34, 0.385])
+        f.block([x, 0, 0.02], [0.013, 0.116, 0.092], 0x725439);
+      f.block([0.68, 0, 0.127], [0.025, 0.02, 0.026], dark);
+      muzzle = 0.714;
+      f.tube([muzzle, 0, 0.085], [muzzle + 0.004, 0, 0.085], 0.025, 0x172323);
     } else {
-      f.tube(
-        [0.1, 0.205, 0.75],
-        [0.24, 0.205, rifle ? 0.42 : 0.55],
-        rifle ? 0.038 : 0.027,
-        0x26312e,
-      );
+      f.block([-0.17, 0, 0.048], [0.25, 0.075, 0.065], steel);
+      f.block([-0.28, 0, 0.027], [0.055, 0.09, 0.155], dark);
+      f.block([0.1, 0, 0.075], [0.29, 0.085, 0.1], dark);
+      f.block([0, 0, -0.018], [0.065, 0.063, 0.145], dark);
+      f.block([0.14, 0, -0.075], [0.09, 0.07, 0.2], steel);
+      f.block([0.3, 0, 0.067], [0.18, 0.09, 0.09], 0x4c6067);
+      f.block([0.05, 0, 0.153], [0.12, 0.055, 0.048], steel);
+      f.tube([0.35, 0, 0.085], [0.53, 0, 0.085], 0.021, steel);
+      f.tube([0.51, 0, 0.085], [0.55, 0, 0.085], 0.029, dark);
+      f.block([0.41, 0, 0.12], [0.022, 0.025, 0.047], dark);
+      muzzle = 0.55;
     }
+    if (flash) f.oval([muzzle + 0.055, 0, 0.08], 0.09, 0.043, 0.045, 0xffd796);
   }
   private fallen(f: Figure, p: Profile, coat: number, outfit: Outfit) {
     // A ground-level body with its own bent limbs, never a rotated standing sprite.
@@ -469,6 +577,10 @@ export class PersonSprite extends ModelMesh {
     };
     this.head(f, p, center, !!outfit.uniform, outfit.appearance === 'guard');
     f.transform = null;
-    if (outfit.weapon) f.block([0.48, 0.36, 0.035], [0.3, 0.06, 0.065], 0x25302e);
+    if (outfit.weapon) {
+      f.transform = mount([0.27, 0.4, 0.06], [1, 0, 0], [0, 0, -1]);
+      this.gun(f, outfit.weapon);
+      f.transform = null;
+    }
   }
 }

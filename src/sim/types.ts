@@ -49,6 +49,17 @@ export interface Landmark extends Vec {
   label: string;
   detail: string;
 }
+export type WeaponKind = 'pistol' | 'carbine' | 'shotgun';
+export interface Armament {
+  kind: WeaponKind;
+  rounds: number;
+  reload: number;
+  settle: number;
+}
+export interface GuardTactic {
+  role: 'sentry' | 'breacher';
+  posts: Vec[];
+}
 export interface Mission {
   id: 'depot' | 'archive' | 'transfer' | 'custody' | 'broadcast' | 'severance';
   number: string;
@@ -60,7 +71,8 @@ export interface Mission {
   intro: string;
   evidenceName: string;
   gateOutside: Vec;
-  response: { spawns: Vec[]; patrol: Vec[] };
+  response: { spawns: Vec[]; patrol: Vec[]; specialists?: GuardTactic[] };
+  loadout?: [WeaponKind, WeaponKind, WeaponKind, WeaponKind];
   archive?: { door: Rect; inside: Vec };
   broadcast?: { duration: number; traceTime: number };
   demolition?: { armTime: number; blastRadius: number };
@@ -80,7 +92,7 @@ export interface Mission {
   restricted: Rect;
   secure: Rect;
   landmarks: Landmark[];
-  guards: { position: Vec; patrol: Vec[]; angle: number }[];
+  guards: { position: Vec; patrol: Vec[]; angle: number; tactic?: GuardTactic }[];
   spawns: Vec[];
 }
 export type Order =
@@ -97,6 +109,7 @@ export interface Person extends Vec {
   path: Vec[];
   cooldown: number;
   step: number;
+  armament?: Armament;
 }
 export interface Operative extends Person {
   name: string;
@@ -122,6 +135,13 @@ export interface Guard extends Person {
   lastSeen: Vec | null;
   searchTime: number;
   repath: number;
+  tactics?: GuardTactic & {
+    lastHp: number;
+    until: number;
+    nextMove: number;
+    cover: boolean;
+    goal: Vec | null;
+  };
 }
 export interface Escort extends Person {
   name: string;
