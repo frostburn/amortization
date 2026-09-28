@@ -15,6 +15,17 @@ lands on a wall, the closest free ring is biased toward the approaching crew.
 This prevents a small offset from causing a long detour around the far side.
 Deliberate destinations across a wall still use ordinary pathfinding.
 
+Half-metre grid connections reuse body-clearance checks across searches. Each
+mission retains at most four gate/shutter combinations outside simulation state;
+geometry edits invalidate them. Building the connections checks thin walls and
+diagonal crossings near each obstacle, rather than scanning every solid for
+every explored edge. Real start/end positions and smoothed segments still use
+live collision checks. Neighbour order and heap ties stay unchanged, preserving
+routes and replay timing. Searches remain synchronous: the reported mission-08
+Rally fell from roughly 210–262 ms to 9–10 ms in browser measurements. This is not
+a hard frame-time guarantee on slower devices or larger future maps; those may
+still need incremental searches or a worker.
+
 Interaction assignment filters prerequisites and checks that the route actually
 reaches working range with clear sight. A selected current worker keeps the job
 and progress; otherwise the nearest eligible, reachable operative takes it.

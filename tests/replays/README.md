@@ -7,9 +7,47 @@ is also verified. Otherwise this checks a route's continued viability, without
 claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All twenty retained files are byte-for-byte copies of submissions provided in chat:
-fifteen on 2026-09-27 and five on 2026-09-28, including their `unversioned` /
+All twenty-one retained files are byte-for-byte copies of submissions provided in chat:
+fifteen on 2026-09-27 and six on 2026-09-28, including their `unversioned` /
 local-changes metadata.
+
+## Adverse selection Rally stall
+
+`mandate-full-crew-rally-ad0da662.replay.json` is the unchanged submission
+`amortization-mandate-won-ad0da662.replay.json`: mission `b9b6cedf`, simulation
+`b99754f6…`, tick 2735 / 91.2s, four survivors, 22 shots, no alarm. It jams RADIO,
+isolates both feeds and leaves three human guards alive. GATE stays closed; the
+last Rally order at tick 1345 / 44.8s sends all four operatives around the perimeter.
+This is the first retained full-crew human completion of operation 08. It does
+not use KIT or inspection, so the human quiet-route question remains open.
+
+Feedback: “Clicking \"Rally\" caused lag frames. It would be nice if path-finding
+worked across multiple frames instead.” Profiling reproduced four synchronous
+A* searches repeatedly testing the same grid connections against every solid.
+Connection caching removes that repeated work while preserving immediate orders
+and deterministic simulation timing. Edges are checked for full body clearance,
+including thin walls and diagonals; gates, shutters and geometry edits cannot
+reuse stale connections. Returned waypoints do not expose mutable cached points.
+
+Local headless Chromium measurements of those four routes, including smoothing:
+
+| Case | Before median / peak | After median / peak |
+| --- | --- | --- |
+| Fresh mission geometry, 15 batches | 210 / 241 ms | 10.3 / 48.9 ms |
+| Reused geometry, 30 batches | 262 / 290 ms | 8.6 / 20.7 ms |
+
+These are development-browser measurements, not a hardware-independent frame-time
+promise. The first-use batch includes grid construction and engine warm-up.
+Searches have not been spread across frames; a worker or deterministic incremental
+search remains an option if larger maps or slower devices need it. CI checks
+geometry-access counts instead of flaky millisecond limits, without adding browser
+smoke journeys.
+
+All 20 original checkpoints in this new recording still match exactly after the
+optimization, despite the changed source fingerprint. The two earlier mission-08
+wins also retain every original checkpoint. A before/after diagnostic across all
+21 human fixtures matched 1,178 sampled simulation states and all outcomes. No
+recorded inputs, combat values or mission geometry were changed.
 
 ## Adverse selection and camera feedback
 
