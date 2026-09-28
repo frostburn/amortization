@@ -103,7 +103,9 @@ test('routes a courier transfer, distinguishes CASE from its carrier, and resets
   await page.mouse.click(casePoint.x, casePoint.y, { button: 'right' });
   await expect(page.locator('#message')).toContainText('The courier holds CASE');
   await expect(page.locator('#condition-0')).toHaveText('Concealed');
-  await page.mouse.click(casePoint.x, casePoint.y + (2.1 - 0.5) * 25 * scale, { button: 'right' });
+  // The diamond now clears the head by at least 32 screen pixels; click the torso below it.
+  const torsoOffset = Math.max(32, 14 * scale) + (1.6 - 0.5) * 25 * scale;
+  await page.mouse.click(casePoint.x, casePoint.y + torsoOffset, { button: 'right' });
   await expect(page.locator('#condition-0')).toHaveText('Weapon drawn');
   await page.getByRole('button', { name: 'Conceal weapons' }).click();
   await order(4.8, 19.5);

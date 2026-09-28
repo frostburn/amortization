@@ -95,6 +95,13 @@ async function mountFeedback(page: Page) {
 }
 
 async function aidFlow(page: Page, touch = false) {
+  await expect(page.locator('#escort-controls')).toHaveAttribute('data-witness', 'quill');
+  await expect(page.locator('.witness-portrait')).toBeVisible();
+  expect(
+    await page
+      .locator('.witness-portrait')
+      .evaluate((el) => getComputedStyle(el).backgroundPositionX),
+  ).toBe('100%');
   const use = async (selector: string) => {
     const button = page.locator(selector);
     if (touch) await button.tap();

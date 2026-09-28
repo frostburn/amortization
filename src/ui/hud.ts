@@ -101,7 +101,7 @@ export class Hud {
     private onGuide: (targets: GuideTarget[], focus: boolean, panel: Rect) => void,
   ) {
     this.app = document.querySelector('#app')!;
-    const escortControls = `<section id="escort-controls" class="objective-actions escort-panel" aria-label="Witness" hidden><button data-action="locate-escort" id="escort-focus" title="Locate the witness without changing squad orders"><strong id="escort-alert" role="status"></strong><span id="escort-status"></span></button><div class="escort-actions"><button data-action="escort-wait" id="escort-wait-button"></button><button data-action="escort-aid" id="escort-aid-button" hidden></button></div><p id="escort-aid-hint" hidden></p></section>`;
+    const escortControls = `<section id="escort-controls" class="objective-actions escort-panel" aria-label="Witness" hidden><button data-action="locate-escort" id="escort-focus" title="Locate the witness without changing squad orders"><strong id="escort-alert" role="status"></strong><span id="escort-status"></span></button><div class="escort-actions"><button data-action="escort-wait" id="escort-wait-button"><span class="witness-portrait" aria-hidden="true"></span><span id="escort-wait-label"></span></button><button data-action="escort-aid" id="escort-aid-button" hidden></button></div><p id="escort-aid-hint" hidden></p></section>`;
     const extractionControls = `<section id="extraction-controls" class="objective-actions extraction-controls" aria-label="Extraction" hidden>${(['extract', 'alternate'] as const).map((id) => `<div id="exit-${id}" class="exit-row"><button data-action="extract:${id}" id="exit-button-${id}" aria-describedby="exit-status-${id}"></button><p id="exit-status-${id}"></p></div>`).join('')}</section>`;
     const courierControls = `<section id="courier-controls" class="objective-actions" aria-label="Courier transfer" hidden><p id="courier-status" role="status"></p><button data-action="call-transfer" id="courier-call-button" hidden>Send selected to CALL</button></section>`;
     const demolitionControls = `<section id="demolition-controls" class="objective-actions" aria-label="Demolition" hidden><div id="plant-actions" class="broadcast-actions">${(['charge-west', 'charge-east'] as const).map((id) => `<div><button data-action="plant:${id}" id="${id}-button" aria-describedby="${id}-status"></button><p id="${id}-status"></p></div>`).join('')}</div><button data-action="detonate" id="detonate-button" aria-describedby="detonation-status">Detonate both cores</button><p id="detonation-status" role="status"></p></section>`;
@@ -295,6 +295,7 @@ export class Hud {
     this.field('broadcast-controls').hidden = !mission.broadcast;
     this.field('demolition-controls').hidden = !mission.demolition;
     this.field('escort-controls').hidden = true;
+    this.field('escort-controls').dataset.witness = mission.escort?.id || '';
     this.app.querySelector<HTMLDetailsElement>('.intel-section')!.open = false;
   }
   showEnd(world: World, record: MissionRecord, force = false) {
@@ -653,7 +654,7 @@ export class Hud {
       );
       this.field('escort-status').classList.toggle('danger', escort.hp < 30);
       this.set(
-        'escort-wait-button',
+        'escort-wait-label',
         `${escort.waiting ? 'Ask' : 'Tell'} ${escort.name} to ${escort.waiting ? 'follow' : 'wait'}`,
       );
       this.set(

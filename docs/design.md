@@ -69,9 +69,17 @@ The generated concept established composition and palette. Intentional differenc
 no nested panel scrolling in that layout. Objective locators bring the map into
 view at the same breakpoint.
 
-Generated portrait and person atlases supply character art. Architecture, sight cones, bullets, and markers come from game state. Generated map artwork never defines collisions.
+Generated atlases supply the crew and witness portraits. Faceted character models, architecture, sight cones, bullets, and markers are drawn in code from game state. Artwork never defines collisions.
 
-The person atlas is animated through a small mesh: opposite strides and foot lifts, knee flexion and restrained arm swing. Gait phase advances once per 1.1 world units of interpolated walking distance, keeping it aligned with movement, pause and slow time. Each atlas quadrant has its own sole anchors. Contact shadows follow the ground projection of each foot while the swinging boot lifts above them; selection rings and depth ordering retain the world ground position. Vehicle face details use world-plane projection rather than screen-space offsets.
+Morrow, Vale, Rook, Sable, guards, Voss, and Mara have distinct models. Each turns through 32 world-space facings, including its face, hair, coat, and weapon. The disguise changes clothing and adds a hardhat while preserving the operative's face and build. Gait phase advances once per 1.1 world units of interpolated walking distance; the stance foot moves backward at the body's ground speed while the other swings forward. Thigh and shin lengths stay fixed as the knee bends forward, with visible kneecaps. Raised hips and low foot clearance keep the walk upright and limit coat stretch; the supporting knee bends less than 35 degrees and the swinging knee less than 55 degrees. Contact shadows stay on the ground beneath each boot. Paused simulation freezes the pose.
+
+Character triangles use GPU depth testing so intersecting sleeves, shoulders, hair, and equipment resolve per pixel. Each character gets a separate depth interval following the existing scenery painter order; internal body depth never pulls a background character in front of a foreground person or wall. The bounded pose cache shares vertex buffers and releases them on mission reset.
+
+Guard shoulder caps pivot at the shoulder and follow 40% of the upper arm's rotation, keeping their uniform shape during walking, aiming, and carrying. Each thigh and raised kneecap pushes its own side of the coat out; rounded sections blend between the legs so the trailing hem can hang back. The chest and belt stay fixed to the torso. Clothing follows the cached pose directly, so pausing and replaying cannot introduce cloth drift.
+
+Actual shot cooldowns raise the arms into a two-handed firing pose; active shot traces supply the muzzle flash. Carriers hold their cargo in both hands. Fallen characters have bent limbs and a face-down head on a low body, with their original colors and no transparency fade. Selection and scenery occlusion still use the world ground position. These are presentation rules and do not add simulation state or change replay fingerprints.
+
+Map text is rasterized for the current camera scale and display pixel density. Character objective markers and guide rings share a screen-space anchor above the head, leaving at least 32 pixels for the ring and leader line; their hit targets use that same anchor. Voss and Mara's wait/follow controls include their own portrait without growing the compact action row. Vehicle details and wall-lamp spill use their actual world planes, including the vertical wall face beneath each lamp.
 
 The extraction van uses a shaped cab and cargo body with a sloped windscreen, short bonnet, door seams and handles. Tyres touch the road and show through wheel openings in the side panel. Its visual height matches a standing person; its navigation footprint and extraction radius are unchanged.
 
