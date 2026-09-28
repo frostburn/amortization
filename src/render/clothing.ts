@@ -32,15 +32,21 @@ export function coatRings(
   // Horizontal clearance includes the angled thigh, its projecting kneecap,
   // and the inward chord of the faceted fabric between ring vertices.
   const clearance = Math.max(...slopes.map((slope) => 0.092 * Math.hypot(1, slope)));
+  // Once the hem passes the knee, the shin turns back under the body. Do not
+  // keep extrapolating the thigh and stretch the coat into empty space.
+  const kneeFront = Math.max(...knees.map((knee) => knee[0])) + 0.105;
+  const kneeCrest = Math.max(-0.15, ...knees.map((knee) => knee[2] - hip + 0.05));
   return [
     [-0.2, Math.max(widths.hips * 1.16, 0.205)],
-    [-0.1, Math.max(widths.hips * 1.08, 0.198)],
+    [kneeCrest, Math.max(widths.hips * 1.08, 0.198)],
     [0.02, Math.max(widths.hips, 0.19)],
     [0.18, widths.waist],
     [0.43, widths.shoulders],
   ].map(([height, width]) => {
     const skirt = height < 0;
-    const front = skirt ? Math.max(0.115, Math.max(...slopes) * -height + clearance) : 0.115;
+    const front = skirt
+      ? Math.max(0.115, Math.min(kneeFront, Math.max(...slopes) * -height + clearance))
+      : 0.115;
     const back = skirt ? Math.min(-0.115, Math.min(...slopes) * -height - clearance) : -0.115;
     const center = (front + back) / 2,
       radius = (front - back) / 2;

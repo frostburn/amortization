@@ -69,6 +69,11 @@ describe('articulated clothing', () => {
         return [knee.forward, side * 0.115, knee.height];
       });
       const rings = coatRings(hip, knees, widths);
+      // The shin folds back below the knee; the hem must not keep extending
+      // along the thigh into empty space at the end of the swing.
+      expect(Math.max(...rings[0].map((point) => point[0]))).toBeLessThanOrEqual(
+        Math.max(...knees.map((knee) => knee[0])) + 0.12,
+      );
       // The chest and belt cannot swell when a knee lifts.
       expect(rings.slice(-2)).toEqual(coatRings(hip, [[0, 0, hip - 0.32]], widths).slice(-2));
       const exposed: Point3[] = [];
