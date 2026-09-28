@@ -11,7 +11,7 @@ import {
 import type { ObjectKind, Person, Rect, Solid, Vec, World } from '../sim/types';
 import { available, landmark } from '../sim/orders';
 import { COIL_CHARGE, longGun, WEAPONS } from '../sim/weapons';
-import { selectionFocus } from './camera';
+import { followOffset, selectionFocus } from './camera';
 import { sightRange } from '../sim/awareness';
 import { findPath, lineClear } from '../sim/navigation';
 import { depthOrder } from './depth';
@@ -708,18 +708,36 @@ export class Scene {
     }
     this.trackSelection(selected, 1, true);
   }
-  private trackSelection(selected: string[], alpha: number, center = false) {
+  private trackSelection(
+    selected: string[],
+    alpha: number,
+    center = false,
+    seconds = this.app.ticker.deltaMS / 1000,
+  ) {
     // A fully visible map needs no translation. Zoom and selection never auto-fit the crew.
     if (!this.following || this.camera.scale.x <= this.overviewScale() * 1.02) return;
     const target = selectionFocus(this.world, selected, alpha);
     if (!target) return;
-    const p = this.screen(target),
-      { width, height } = this.app.screen;
-    const x = center ? width * 0.5 : Math.max(width * 0.3, Math.min(width * 0.7, p.x));
-    const y = center ? height * 0.53 : Math.max(height * 0.32, Math.min(height * 0.68, p.y));
-    if (Math.abs(x - p.x) + Math.abs(y - p.y) < 0.01) return;
-    this.pan.x += x - p.x;
-    this.pan.y += y - p.y;
+    const lead = project(target.lookAhead),
+      scale = this.camera.scale.x;
+    const spread = target.members.map((p) => project({ x: p.x - target.x, y: p.y - target.y }));
+    const offset = followOffset(
+      this.screen(target),
+      { x: lead.x * scale, y: lead.y * scale },
+      {
+        width: this.app.screen.width,
+        height: this.app.screen.height,
+        inset: {
+          x: Math.max(...spread.map((p) => Math.abs(p.x))) * scale + 22,
+          y: Math.max(...spread.map((p) => Math.abs(p.y))) * scale + 50,
+        },
+      },
+      seconds,
+      center,
+    );
+    if (Math.abs(offset.x) + Math.abs(offset.y) < 0.01) return;
+    this.pan.x += offset.x;
+    this.pan.y += offset.y;
     this.updateCamera();
   }
   showGuidance(ids: GuideTarget[], panel: Rect) {
@@ -946,7 +964,7 @@ export class Scene {
     }
     return v;
   }
-  render(selected: string[], alpha: number) {
+  render(selected: string[], alpha: number, seconds = this.app.ticker.deltaMS / 1000) {
     // Resize only immediately before drawing, so a ResizeObserver cannot clear
     // the WebGL canvas between frames (e.g. when picking up the mission item).
     if (this.resizePending) {
@@ -966,7 +984,7 @@ export class Scene {
     }
     const selectionKey = selected.join(',');
     if (this.selectionKey && selectionKey !== this.selectionKey) this.following = true;
-    this.trackSelection(selected, alpha, selectionKey !== this.selectionKey);
+    this.trackSelection(selected, alpha, selectionKey !== this.selectionKey, seconds);
     this.selectionKey = selectionKey;
     const w = this.world;
     this.drawGuidance();

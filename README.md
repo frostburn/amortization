@@ -139,7 +139,8 @@ Viewport resizing preserves the camera’s scale. **Fit map** frames the mission
 space; operations 01–06 start with this overview. Operation 07 starts at a readable scale near the crew.
 
 **Follow** / **Home** returns to the selected crew at the last working zoom. When
-zoomed in, the camera follows their movement within a central screen area. Select
+zoomed in, the camera looks ahead along their route, eases through turns, and
+looks in their facing direction when stationary. Select
 a portrait or press **1–4** to follow an individual operative, including across a
 split team. Selection and movement never change zoom. A widely split group
 selection follows its largest nearby group (ties prefer the first selected

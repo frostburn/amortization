@@ -269,8 +269,14 @@ aimed, lowered, slung and dropped poses.
 Operation 07 starts at 0.95 screen scale near the crew, independent of map area or
 viewport size. Fit map remains a deliberate overview. Follow / Home restores the
 last working scale and tracks the selection; fully visible maps need no movement.
-Tracking uses interpolated positions within a central screen area, without changing
-zoom. Selecting one operative recentres on them. Widely split multi-selections
+Tracking uses interpolated positions and looks ahead along the next path segment;
+it never aims straight at a distant destination through intervening walls. Movement
+takes priority over shooting backwards. At rest, the local group's average facing
+sets a shorter lead. Opposing directions cancel. Screen-space limits keep the lead
+comfortable on a phone and reserve space for the local group, while time-based
+easing prevents a sudden swing at corners.
+An off-screen selection returns immediately to the visible area. Zoom never changes.
+Selecting one operative immediately frames them and their direction. Widely split multi-selections
 follow the largest local group, with stable selection-order ties. Manual pan and
 objective focus suspend tracking; selecting an operative resumes it. Wheel zoom
 keeps the centre world point fixed. Mission resets restore the authored start.
@@ -282,4 +288,4 @@ launch, default framing, tracking, manual pan, overview and touch selection.
 
 ## Next useful work
 
-Collect human runs of operation 07 and tune its firing lanes, road crossing and split-team workload. The [future combat ideas](combat-expansion.md) retain flash grenades, loadout choice, and further equipment and security suggestions for later missions.
+The first four human runs of operation 07 are analyzed in the [replay notes](../tests/replays/README.md#margin-call-human-assaults). They establish that direct assaults can win with casualties and that leaving RADIO active makes the forced shutter risky. They do not yet validate the human experience of the quiet route or establish that marksmen require deliberate flanking. Keep those questions open for further playtesting. The [future combat ideas](combat-expansion.md) retain flash grenades, loadout choice, and further equipment and security suggestions for later missions.

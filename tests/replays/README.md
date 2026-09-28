@@ -2,12 +2,55 @@
 
 Selected successful `.replay.json` bundles go here after playtesting. Vitest runs
 them under **current rules** and requires a win within the recorded duration.
-This checks a route's continued viability; it does not claim that an older
-simulation's state checksums still match. Never rewrite a player's commands,
+When mission and simulation fingerprints match, every original state checkpoint
+is also verified. Otherwise this checks a route's continued viability, without
+claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All fifteen retained files are byte-for-byte copies of submissions provided in chat
-on 2026-09-27, including their `unversioned` / local-changes metadata.
+All eighteen retained files are byte-for-byte copies of submissions provided in chat:
+fifteen on 2026-09-27 and three on 2026-09-28, including their `unversioned` /
+local-changes metadata.
+
+## Margin call human assaults
+
+All four submissions on 2026-09-28 verify every original checkpoint against the
+current mission hash `b47ff7f7` and simulation fingerprint
+`98ab5c929c5b796f9598a154f3ee3906fc645e2602791bf5b10b3feda357e4bd`.
+The camera look-ahead change does not alter either fingerprint. The three wins
+join the completion corpus unchanged:
+
+| Fixture                                 | Original submission                              | Exact outcome                            |
+| --------------------------------------- | ------------------------------------------------ | ---------------------------------------- |
+| `clearing-assault-ab8d6570.replay.json` | `amortization-clearing-won-ab8d6570.replay.json` | Tick 1642 / 54.7s; 3 survivors; 55 shots |
+| `clearing-assault-8de9cdd6.replay.json` | `amortization-clearing-won-8de9cdd6.replay.json` | Tick 1871 / 62.4s; 3 survivors; 47 shots |
+| `clearing-assault-97226b41.replay.json` | `amortization-clearing-won-97226b41.replay.json` | Tick 2525 / 84.2s; 3 survivors; 48 shots |
+
+These are armed advances through the yard followed by CUT and KEYS recovery.
+Every win disables RADIO before forcing the shutter and finishes without a site
+alarm. Vale dies in the first two listed runs; Sable dies in the third after an
+individual attack on the central patrol while already injured. None uses KIT,
+SHUNT, or first aid. Rook fires 19–21 automatic rounds in each win; Sable fires
+1–4 coil shots. The two marksmen collectively land 1–2 charged shots per win.
+
+The loss, `amortization-clearing-lost-c1b932e6.replay.json`, is diagnostic input,
+not a required defeat in the completion corpus. Its note is “Oops. Forgot to jam
+radio.” CUT completes and triggers the alarm at 33.4s, KEYS are collected at
+37.2s, and the first response wave arrives at 39.5s. Its pistol volley kills
+Morrow at 41.9s and Sable at 43.4s near the east gate. Rook is carrying KEYS and
+cannot fire; the road patrol kills him at 47.2s. Vale had already fallen at 17.9s.
+This is the intended cost of forcing access with the radio still active, not a
+mission-ending or replay divergence bug.
+
+The assaults show useful costs and a meaningful radio decision, but do not show
+that marksmen demand flanking: focused squad attacks still work while accepting
+a casualty. The quiet route, full-crew human completion, and field-dressing use
+remain untested by these submissions. No combat values or mission geometry were
+changed in response to this small sample.
+
+Replay commands identify order recipients, not selection-only clicks, zoom, or
+manual camera movement. They cannot reconstruct the exact view the player saw.
+Separate desktop and touch checks exercise movement lead, stationary facing,
+smooth turns, split-team selection, manual panning, and stable zoom.
 
 ## Earlier routes
 

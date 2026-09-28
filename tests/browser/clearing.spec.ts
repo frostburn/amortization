@@ -5,7 +5,7 @@ import type { Hud, Action } from '../../src/ui/hud';
 
 declare global {
   interface Window {
-    clearingTest: { world: World; scene: Scene; hud: Hud; draw: () => void };
+    clearingTest: { world: World; scene: Scene; hud: Hud; draw: (seconds?: number) => void };
   }
 }
 
@@ -82,8 +82,8 @@ for (const mobile of [false, true]) {
       ] = await Promise.all(paths.map((p) => import(p)));
       const world = createWorld(clearing) as World;
       let selected = world.agents.map((a) => a.id);
-      const draw = () => {
-        scene.render(selected, 1);
+      const draw = (seconds = scene.app.ticker.deltaMS / 1000) => {
+        scene.render(selected, 1, seconds);
         hud.update(world, {
           selected,
           paused: true,
@@ -135,7 +135,7 @@ for (const mobile of [false, true]) {
           draw();
         },
       });
-      scene.app.ticker.add(draw);
+      scene.app.ticker.add(() => draw());
       draw();
       window.clearingTest = { world, scene, hud, draw };
     });
@@ -149,7 +149,9 @@ for (const mobile of [false, true]) {
       };
     });
     expect(initial.scale).toBeCloseTo(0.95);
-    expect(initial.point.x / initial.width).toBeCloseTo(0.5, 1);
+    // The initial northward facing leaves more room ahead, even before moving.
+    expect(initial.point.x / initial.width).toBeGreaterThan(0.25);
+    expect(initial.point.x / initial.width).toBeLessThan(0.5);
     const moved = await page.evaluate(() => {
       const { world, scene, draw } = window.clearingTest;
       for (const a of world.agents) {
@@ -160,8 +162,8 @@ for (const mobile of [false, true]) {
       return { scale: scene.camera.scale.x, point: scene.screen(world.agents[0]) };
     });
     expect(moved.scale).toBe(initial.scale);
-    expect(moved.point.x).toBeLessThan(initial.width * 0.72);
-    expect(moved.point.y).toBeLessThan(initial.height * 0.7);
+    expect(moved.point.x).toBeLessThan(initial.width * 0.85);
+    expect(moved.point.y).toBeLessThan(initial.height * 0.87);
     await page.evaluate(() => {
       const { world, draw } = window.clearingTest;
       Object.assign(world.agents[1], {
@@ -179,8 +181,10 @@ for (const mobile of [false, true]) {
       return { scale: scene.camera.scale.x, point: scene.screen(world.agents[1]) };
     });
     expect(split.scale).toBe(initial.scale);
-    expect(split.point.x).toBeCloseTo(initial.width * 0.5);
-    expect(split.point.y).toBeCloseTo(initial.height * 0.53);
+    expect(split.point.x).toBeGreaterThan(initial.width * 0.25);
+    expect(split.point.x).toBeLessThan(initial.width * 0.5);
+    expect(split.point.y).toBeGreaterThan(initial.height * 0.53);
+    expect(split.point.y).toBeLessThan(initial.height * 0.8);
     // Real pointer panning suspends follow on desktop and touch.
     await page.locator('canvas').scrollIntoViewIfNeeded();
     const canvas = (await page.locator('canvas').boundingBox())!;
@@ -211,7 +215,39 @@ for (const mobile of [false, true]) {
       return { scale: scene.camera.scale.x, point: scene.screen(world.agents[0]) };
     });
     expect(switched.scale).toBe(initial.scale);
-    expect(switched.point.x).toBeCloseTo(initial.width * 0.5);
+    expect(switched.point.x).toBeGreaterThan(initial.width * 0.25);
+    expect(switched.point.x).toBeLessThan(initial.width * 0.5);
+    const advancing = await page.evaluate(() => {
+      const { world, scene, draw } = window.clearingTest;
+      const a = world.agents[0];
+      a.angle = Math.PI; // Aim backwards while walking east.
+      a.path = [{ x: a.x + 10, y: a.y }];
+      for (let i = 0; i < 30; i++) {
+        a.previous = { x: a.x, y: a.y };
+        a.x += 3.2 / 30;
+        draw(1 / 30);
+      }
+      return { point: scene.screen(a), scale: scene.camera.scale.x };
+    });
+    expect(advancing.point.x).toBeLessThan(initial.width * 0.48);
+    expect(advancing.point.y).toBeLessThan(initial.height * 0.53);
+    expect(advancing.scale).toBe(initial.scale);
+    const turning = await page.evaluate(() => {
+      const { world, scene, draw } = window.clearingTest;
+      const a = world.agents[0];
+      a.path = [];
+      a.previous = { x: a.x, y: a.y };
+      const before = scene.screen(a);
+      draw(1 / 60);
+      const first = scene.screen(a);
+      for (let i = 0; i < 20; i++) draw(0.1);
+      return { before, first, settled: scene.screen(a), scale: scene.camera.scale.x };
+    });
+    expect(turning.first.x).toBeGreaterThan(turning.before.x);
+    expect(turning.first.x - turning.before.x).toBeLessThan(25);
+    expect(turning.settled.x).toBeGreaterThan(initial.width * 0.5);
+    expect(turning.settled.y).toBeGreaterThan(initial.height * 0.53);
+    expect(turning.scale).toBe(initial.scale);
     await press('[data-action="zoom-in"]');
     await press('[data-action="home"]');
     const overview = await page.evaluate(() => window.clearingTest.scene.camera.scale.x);
