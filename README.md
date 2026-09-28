@@ -381,7 +381,7 @@ Characters use a small deformable mesh over the existing atlas for alternating s
 
 CI uses one Ubuntu job, Node 24, and Chromium. The simulation suite includes complete quiet and armed extractions for all six missions and checks for navigation clearance, local identification, disguise permissions, radio disruption, evidence custody, demolition safety, and extraction requirements.
 Playwright launches Vite with `VITE_BROWSER_TEST=true`, capping its renderer at
-30 FPS so concurrent software-GPU browsers leave CPU time for input and assertions.
+15 FPS, and runs one browser at a time so software rendering leaves CPU time for input and assertions.
 The fixed-step simulation still follows elapsed time; ordinary dev and production
 rendering are uncapped. Local and CI browser tests use the same SwiftShader backend.
 
