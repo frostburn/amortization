@@ -1,8 +1,9 @@
-import { Graphics, GraphicsContext, type DestroyOptions } from 'pixi.js';
-import type { Person, Vec } from '../sim/types';
+import type { Geometry, DestroyOptions } from 'pixi.js';
+import type { Person } from '../sim/types';
 import { living } from '../sim/types';
-import { footfall, walkPhase } from './gait';
+import { footfall, hipHeight, kneePosition, walkPhase } from './gait';
 import { project } from './isometric';
+import { modelGeometry, ModelMesh, MODEL_VIEW, type ModelFace, type Point3 } from './model-mesh';
 
 export type Appearance = 'morrow' | 'vale' | 'rook' | 'sable' | 'guard' | 'voss' | 'mara';
 export interface Outfit {
@@ -100,8 +101,7 @@ const PROFILES: Record<Appearance, Profile> = {
   },
 };
 
-type Point = [number, number, number]; // forward, right, height in character space
-type Face = { points: Vec[]; color: number; depth: number };
+type Point = Point3; // forward, right, height in character space
 const add = (a: Point, b: Point): Point => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const sub = (a: Point, b: Point): Point => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const mul = (a: Point, n: number): Point => [a[0] * n, a[1] * n, a[2] * n];
@@ -121,7 +121,7 @@ function shade(color: number, amount: number) {
 
 /** Faceted models share the map's projection and turn in world space, including their faces. */
 class Figure {
-  faces: Face[] = [];
+  faces: ModelFace[] = [];
   transform: ((p: Point) => Point) | null = null;
   constructor(private angle: number) {}
   world(p: Point): Point {
@@ -135,14 +135,17 @@ class Figure {
   }
   face(points: Point[], color: number) {
     const v = points.map((p) => this.world(this.transform ? this.transform(p) : p));
+    // Lofted rings can produce twisted quads. Triangulate for correct lighting and culling.
     const normal = unit(cross(sub(v[1], v[0]), sub(v[2], v[0])));
-    if (dot(normal, [1, 1, 1.12]) <= 0) return;
+    if (v.some((p) => Math.abs(dot(normal, sub(p, v[0]))) > 1e-7)) {
+      for (let i = 1; i < v.length - 1; i++) this.planarFace([v[0], v[i], v[i + 1]], color);
+    } else this.planarFace(v, color);
+  }
+  private planarFace(vertices: Point[], color: number) {
+    const normal = unit(cross(sub(vertices[1], vertices[0]), sub(vertices[2], vertices[0])));
+    if (dot(normal, MODEL_VIEW) <= 1e-7) return;
     const light = 0.72 + Math.max(0, dot(normal, [-0.35, -0.45, 0.82])) * 0.48;
-    this.faces.push({
-      points: v.map(([x, y, z]) => project({ x, y }, z)),
-      color: shade(color, light),
-      depth: v.reduce((sum, p) => sum + dot(p, [1, 1, 1.12]), 0) / v.length,
-    });
+    this.faces.push({ vertices, color: shade(color, light) });
   }
   rings(rings: Point[][], color: number) {
     const n = rings[0].length;
@@ -196,17 +199,13 @@ class Figure {
       color,
     );
   }
-  draw(g: GraphicsContext) {
-    this.faces.sort((a, b) => a.depth - b.depth);
-    for (const face of this.faces) g.poly(face.points.flatMap((p) => [p.x, p.y])).fill(face.color);
-  }
 }
 
 export const FACING_COUNT = 32;
 const facing = (angle: number) => Math.round((angle * FACING_COUNT) / (Math.PI * 2));
 
 interface PoseFrame {
-  context: GraphicsContext;
+  geometry: Geometry;
   contacts: Float32Array;
   users: number;
 }
@@ -218,27 +217,27 @@ function trimFrames() {
     if (frames.size <= FRAME_LIMIT) break;
     if (!frame.users) {
       frames.delete(key);
-      frame.context.destroy();
+      frame.geometry.destroy(true);
     }
   }
 }
 
-export class PersonSprite extends Graphics {
+export class PersonSprite extends ModelMesh {
   readonly contacts = new Float32Array(4);
   private lastPose = '';
   private current: PoseFrame | null = null;
-  private placeholder: GraphicsContext | null;
+  private placeholder: Geometry | null;
   constructor() {
-    super({ context: new GraphicsContext() });
-    this.placeholder = this.context;
+    super();
+    this.placeholder = this.geometry;
   }
   private useFrame(key: string, frame: PoseFrame) {
     if (this.current) this.current.users--;
     this.current = frame;
     frame.users++;
-    this.context = frame.context;
+    this.geometry = frame.geometry;
     this.contacts.set(frame.contacts);
-    this.placeholder?.destroy();
+    this.placeholder?.destroy(true);
     this.placeholder = null;
     frames.delete(key);
     frames.set(key, frame);
@@ -283,13 +282,18 @@ export class PersonSprite extends Graphics {
         this.contacts.set([ground.x, ground.y], i * 2);
         return foot;
       });
-      const bob = stride === null ? 0 : Math.sin(stride * Math.PI * 4) * 0.013;
+      const hip = hipHeight(stride),
+        bob = hip - 0.66;
       for (let i = 0; i < 2; i++) {
         const foot = feet[i],
           side = i ? 1 : -1;
-        const knee: Point = [foot[0] * 0.45 + foot[2] * 0.55, side * 0.1, 0.34 + foot[2] * 0.4];
-        f.tube([0, side * 0.1, 0.66 + bob], knee, 0.066, 0x35413e, 0.056);
-        f.tube(knee, add(foot, [0, 0, 0.09]), 0.053, 0x303a38, 0.046);
+        const ankle = add(foot, [0, 0, 0.09]);
+        const bend = kneePosition(hip, ankle[0], ankle[2]);
+        const knee: Point = [bend.forward, foot[1], bend.height];
+        f.tube([0, side * 0.115, hip], knee, 0.068, 0x35413e, 0.058);
+        f.tube(knee, ankle, 0.054, 0x303a38, 0.046);
+        f.oval(knee, 0.067, 0.06, 0.06, 0x43534b);
+        f.oval(add(knee, [0.038, 0, 0]), 0.038, 0.055, 0.051, 0x506057);
         f.block(add(foot, [0.025, 0, 0.047]), [0.22, 0.115, 0.094], 0x242d2b);
       }
       this.torso(f, profile, coat, bob);
@@ -311,6 +315,8 @@ export class PersonSprite extends Graphics {
         }
         f.tube(shoulder, elbow, 0.055, coat, 0.05);
         f.tube(elbow, hand, 0.047, coat, 0.038);
+        f.oval(shoulder, 0.061, 0.062, 0.06, coat);
+        f.oval(elbow, 0.049, 0.049, 0.048, coat);
         f.oval(hand, 0.049, 0.039, 0.045, profile.skin);
         if (outfit.appearance === 'guard')
           f.tube(add(shoulder, [0, 0, -0.04]), add(shoulder, [0, 0, -0.1]), 0.057, 0xc38d50);
@@ -318,23 +324,24 @@ export class PersonSprite extends Graphics {
       if (outfit.carrying) f.block([0.26, 0, 0.79 + bob], [0.17, 0.37, 0.23], 0xbfa476);
       if (outfit.weapon) this.gun(f, aiming, !!outfit.flash, outfit.weapon === 'rifle', bob);
     }
-    const context = new GraphicsContext();
-    f.draw(context);
-    this.useFrame(key, { context, contacts: this.contacts.slice(), users: 0 });
+    const geometry = modelGeometry(f.faces);
+    this.useFrame(key, { geometry, contacts: this.contacts.slice(), users: 0 });
   }
   override destroy(options?: DestroyOptions) {
     if (this.destroyed) return;
     if (this.current) this.current.users--;
     this.current = null;
-    this.placeholder?.destroy();
+    this.placeholder?.destroy(true);
     this.placeholder = null;
+    this.shader?.destroy();
     super.destroy({
       ...(typeof options === 'object' ? options : { children: !!options }),
-      context: false,
+      texture: false,
+      textureSource: false,
     });
     // Mission resets release all cached GPU geometry once its last viewer is gone.
     if (![...frames.values()].some((frame) => frame.users)) {
-      for (const frame of frames.values()) frame.context.destroy();
+      for (const frame of frames.values()) frame.geometry.destroy(true);
       frames.clear();
     }
   }
@@ -451,6 +458,7 @@ export class PersonSprite extends Graphics {
       const foot: Point = [-0.77, side === 1 ? 0.24 : -0.035, 0.06];
       f.tube(hip, knee, 0.07, 0x35413e, 0.055);
       f.tube(knee, foot, 0.052, 0x303a38, 0.043);
+      f.oval(knee, 0.067, 0.06, 0.055, 0x35413e);
       f.block(add(foot, [-0.035, 0.03, -0.01]), [0.13, 0.18, 0.09], 0x242d2b);
     }
     f.oval([0.17, 0, 0.16], 0.34, p.shoulders, 0.12, coat);

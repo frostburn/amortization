@@ -1,5 +1,13 @@
-import { describe, expect, it } from 'vitest';
-import { footfall, walkPhase, WALK_STRIDE } from '../src/render/gait';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { DOMAdapter } from 'pixi.js';
+import {
+  footfall,
+  hipHeight,
+  kneePosition,
+  LEG_SEGMENT,
+  walkPhase,
+  WALK_STRIDE,
+} from '../src/render/gait';
 import { body } from '../src/sim/world';
 import { PersonSprite } from '../src/render/person';
 
@@ -9,24 +17,55 @@ const walker = () => ({
   step: 0.3,
 });
 
+const adapter = DOMAdapter.get();
+beforeAll(() =>
+  DOMAdapter.set({
+    ...adapter,
+    // Geometry tests do not create a GPU context; real shader drawing is covered in Chromium.
+    createCanvas: () => ({ getContext: () => null }) as unknown as HTMLCanvasElement,
+  }),
+);
+afterAll(() => DOMAdapter.set(adapter));
+
 describe('directional character animation', () => {
+  it('bends the knees forward without stretching either leg segment through a full stride', () => {
+    for (const phase of [null, ...Array.from({ length: 24 }, (_, i) => i / 24)]) {
+      const hip = hipHeight(phase);
+      for (const side of [0, 0.5]) {
+        const foot = phase === null ? { forward: 0, lift: 0 } : footfall(phase + side);
+        const ankle = foot.lift + 0.09;
+        const knee = kneePosition(hip, foot.forward, ankle);
+        expect(Math.hypot(knee.forward, knee.height - hip)).toBeCloseTo(LEG_SEGMENT);
+        expect(Math.hypot(knee.forward - foot.forward, knee.height - ankle)).toBeCloseTo(
+          LEG_SEGMENT,
+        );
+        expect(knee.forward).toBeGreaterThan(foot.forward / 2);
+      }
+    }
+    const hip = hipHeight(0.25);
+    expect(kneePosition(hip, 0, 0.25).forward).toBeGreaterThan(
+      kneePosition(hip, 0, 0.09).forward + 0.1,
+    );
+  });
   it('reuses posed geometry without destroying another visible character during reset', () => {
     const p = walker(),
       first = new PersonSprite(),
       second = new PersonSprite();
     first.pose(p, 1, { appearance: 'guard' });
     second.pose(p, 1, { appearance: 'guard' });
-    const context = first.context;
-    expect(second.context).toBe(context);
+    const geometry = first.geometry;
+    const buffer = geometry.getBuffer('aPosition');
+    expect(second.geometry).toBe(geometry);
     first.destroy({ children: true });
-    expect(context.destroyed).toBe(false);
+    expect(buffer.destroyed).toBe(false);
     p.step += 0.12;
     second.pose(p, 1, { appearance: 'guard' });
-    const movingContext = second.context;
-    expect(movingContext).not.toBe(context);
+    const movingGeometry = second.geometry;
+    const movingBuffer = movingGeometry.getBuffer('aPosition');
+    expect(movingGeometry).not.toBe(geometry);
     second.destroy();
-    expect(context.destroyed).toBe(true);
-    expect(movingContext.destroyed).toBe(true);
+    expect(buffer.destroyed).toBe(true);
+    expect(movingBuffer.destroyed).toBe(true);
   });
   it('keeps the stance foot fixed in world space and lifts only the returning foot', () => {
     for (const phase of [0.05, 0.15, 0.3]) {

@@ -30,10 +30,14 @@ hair, and facial details, including Vale's glasses and beard, Rook's shaved head
 Morrow's dark swept hair, and Sable's silver bob. Voss and Mara match their witness
 portraits. The maintenance outfit preserves the person beneath the uniform.
 
-Models have 32 facings, walking limbs, two-handed aim and recoil, carried cargo,
+Models have 32 facings, articulated knees with fixed thigh and shin lengths,
+two-handed aim and recoil, carried cargo,
 and a separate grounded fallen pose. A bounded shared cache reuses tessellated
 poses across strides and guards, keeps visible frames alive, and releases its
 geometry on mission reset. Foot contacts and shadows share the gait's ground projection.
+GPU depth testing resolves overlapping body surfaces rather than sorting whole
+faces by their average depth. Separate depth intervals preserve the map's painter
+order between characters and architecture.
 The character art is illustrative. Markers and status text communicate exact
 selection, weapon state, suspicion, and custody. Architecture and interface icons
 are original code drawings. Audio is synthesized; no third-party audio samples or

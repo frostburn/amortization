@@ -971,6 +971,8 @@ export class Scene {
     depthOrder(depthItems).forEach((item, index) => {
       item.root.zIndex = index;
     });
+    for (const view of this.views.values())
+      view.sprite.setDepthLayer(view.root.zIndex, depthItems.length);
     const exitLocked = !!extractionRequirement(w);
     for (const [id, icon] of this.icons) {
       icon.visible =

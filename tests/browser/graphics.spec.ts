@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import type { World } from '../../src/sim/types';
 import type { Scene } from '../../src/render/scene';
 import type { Hud } from '../../src/ui/hud';
+import type { Graphics, WebGLRenderer } from 'pixi.js';
 
 declare global {
   interface Window {
@@ -188,6 +189,96 @@ test('keeps high-DPI text sharp and witness markers clear and actionable through
   await page.screenshot({ path: testInfo.outputPath('zoomed-kit-and-van.png') });
   await focus(page, 18, 4.3, 1.2);
   await page.screenshot({ path: testInfo.outputPath('wall-lights.png') });
+  const occlusion = await page.evaluate(async () => {
+    const path = '/src/render/model-mesh.ts';
+    const { ModelMesh, modelGeometry } = await import(path);
+    const { scene } = window.graphics;
+    const app = scene.app;
+    app.ticker.stop();
+    app.stage.removeChildren();
+    // Two surfaces crossing through each other: average-depth sorting puts one
+    // whole face on top. The nearer surface must instead win at each pixel.
+    const face = (color: number, slope: number, offset = 0) => ({
+      color,
+      vertices: [
+        [-1, -1],
+        [1, -1],
+        [1, 1],
+        [-1, 1],
+      ].map(([u, v]) => {
+        const height = (-v * 40) / 40.68;
+        const depth = (u * slope + offset) / (2 + 1.12 ** 2);
+        return [
+          (u * 40) / 52 - 0.56 * height + depth,
+          (-u * 40) / 52 - 0.56 * height + depth,
+          height + 1.12 * depth,
+        ];
+      }),
+    });
+    const surfaces = [face(0xff0000, 0.8), face(0x00ff00, 0, 0.2)];
+    const model = new ModelMesh(modelGeometry(surfaces));
+    model.position.set(120, 120);
+    model.setDepthLayer(0, 3);
+    app.stage.addChild(model);
+    const gl = (app.renderer as WebGLRenderer).gl;
+    const read = (x: number) => {
+      const pixel = new Uint8Array(4),
+        scale = app.renderer.resolution;
+      gl.readPixels(
+        Math.round(x * scale),
+        app.canvas.height - 1 - Math.round(120 * scale),
+        1,
+        1,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        pixel,
+      );
+      return [...pixel].slice(0, 3);
+    };
+    const sample = () => {
+      app.render();
+      return [read(100), read(140)];
+    };
+    const crossing = sample();
+    const original = model.geometry;
+    model.geometry = modelGeometry([...surfaces].reverse());
+    original.destroy(true);
+    const reversed = sample();
+    // A foreground character's farthest surfaces still cover a background one.
+    // Ordinary scenery keeps its existing painter order between character meshes.
+    const wall = scene.camera.getChildAt<Graphics>(0).clear().rect(80, 80, 80, 80).fill(0xffff00);
+    const foreground = new ModelMesh(modelGeometry([face(0x0000ff, 0, -3)]));
+    foreground.position.copyFrom(model.position);
+    foreground.setDepthLayer(2, 3);
+    app.stage.addChild(wall, foreground);
+    const front = sample();
+    app.stage.removeChild(wall);
+    app.stage.addChild(wall);
+    const wallInFront = sample();
+    app.stage.removeChild(wall, foreground);
+    const nextFrame = sample(); // Stale depth from the foreground model must be cleared.
+    for (const mesh of [model, foreground]) {
+      mesh.geometry.destroy(true);
+      mesh.shader.destroy();
+      mesh.destroy();
+    }
+    return { crossing, reversed, front, wallInFront, nextFrame };
+  });
+  const greenAndRed = [
+    [0, 255, 0],
+    [255, 0, 0],
+  ];
+  expect(occlusion.crossing).toEqual(greenAndRed);
+  expect(occlusion.reversed).toEqual(greenAndRed);
+  expect(occlusion.front).toEqual([
+    [0, 0, 255],
+    [0, 0, 255],
+  ]);
+  expect(occlusion.wallInFront).toEqual([
+    [255, 255, 0],
+    [255, 255, 0],
+  ]);
+  expect(occlusion.nextFrame).toEqual(greenAndRed);
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);
   expect(errors).toEqual([]);
   await context.close();
