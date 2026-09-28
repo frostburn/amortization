@@ -102,6 +102,20 @@ Guard shoulder caps pivot at the shoulder and follow 40% of the upper arm's rota
 
 Actual shot cooldowns raise the arms into a two-handed firing pose; active shot traces supply the muzzle flash. Carriers hold their cargo in both hands. Fallen characters have bent limbs and a face-down head on a low body, with their original colors and no transparency fade. Selection and scenery occlusion still use the world ground position. These are presentation rules and do not add simulation state or change replay fingerprints.
 
+Enemy roles use full uniform palettes: khaki for site guards, blue for carbine
+sentries, and red for breach officers. Coats, sleeves, caps and shoulder pads
+carry the color around the body; the officer's dark chest plate and visor provide
+another cue. Corpses retain their role colors. Alert state still uses the existing
+ground indicators and sight cones.
+
+Each weapon has one rigid model shared by lowered, aimed, slung and dropped poses.
+Pistols have a short slide and grip; carbines have a box magazine, short stock and
+upper sight; shotguns have a longer barrel, tubular magazine, wooden stock and
+ribbed pump. Long guns use both hands at low ready and remain visible on the back
+when stowed or carrying cargo. The lowered pistol follows the hand through the
+walk cycle; a concealed pistol stays hidden. Attachments use the same depth-tested
+character geometry as sleeves and shoulder pads.
+
 Map text is rasterized for the current camera scale and display pixel density. Character objective markers and guide rings share a screen-space anchor above the head, leaving at least 32 pixels for the ring and leader line; their hit targets use that same anchor. Voss and Mara's wait/follow controls include their own portrait without growing the compact action row. Vehicle details and wall-lamp spill use their actual world planes, including the vertical wall face beneath each lamp.
 
 The extraction van uses a shaped cab and cargo body with a sloped windscreen, short bonnet, door seams and handles. Tyres touch the road and show through wheel openings in the side panel. Its visual height matches a standing person; its navigation footprint and extraction radius are unchanged.

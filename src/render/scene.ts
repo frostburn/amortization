@@ -151,6 +151,10 @@ export class Scene {
       resolution: Math.min(devicePixelRatio, 2),
       preference: 'webgl',
     });
+    // Browser tests share a software GPU. Cap presentation work there while the
+    // fixed-step simulation and real input handling continue at their usual rates.
+    if (import.meta.env.DEV && import.meta.env.VITE_BROWSER_TEST === 'true')
+      this.app.ticker.maxFPS = 30;
     this.host.appendChild(this.app.canvas);
     this.app.canvas.tabIndex = 0;
     this.guideLayer.className = 'objective-locators';

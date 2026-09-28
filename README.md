@@ -267,6 +267,13 @@ range and readiness. Hover an enemy to inspect its role and readiness; touch tap
 show that information while issuing the usual attack order. Small bars beneath
 characters show preparation and reload progress without obscuring faces.
 
+Enemy uniforms identify the role from any direction: **khaki site guards**,
+**blue carbine sentries**, and **red breach officers**. Officers also wear a
+dark chest plate and visor. At close zoom, pistols have a compact slide and grip,
+carbines have a box magazine and short stock, and shotguns have a long barrel,
+wooden stock and ribbed pump. Those shapes remain visible at low ready or slung
+on the back; concealed pistols stay hidden.
+
 Carbine sentries defend lanes and seek nearby physical cover when hit or reloading.
 Breach officers use short-range shotguns and approach last-seen threats through
 screened positions. Nearby specialists can share a directly observed contact;
@@ -373,6 +380,10 @@ Simulation runs at 30 Hz with interpolated rendering. All gameplay uses world co
 Characters use a small deformable mesh over the existing atlas for alternating steps, knee lift and arm motion. The walking cycle follows interpolated distance travelled, so idle characters stand still and pause/slow time also affect animation. Each character image is anchored between its soles, with contact shadows following the feet along the ground. Tram windscreens, lamps and trim are projected on their actual vertical face. The extraction van has a cab, sloped windscreen, cargo doors and tyres visible through open wheel arches; its original collision footprint is preserved.
 
 CI uses one Ubuntu job, Node 24, and Chromium. The simulation suite includes complete quiet and armed extractions for all six missions and checks for navigation clearance, local identification, disguise permissions, radio disruption, evidence custody, demolition safety, and extraction requirements.
+Playwright launches Vite with `VITE_BROWSER_TEST=true`, capping its renderer at
+30 FPS so concurrent software-GPU browsers leave CPU time for input and assertions.
+The fixed-step simulation still follows elapsed time; ordinary dev and production
+rendering are uncapped. Local and CI browser tests use the same SwiftShader backend.
 
 ## Current scope
 
