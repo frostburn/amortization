@@ -7,6 +7,26 @@ const widths = { hips: 0.175, waist: 0.17, shoulders: 0.195 };
 const lerp = (a: Point3, b: Point3, t: number): Point3 =>
   a.map((v, i) => v + (b[i] - v) * t) as Point3;
 
+function stride(phase: number | null) {
+  const hip = hipHeight(phase);
+  const knees = [-1, 1].map((side, i): Point3 => {
+    const foot = phase === null ? { forward: 0, lift: 0 } : footfall(phase + i / 2);
+    const knee = kneePosition(hip, foot.forward, foot.lift + 0.09);
+    return [knee.forward, side * 0.115, knee.height];
+  });
+  return { hip, knees };
+}
+
+function hemFront(ring: Point3[], side: number) {
+  return Math.max(
+    ...ring.flatMap((a, i) => {
+      const b = ring[(i + 1) % ring.length];
+      const t = (side - a[1]) / (b[1] - a[1]);
+      return t >= 0 && t <= 1 ? [a[0] + (b[0] - a[0]) * t] : [];
+    }),
+  );
+}
+
 // Slice the triangulated loft, including each quad's diagonal. Merely checking
 // ring vertices misses leg tips protruding through the fabric between rings.
 function covered(point: Point3, rings: Point3[][]) {
@@ -56,18 +76,32 @@ describe('articulated clothing', () => {
     }
   });
 
+  it('lets the trailing hem hang back while the leading side folds around either knee', () => {
+    const voss = { hips: 0.17, waist: 0.13, shoulders: 0.16 };
+    for (const phase of [0.375, 0.875]) {
+      const { hip, knees } = stride(phase);
+      const [trailing, leading] = [...knees].sort((a, b) => a[0] - b[0]);
+      const hem = coatRings(hip, knees, voss)[0];
+      expect(hemFront(hem, leading[1]) - hemFront(hem, trailing[1])).toBeGreaterThan(0.1);
+      expect(hemFront(hem, trailing[1])).toBeLessThan(0.2);
+      const mirrored = coatRings(
+        hip,
+        knees.map(([x, y, z]) => [x, -y, z]),
+        voss,
+      )[0];
+      for (const side of [-0.115, 0, 0.115])
+        expect(hemFront(hem, side)).toBeCloseTo(hemFront(mirrored, -side));
+    }
+  });
+
   it.each([
     ['guard', widths],
+    ['Voss', { hips: 0.17, waist: 0.13, shoulders: 0.16 }],
     ['slim operative', { hips: 0.16, waist: 0.12, shoulders: 0.16 }],
     ['broad operative', { hips: 0.18, waist: 0.19, shoulders: 0.235 }],
   ])('covers %s thighs and raised kneecaps above the hem through a full stride', (_, widths) => {
     for (const phase of [null, ...Array.from({ length: 24 }, (_, i) => i / 24)]) {
-      const hip = hipHeight(phase);
-      const knees = [-1, 1].map((side, i): Point3 => {
-        const foot = phase === null ? { forward: 0, lift: 0 } : footfall(phase + i / 2);
-        const knee = kneePosition(hip, foot.forward, foot.lift + 0.09);
-        return [knee.forward, side * 0.115, knee.height];
-      });
+      const { hip, knees } = stride(phase);
       const rings = coatRings(hip, knees, widths);
       // The shin folds back below the knee; the hem must not keep extending
       // along the thigh into empty space at the end of the swing.

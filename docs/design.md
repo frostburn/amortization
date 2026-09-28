@@ -75,7 +75,7 @@ Morrow, Vale, Rook, Sable, guards, Voss, and Mara have distinct models. Each tur
 
 Character triangles use GPU depth testing so intersecting sleeves, shoulders, hair, and equipment resolve per pixel. Each character gets a separate depth interval following the existing scenery painter order; internal body depth never pulls a background character in front of a foreground person or wall. The bounded pose cache shares vertex buffers and releases them on mission reset.
 
-Guard shoulder caps pivot at the shoulder and follow 40% of the upper arm's rotation, keeping their uniform shape during walking, aiming, and carrying. Coat hems deform around the thighs and raised kneecaps, with rounded rectangular sections that leave room for both legs. The chest and belt stay fixed to the torso. Clothing follows the cached pose directly, so pausing and replaying cannot introduce cloth drift.
+Guard shoulder caps pivot at the shoulder and follow 40% of the upper arm's rotation, keeping their uniform shape during walking, aiming, and carrying. Each thigh and raised kneecap pushes its own side of the coat out; rounded sections blend between the legs so the trailing hem can hang back. The chest and belt stay fixed to the torso. Clothing follows the cached pose directly, so pausing and replaying cannot introduce cloth drift.
 
 Actual shot cooldowns raise the arms into a two-handed firing pose; active shot traces supply the muzzle flash. Carriers hold their cargo in both hands. Fallen characters have bent limbs and a face-down head on a low body, with their original colors and no transparency fade. Selection and scenery occlusion still use the world ground position. These are presentation rules and do not add simulation state or change replay fingerprints.
 
