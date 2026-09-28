@@ -47,7 +47,10 @@ test('keeps the map usable through objective controls, injuries, COMMS, and view
     await scene.init();
     scene.app.ticker.add(() => scene.render([world.agents[0].id], 1));
     const settle = async () => {
-      for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame);
+      // Wait for application updates on both sides of layout/ResizeObserver.
+      // Browser animation frames need not each render a frame in a capped ticker.
+      for (let i = 0; i < 2; i++)
+        await new Promise<void>((resolve) => scene.app.ticker.addOnce(() => resolve()));
     };
     const target = { x: 25, y: 18.4 };
     const snapshot = () => ({
