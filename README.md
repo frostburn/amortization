@@ -269,7 +269,8 @@ characters show preparation and reload progress without obscuring faces.
 
 Enemy uniforms identify the role from any direction: **khaki site guards**,
 **blue carbine sentries**, and **red breach officers**. Officers also wear a
-dark chest plate and visor. At close zoom, pistols have a compact slide and grip,
+dark chest plate and visor. Regular guards use the same pistol model in every
+operation. At close zoom, pistols have a compact slide and grip,
 carbines have a box magazine and short stock, and shotguns have a long barrel,
 wooden stock and ribbed pump. Those shapes remain visible at low ready or slung
 on the back; concealed pistols stay hidden.

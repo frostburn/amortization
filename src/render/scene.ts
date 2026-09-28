@@ -940,7 +940,7 @@ export class Scene {
           : cargo
             ? undefined
             : guard
-              ? p.armament?.kind || 'rifle'
+              ? p.armament?.kind || 'pistol'
               : a?.weapon
                 ? 'pistol'
                 : undefined,

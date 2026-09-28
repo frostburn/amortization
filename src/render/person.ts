@@ -1,5 +1,5 @@
 import type { Geometry, DestroyOptions } from 'pixi.js';
-import type { Person } from '../sim/types';
+import type { Person, WeaponKind } from '../sim/types';
 import { living } from '../sim/types';
 import { footfall, hipHeight, kneePosition, walkPhase } from './gait';
 import { coatRings, shoulderPadTransform } from './clothing';
@@ -10,7 +10,7 @@ export type Appearance = 'morrow' | 'vale' | 'rook' | 'sable' | 'guard' | 'voss'
 export interface Outfit {
   appearance: Appearance;
   uniform?: boolean;
-  weapon?: 'pistol' | 'rifle' | 'carbine' | 'shotgun';
+  weapon?: WeaponKind;
   stowed?: boolean;
   specialist?: 'sentry' | 'breacher';
   carrying?: boolean;
@@ -536,7 +536,6 @@ export class PersonSprite extends ModelMesh {
       muzzle = 0.714;
       f.tube([muzzle, 0, 0.085], [muzzle + 0.004, 0, 0.085], 0.025, 0x172323);
     } else {
-      // The legacy rifle shares this silhouette; its simulation stays unchanged.
       f.block([-0.17, 0, 0.048], [0.25, 0.075, 0.065], steel);
       f.block([-0.28, 0, 0.027], [0.055, 0.09, 0.155], dark);
       f.block([0.1, 0, 0.075], [0.29, 0.085, 0.1], dark);
