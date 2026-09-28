@@ -52,6 +52,8 @@ and impact tails. A compressor and final soft ceiling keep simultaneous volleys
 under control. Finished sources disconnect their entire voice graph. Sustained
 sources have short releases and their parameter automation is replaced as they
 move; a stationary ambience loop does not accumulate per-frame automation.
+Engines without `cancelAndHoldAtTime` retain the current parameter value before
+replacing automation through the older Web Audio methods.
 
 PCM is synthesized in code and cached in the browser. Initial preparation is
 spread across event-loop turns; a first-use cache miss can still create its clip

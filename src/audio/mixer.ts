@@ -182,7 +182,14 @@ export class Mixer {
     for (const key of ['gain', 'pan', 'cutoff', 'rate'] as const) {
       if (targets[key] === voice.targets[key]) continue;
       const param = parameters[key];
-      param.cancelAndHoldAtTime(now);
+      if (typeof param.cancelAndHoldAtTime === 'function') param.cancelAndHoldAtTime(now);
+      else {
+        // Some Web Audio implementations lack cancelAndHoldAtTime. Preserve
+        // the current rendered value before replacing their automation.
+        const value = param.value;
+        param.cancelScheduledValues(now);
+        param.setValueAtTime(value, now);
+      }
       param.setTargetAtTime(targets[key], now, 0.04);
     }
     voice.targets = targets;

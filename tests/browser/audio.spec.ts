@@ -202,6 +202,15 @@ test('muting, pausing, replay acceleration and world changes stop live sustained
     world.agents[3].armament.charging = { target: 'guard-0', remaining: 1 };
     sound.update(world, view, true);
     const charging = [...sound.loops.keys()];
+    world.agents[3].armament.charging.remaining = 0.8;
+    sound.update(world, view, true);
+    // Exercise live retuning on engines without this optional Web Audio method.
+    Object.defineProperty(AudioParam.prototype, 'cancelAndHoldAtTime', {
+      value: undefined,
+      configurable: true,
+    });
+    world.agents[3].armament.charging.remaining = 0.6;
+    sound.update(world, view, true);
     sound.update(world, view, false);
     const paused = sound.loops.size;
     sound.update(world, view, true);
