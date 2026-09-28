@@ -457,7 +457,7 @@ export class Hud {
         ? 'Select an operative to issue orders.'
         : all
           ? world.mission.loadout
-            ? 'KIT: Morrow / Vale. Hover or tap guards to inspect.'
+            ? 'Hover guards to inspect; tapping a guard attacks.'
             : 'Map clicks keep this group selected. Use a portrait or 1–4 to select one.'
           : a.order.kind === 'interact' && isCharge(a.order.target)
             ? 'Planting needs five uninterrupted seconds and free hands. Cannot fire while planting; moving or Hold cancels unfinished work.'

@@ -255,8 +255,8 @@ export class PersonSprite extends ModelMesh {
       alive &&
       !!outfit.weapon &&
       !outfit.stowed &&
-      !p.armament?.reload &&
-      (p.cooldown > 0 || (!!p.armament?.settle && !p.path.length));
+      (!!outfit.flash ||
+        (!p.armament?.reload && (p.cooldown > 0 || (!!p.armament?.settle && !p.path.length))));
     const key = [
       direction,
       alive,
