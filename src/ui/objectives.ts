@@ -5,6 +5,7 @@ import { clearedCargo, courierGuard } from '../sim/courier';
 import { published } from '../sim/broadcast';
 import { extractionRequirement } from './extraction';
 import { demolished, detonationStatus } from '../sim/demolition';
+import { activeTurrets, inspectionRemaining } from '../sim/security';
 
 export type GoalId = 'primary' | 'evidence' | 'extract';
 export type GuideTarget = ObjectKind | 'inspection';
@@ -85,7 +86,39 @@ export function missionGoals(w: World): Goal[] {
   const kit: GuideTarget[] = w.disguiseTaken ? [] : ['disguise'];
   const evidenceInArchive = !!m.archive && inside(w.evidencePosition, m.secure);
   let primary: Goal;
-  if (w.demolition) {
+  if (w.security) {
+    const remaining = (['power-west', 'power-east'] as const).filter(
+      (id) =>
+        w.guards.some((g) => g.turret?.circuit === id && living(g)) &&
+        !w.security!.isolated.includes(id),
+    );
+    const inspection = inspectionRemaining(w);
+    const identityLost = w.disguiseTaken && !cover;
+    primary = {
+      id: 'primary',
+      optional: true,
+      complete: remaining.length === 0,
+      label:
+        remaining.length === 0
+          ? '✓ Sentry circuits neutralised'
+          : inspection > 0
+            ? `○ Inspection · ${Math.ceil(inspection)}s remaining`
+            : `◇ Prepare the crossing · ${activeTurrets(w).length} turrets live`,
+      detail:
+        remaining.length === 0
+          ? 'The turrets cannot restart. Human guards still patrol. Collect MANDATE from the north records room, open GATE from inside, and bring every survivor to VAN.'
+          : `${inspection > 0 ? `Turrets are stopped for ${Math.ceil(inspection)} more seconds. Isolate the remaining feeds now. ` : ''}RADIO stops human reinforcements only. WEST powers the two amber guns; EAST powers the two blue guns. Each feed needs four seconds with free hands, permanently stops its guns, and leaves the worker unable to fire. Reach WEST behind reception and EAST north of the generator hall.${!w.security.inspectionUsed && !identityLost ? ' An unexposed maintenance identity can use INSPECT once for a 22-second shutdown. Stage the crew before authorising it.' : ' You can still isolate feeds from cover or destroy the stationary turrets.'} Cover breaks their tracking; Sable’s coil outranges them. This preparation is optional, but a direct rush meets overlapping fire.`,
+      targets:
+        remaining.length === 0
+          ? ['evidence', 'gate', 'extract']
+          : [
+              ...remaining,
+              ...(!w.security.inspectionUsed && !identityLost
+                ? [...kit, 'authorise' as const]
+                : []),
+            ],
+    };
+  } else if (w.demolition) {
     const done = demolished(w),
       status = detonationStatus(w);
     const remaining = (['charge-west', 'charge-east'] as const).filter(

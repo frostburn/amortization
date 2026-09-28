@@ -20,9 +20,11 @@ import { missionGoals, transferFeedback } from './objectives';
 import type { Goal, GoalId, GuideTarget } from './objectives';
 import { extractionRequirement } from './extraction';
 import { demolished, detonationStatus } from '../sim/demolition';
+import { activeTurrets, canAuthorise, inspectionRemaining, turretPowered } from '../sim/security';
 
 export type Action =
   | 'objectives'
+  | `security:${'authorise' | 'power-west' | 'power-east'}`
   | `extract:${'extract' | 'alternate'}`
   | 'operations'
   | 'next'
@@ -108,6 +110,7 @@ export class Hud {
     const escortControls = `<section id="escort-controls" class="objective-actions escort-panel" aria-label="Witness" hidden><button data-action="locate-escort" id="escort-focus" title="Locate the witness without changing squad orders"><strong id="escort-alert" role="status"></strong><span id="escort-status"></span></button><div class="escort-actions"><button data-action="escort-wait" id="escort-wait-button"><span class="witness-portrait" aria-hidden="true"></span><span id="escort-wait-label"></span></button><button data-action="escort-aid" id="escort-aid-button" hidden></button></div><p id="escort-aid-hint" hidden></p></section>`;
     const extractionControls = `<section id="extraction-controls" class="objective-actions extraction-controls" aria-label="Extraction" hidden>${(['extract', 'alternate'] as const).map((id) => `<div id="exit-${id}" class="exit-row"><button data-action="extract:${id}" id="exit-button-${id}" aria-describedby="exit-status-${id}"></button><p id="exit-status-${id}"></p></div>`).join('')}</section>`;
     const courierControls = `<section id="courier-controls" class="objective-actions" aria-label="Courier transfer" hidden><p id="courier-status" role="status"></p><button data-action="call-transfer" id="courier-call-button" hidden>Send selected to CALL</button></section>`;
+    const securityControls = `<section id="security-controls" class="objective-actions" aria-label="Wired security" hidden><p id="security-status" role="status"></p><div class="broadcast-actions"><button data-action="security:power-west" id="power-west-button" title="Amber circuit · four seconds with free hands">Isolate WEST · 4s</button><button data-action="security:power-east" id="power-east-button" title="Blue circuit · four seconds with free hands">Isolate EAST · 4s</button></div><button data-action="security:authorise" id="authorise-button" aria-describedby="authorise-status">Authorise INSPECT · 22s</button><p id="authorise-status"></p></section>`;
     const demolitionControls = `<section id="demolition-controls" class="objective-actions" aria-label="Demolition" hidden><div id="plant-actions" class="broadcast-actions">${(['charge-west', 'charge-east'] as const).map((id) => `<div><button data-action="plant:${id}" id="${id}-button" aria-describedby="${id}-status"></button><p id="${id}-status"></p></div>`).join('')}</div><button data-action="detonate" id="detonate-button" aria-describedby="detonation-status">Detonate both cores</button><p id="detonation-status" role="status"></p></section>`;
     const broadcastControls = `<section id="broadcast-controls" class="objective-actions" aria-label="Audit transmission" hidden><p id="broadcast-progress-label"></p><progress id="broadcast-progress" value="0" max="1" aria-label="Audit upload progress"></progress><p id="broadcast-status" role="status"></p><div id="broadcast-actions" class="broadcast-actions"><button data-action="work:mask" id="mask-button" title="Send a selected operative with free hands to hold LOOP. Moving or Hold releases it.">Hold LOOP</button><button data-action="work:upload" id="upload-button" title="Send a selected operative with free hands to UPLINK. Moving or Hold pauses the upload; progress is saved.">Work UPLINK</button></div></section>`;
     this.app.innerHTML = `
@@ -125,7 +128,7 @@ export class Hud {
           <footer class="controls-hint"><span><kbd>1–4</kbd> operative <kbd>Q</kbd> squad <kbd>RMB</kbd> order <kbd>Space</kbd> pause <kbd>Tab</kbd> slow</span><button data-action="restart" title="Restart operation (Shift+R)">Restart</button></footer>
         </section>
         <aside class="sidebar mission-sidebar" aria-label="Mission and status">
-          <section class="mission-section"><h2 id="mission-title"></h2><div class="objectives">${(['primary', 'evidence', 'extract'] as const).map((id) => `<div class="objective-group" id="objective-group-${id}"><button id="objective-${id}" data-goal="${id}" aria-controls="objective-guide" aria-describedby="objective-help" title="Locate relevant mission items"></button>${id === 'primary' ? escortControls + courierControls + broadcastControls + demolitionControls : id === 'extract' ? extractionControls : ''}</div>`).join('')}</div><p id="objective-help">Hover or tap goals to locate · <kbd>?</kbd> help</p></section>
+          <section class="mission-section"><h2 id="mission-title"></h2><div class="objectives">${(['primary', 'evidence', 'extract'] as const).map((id) => `<div class="objective-group" id="objective-group-${id}"><button id="objective-${id}" data-goal="${id}" aria-controls="objective-guide" aria-describedby="objective-help" title="Locate relevant mission items"></button>${id === 'primary' ? escortControls + courierControls + broadcastControls + demolitionControls + securityControls : id === 'extract' ? extractionControls : ''}</div>`).join('')}</div><p id="objective-help">Hover or tap goals to locate · <kbd>?</kbd> help</p></section>
           <section class="alert-section" aria-label="Alert status"><p class="alert" id="alert">● Site quiet</p><p class="fine" id="radio-status">Radio network online</p><p class="fine" id="archive-status" hidden></p></section>
           <section class="dispatch" aria-label="Comms"><span>COMMS</span><p id="message" role="status">Preparing the operation…</p></section>
           <details class="intel-section"><summary>Field notes &amp; records</summary><div class="intel-content"><p class="description" id="mission-description"></p><p id="intel"></p><p class="best" id="best"></p></div></details>
@@ -305,6 +308,7 @@ export class Hud {
     this.field('courier-controls').hidden = !mission.transfer;
     this.field('broadcast-controls').hidden = !mission.broadcast;
     this.field('demolition-controls').hidden = !mission.demolition;
+    this.field('security-controls').hidden = !mission.security;
     this.field('escort-controls').hidden = true;
     this.field('escort-controls').dataset.witness = mission.escort?.id || '';
     this.app.querySelector<HTMLDetailsElement>('.intel-section')!.open = false;
@@ -328,7 +332,7 @@ export class Hud {
     this.set(
       'map-detail',
       inspected
-        ? `${WEAPONS[inspected.armament!.kind].name} · ${weaponStatus(inspected)} · range ${weaponRange(inspected)}`
+        ? `${inspected.turret && !turretPowered(world, inspected) ? 'Offline · ' : ''}${WEAPONS[inspected.armament!.kind].name} · ${weaponStatus(inspected)} · range ${weaponRange(inspected)}`
         : 'Municipal assets division',
     );
     this.field('map-location').parentElement!.classList.toggle('inspecting', !!inspected);
@@ -520,6 +524,45 @@ export class Hud {
             : `${worker.name}: ${landmark(world, work).tag} · ${Math.min(progress, duration).toFixed(1)} / ${duration}s`,
       );
       (this.field('work-progress') as HTMLProgressElement).value = Math.min(1, progress / duration);
+    }
+    if (world.security) {
+      const remaining = inspectionRemaining(world);
+      this.set(
+        'security-status',
+        remaining > 0
+          ? `Inspection: ${Math.ceil(remaining)}s · guns stopped`
+          : `${activeTurrets(world).length} / 4 turrets live · RADIO has no effect`,
+      );
+      const neutralised = !world.guards.some(
+        (g) => living(g) && g.turret && !world.security!.isolated.includes(g.turret.circuit),
+      );
+      const authorised = selected.some((p) => canAuthorise(world, p));
+      this.set(
+        'authorise-button',
+        world.security.inspectionUsed ? 'Inspection used' : 'Authorise INSPECT · 22s',
+      );
+      (this.field('authorise-button') as HTMLButtonElement).disabled =
+        world.security.inspectionUsed || !authorised || neutralised;
+      this.set(
+        'authorise-status',
+        neutralised
+          ? 'No sentries can restart.'
+          : world.security.inspectionUsed
+            ? 'Remaining feeds can still be isolated.'
+            : authorised
+              ? 'One use · stage the crew first'
+              : 'Select an unexposed KIT wearer; conceal pistol.',
+      );
+      for (const id of ['power-west', 'power-east'] as const) {
+        const off = world.security.isolated.includes(id);
+        const guns = world.guards.filter((g) => g.turret?.circuit === id && living(g)).length;
+        this.set(
+          `${id}-button`,
+          `${off || !guns ? '✓' : 'Isolate'} ${landmark(world, id).tag}${off || !guns ? ' · offline' : ' · 4s'}`,
+        );
+        (this.field(`${id}-button`) as HTMLButtonElement).disabled =
+          off || !guns || !selected.some((p) => !p.carrying);
+      }
     }
     if (world.demolition) {
       const done = demolished(world),

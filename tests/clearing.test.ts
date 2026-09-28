@@ -61,7 +61,6 @@ function run() {
 describe('Margin call', () => {
   it('connects the larger site and keeps authored routes and firing posts reachable', () => {
     expect(nextMission('severance')).toBe(clearing);
-    expect(nextMission('clearing')).toBeUndefined();
     expect(clearing.width * clearing.height).toBeGreaterThan(
       severance.width * severance.height * 1.8,
     );

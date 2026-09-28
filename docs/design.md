@@ -38,7 +38,7 @@ not reveal an identity or permit shooting through a wall. Killing callers or
 disabling RADIO still interrupts escalation. Support arrives 6 and 30 seconds
 after the alarm, with countdowns shown in the HUD.
 
-Operations 05–07 use explicit, shared weapon definitions. Pistols are concealable
+Operations 05–08 use explicit, shared weapon definitions. Pistols are concealable
 and mobile (range 6, damage 17, eight shots); carbines reach farther but need a
 0.35-second stationary preparation (range 9, damage 26, six shots); shotguns
 favour close encounters (range 3.8, damage 44, two shots). Automatic reloads take
@@ -285,6 +285,57 @@ Quiet and armed full-crew completions run with live patrols and are recorded the
 replayed exactly. Unit checks cover reachable posts and map edges, coil charge
 interruption, automatic reloads and split selection. Browser checks exercise
 launch, default framing, tracking, manual pan, overview and touch selection.
+
+## Adverse selection and wired security
+
+Operation 08 is a 52 × 38 authorisation works. The settlement keys recovered in
+operation 07 still need a physical restitution mandate before the bank releases
+the frozen funds. Recover MANDATE from the north records room, open the east
+loading gate, and extract every survivor. Security preparation is optional; the
+mandate remains the extraction requirement.
+
+Four stationary sentry turrets introduce two ideas from the combat proposal:
+physical security circuits and borrowed corporate authority. Amber guns belong
+to WEST; blue guns belong to EAST. Visible cables connect each mount to its feed.
+RADIO stops human reinforcement calls but never disables wired guns, transfers
+identities to them, or causes them to chase noise. Each turret has 180 health and
+uses the existing shared carbine rules. It scans a 90-degree cone, oscillates
+around its authored facing, and needs 0.8 seconds of uninterrupted optical
+tracking before shooting. A red tracking line and under-mount bar show that delay.
+Walls, range loss, target changes and power loss reset tracking. Guns use their
+ordinary magazine and reload cycle and leave dedicated mechanical wrecks.
+
+An unexposed, disguised pistol carrier with free hands can authorise INSPECT at
+the reception terminal. It stops all turrets for 22 seconds, once. The visible
+countdown uses simulation time; pause also pauses the window. Assignment and
+completion both validate the identity. During inspection, maintenance work does
+not itself arouse suspicion. Guards continue to patrol and still recognise
+visible weapons, cargo and intruders in the records room.
+
+WEST and EAST each take four uninterrupted seconds with free hands and disable
+their two guns permanently. Moving, Hold or losing the worker abandons unfinished
+work; workers cannot fire. Outside inspection, visible work is suspicious and a
+completed breaker trip draws nearby guards to investigate. Neither an expired
+inspection nor a lost disguise prevents physical isolation or destroying guns.
+A one-person disguised approach can use the service walks, but a revealed worker
+needs covering teammates. Sable can outrange a mount; a frontal squad rush instead
+meets overlapping guns that survive its opening volley.
+
+The quiet verification run stages the other three operatives on the public north
+road, isolates both feeds during inspection, prepares the exit, and times the
+carrier's crossing behind the east patrol. It extracts four uninjured operatives
+without a shot or alarm. The armed run clears and covers the service approach,
+isolates both feeds without authorisation, and extracts all four. Both are
+recorded and replayed against exact checkpoints. A separate nearest-enemy assault
+jams RADIO, focuses fire, and uses dressings at half health but ignores the feeds:
+it clears the site with only Sable surviving. This is a balance regression check,
+not a claim that every improvised assault must fail; human playtesting remains
+necessary.
+
+Desktop and touch browser checks cover mission launch, goal locators, authority
+requirements, issuing inspection and breaker orders, expiry and permanent isolation.
+They stay outside the routine smoke gate. The full simulation checks continue on
+all PRs; no CI workers, retries, or matrix entries were added.
 
 ## Next useful work
 

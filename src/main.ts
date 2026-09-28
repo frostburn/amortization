@@ -140,6 +140,24 @@ async function boot() {
       updateHud();
       return;
     }
+    if (
+      type === 'security:authorise' ||
+      type === 'security:power-west' ||
+      type === 'security:power-east'
+    ) {
+      issue({
+        kind: 'interact',
+        agents: selected,
+        target:
+          type === 'security:authorise'
+            ? 'authorise'
+            : type === 'security:power-west'
+              ? 'power-west'
+              : 'power-east',
+      });
+      updateHud();
+      return;
+    }
     if (type === 'work:mask' || type === 'work:upload') {
       issue({
         kind: 'interact',

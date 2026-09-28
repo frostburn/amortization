@@ -24,6 +24,8 @@ import { guideLocation } from '../ui/objectives';
 import type { GuideTarget } from '../ui/objectives';
 import { extractionRequirement } from '../ui/extraction';
 import { demolished } from '../sim/demolition';
+import { turretPowered, TURRET_ARC } from '../sim/security';
+import { circuitColor, drawTurret } from './turret';
 
 const COLORS = {
   ground: 0x263331,
@@ -307,6 +309,22 @@ export class Scene {
       plane(g, s.x, s.y, s.w, s.h, 0x746752, 0, 0.65);
       for (let x = 44; x < 47; x += 0.5) plane(g, x, 16.5, 0.25, 0.18, COLORS.amber);
     }
+    if (mission.security) {
+      plane(g, 9.5, 24.5, 36, 3.5, 0x35443e);
+      plane(g, 9.5, 4, 1.7, 28, 0x5c6a5e);
+      plane(g, 19.5, 15.6, 14, 2, 0x526257);
+      plane(g, 34.4, 5.4, 9.2, 10.5, 0x665a45, 0, 0.6);
+      for (const turret of mission.security.turrets) {
+        for (const [i, point] of turret.cable.entries()) {
+          const p = project(point, 0.015);
+          if (!i) g.moveTo(p.x, p.y);
+          else g.lineTo(p.x, p.y);
+        }
+        g.stroke({ color: circuitColor(turret.circuit), width: 2.5, alpha: 0.8 });
+        const ring = project(turret.position);
+        g.ellipse(ring.x, ring.y, 27, 14).stroke({ color: circuitColor(turret.circuit), width: 2 });
+      }
+    }
     if (mission.broadcast) {
       plane(g, 5.3, 2, 1.7, 25, 0x53615b);
       plane(g, 35, 3, 3.5, 24, 0x35423e);
@@ -362,17 +380,19 @@ export class Scene {
       this.addScenery(this.shutter, d);
     }
     const office = this.label(
-      mission.demolition
-        ? 'RECOVERY CORES / RESTRICTED'
-        : mission.broadcast
-          ? 'RESTRICTED / UPLINK'
-          : mission.escort?.locked
-            ? 'TRANSFER RECORDS'
-            : mission.transfer
-              ? 'CUSTOMS'
-              : mission.archive
-                ? 'SECURE ARCHIVE'
-                : 'SECURE OFFICE',
+      mission.security
+        ? 'RECORDS / 08'
+        : mission.demolition
+          ? 'RECOVERY CORES / RESTRICTED'
+          : mission.broadcast
+            ? 'RESTRICTED / UPLINK'
+            : mission.escort?.locked
+              ? 'TRANSFER RECORDS'
+              : mission.transfer
+                ? 'CUSTOMS'
+                : mission.archive
+                  ? 'SECURE ARCHIVE'
+                  : 'SECURE OFFICE',
       10,
       0xf0c68b,
     );
@@ -411,7 +431,9 @@ export class Scene {
         ? COLORS.mint
         : o.id === 'escort' || o.id === 'evidence' || o.id === 'upload' || isCharge(o.id)
           ? COLORS.amber
-          : 0xa8c2b3;
+          : o.id === 'power-west' || o.id === 'power-east'
+            ? circuitColor(o.id)
+            : 0xa8c2b3;
       mark
         .poly([0, -9, 7, 0, 0, 9, -7, 0])
         .fill({ color: 0x162722, alpha: 0.9 })
@@ -1018,23 +1040,25 @@ export class Scene {
       v.root.position.copyFrom(project(pos));
       depthItems.push({ root: v.root, footprint: { ...pos, w: 0, h: 0 } });
       const cargo = !!a?.carrying || (p.id === w.courier?.guardId && w.evidence === 'courier');
-      v.sprite.pose(p, alpha, {
-        appearance,
-        uniform: a?.disguised,
-        weapon: longGun(p)
-          ? p.armament!.kind
-          : cargo
-            ? undefined
-            : guard
-              ? p.armament?.kind || 'pistol'
-              : a?.weapon
-                ? 'pistol'
-                : undefined,
-        stowed: !!a && !a.weapon,
-        specialist: guard?.tactics?.role,
-        carrying: cargo,
-        flash: living(p) && w.traces.some((t) => distance(t.from, p) < 0.2),
-      });
+      v.sprite.visible = !guard?.turret;
+      if (!guard?.turret)
+        v.sprite.pose(p, alpha, {
+          appearance,
+          uniform: a?.disguised,
+          weapon: longGun(p)
+            ? p.armament!.kind
+            : cargo
+              ? undefined
+              : guard
+                ? p.armament?.kind || 'pistol'
+                : a?.weapon
+                  ? 'pistol'
+                  : undefined,
+          stowed: !!a && !a.weapon,
+          specialist: guard?.tactics?.role,
+          carrying: cargo,
+          flash: living(p) && w.traces.some((t) => distance(t.from, p) < 0.2),
+        });
       const color = a
         ? a.exposed
           ? COLORS.red
@@ -1045,7 +1069,8 @@ export class Scene {
             : COLORS.amber
           : COLORS.amber;
       v.ink.clear().ellipse(0, 0, 8, 3.5).fill({ color: 0x0d1915, alpha: 0.25 });
-      if (living(p)) {
+      if (guard?.turret) drawTurret(v.ink, guard, w);
+      if (living(p) && !guard?.turret) {
         const feet = v.sprite.contacts;
         for (let i = 0; i < feet.length; i += 2)
           v.ink
@@ -1060,7 +1085,7 @@ export class Scene {
         v.ink.rect(-12, -38, 24, 3).fill(0x182522);
         v.ink.rect(-12, -38, (24 * p.hp) / p.maxHp, 3).fill(color);
       }
-      if (guard && guard.mode !== 'patrol' && living(p)) {
+      if (guard && !guard.turret && guard.mode !== 'patrol' && living(p)) {
         const suspicion = Math.max(...Object.values(guard.suspicion), 0);
         v.ink
           .rect(-12, -44, 24, 3)
@@ -1188,6 +1213,16 @@ export class Scene {
         this.effects.ellipse(dest.x, dest.y, 7, 4).stroke({ color: COLORS.mint, width: 1.5 });
       }
     }
+    for (const turret of w.guards.filter((g) => turretPowered(w, g) && g.target)) {
+      const target = w.agents.find((a) => a.id === turret.target && living(a));
+      if (!target || !lineClear(w, turret, target)) continue;
+      const from = project(turret, 0.9),
+        to = project(target, 0.8);
+      this.effects
+        .moveTo(from.x, from.y)
+        .lineTo(to.x, to.y)
+        .stroke({ color: COLORS.red, width: 1.5, alpha: 0.7 });
+    }
     for (const t of w.traces) {
       const angle = Math.atan2(t.to.y - t.from.y, t.to.x - t.from.x);
       const a = project(
@@ -1209,9 +1244,11 @@ export class Scene {
     const g = this.cones;
     g.clear();
     for (const guard of this.world.guards.filter(living)) {
+      if (guard.turret && !turretPowered(this.world, guard)) continue;
       const points = [project(guard)];
+      const arc = guard.turret ? TURRET_ARC : Math.PI * 0.36;
       for (let i = 0; i <= 22; i++) {
-        const angle = guard.angle - Math.PI * 0.36 + (i / 22) * Math.PI * 0.72;
+        const angle = guard.angle - arc + (i / 22) * arc * 2;
         let low = 0,
           high = sightRange(guard);
         for (let j = 0; j < 7; j++) {
@@ -1227,7 +1264,11 @@ export class Scene {
       polygon(
         g,
         points,
-        guard.mode === 'combat' ? COLORS.red : COLORS.amber,
+        guard.mode === 'combat'
+          ? COLORS.red
+          : guard.turret
+            ? circuitColor(guard.turret.circuit)
+            : COLORS.amber,
         guard.mode === 'combat' ? 0.13 : 0.09,
       );
     }

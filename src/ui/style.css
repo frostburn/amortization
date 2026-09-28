@@ -229,6 +229,7 @@ kbd {
   margin-top: 0;
 }
 .exit-row button,
+#authorise-button,
 #detonate-button,
 #courier-call-button {
   min-height: 44px;
@@ -1251,10 +1252,22 @@ dialog h2 {
   background: #352b19;
 }
 #broadcast-controls p,
+#security-controls p,
 #demolition-controls p {
   font-size: 10px;
   line-height: 1.5;
   margin: 0 0 6px;
+}
+#authorise-button {
+  margin-top: 6px;
+}
+#power-west-button:not(:disabled) {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+#power-east-button:not(:disabled) {
+  border-color: #7fbdf1;
+  color: #7fbdf1;
 }
 #broadcast-progress {
   display: block;

@@ -1,4 +1,12 @@
-import { distance, inside, isCharge, isExtraction, living, EXTRACTION_RADIUS } from './types';
+import {
+  distance,
+  inside,
+  isCharge,
+  isExtraction,
+  isPower,
+  living,
+  EXTRACTION_RADIUS,
+} from './types';
 import type { Landmark, ObjectKind, Operative, Vec, World } from './types';
 import { findPath, lineClear } from './navigation';
 import { formationTargets } from './formation';
@@ -9,6 +17,7 @@ import { courierGuard, routeCourier } from './courier';
 import { BROADCAST_SETUP_TIME, published, workBroadcast } from './broadcast';
 import { demolished, detonationStatus } from './demolition';
 import { cancelCharge, longGun } from './weapons';
+import { canAuthorise, inspectionRemaining } from './security';
 
 export function landmark(world: World, id: ObjectKind): Landmark {
   const source = world.mission.landmarks.find((o) => o.id === id)!;
@@ -30,6 +39,8 @@ export function available(world: World, id: ObjectKind) {
       (id === 'disguise' && world.disguiseTaken) ||
       (id === 'gate' && world.gateOpen) ||
       (id === 'relay' && world.relayOff) ||
+      (id === 'authorise' && (!world.security || world.security.inspectionUsed)) ||
+      (isPower(id) && (!world.security || world.security.isolated.includes(id))) ||
       (id === 'escort' && (!world.escort || !living(world.escort) || world.escortLocked)) ||
       (id === 'release' && !world.escortLocked) ||
       (id === 'evidence' &&
@@ -52,6 +63,8 @@ export function interactionPoint(world: World, agent: Operative, id: ObjectKind)
   return landmark(world, id);
 }
 export function interactionDuration(world: World, agent: Operative, id: ObjectKind) {
+  if (isPower(id)) return 4;
+  if (id === 'authorise') return 2;
   if (id === 'breach') return 8;
   if (id === 'divert') return 3;
   if (id === 'release') return 3;
@@ -88,11 +101,16 @@ function interactionRefusal(world: World, a: Operative, id: ObjectKind): string 
       'upload',
       'charge-west',
       'charge-east',
+      'authorise',
+      'power-west',
+      'power-east',
     ].includes(id)
   )
     return 'Set the cargo down before working these controls.';
   if (id === 'release' && (!a.disguised || a.weapon || a.exposed))
     return 'Release refused. WARRANT requires a maintenance identity that has not been exposed, with weapons concealed.';
+  if (id === 'authorise' && !canAuthorise(world, a))
+    return 'INSPECT requires an unexposed maintenance identity with a concealed pistol and free hands. Use KIT with Morrow or Vale, or isolate the feeds from cover.';
   if (id === 'evidence' && world.evidence === 'courier') {
     const courier = courierGuard(world);
     if (
@@ -110,6 +128,15 @@ function interactionRefusal(world: World, a: Operative, id: ObjectKind): string 
 }
 export function interact(world: World, ids: string[], id: ObjectKind) {
   if (!available(world, id)) {
+    if (id === 'authorise' && world.security?.inspectionUsed)
+      notify(
+        world,
+        inspectionRemaining(world) > 0
+          ? `Inspection active for ${Math.ceil(inspectionRemaining(world))}s. Isolate WEST and EAST while the guns are stopped.`
+          : 'Inspection already used. WEST and EAST can still be isolated, or destroy the turrets.',
+      );
+    if (isPower(id) && world.security?.isolated.includes(id))
+      notify(world, `${landmark(world, id).tag} is isolated. Its two sentries stay off.`);
     if (isCharge(id) && world.demolition)
       notify(
         world,
@@ -356,6 +383,23 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
   if (!available(world, id)) return;
   world.sounds.push({ kind: 'interact', x: a.x });
   switch (id) {
+    case 'authorise':
+      world.security!.inspectionUsed = true;
+      world.security!.inspectionUntil = world.time + world.mission.security!.inspectionTime;
+      notify(
+        world,
+        `Inspection authorised. All turrets are off for ${world.mission.security!.inspectionTime}s. Isolate WEST and EAST for a permanent shutdown; guards still patrol.`,
+      );
+      break;
+    case 'power-west':
+    case 'power-east':
+      world.security!.isolated.push(id);
+      if (inspectionRemaining(world) === 0) investigateNoise(world, a);
+      notify(
+        world,
+        `${landmark(world, id).tag} isolated. Its two turrets are permanently offline.${inspectionRemaining(world) === 0 ? ' Nearby guards heard the breaker trip.' : ''}`,
+      );
+      break;
     case 'charge-west':
     case 'charge-east':
       world.demolition!.armed.push(id);
@@ -382,7 +426,10 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
       break;
     case 'relay':
       world.relayOff = true;
-      notify(world, 'Radio relay disabled. No further reinforcements can be called.');
+      notify(
+        world,
+        `Radio relay disabled. No further reinforcements can be called.${world.security ? ' Wired turrets are still independent: use INSPECT, WEST or EAST.' : ''}`,
+      );
       break;
     case 'escort':
       if (!world.escort) break;
