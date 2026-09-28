@@ -7,9 +7,48 @@ is also verified. Otherwise this checks a route's continued viability, without
 claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All eighteen retained files are byte-for-byte copies of submissions provided in chat:
-fifteen on 2026-09-27 and three on 2026-09-28, including their `unversioned` /
+All twenty retained files are byte-for-byte copies of submissions provided in chat:
+fifteen on 2026-09-27 and five on 2026-09-28, including their `unversioned` /
 local-changes metadata.
+
+## Adverse selection and camera feedback
+
+The four mission-08 submissions reproduce all original state checkpoints and
+outcomes under the current simulation. Mission hash is `b9b6cedf`; `2f4e6eff`
+has simulation fingerprint `b99754f6…`, while the other three use `5207de59…`
+from before the replay parser fix. A diagnostic playback compared every original
+checkpoint even across that parser-only fingerprint change. The camera/input
+changes do not change the simulation fingerprint or any recorded command.
+
+| Fixture | Original submission | Outcome |
+| --- | --- | --- |
+| `mandate-feed-assault-2f4e6eff.replay.json` | `amortization-mandate-won-2f4e6eff.replay.json` | Tick 2264 / 75.5s; 3 survivors; 51 shots |
+| `mandate-feed-detour-63c8216c.replay.json` | `amortization-mandate-won-63c8216c.replay.json` | Tick 3089 / 103.0s; 3 survivors; 25 shots |
+
+Both wins jam RADIO, isolate WEST and EAST, and lose Vale. Neither uses KIT,
+inspection, or field dressings. The faster run clears the remaining human guards
+and opens GATE. The slower run leaves three guards alive and GATE closed; its
+final VAN order takes the long walk around the perimeter. Its note, “A little
+cheesy, but at least the strat cost time. *shrug*”, describes a working alternate
+route with a time cost, not an extraction failure.
+
+The two losses remain diagnostic input rather than required defeats:
+
+- `57cc1984`: “The new camera is nauseating. Misclicked a bunch and died.”
+  Repeated movement orders cancel the radio interaction. The alarm starts at
+  8.9s and the crew falls at 17.3s.
+- `59d45619`: “Brain off = dead. Good.” RADIO is off by 12.9s, but both feeds
+  remain live. The crew destroys one turret and falls at 20.6s without an alarm.
+
+The faster win also says “Fair enough. Camera sucks.” Local selection and
+casualty changes previously recentered instantly, while short path turns and
+automatic aim continuously moved the view. Follow now uses a shorter, filtered
+lead, a central quiet area, and bounded pan speed. Pointer holds freeze automatic
+tracking, and release keeps the original pressed target even if it moves.
+Desktop and touch regressions cover those behaviors along with remote selection,
+manual panning, and stable zoom. The recordings do not contain camera or
+selection-only events, so they cannot reconstruct the exact nauseating view.
+No combat values or mission geometry changed in response to these runs.
 
 ## Margin call human assaults
 

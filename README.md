@@ -140,8 +140,11 @@ Viewport resizing preserves the camera’s scale. **Fit map** frames the mission
 space; operations 01–06 start with this overview. Operations 07–08 start at a readable scale near the crew.
 
 **Follow** / **Home** returns to the selected crew at the last working zoom. When
-zoomed in, the camera looks ahead along their route, eases through turns, and
-looks in their facing direction when stationary. Select
+zoomed in, the camera uses a modest, smoothed look ahead along their route and
+a shorter facing lead at rest. A central quiet area absorbs small formation and
+aim changes. Nearby selections and casualties do not snap the view; a distant
+operative is brought into view immediately. The camera stays still while you
+press or drag on the map, and orders use the target you pressed. Select
 a portrait or press **1–4** to follow an individual operative, including across a
 split team. Selection and movement never change zoom. A widely split group
 selection follows its largest nearby group (ties prefer the first selected
@@ -468,7 +471,7 @@ UI, renderer, or broader input changes; extended mission journeys and detailed
 graphics checks are not part of the routine gate. Keep `@smoke` for shared player
 flows so each new mission does not add another real-time browser journey to CI.
 
-The full simulation suite still runs on every change, including all 18 retained
+The full simulation suite still runs on every change, including all 20 retained
 human completions, complete quiet and armed extractions for all eight missions,
 navigation clearance, local identification, disguise permissions, radio disruption,
 evidence custody, demolition safety, and extraction requirements.
@@ -479,6 +482,6 @@ rendering are uncapped. Local and CI browser tests use the same SwiftShader back
 
 ## Current scope
 
-Seven ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, and mid-mission saves remain future work. Each operative has a distinct on-map model with 32 facings, a distance-driven walk, an armed stance, and a grounded fallen pose. Hair, skin, clothing, and build correspond to their portraits; disguises preserve their identity. Voss and Mara have their own models and portraits beside the wait/follow control.
+Eight ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, and mid-mission saves remain future work. Each operative has a distinct on-map model with 32 facings, a distance-driven walk, an armed stance, and a grounded fallen pose. Hair, skin, clothing, and build correspond to their portraits; disguises preserve their identity. Voss and Mara have their own models and portraits beside the wait/follow control.
 
 See [design notes](docs/design.md) and [art provenance](docs/art.md). Distributed under the repository's [MIT license](LICENSE).

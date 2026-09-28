@@ -135,6 +135,9 @@ export class Scene {
   private homePending = true;
   following = true;
   private followScale = 0.95;
+  private followLead: Vec | null = null;
+  private pointerActive = false;
+  private followDelay = 0;
   private selectionKey = '';
   private guideLayer = document.createElement('div');
   private guideMarkers = new Map<GuideTarget, HTMLElement>();
@@ -196,6 +199,9 @@ export class Scene {
     this.homePending = true;
     this.selectionKey = '';
     this.followScale = 0.95;
+    this.followLead = null;
+    this.pointerActive = false;
+    this.followDelay = 0;
   }
   private build() {
     const world = this.world,
@@ -724,11 +730,17 @@ export class Scene {
   }
   follow(selected: string[], restoreScale = false) {
     this.following = true;
+    // A portrait/key selection is a new navigation intent, not part of the previous map gesture.
+    if (!this.pointerActive) this.followDelay = 0;
     if (restoreScale) {
       this.zoom = Math.max(this.fit, this.followScale) / this.fit;
       this.updateCamera();
+      this.trackSelection(selected, 1, true);
     }
-    this.trackSelection(selected, 1, true);
+  }
+  setPointerActive(active: boolean) {
+    if (this.pointerActive && !active) this.followDelay = 0.25;
+    this.pointerActive = active;
   }
   private trackSelection(
     selected: string[],
@@ -737,18 +749,33 @@ export class Scene {
     seconds = this.app.ticker.deltaMS / 1000,
   ) {
     // A fully visible map needs no translation. Zoom and selection never auto-fit the crew.
-    if (!this.following || this.camera.scale.x <= this.overviewScale() * 1.02) return;
+    if (
+      !this.following ||
+      this.pointerActive ||
+      this.followDelay > 0 ||
+      this.camera.scale.x <= this.overviewScale() * 1.02
+    )
+      return;
     const target = selectionFocus(this.world, selected, alpha);
     if (!target) return;
     const lead = project(target.lookAhead),
       scale = this.camera.scale.x;
+    const desired = { x: lead.x * scale, y: lead.y * scale };
+    if (!this.followLead || center) this.followLead = desired;
+    else {
+      // Turns in a tiled path and automatic aim changes should not whip the view around.
+      const blend = 1 - Math.exp(-2 * Math.max(0, Math.min(seconds, 0.1)));
+      this.followLead.x += (desired.x - this.followLead.x) * blend;
+      this.followLead.y += (desired.y - this.followLead.y) * blend;
+    }
     const spread = target.members.map((p) => project({ x: p.x - target.x, y: p.y - target.y }));
     const offset = followOffset(
       this.screen(target),
-      { x: lead.x * scale, y: lead.y * scale },
+      this.followLead,
       {
         width: this.app.screen.width,
         height: this.app.screen.height,
+        scale,
         inset: {
           x: Math.max(...spread.map((p) => Math.abs(p.x))) * scale + 22,
           y: Math.max(...spread.map((p) => Math.abs(p.y))) * scale + 50,
@@ -987,6 +1014,7 @@ export class Scene {
     return v;
   }
   render(selected: string[], alpha: number, seconds = this.app.ticker.deltaMS / 1000) {
+    this.followDelay = Math.max(0, this.followDelay - Math.max(0, Math.min(seconds, 0.1)));
     // Resize only immediately before drawing, so a ResizeObserver cannot clear
     // the WebGL canvas between frames (e.g. when picking up the mission item).
     if (this.resizePending) {
@@ -1005,8 +1033,11 @@ export class Scene {
       }
     }
     const selectionKey = selected.join(',');
-    if (this.selectionKey && selectionKey !== this.selectionKey) this.following = true;
-    this.trackSelection(selected, alpha, selectionKey !== this.selectionKey, seconds);
+    if (this.selectionKey && selectionKey !== this.selectionKey) {
+      this.following = true;
+      this.followLead = null;
+    }
+    this.trackSelection(selected, alpha, false, seconds);
     this.selectionKey = selectionKey;
     const w = this.world;
     this.drawGuidance();

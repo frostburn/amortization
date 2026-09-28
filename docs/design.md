@@ -273,10 +273,17 @@ Tracking uses interpolated positions and looks ahead along the next path segment
 it never aims straight at a distant destination through intervening walls. Movement
 takes priority over shooting backwards. At rest, the local group's average facing
 sets a shorter lead. Opposing directions cancel. Screen-space limits keep the lead
-comfortable on a phone and reserve space for the local group, while time-based
-easing prevents a sudden swing at corners.
+comfortable on a phone and reserve space for the local group. Lead direction is
+filtered over time; a central quiet area absorbs formation settling and small aim
+changes. Ordinary pans ease at a capped speed. One moving teammate contributes
+only their share of the group's lead, rather than pulling the camera at full strength.
 An off-screen selection returns immediately to the visible area. Zoom never changes.
-Selecting one operative immediately frames them and their direction. Widely split multi-selections
+Selecting a nearby operative or losing a teammate never snaps the camera. Only
+mission launch, an explicit Follow / Home command, or an off-screen focus cuts
+directly to the new framing. Holding a mouse button or touch on the map suspends
+automatic tracking through release and a short settling interval; clicks retain
+the target identified at press time. Manual panning still works during the hold.
+Widely split multi-selections
 follow the largest local group, with stable selection-order ties. Manual pan and
 objective focus suspend tracking; selecting an operative resumes it. Wheel zoom
 keeps the centre world point fixed. Mission resets restore the authored start.

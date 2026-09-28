@@ -21,6 +21,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     canvas = scene.app.canvas;
   let start: Vec | null = null,
     last: Vec | null = null,
+    pressed: Hit | null = null,
     button = 0,
     pointer: number | null = null,
     drag = false,
@@ -41,6 +42,8 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     drag = false;
     add = e.shiftKey;
     pointerType = e.pointerType;
+    pressed = scene.hit(start.x, start.y, button === 2 || pointerType === 'touch');
+    scene.setPointerActive(true);
     canvas.setPointerCapture(e.pointerId);
     e.preventDefault();
   });
@@ -67,8 +70,10 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     if (e.pointerType !== 'touch') hud.inspectGuard(null);
   });
   const cancel = () => {
+    scene.setPointerActive(false);
     start = null;
     last = null;
+    pressed = null;
     pointer = null;
     hud.selectionBox(null);
   };
@@ -92,8 +97,9 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
         .map((a) => a.id);
       // A missed box must not leave the crew without an active selection.
       if (ids.length) target.select(add ? [...new Set([...target.selection(), ...ids])] : ids);
-    } else if (!drag && button !== 1) {
-      const hit = scene.hit(p.x, p.y, button === 2 || pointerType === 'touch');
+    } else if (!drag && button !== 1 && pressed) {
+      // Honour what was pressed, even if a character moves before release.
+      const hit = pressed;
       if (button === 0 && pointerType !== 'touch' && hit.kind === 'agent')
         target.select(
           add

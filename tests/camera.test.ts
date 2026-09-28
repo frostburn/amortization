@@ -32,15 +32,15 @@ it('anticipates the local route, prioritizes movement over backwards aim, and us
     { x: a.x + 3, y: a.y - 10 },
   ];
   a.order = { kind: 'move', target: a.path[1] };
-  expect(selectionFocus(w, [a.id], 1)!.lookAhead).toEqual({ x: 4, y: 0 });
+  expect(selectionFocus(w, [a.id], 1)!.lookAhead).toEqual({ x: 2.5, y: 0 });
   // Reaching the bend looks north along the route, not towards the old heading.
   a.path.shift();
   a.x += 3;
   a.previous = { x: a.x, y: a.y };
-  expect(selectionFocus(w, [a.id], 1)!.lookAhead).toEqual({ x: 0, y: -4 });
+  expect(selectionFocus(w, [a.id], 1)!.lookAhead).toEqual({ x: 0, y: -2.5 });
   a.path = [];
   a.order = { kind: 'hold' };
-  expect(selectionFocus(w, [a.id], 1)!.lookAhead.x).toBeCloseTo(-2.2);
+  expect(selectionFocus(w, [a.id], 1)!.lookAhead.x).toBeCloseTo(-1.2);
 });
 
 it('ignores remote and fallen headings and cancels opposing local directions', () => {
@@ -57,7 +57,8 @@ it('ignores remote and fallen headings and cancels opposing local directions', (
   )!;
   expect(Math.hypot(focus.lookAhead.x, focus.lookAhead.y)).toBeLessThan(1e-8);
   b.path = [{ x: b.x, y: b.y - 5 }];
-  expect(selectionFocus(w, [a.id, b.id], 1)!.lookAhead).toEqual({ x: 0, y: -4 });
+  // One operative settling into formation must not pull the whole team's view at full strength.
+  expect(selectionFocus(w, [a.id, b.id], 1)!.lookAhead).toEqual({ x: 0, y: -1.25 });
 });
 
 it('leads smoothly through reversals at different frame rates without losing the operative', () => {
@@ -74,15 +75,15 @@ it('leads smoothly through reversals at different frame rates without losing the
     }
     return point;
   };
-  expect(settle(30).x).toBeCloseTo(settle(120).x, 6);
+  expect(Math.abs(settle(30).x - settle(120).x)).toBeLessThan(2);
   const phone = { width: 390, height: 400 },
     far = { x: 1500, y: -300 };
   const recovered = followOffset(far, { x: 700, y: -500 }, phone, 1 / 60);
   expect(far.x + recovered.x).toBeLessThan(phone.width * 0.85);
   expect(far.y + recovered.y).toBeGreaterThan(phone.height * 0.17);
   const selected = followOffset(far, { x: 700, y: -500 }, phone, 0, true);
-  expect(far.x + selected.x).toBeCloseTo(phone.width * 0.3);
-  expect(far.y + selected.y).toBeCloseTo(phone.height * 0.73);
+  expect(far.x + selected.x).toBeCloseTo(phone.width * 0.35);
+  expect(far.y + selected.y).toBeCloseTo(phone.height * 0.68);
   const wideGroup = followOffset(
     { x: 195, y: 200 },
     { x: 150, y: 0 },
@@ -91,4 +92,32 @@ it('leads smoothly through reversals at different frame rates without losing the
     true,
   );
   expect(195 + wideGroup.x).toBeGreaterThanOrEqual(155); // Lead must not clip the rear operative.
+});
+
+it('keeps small formation and aim changes still and bounds larger visible corrections', () => {
+  const view = { width: 800, height: 600 };
+  for (const lead of [
+    { x: 18, y: 10 },
+    { x: -18, y: -10 },
+    { x: 0, y: 0 },
+  ]) {
+    const pan = followOffset({ x: 400, y: 318 }, lead, view, 1 / 60);
+    expect(Math.hypot(pan.x, pan.y)).toBe(0);
+  }
+  const correction = followOffset({ x: 80, y: 85 }, { x: -100, y: 50 }, view, 1 / 60);
+  expect(Math.hypot(correction.x, correction.y)).toBeLessThanOrEqual(3.000001);
+  expect(Math.hypot(correction.x, correction.y)).toBeGreaterThan(0);
+});
+
+it('keeps pace at close zoom without repeated off-screen recovery jumps', () => {
+  const view = { width: 390, height: 450, scale: 3 };
+  const point = { x: 150, y: 220 };
+  for (let i = 0; i < 180; i++) {
+    point.x += 6; // 360 screen pixels/second at close zoom.
+    expect(point.x).toBeLessThan(view.width);
+    const pan = followOffset(point, { x: 150, y: 0 }, view, 1 / 60);
+    expect(Math.hypot(pan.x, pan.y)).toBeLessThanOrEqual(9.000001);
+    point.x += pan.x;
+    point.y += pan.y;
+  }
 });
