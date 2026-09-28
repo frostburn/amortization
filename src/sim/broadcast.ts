@@ -21,6 +21,7 @@ export function workBroadcast(w: World, a: Operative, id: 'mask' | 'upload') {
     previous.path = [];
   }
   b[key] = a.id;
+  w.sounds.push({ kind: 'interact', action: id, x: a.x, y: a.y });
   a.path = [];
   notify(
     w,
@@ -77,7 +78,8 @@ export function updateBroadcast(w: World, dt: number) {
       }
     }
     b.uploadBy = b.maskBy = null;
-    w.sounds.push({ kind: 'interact', x: w.mission.landmarks.find((o) => o.id === 'upload')!.x });
+    const terminal = w.mission.landmarks.find((o) => o.id === 'upload')!;
+    w.sounds.push({ kind: 'interact', action: 'upload', x: terminal.x, y: terminal.y });
     notify(
       w,
       "Audit published. Mara's evidence is public. LOOP is released; bring every survivor to VAN. LOG is optional.",

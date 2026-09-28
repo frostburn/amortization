@@ -45,7 +45,7 @@ export function raiseAlarm(world: World, ids: string[] = []) {
   world.alarm = true;
   world.alarmTime = world.time;
   notify(world, 'Security called it in. Reinforcements approaching the delivery gate.', 'warning');
-  world.sounds.push({ kind: 'alarm', x: 16 });
+  world.sounds.push({ kind: 'alarm', x: world.mission.width / 2, y: world.mission.height / 2 });
 }
 export function investigateNoise(world: World, point: Vec) {
   for (const g of world.guards.filter(living)) {

@@ -45,7 +45,15 @@ export function shoot(
     life: 0.12,
     hostile,
   });
-  world.sounds.push({ kind: 'shot', x: from.x });
+  world.sounds.push({ kind: 'shot', weapon: gun?.kind ?? 'pistol', x: from.x, y: from.y });
+  world.sounds.push({
+    kind: 'hit',
+    x: to.x,
+    y: to.y,
+    metal: 'turret' in to && !!to.turret,
+    fatal: !living(to),
+    friendly: world.agents.some((a) => a === to) || world.escort === to,
+  });
   world.shots++;
   if (!living(to)) {
     cancelCharge(to);

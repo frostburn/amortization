@@ -31,6 +31,7 @@ export type Action =
   | `mission:${Mission['id']}`
   | 'pause'
   | 'sound'
+  | `volume:${number}`
   | 'briefing'
   | 'begin'
   | 'restart'
@@ -61,6 +62,7 @@ export interface HudState {
   paused: boolean;
   slow: boolean;
   sound: boolean;
+  volume?: number;
   best: number | null;
   fullCrewBest?: number | null;
   following?: boolean;
@@ -114,7 +116,7 @@ export class Hud {
     const demolitionControls = `<section id="demolition-controls" class="objective-actions" aria-label="Demolition" hidden><div id="plant-actions" class="broadcast-actions">${(['charge-west', 'charge-east'] as const).map((id) => `<div><button data-action="plant:${id}" id="${id}-button" aria-describedby="${id}-status"></button><p id="${id}-status"></p></div>`).join('')}</div><button data-action="detonate" id="detonate-button" aria-describedby="detonation-status">Detonate both cores</button><p id="detonation-status" role="status"></p></section>`;
     const broadcastControls = `<section id="broadcast-controls" class="objective-actions" aria-label="Audit transmission" hidden><p id="broadcast-progress-label"></p><progress id="broadcast-progress" value="0" max="1" aria-label="Audit upload progress"></progress><p id="broadcast-status" role="status"></p><div id="broadcast-actions" class="broadcast-actions"><button data-action="work:mask" id="mask-button" title="Send a selected operative with free hands to hold LOOP. Moving or Hold releases it.">Hold LOOP</button><button data-action="work:upload" id="upload-button" title="Send a selected operative with free hands to UPLINK. Moving or Hold pauses the upload; progress is saved.">Work UPLINK</button></div></section>`;
     this.app.innerHTML = `
-      <header class="topbar"><h1>AMORTIZATION</h1><span class="operation" id="operation-title"></span><div class="top-actions"><button data-action="operations">Operations</button><button data-action="briefing" title="Mission briefing and controls">Briefing</button><button data-action="pause" id="pause-button">${icon('play')}<span id="pause-label">Resume</span></button><button data-action="sound" id="sound-button">Sound off</button></div></header>
+      <header class="topbar"><h1>AMORTIZATION</h1><span class="operation" id="operation-title"></span><div class="top-actions"><button data-action="operations">Operations</button><button data-action="briefing" title="Mission briefing and controls">Briefing</button><button data-action="pause" id="pause-button">${icon('play')}<span id="pause-label">Resume</span></button><div class="audio-controls"><button data-action="sound" id="sound-button" aria-pressed="false">Sound off</button><label class="volume-control" title="Master volume"><span>Vol</span><input id="sound-volume" aria-label="Sound volume" type="range" min="0" max="100" value="65" step="1"></label></div></div></header>
       <main class="game-layout">
         <aside class="sidebar crew-sidebar" aria-label="Crew and orders">
           <section class="crew-section"><div class="crew-heading"><p class="section-label">CREW</p><button data-action="all">Select all <kbd>Q</kbd></button></div>
@@ -137,6 +139,11 @@ export class Hud {
       <dialog id="mission-dialog" aria-labelledby="dialog-title"></dialog>`;
     this.stage = this.app.querySelector('#stage')!;
     this.modal = this.app.querySelector('#mission-dialog')!;
+    this.app
+      .querySelector<HTMLInputElement>('#sound-volume')!
+      .addEventListener('input', (event) => {
+        onAction(`volume:${Number((event.target as HTMLInputElement).value)}`);
+      });
     this.reset(this.mission);
     this.app.addEventListener('click', (e) => {
       const el = (e.target as HTMLElement).closest<HTMLElement>('[data-action], [data-agent]');
@@ -361,6 +368,10 @@ export class Hud {
     this.field('time-mode').classList.toggle('live', !state.paused);
     this.set('pause-label', state.paused ? 'Resume' : 'Pause');
     this.set('sound-button', state.sound ? 'Sound on' : 'Sound off');
+    this.field('sound-button').setAttribute('aria-pressed', String(state.sound));
+    const volume = this.field('sound-volume') as HTMLInputElement;
+    volume.value = String(Math.round((state.volume ?? 0.65) * 100));
+    volume.setAttribute('aria-valuetext', `${volume.value}%`);
     if (this.lastMessage !== world.message) {
       this.set('message', world.message);
       this.lastMessage = world.message;

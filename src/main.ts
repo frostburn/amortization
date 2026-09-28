@@ -53,6 +53,7 @@ async function boot() {
         world: () => world,
         showWorld(next) {
           world = next;
+          sound.reset(world);
           selected = world.agents.filter(living).map((a) => a.id);
           accumulator = 0;
           scene.reset(world);
@@ -79,6 +80,7 @@ async function boot() {
   }
   function startMission(mission: Mission, briefing: boolean) {
     world = createWorld(mission);
+    sound.reset(world);
     selected = world.agents.map((a) => a.id);
     paused = briefing;
     slow = false;
@@ -118,6 +120,11 @@ async function boot() {
     }
   }
   function action(type: Action) {
+    if (type.startsWith('volume:')) {
+      sound.setVolume(Number(type.slice(7)) / 100);
+      updateHud();
+      return;
+    }
     if (
       playtest?.isPlayback &&
       (type === 'restart' ||
@@ -208,7 +215,7 @@ async function boot() {
         if (world.status === 'playing') paused = !paused;
         break;
       case 'sound':
-        sound.toggle();
+        void sound.toggle().then(updateHud);
         break;
       case 'begin':
         if (world.status !== 'playing') break;
@@ -303,6 +310,7 @@ async function boot() {
       paused,
       slow,
       sound: sound.enabled,
+      volume: sound.volume,
       following: scene.following,
       best: missionRecord(records, world.mission.id).best,
       fullCrewBest: missionRecord(records, world.mission.id).fullCrewBest,
@@ -319,6 +327,7 @@ async function boot() {
     },
   });
   const autoPause = () => {
+    sound.silence();
     if (world.status === 'playing') {
       paused = true;
       slow = false;
@@ -330,6 +339,7 @@ async function boot() {
     if (document.hidden) autoPause();
   });
   window.addEventListener('blur', autoPause);
+  window.addEventListener('pagehide', () => sound.silence());
   scene.app.ticker.add(() => {
     const now = performance.now(),
       wallElapsed = (now - last) / 1000,
@@ -347,7 +357,16 @@ async function boot() {
       }
     } else accumulator = 0;
     scene.render(selected, paused ? 1 : accumulator / STEP);
-    for (const event of world.sounds.splice(0)) sound.play(event, world.mission.width);
+    sound.update(
+      world,
+      {
+        centre: scene.toWorld(scene.app.screen.width / 2, scene.app.screen.height / 2),
+        width: scene.app.screen.width,
+        scale: scene.camera.scale.x,
+      },
+      !paused && !hud.modal.open && world.status === 'playing',
+      !document.hidden && (!playtest?.isPlayback || playtest.speed === 1),
+    );
     if (world.status !== 'playing' && !playtest?.isPlayback) {
       paused = true;
       if (world.status === 'won' && !saved) {

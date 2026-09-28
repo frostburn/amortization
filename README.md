@@ -27,6 +27,17 @@ npm run preview    # serve the production build
 
 To play from another device on your local network, use `npm run dev -- --host 0.0.0.0`.
 
+## Sound
+
+Use **Sound off** in the top bar to enable audio; the adjacent **Vol** slider
+remembers your chosen volume. The page always starts muted. Each weapon has its
+own report, coil charges and turret tracking give audible warnings, and movement,
+reloads, impacts and mission equipment have distinct cues. Footsteps are quiet
+and muffled; there is no site ambience yet. Stereo follows the camera's isometric view.
+
+Planning pauses sustained sound. Normal-speed replays include audio; accelerated
+playback stays quiet. See [sound design](docs/audio.md) for the palette and checks.
+
 ## Playtesting and replay bundles
 
 Run `npm run dev`. The top bar, briefing, and result screens have two direct entry
@@ -448,7 +459,7 @@ is disabled.
 | `src/render/`  | Pixi scene, camera, sprites, indicators                                                |
 | `src/input/`   | Selection and input-to-command translation                                             |
 | `src/ui/`      | HTML interface, briefings, results, versioned local records                            |
-| `src/audio/`   | Gesture-activated synthesized effects                                                  |
+| `src/audio/`   | Procedural sound palette, spatial mixer, and presentation-only cue tracking              |
 | `src/replay/`  | Browser-independent command recording, validation, checksums, and playback             |
 | `src/dev/`     | Development-only playtest panel, recent attempts, import/export                        |
 | `scripts/`     | Build identity and headless replay verification                                        |

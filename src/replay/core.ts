@@ -413,12 +413,14 @@ export class ReplayPlayer {
         this.fail('final result differs.');
     }
   }
-  advance() {
+  advance(preserveSounds = false) {
     if (this.done) return;
     step(this.world);
     this.tick++;
     this.boundary();
-    this.world.sounds.length = 0;
+    // The live viewer drains these after rendering; headless/accelerated
+    // verification must not accumulate an unused audio queue.
+    if (!preserveSounds) this.world.sounds.length = 0;
   }
 }
 

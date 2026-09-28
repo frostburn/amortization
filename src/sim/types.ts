@@ -183,10 +183,14 @@ export interface Notice {
   text: string;
   kind: 'info' | 'warning';
 }
-export interface SoundEvent {
-  kind: 'shot' | 'alarm' | 'interact' | 'hit' | 'blast';
-  x: number;
-}
+export type SoundEvent = Vec &
+  (
+    | { kind: 'shot'; weapon: WeaponKind }
+    | { kind: 'hit'; metal: boolean; fatal: boolean; friendly: boolean }
+    | { kind: 'interact'; action: ObjectKind | 'heal' | 'drop' }
+    | { kind: 'alarm' }
+    | { kind: 'blast' }
+  );
 export interface World {
   mission: Mission;
   agents: Operative[];
