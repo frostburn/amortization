@@ -14,6 +14,8 @@ test('exports real inputs, verifies playback, preserves the live attempt, and re
   page,
 }) => {
   test.setTimeout(90_000);
+  // Repeated replay/world restores exercise the real renderer at laptop size.
+  await page.setViewportSize({ width: 1280, height: 720 });
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
@@ -105,6 +107,7 @@ test('exports real inputs, verifies playback, preserves the live attempt, and re
   await expect(recording).toHaveAttribute('data-recording', 'true');
   await expect(dot).toBeVisible();
   await expect(page.getByRole('button', { name: 'Restart', exact: true })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Operations', exact: true })).toBeEnabled();
   await expect(page.locator('#pause-label')).toHaveText('Resume');
   await recording.click();
   const again = page.waitForEvent('download');

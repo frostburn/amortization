@@ -326,6 +326,12 @@ export class Playtest {
     }
   }
   private paintRecording() {
+    // Navigation must change with playback state, even while the renderer is
+    // rebuilding the restored world and has not delivered another frame yet.
+    for (const button of document.querySelectorAll<HTMLButtonElement>(
+      '[data-action="restart"], [data-action="operations"], [data-action="next"], [data-action^="mission:"]',
+    ))
+      button.disabled = this.isPlayback;
     const recording = !this.player && !this.recorder.stopped;
     this.button.dataset.recording = String(recording);
     this.button.querySelector<HTMLElement>('.playtest-recording-dot')!.hidden = !recording;
@@ -388,10 +394,6 @@ export class Playtest {
     }
     if (now - this.lastPaint < 150) return;
     this.lastPaint = now;
-    for (const button of document.querySelectorAll<HTMLButtonElement>(
-      '[data-action="restart"], [data-action="operations"], [data-action="next"], [data-action^="mission:"]',
-    ))
-      button.disabled = this.isPlayback;
     if (this.player) this.paintPlayback();
     this.paintRecording();
     if (this.host.modal.open && !this.host.modal.querySelector('[data-playtest]')) {
