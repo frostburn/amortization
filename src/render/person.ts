@@ -2,6 +2,7 @@ import type { Geometry, DestroyOptions } from 'pixi.js';
 import type { Person } from '../sim/types';
 import { living } from '../sim/types';
 import { footfall, hipHeight, kneePosition, walkPhase } from './gait';
+import { coatRings, shoulderPadTransform } from './clothing';
 import { project } from './isometric';
 import { modelGeometry, ModelMesh, MODEL_VIEW, type ModelFace, type Point3 } from './model-mesh';
 
@@ -284,19 +285,21 @@ export class PersonSprite extends ModelMesh {
       });
       const hip = hipHeight(stride),
         bob = hip - 0.66;
+      const knees: Point[] = [];
       for (let i = 0; i < 2; i++) {
         const foot = feet[i],
           side = i ? 1 : -1;
         const ankle = add(foot, [0, 0, 0.09]);
         const bend = kneePosition(hip, ankle[0], ankle[2]);
         const knee: Point = [bend.forward, foot[1], bend.height];
+        knees.push(knee);
         f.tube([0, side * 0.115, hip], knee, 0.068, 0x35413e, 0.058);
         f.tube(knee, ankle, 0.054, 0x303a38, 0.046);
         f.oval(knee, 0.067, 0.06, 0.06, 0x43534b);
         f.oval(add(knee, [0.038, 0, 0]), 0.038, 0.055, 0.051, 0x506057);
         f.block(add(foot, [0.025, 0, 0.047]), [0.22, 0.115, 0.094], 0x242d2b);
       }
-      this.torso(f, profile, coat, bob);
+      this.torso(f, profile, coat, bob, knees);
       this.head(f, profile, [0, 0, 1.31 + bob], !!outfit.uniform, outfit.appearance === 'guard');
       for (let i = 0; i < 2; i++) {
         const side = i ? 1 : -1;
@@ -318,8 +321,11 @@ export class PersonSprite extends ModelMesh {
         f.oval(shoulder, 0.061, 0.062, 0.06, coat);
         f.oval(elbow, 0.049, 0.049, 0.048, coat);
         f.oval(hand, 0.049, 0.039, 0.045, profile.skin);
-        if (outfit.appearance === 'guard')
-          f.tube(add(shoulder, [0, 0, -0.04]), add(shoulder, [0, 0, -0.1]), 0.057, 0xc38d50);
+        if (outfit.appearance === 'guard') {
+          f.transform = shoulderPadTransform(shoulder, elbow);
+          f.oval([0, side * 0.01, 0.036], 0.078, 0.078, 0.043, 0xc38d50);
+          f.transform = null;
+        }
       }
       if (outfit.carrying) f.block([0.26, 0, 0.79 + bob], [0.17, 0.37, 0.23], 0xbfa476);
       if (outfit.weapon) this.gun(f, aiming, !!outfit.flash, outfit.weapon === 'rifle', bob);
@@ -345,22 +351,8 @@ export class PersonSprite extends ModelMesh {
       frames.clear();
     }
   }
-  private torso(f: Figure, p: Profile, coat: number, bob: number) {
-    f.rings(
-      [
-        [0.46, p.hips * 1.16],
-        [0.68, p.hips],
-        [0.84, p.waist],
-        [1.09, p.shoulders],
-      ].map(([z, width]) =>
-        Array.from({ length: 8 }, (_, i): Point => [
-          Math.cos((i * Math.PI) / 4) * 0.115,
-          Math.sin((i * Math.PI) / 4) * width,
-          z + bob,
-        ]),
-      ),
-      coat,
-    );
+  private torso(f: Figure, p: Profile, coat: number, bob: number, knees: Point[]) {
+    f.rings(coatRings(0.66 + bob, knees, p), coat);
     f.face(
       [
         [0.117, -0.06, 0.82 + bob],

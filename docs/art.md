@@ -38,6 +38,10 @@ geometry on mission reset. Foot contacts and shadows share the gait's ground pro
 GPU depth testing resolves overlapping body surfaces rather than sorting whole
 faces by their average depth. Separate depth intervals preserve the map's painter
 order between characters and architecture.
+Guard shoulder caps are attached to the shoulder joint with restrained arm
+rotation. Coat hems flare around the moving thighs and kneecaps while the chest
+and belt retain their shape; this deformation also applies to operative and
+witness coats. Clothing is posed geometry, without a separate cloth simulation.
 The character art is illustrative. Markers and status text communicate exact
 selection, weapon state, suspicion, and custody. Architecture and interface icons
 are original code drawings. Audio is synthesized; no third-party audio samples or
