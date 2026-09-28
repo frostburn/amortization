@@ -37,24 +37,24 @@ export function selectionFocus(world: World, selected: string[], alpha: number):
   });
   const moving = directions.filter((d) => d.moving);
   const looking = moving.length ? moving : directions;
-  const lead = moving.length ? 4 : 2.2;
+  const lead = moving.length ? 2.5 : 1.2;
   return {
     x: group.reduce((sum, p) => sum + p.x, 0) / group.length,
     y: group.reduce((sum, p) => sum + p.y, 0) / group.length,
     members: group.map(({ x, y }) => ({ x, y })),
     // Opposing headings cancel instead of arbitrarily picking one person's facing.
     lookAhead: {
-      x: (looking.reduce((sum, p) => sum + p.x, 0) / looking.length) * lead,
-      y: (looking.reduce((sum, p) => sum + p.y, 0) / looking.length) * lead,
+      x: (looking.reduce((sum, p) => sum + p.x, 0) / group.length) * lead,
+      y: (looking.reduce((sum, p) => sum + p.y, 0) / group.length) * lead,
     },
   };
 }
 
-/** Screen-space pan: ease into turns, but immediately recover an off-screen selection. */
+/** Keep a quiet central area; only explicit recentering or an off-screen focus cuts the view. */
 export function followOffset(
   point: Vec,
   lead: Vec,
-  view: { width: number; height: number; inset?: Vec },
+  view: { width: number; height: number; inset?: Vec; scale?: number },
   seconds: number,
   snap = false,
 ): Vec {
@@ -69,20 +69,26 @@ export function followOffset(
     Math.min(view.height * 0.86, view.height - (view.inset?.y ?? 0)),
   );
   const x = clamp(
-    view.width * 0.5 - clamp(lead.x, -view.width * 0.2, view.width * 0.2),
+    view.width * 0.5 - clamp(lead.x, -view.width * 0.15, view.width * 0.15),
     left,
     right,
   );
   const y = clamp(
-    view.height * 0.53 - clamp(lead.y, -view.height * 0.2, view.height * 0.2),
+    view.height * 0.53 - clamp(lead.y, -view.height * 0.15, view.height * 0.15),
     top,
     bottom,
   );
-  const blend = snap ? 1 : 1 - Math.exp(-6 * clamp(seconds, 0, 0.1));
-  const panX = Math.abs(x - point.x) > 1 ? (x - point.x) * blend : 0;
-  const panY = Math.abs(y - point.y) > 1 ? (y - point.y) * blend : 0;
-  return {
-    x: clamp(point.x + panX, left, right) - point.x,
-    y: clamp(point.y + panY, top, bottom) - point.y,
-  };
+  if (snap || point.x < 0 || point.x > view.width || point.y < 0 || point.y > view.height)
+    return { x: x - point.x, y: y - point.y };
+  const dt = clamp(seconds, 0, 0.1),
+    blend = 1 - Math.exp(-3 * dt);
+  // Formation shuffling and small aiming changes must not drag the whole map.
+  const beyond = (error: number, margin: number) =>
+    Math.sign(error) * Math.max(0, Math.abs(error) - margin);
+  const panX = beyond(x - point.x, Math.min(24, view.width * 0.05)) * blend;
+  const panY = beyond(y - point.y, Math.min(14, view.height * 0.05)) * blend;
+  // Bound ordinary pans even when a casualty changes the group's centre.
+  const length = Math.hypot(panX, panY),
+    speed = length > 0 ? Math.min(1, (180 * Math.max(1, view.scale ?? 1) * dt) / length) : 0;
+  return { x: panX * speed, y: panY * speed };
 }
