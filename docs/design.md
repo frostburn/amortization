@@ -198,4 +198,4 @@ A read-only goal model supplies both the HUD labels and context-sensitive help. 
 
 ## Next useful work
 
-Tune whether splitting the crew earns its cognitive cost. Then extend civilian responses and challenges, spatial equipment choices, full directional character art, route variety, and missions built from these systems.
+The [combat expansion proposal](combat-expansion.md) stages new weapons, flash grenades, and enemy roles in operations 05 and 06, with further equipment and security ideas reserved for later missions. Use these encounters to tune whether splitting the crew earns its cognitive cost.
