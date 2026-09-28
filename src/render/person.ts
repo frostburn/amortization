@@ -10,7 +10,9 @@ export type Appearance = 'morrow' | 'vale' | 'rook' | 'sable' | 'guard' | 'voss'
 export interface Outfit {
   appearance: Appearance;
   uniform?: boolean;
-  weapon?: 'pistol' | 'rifle';
+  weapon?: 'pistol' | 'rifle' | 'carbine' | 'shotgun';
+  stowed?: boolean;
+  specialist?: 'sentry' | 'breacher';
   carrying?: boolean;
   flash?: boolean;
 }
@@ -249,7 +251,12 @@ export class PersonSprite extends ModelMesh {
       alive = living(p);
     const phase = walkPhase(p, alpha);
     const frame = phase === null ? -1 : Math.round((((phase % 1) + 1) % 1) * 24) % 24;
-    const aiming = alive && !!outfit.weapon && p.cooldown > 0;
+    const aiming =
+      alive &&
+      !!outfit.weapon &&
+      !outfit.stowed &&
+      !p.armament?.reload &&
+      (p.cooldown > 0 || (!!p.armament?.settle && !p.path.length));
     const key = [
       direction,
       alive,
@@ -258,6 +265,8 @@ export class PersonSprite extends ModelMesh {
       outfit.appearance,
       outfit.uniform,
       outfit.weapon,
+      outfit.stowed,
+      outfit.specialist,
       outfit.carrying,
       outfit.flash,
     ].join(':');
@@ -300,6 +309,12 @@ export class PersonSprite extends ModelMesh {
         f.block(add(foot, [0.025, 0, 0.047]), [0.22, 0.115, 0.094], 0x242d2b);
       }
       this.torso(f, profile, coat, bob, knees);
+      if (outfit.specialist) {
+        const accent = outfit.specialist === 'sentry' ? 0x82a4a5 : 0xc18459;
+        f.block([0.13, -0.045, 0.96 + bob], [0.025, 0.13, 0.085], accent);
+        if (outfit.specialist === 'breacher')
+          f.block([0.125, 0, 1.36 + bob], [0.04, 0.21, 0.065], 0x333e3c);
+      }
       this.head(f, profile, [0, 0, 1.31 + bob], !!outfit.uniform, outfit.appearance === 'guard');
       for (let i = 0; i < 2; i++) {
         const side = i ? 1 : -1;
@@ -328,7 +343,15 @@ export class PersonSprite extends ModelMesh {
         }
       }
       if (outfit.carrying) f.block([0.26, 0, 0.79 + bob], [0.17, 0.37, 0.23], 0xbfa476);
-      if (outfit.weapon) this.gun(f, aiming, !!outfit.flash, outfit.weapon === 'rifle', bob);
+      if (outfit.weapon)
+        this.gun(
+          f,
+          aiming,
+          !!outfit.flash,
+          outfit.weapon,
+          bob,
+          !!outfit.stowed || !!outfit.carrying,
+        );
     }
     const geometry = modelGeometry(f.faces);
     this.useFrame(key, { geometry, contacts: this.contacts.slice(), users: 0 });
@@ -421,15 +444,41 @@ export class PersonSprite extends ModelMesh {
       f.block(add(c, [0.075, 0, 0.106]), [0.22, 0.27, 0.025], color);
     }
   }
-  private gun(f: Figure, aiming: boolean, flash: boolean, rifle: boolean, bob: number) {
+  private gun(
+    f: Figure,
+    aiming: boolean,
+    flash: boolean,
+    kind: NonNullable<Outfit['weapon']>,
+    bob: number,
+    stowed: boolean,
+  ) {
     const recoil = flash ? -0.035 : 0;
+    const rifle = kind !== 'pistol',
+      shotgun = kind === 'shotgun';
+    if (stowed && rifle) {
+      f.tube(
+        [-0.17, -0.1, 1.08 + bob],
+        [-0.19, 0.13, 0.54 + bob],
+        shotgun ? 0.045 : 0.033,
+        0x26312e,
+      );
+      f.block([-0.17, -0.075, 0.99 + bob], [0.065, 0.08, 0.18], shotgun ? 0x9d7853 : 0x586961);
+      return;
+    }
     if (aiming) {
-      f.block([0.49 + recoil, 0.05, 1.05 + bob], [rifle ? 0.39 : 0.22, 0.055, 0.07], 0x25302e);
+      f.block(
+        [0.49 + recoil, 0.05, 1.05 + bob],
+        [rifle ? 0.39 : 0.22, shotgun ? 0.085 : 0.055, 0.07],
+        0x25302e,
+      );
+      if (rifle)
+        f.block([0.32, 0.05, 1.06 + bob], [0.22, 0.07, 0.09], shotgun ? 0x9d7853 : 0x586961);
+      if (shotgun) f.block([0.61 + recoil, 0.05, 1.02 + bob], [0.15, 0.09, 0.055], 0x9d7853);
       f.block([0.43 + recoil, 0.05, 0.99 + bob], [0.065, 0.055, 0.12], 0x202826);
       f.tube(
         [0.55 + recoil, 0.05, 1.063 + bob],
         [0.73 + recoil, 0.05, 1.063 + bob],
-        rifle ? 0.023 : 0.014,
+        shotgun ? 0.033 : rifle ? 0.023 : 0.014,
         0x7a8780,
       );
       if (flash) f.oval([0.81, 0.05, 1.063 + bob], 0.105, 0.045, 0.055, 0xffd796);
@@ -440,6 +489,7 @@ export class PersonSprite extends ModelMesh {
         rifle ? 0.038 : 0.027,
         0x26312e,
       );
+      if (shotgun) f.block([0.15, 0.205, 0.65 + bob], [0.075, 0.07, 0.13], 0x9d7853);
     }
   }
   private fallen(f: Figure, p: Profile, coat: number, outfit: Outfit) {

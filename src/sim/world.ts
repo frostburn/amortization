@@ -1,5 +1,6 @@
 import { depot } from '../content/depot';
-import type { Guard, Mission, Notice, Person, Vec, World } from './types';
+import type { Guard, GuardTactic, Mission, Notice, Person, Vec, World, WeaponKind } from './types';
+import { equip } from './weapons';
 
 export function body(id: string, p: Vec, hp: number): Person {
   return {
@@ -14,10 +15,21 @@ export function body(id: string, p: Vec, hp: number): Person {
     step: 0,
   };
 }
-export function makeGuard(id: string, position: Vec, patrol: Vec[], angle = Math.PI): Guard {
+export function makeGuard(
+  id: string,
+  position: Vec,
+  patrol: Vec[],
+  angle = Math.PI,
+  weapon?: WeaponKind,
+  tactic?: GuardTactic,
+): Guard {
   return {
     // A coordinated opening volley hurts, but leaves time to return fire or retreat.
     ...body(id, position, 90),
+    ...(weapon ? { armament: equip(weapon) } : {}),
+    ...(tactic
+      ? { tactics: { ...tactic, lastHp: 90, until: 0, nextMove: 0, cover: false, goal: null } }
+      : {}),
     patrol,
     waypoint: 0,
     suspicion: {},
@@ -40,6 +52,7 @@ export function createWorld(mission: Mission = depot): World {
     mission,
     agents: mission.spawns.map((p, i) => ({
       ...body(`agent-${i}`, p, 100),
+      ...(mission.loadout ? { armament: equip(mission.loadout[i]) } : {}),
       name: names[i],
       role: roles[i],
       index: i,
@@ -52,7 +65,22 @@ export function createWorld(mission: Mission = depot): World {
       interaction: 0,
     })),
     guards: [
-      ...mission.guards.map((g, i) => makeGuard(`guard-${i}`, g.position, g.patrol, g.angle)),
+      ...mission.guards.map((g, i) =>
+        makeGuard(
+          `guard-${i}`,
+          g.position,
+          g.patrol,
+          g.angle,
+          mission.loadout
+            ? g.tactic?.role === 'sentry'
+              ? 'carbine'
+              : g.tactic?.role === 'breacher'
+                ? 'shotgun'
+                : 'pistol'
+            : undefined,
+          g.tactic,
+        ),
+      ),
       ...(mission.transfer
         ? [makeGuard('courier', mission.transfer.start, mission.transfer.patrol)]
         : []),

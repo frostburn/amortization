@@ -6,7 +6,7 @@ This checks a route's continued viability; it does not claim that an older
 simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All seventeen retained files are byte-for-byte copies of submissions provided in chat
+All fifteen retained files are byte-for-byte copies of submissions provided in chat
 on 2026-09-27, including their `unversioned` / local-changes metadata.
 
 ## Earlier routes
@@ -153,13 +153,13 @@ opened by keyboard, and phone controls. Notes and records no longer compete
 with active orders for space; cargo-drop availability does not move the buttons.
 These are layout and input changes only, with no changes to simulation rules.
 
-## Public offering extraction feedback
+## Public offering extraction feedback (retired run)
 
-`broadcast-premature-extraction.replay.json` is the unchanged submission
+`broadcast-premature-extraction.replay.json` was the unchanged submission
 `amortization-broadcast-won-52011baa.replay.json`, recorded against simulation
 fingerprint `1a2e5da7f430f443455bd2dfc1e0801d4690ecb2c4cbe86a1a4548cade35cbbf`.
-It verifies every checkpoint and wins at tick **5851**, with **4 survivors**, no
-site alarm, the audit published, and optional LOG extracted.
+Before the weapon rollout, it verified every checkpoint and won at tick **5851**,
+with **4 survivors**, no site alarm, the audit published, and optional LOG extracted.
 
 The note reads: “Being able to rally for the exit without being allowed to leave
 is annoying.” LOG pickup exposed an enabled rally button with less than one
@@ -171,24 +171,24 @@ Live input now rejects premature extraction before recording or dispatching an
 order, explains the missing objective and opens its locator. Sidebar actions and
 map markers use the same readiness rule. This changes the input affordance, not
 the replay command format or simulation: previously recorded orders still play
-back exactly. The new recording is retained as completion evidence; separate
-browser regressions verify that new early exit clicks preserve standing orders
-and that completing the audit enables a rally which actually ends the mission.
+back exactly under that simulation. The weapon rollout later invalidated this
+route; separate browser regressions still verify that new early exit clicks
+preserve standing orders and that completing the audit enables a rally which actually ends the mission.
 
-## Severance squad assault
+## Severance squad assault (retired run)
 
-`severance-squad-assault.replay.json` is the unchanged submission
+`severance-squad-assault.replay.json` was the unchanged submission
 `amortization-severance-won-546bc6e8.replay.json`, with an empty feedback note.
-Every original checkpoint verifies against simulation fingerprint
+Every original checkpoint verified against simulation fingerprint
 `6d4441a171e3a3d4bd4dfe8a7088840278bfeda3667cbd19fa2a8f4df0473b1e`.
-It wins at tick **1684** (56.1 seconds), with **4 survivors**, **50 shots**, no
+It won at tick **1684** (56.1 seconds), with **4 survivors**, **50 shots**, no
 site alarm, both backups destroyed, and the optional REGISTER extracted.
 
 The crew advances together, disables RADIO early, collects REGISTER, and plants
 WEST followed by EAST. A repeated EAST order preserves the placement progress.
 They leave through GATE, detonate outside the compound, and board VAN. No
-disguise or field dressing is used. This provides human completion coverage for
-the sixth mission without changing the submitted commands or balance rules.
+disguise or field dressing was used. The weapon rollout invalidates this route;
+a replacement human completion is still needed.
 
 ## Retired recordings
 
@@ -196,6 +196,14 @@ These recordings no longer win within their recorded duration under revised
 rules and were removed from the completion corpus. Original submissions remain
 in git history; they were not converted to passing fixtures.
 
+- `broadcast-premature-extraction.replay.json` (`52011baa`, PR #14): the new weapon
+  ranges, stationary carbine preparation and sentry encounter defeat the old
+  assault at tick 615, before its next recorded order. Its original win was tick
+  5851. The premature extraction regression remains covered in browser tests.
+- `severance-squad-assault.replay.json` (`546bc6e8`, PR #14): the new loadout and
+  specialist pair defeat the old moving assault at tick 930, before its next
+  recorded order. Its original win was tick 1684. The synthetic quiet and armed
+  routes now use the new weapon commitments; new human runs are needed.
 - `archive-breach-assault.replay.json` (`860040c5`, PR #9): note “Fair.” Formation
   changes alter combat positions and choose a different ledger carrier. The crew
   is ready at tick 1522 but needs another 16 ticks to finish boarding. The new
@@ -213,9 +221,11 @@ in git history; they were not converted to passing fixtures.
 
 Earlier notes (“Click stuff. Go home.” and “Shoot and click.”) motivated guard
 survivability, equal weapon range, audible gunfire reports, and earlier response
-teams. This pass changes formation, assignment, feedback and record categories;
-it does not change combat values. All six missions also retain command-driven
-quiet and armed completion tests. Those are synthetic routes, not human runs.
+teams. Those earlier passes changed formation, assignment, feedback and records.
+PR #14 introduces new weapon rules and specialist enemies only in operations
+05–06; the fifteen retained routes for 01–04 continue to win. All six missions
+also retain command-driven quiet and armed completion tests. Those are synthetic
+routes, not human runs.
 
 ```sh
 npm run replay:verify -- attempt.replay.json

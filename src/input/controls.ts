@@ -45,7 +45,13 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     e.preventDefault();
   });
   canvas.addEventListener('pointermove', (e) => {
-    if (!start || !last || e.pointerId !== pointer) return;
+    if (!start) {
+      const p = position(e),
+        hit = scene.hit(p.x, p.y);
+      hud.inspectGuard(hit.kind === 'guard' ? hit.id : null);
+      return;
+    }
+    if (!last || e.pointerId !== pointer) return;
     const p = position(e);
     if (Math.hypot(p.x - start.x, p.y - start.y) > 8) drag = true;
     if (drag) {
@@ -56,6 +62,9 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
       }
     }
     last = p;
+  });
+  canvas.addEventListener('pointerleave', (e) => {
+    if (e.pointerType !== 'touch') hud.inspectGuard(null);
   });
   const cancel = () => {
     start = null;
@@ -95,7 +104,10 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
               ? target.selection()
               : [hit.id],
         );
-      else target.order(hit);
+      else {
+        hud.inspectGuard(hit.kind === 'guard' ? hit.id : null);
+        target.order(hit);
+      }
     }
     cancel();
   });

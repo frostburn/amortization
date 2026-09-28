@@ -19,6 +19,8 @@ test('launches operation five and keeps LOOP held when a different operative rec
   await page.getByRole('button', { name: 'Choose operation' }).click();
   await page.getByRole('button', { name: /05 .*Public offering/ }).click();
   await expect(page.getByRole('dialog')).toContainText('A patrol checks the server room');
+  await expect(page.locator('[data-loadout]')).toContainText('Rook — Carbine; Sable — Carbine');
+  await expect(page.locator('[data-loadout]')).toContainText('Morrow or Vale can take KIT');
   await page.getByRole('button', { name: 'Begin operation' }).click();
   await page.getByRole('button', { name: 'Select Vale', exact: true }).click();
   await page.getByRole('button', { name: 'Hold LOOP', exact: true }).click();

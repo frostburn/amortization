@@ -1,22 +1,26 @@
 import { distance, inside, isCharge, living } from './types';
 import type { Guard, Operative, Person, Vec, World } from './types';
 import { findPath, lineClear } from './navigation';
-import { shoot, WEAPON_RANGE } from './combat';
+import { shoot } from './combat';
+import { visibleWeapon, weaponRange } from './weapons';
+import { maneuver, shareContact } from './tactics';
 import { makeGuard, notify } from './world';
 import { clearedCargo } from './courier';
 
 export const RESPONSE_TIMES = [6, 30] as const;
+export const sightRange = (guard: Guard) =>
+  guard.armament ? Math.max(7.5, weaponRange(guard)) : 7.5;
 
 export function sees(world: World, guard: Guard, person: Vec): boolean {
   const range = distance(guard, person);
-  if (range > 7.5 || !lineClear(world, guard, person)) return false;
+  if (range > sightRange(guard) || !lineClear(world, guard, person)) return false;
   if (range < 1.3) return true;
   const angle = Math.atan2(person.y - guard.y, person.x - guard.x) - guard.angle;
   return Math.cos(angle) > Math.cos(Math.PI * 0.36);
 }
 export function suspicionRate(world: World, agent: Operative): number {
   if (world.known.includes(agent.id)) return 130;
-  if (agent.weapon) return 95;
+  if (visibleWeapon(agent)) return 95;
   if (
     agent.order.kind === 'interact' &&
     (agent.order.target === 'divert' || isCharge(agent.order.target)) &&
@@ -56,7 +60,7 @@ export function reportGunfire(world: World, shooter: Operative) {
     g.lastSeen = { x: shooter.x, y: shooter.y };
     g.searchTime = 10;
     g.mode = 'combat';
-    g.path = [];
+    if (!g.tactics) g.path = [];
     // A guard can report audible shots through a wall, but cannot identify or
     // target the shooter without sight. Repeated shots never restart the call.
     if (lineClear(world, g, shooter)) {
@@ -127,6 +131,7 @@ export function updateAwareness(world: World, dt: number) {
       g.target = visibleTarget.id;
       g.lastSeen = { x: visibleTarget.x, y: visibleTarget.y };
       g.searchTime = 9;
+      shareContact(world, g, visibleTarget);
     }
     if (g.mode !== 'combat') g.mode = highest > 15 ? 'challenge' : 'patrol';
     if (g.radio > 0) {
@@ -139,7 +144,9 @@ export function updateAwareness(world: World, dt: number) {
     if (g.mode === 'combat') {
       const target =
         escort?.id === g.target ? escort : world.agents.find((a) => a.id === g.target && living(a));
-      if (target && distance(g, target) <= WEAPON_RANGE && lineClear(world, g, target)) {
+      if (maneuver(world, g, target)) {
+        g.searchTime -= dt;
+      } else if (target && distance(g, target) <= weaponRange(g) && lineClear(world, g, target)) {
         g.angle = Math.atan2(target.y - g.y, target.x - g.x);
         g.lastSeen = { x: target.x, y: target.y };
         g.searchTime = 9;
@@ -181,7 +188,21 @@ export function updateAwareness(world: World, dt: number) {
     world.time - world.alarmTime > RESPONSE_TIMES[world.waves]
   ) {
     for (const [i, p] of world.mission.response.spawns.entries()) {
-      const g = makeGuard(`response-${world.waves}-${i}`, p, [p, ...world.mission.response.patrol]);
+      const tactic = world.waves > 0 ? world.mission.response.specialists?.[i] : undefined;
+      const g = makeGuard(
+        `response-${world.waves}-${i}`,
+        p,
+        [p, ...world.mission.response.patrol],
+        Math.PI,
+        world.mission.loadout
+          ? tactic?.role === 'sentry'
+            ? 'carbine'
+            : tactic?.role === 'breacher'
+              ? 'shotgun'
+              : 'pistol'
+          : undefined,
+        tactic,
+      );
       g.known = [...world.known];
       world.guards.push(g);
     }

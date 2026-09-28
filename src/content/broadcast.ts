@@ -17,6 +17,7 @@ export const broadcast: Mission = {
   title: 'Public offering',
   location: 'Municipal exchange 11',
   objective: 'broadcast',
+  loadout: ['pistol', 'pistol', 'carbine', 'carbine'],
   broadcast: { duration: 24, traceTime: 5 },
   description: "Publish Mara's audit. Hold the line, then get everyone out.",
   evidenceName: 'Suppression log',
@@ -32,7 +33,7 @@ export const broadcast: Mission = {
       },
       {
         title: 'Defend the transmission',
-        body: 'Without LOOP, five seconds of uploading reveals the terminal and draws nearby security. RADIO stops reinforcements, not the trace. Defend the operator while the upload finishes; they cannot fire while working. Prepare GATE for the east escape and remember the LOOP operator. The suppression LOG is optional, suspicious cargo.',
+        body: 'Without LOOP, five seconds of uploading reveals the terminal and draws nearby security. RADIO stops reinforcements, not the trace. Defend the operator while the upload finishes; they cannot fire while working. Prepare GATE for the east escape and remember the LOOP operator. A carbine sentry covers the server-room approach. Break its lane at the racks or approach from the other side. Stop Rook and Sable to steady their carbines; cover their reloads. The suppression LOG is optional, suspicious cargo.',
       },
     ],
   },
@@ -83,7 +84,8 @@ export const broadcast: Mission = {
       x: 5.6,
       y: 22.5,
       label: 'Exchange maintenance kit',
-      detail: 'One staff identity. The server room is still restricted.',
+      detail:
+        'Maintenance cover for Morrow or Vale: pistols conceal, carbines remain visible. The server room is still restricted.',
     },
     {
       id: 'mask',
@@ -173,13 +175,24 @@ export const broadcast: Mission = {
       ],
       Math.PI / 2,
     ),
-    patrol(
-      [
-        { x: 27, y: 13.7 },
-        { x: 32.5, y: 13.7 },
-      ],
-      0,
-    ),
+    {
+      ...patrol(
+        [
+          { x: 27, y: 13.7 },
+          { x: 32.5, y: 13.7 },
+        ],
+        0,
+      ),
+      tactic: {
+        role: 'sentry',
+        posts: [
+          { x: 27, y: 13.7 },
+          { x: 32.5, y: 13.7 },
+          { x: 26.1, y: 10.5 },
+          { x: 31.5, y: 10.5 },
+        ],
+      },
+    },
     patrol(
       [
         { x: 23, y: 16 },

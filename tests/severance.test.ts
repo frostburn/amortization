@@ -44,6 +44,8 @@ describe('Severance', () => {
       ...severance.landmarks,
       ...severance.spawns,
       ...severance.guards.flatMap((g) => g.patrol),
+      ...severance.guards.flatMap((g) => g.tactic?.posts ?? []),
+      ...(severance.response.specialists?.flatMap((tactic) => tactic.posts) ?? []),
       ...severance.solids
         .flatMap((s) => [
           { x: s.x - 0.205, y: s.y + s.h / 2 },
@@ -183,7 +185,7 @@ describe('Severance', () => {
       send({ kind: 'interact', agents: [a.id], target });
       wait(p);
     };
-    send({ kind: 'move', agents: ids.slice(1), point: { x: 37.7, y: 7 } });
+    send({ kind: 'move', agents: ids.slice(1), point: { x: 5.5, y: 1.5 } });
     act('disguise', () => a.disguised);
     act('relay', () => w.relayOff);
     act('gate', () => w.gateOpen);
@@ -198,6 +200,10 @@ describe('Severance', () => {
     move({ x: 24, y: 14 });
     send({ kind: 'detonate' });
     expect(demolished(w)).toBe(true);
+    // Move the visible long guns along the screened north street after the
+    // blast draws security into the compound.
+    send({ kind: 'move', agents: ids.slice(1), point: { x: 37.7, y: 1.5 } });
+    wait(() => w.agents.slice(1).every((p) => !p.path.length));
     send({ kind: 'interact', agents: ids, target: 'extract' });
     wait(() => w.status === 'won');
     expect(w.shots).toBe(0);
@@ -212,10 +218,14 @@ describe('Severance', () => {
     const w = createWorld(severance),
       ids = w.agents.map((p) => p.id);
     const send = (c: Command) => applyCommand(w, c);
+    const coverAndTreat = () => {
+      const end = w.time + 4;
+      until(w, () => w.time >= end);
+      send({ kind: 'heal', agents: w.agents.filter((p) => p.hp <= 60).map((p) => p.id) });
+    };
     const move = (p: Vec) => {
       send({ kind: 'move', agents: ids, point: p });
       until(w, () => w.agents.filter(living).every((p) => !p.path.length));
-      send({ kind: 'heal', agents: w.agents.filter((p) => p.hp <= 60).map((p) => p.id) });
     };
     const act = (target: 'relay' | 'gate' | 'charge-west' | 'charge-east', p: () => boolean) => {
       send({ kind: 'interact', agents: ids, target });
@@ -223,25 +233,33 @@ describe('Severance', () => {
     };
     send({ kind: 'weapons', agents: ids });
     move({ x: 10, y: 20.5 });
+    coverAndTreat();
     act('relay', () => w.relayOff);
-    for (const p of [
-      { x: 16.7, y: 21 },
-      { x: 16.8, y: 13 },
-      { x: 18, y: 10 },
-      { x: 18, y: 5.7 },
-    ])
-      move(p);
+    move({ x: 16.7, y: 21 });
+    coverAndTreat();
+    for (const index of [5, 1, 3, 2, 4]) {
+      const target = w.guards[index];
+      if (!living(target)) continue;
+      send({ kind: 'attack', agents: ids, target: target.id });
+      until(w, () => !living(target));
+      coverAndTreat();
+    }
+    move({ x: 18, y: 5.7 });
+    coverAndTreat();
     act('charge-west', () => w.demolition!.armed.includes('charge-west'));
     for (const p of [
       { x: 18, y: 13.5 },
       { x: 24, y: 13.5 },
       { x: 24, y: 5.5 },
-    ])
+    ]) {
       move(p);
+      coverAndTreat();
+    }
     act('charge-east', () => w.demolition!.armed.includes('charge-east'));
     move({ x: 24, y: 14 });
     send({ kind: 'detonate' });
     move({ x: 32, y: 18 });
+    coverAndTreat();
     act('gate', () => w.gateOpen);
     send({ kind: 'interact', agents: ids, target: 'extract' });
     until(w, () => w.status === 'won');
