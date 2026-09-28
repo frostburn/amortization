@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('previews, pins and refocuses goals without changing a queued squad order', async ({
+test('previews, pins and refocuses goals without changing a queued squad order @smoke', async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -77,7 +77,7 @@ test('previews, pins and refocuses goals without changing a queued squad order',
   expect(errors).toEqual([]);
 });
 
-test('touch goals reveal the map, explain alternatives, and keep the highlighted diamond actionable', async ({
+test('touch goals reveal the map, explain alternatives, and keep the highlighted diamond actionable @smoke', async ({
   browser,
 }) => {
   const context = await browser.newContext({

@@ -62,7 +62,7 @@ test('explains why a whole-crew rally must wait for the held archive shutter', a
   expect(result.operatorOrder).toEqual({ kind: 'interact', target: 'override' });
 });
 
-test('locked vehicle clicks explain the missing objective without issuing orders on mouse or touch', async ({
+test('locked vehicle clicks explain the missing objective without issuing orders on mouse or touch @smoke', async ({
   browser,
 }) => {
   for (const touch of [false, true]) {

@@ -12,7 +12,7 @@ async function mountScene(page: Page) {
   await page.goto('/camera-fixture');
 }
 
-test('keeps the map usable through objective controls, injuries, COMMS, and viewport resizing', async ({
+test('keeps the map usable through objective controls, injuries, COMMS, and viewport resizing @smoke', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
