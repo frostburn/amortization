@@ -1,5 +1,5 @@
 import { distance } from './types';
-import type { Rect, Vec, World } from './types';
+import type { Mission, Rect, Vec, World } from './types';
 
 export const BODY_RADIUS = 0.2;
 // Permit contact with the clearance boundary without trapping a body on it.
@@ -14,12 +14,16 @@ export function obstacles(world: World): Rect[] {
 }
 
 export function passable(world: World, p: Vec, radius = BODY_RADIUS): boolean {
+  return pointClear(world.mission, obstacles(world), p, radius);
+}
+
+function pointClear(mission: Mission, solids: Rect[], p: Vec, radius = BODY_RADIUS): boolean {
   return (
     p.x >= radius - EPSILON &&
     p.y >= radius - EPSILON &&
-    p.x <= world.mission.width - radius + EPSILON &&
-    p.y <= world.mission.height - radius + EPSILON &&
-    !obstacles(world).some(
+    p.x <= mission.width - radius + EPSILON &&
+    p.y <= mission.height - radius + EPSILON &&
+    !solids.some(
       (r) =>
         p.x >= r.x - radius + EPSILON &&
         p.x <= r.x + r.w + radius - EPSILON &&
@@ -77,17 +81,115 @@ export function nearestFree(world: World, target: Vec, toward?: Vec): Vec {
   return { ...target };
 }
 
+// Keep the original neighbour order: equal-cost heap ties determine the route,
+// and changing those ties would change combat timing in recorded attempts.
+const directions = [
+  [-1, -1],
+  [0, -1],
+  [1, -1],
+  [-1, 0],
+  [1, 0],
+  [-1, 1],
+  [0, 1],
+  [1, 1],
+] as const;
+const lengths = directions.map(([dx, dy]) => Math.hypot(dx / 2, dy / 2));
+
+interface NavigationGrid {
+  width: number;
+  height: number;
+  points: Vec[];
+  edges: Uint8Array;
+}
+
+// Derived geometry stays outside World and replay state. At most four door
+// combinations are retained per mission; discarded missions can be collected.
+const grids = new WeakMap<Mission, { geometry: string; states: Map<number, NavigationGrid> }>();
+
+function navigationGrid(world: World): NavigationGrid {
+  const mission = world.mission;
+  const geometry = [
+    mission.width,
+    mission.height,
+    mission.solids.length,
+    Number(!!mission.archive),
+    ...mission.solids.flatMap((r) => [r.x, r.y, r.w, r.h]),
+    mission.gate.x,
+    mission.gate.y,
+    mission.gate.w,
+    mission.gate.h,
+    ...(mission.archive
+      ? [
+          mission.archive.door.x,
+          mission.archive.door.y,
+          mission.archive.door.w,
+          mission.archive.door.h,
+        ]
+      : []),
+  ].join(',');
+  let cached = grids.get(mission);
+  // Also covers an editor/test replacing or moving solids in place.
+  if (cached?.geometry !== geometry) {
+    cached = { geometry, states: new Map() };
+    grids.set(mission, cached);
+  }
+  const state = Number(world.gateOpen) | (Number(world.shutterOpen) << 1);
+  const existing = cached.states.get(state);
+  if (existing) return existing;
+
+  const width = mission.width * 2,
+    height = mission.height * 2;
+  const points = Array.from({ length: width * height }, (_, id) => ({
+    x: (id % width) / 2 + 0.25,
+    y: Math.floor(id / width) / 2 + 0.25,
+  }));
+  const solids = obstacles(world);
+  const free = Uint8Array.from(points, (p) => Number(pointClear(mission, solids, p)));
+  const edges = new Uint8Array(points.length);
+  for (let y = 0; y < height; y++)
+    for (let x = 0; x < width; x++) {
+      const id = y * width + x;
+      if (!free[id]) continue;
+      for (let i = 0; i < directions.length; i++) {
+        const [dx, dy] = directions[i],
+          nx = x + dx,
+          ny = y + dy;
+        if (nx >= 0 && ny >= 0 && nx < width && ny < height && free[ny * width + nx])
+          edges[id] |= 1 << i;
+      }
+    }
+  // Clear corner-cutting and thin-wall crossings. Each rectangle only visits
+  // nearby edges, not every edge on the map; each undirected edge is tested once.
+  for (const rect of solids) {
+    const left = Math.max(0, Math.floor((rect.x - BODY_RADIUS) * 2) - 1),
+      right = Math.min(width - 1, Math.ceil((rect.x + rect.w + BODY_RADIUS) * 2) + 1),
+      top = Math.max(0, Math.floor((rect.y - BODY_RADIUS) * 2) - 1),
+      bottom = Math.min(height - 1, Math.ceil((rect.y + rect.h + BODY_RADIUS) * 2) + 1);
+    for (let y = top; y <= bottom; y++)
+      for (let x = left; x <= right; x++) {
+        const id = y * width + x;
+        for (let i = 0; i < 4; i++) {
+          if (!(edges[id] & (1 << i))) continue;
+          const [dx, dy] = directions[i],
+            next = id + dy * width + dx;
+          if (intersects(points[id], points[next], rect, BODY_RADIUS - EPSILON)) {
+            edges[id] &= ~(1 << i);
+            edges[next] &= ~(1 << (7 - i));
+          }
+        }
+      }
+  }
+  const grid = { width, height, points, edges };
+  cached.states.set(state, grid);
+  return grid;
+}
+
 // A half-metre grid is small enough for doors. A binary heap keeps repeated guard paths cheap.
 export function findPath(world: World, start: Vec, requested: Vec): Vec[] {
   const end = nearestFree(world, requested);
   if (!passable(world, start) || !passable(world, end)) return [];
   if (canWalk(world, start, end)) return [end];
-  const width = world.mission.width * 2,
-    height = world.mission.height * 2;
-  const point = (id: number) => ({
-    x: (id % width) / 2 + 0.25,
-    y: Math.floor(id / width) / 2 + 0.25,
-  });
+  const { width, height, points, edges } = navigationGrid(world);
   const costs = new Float64Array(width * height).fill(Infinity);
   const parent = new Int32Array(width * height).fill(-1);
   const closed = new Uint8Array(width * height);
@@ -129,7 +231,7 @@ export function findPath(world: World, start: Vec, requested: Vec): Vec[] {
     for (let x = sx - 1; x <= sx + 1; x++) {
       if (x < 0 || y < 0 || x >= width || y >= height) continue;
       const id = y * width + x,
-        p = point(id);
+        p = points[id];
       if (!canWalk(world, start, p)) continue;
       costs[id] = distance(start, p);
       push(id, costs[id] + distance(p, end));
@@ -138,13 +240,13 @@ export function findPath(world: World, start: Vec, requested: Vec): Vec[] {
     const id = pop();
     if (closed[id]) continue;
     closed[id] = 1;
-    const p = point(id);
+    const p = points[id];
     // Sharing a grid cell does not prove the final segment clears its corner.
     if (distance(p, end) < 0.8 && canWalk(world, p, end)) {
       const result: Vec[] = [end];
       let cursor = id;
       while (cursor >= 0) {
-        result.push(point(cursor));
+        result.push(points[cursor]);
         cursor = parent[cursor];
       }
       result.reverse();
@@ -154,28 +256,24 @@ export function findPath(world: World, start: Vec, requested: Vec): Vec[] {
       for (let i = 0; i < result.length; i++) {
         let j = i;
         while (j + 1 < result.length && canWalk(world, from, result[j + 1])) j++;
-        smooth.push(result[j]);
+        smooth.push({ ...result[j] });
         from = result[j];
         i = j;
       }
       return smooth;
     }
-    for (let dy = -1; dy <= 1; dy++)
-      for (let dx = -1; dx <= 1; dx++) {
-        if (!dx && !dy) continue;
-        const nx = (id % width) + dx,
-          ny = Math.floor(id / width) + dy;
-        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
-        const next = ny * width + nx,
-          q = point(next);
-        if (closed[next] || !canWalk(world, p, q)) continue;
-        const cost = costs[id] + distance(p, q);
-        if (cost < costs[next]) {
-          costs[next] = cost;
-          parent[next] = id;
-          push(next, cost + distance(q, end));
-        }
+    for (let i = 0; i < directions.length; i++) {
+      if (!(edges[id] & (1 << i))) continue;
+      const [dx, dy] = directions[i],
+        next = id + dy * width + dx;
+      if (closed[next]) continue;
+      const cost = costs[id] + lengths[i];
+      if (cost < costs[next]) {
+        costs[next] = cost;
+        parent[next] = id;
+        push(next, cost + distance(points[next], end));
       }
+    }
   }
   return [];
 }
