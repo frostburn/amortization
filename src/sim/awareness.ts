@@ -2,7 +2,7 @@ import { distance, inside, isCharge, living } from './types';
 import type { Guard, Operative, Person, Vec, World } from './types';
 import { findPath, lineClear } from './navigation';
 import { shoot } from './combat';
-import { visibleWeapon, weaponRange } from './weapons';
+import { cancelCharge, guardWeapon, visibleWeapon, weaponRange } from './weapons';
 import { maneuver, shareContact } from './tactics';
 import { makeGuard, notify } from './world';
 import { clearedCargo } from './courier';
@@ -145,16 +145,18 @@ export function updateAwareness(world: World, dt: number) {
       const target =
         escort?.id === g.target ? escort : world.agents.find((a) => a.id === g.target && living(a));
       if (maneuver(world, g, target)) {
+        cancelCharge(g);
         g.searchTime -= dt;
       } else if (target && distance(g, target) <= weaponRange(g) && lineClear(world, g, target)) {
         g.angle = Math.atan2(target.y - g.y, target.x - g.x);
         g.lastSeen = { x: target.x, y: target.y };
         g.searchTime = 9;
         g.path = [];
-        shoot(world, g, target, true);
+        shoot(world, g, target, true, dt);
       } else {
+        cancelCharge(g);
         g.searchTime -= dt;
-        if (g.lastSeen && g.repath <= 0) {
+        if (g.lastSeen && g.repath <= 0 && g.tactics?.role !== 'marksman') {
           g.path = findPath(world, g, g.lastSeen);
           g.repath = 1;
         }
@@ -166,6 +168,7 @@ export function updateAwareness(world: World, dt: number) {
         }
       }
     } else if (g.mode === 'challenge') {
+      cancelCharge(g);
       const suspect =
         escort && g.suspicion[escort.id] === highest
           ? escort
@@ -194,13 +197,7 @@ export function updateAwareness(world: World, dt: number) {
         p,
         [p, ...world.mission.response.patrol],
         Math.PI,
-        world.mission.loadout
-          ? tactic?.role === 'sentry'
-            ? 'carbine'
-            : tactic?.role === 'breacher'
-              ? 'shotgun'
-              : 'pistol'
-          : undefined,
+        world.mission.loadout ? guardWeapon(tactic) : undefined,
         tactic,
       );
       g.known = [...world.known];

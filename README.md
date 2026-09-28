@@ -2,7 +2,7 @@
 
 A real-time squad tactics game for the browser. Control four operatives together or individually. One maintenance disguise admits a single person; the rest of the crew can prepare access or provide armed backup.
 
-**Six operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing any of the first five. Restart and Shift+R restart the selected mission.
+**Seven operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing any of the first six. Restart and Shift+R restart the selected mission.
 
 ## Development
 
@@ -95,7 +95,7 @@ tests completion under current rules. Both exit nonzero on failure. Selected pla
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
 distinct routes. Fifteen retained recordings cover operations 01–04. The two
 recordings for operations 05–06 no longer win with their new equipment and were
-retired without altering the submitted inputs. All six missions have synthetic
+retired without altering the submitted inputs. All seven missions have synthetic
 quiet and armed completion tests; new human runs for 05–06 are welcome. See
 `tests/replays/README.md` for provenance, current outcomes, and retired routes.
 
@@ -113,7 +113,7 @@ quiet and armed completion tests; new human runs for 05–06 are welcome. See
 | Right-click a guard            | Draw weapons and attack                                             |
 | G                              | Regroup everyone at the lead selected operative                     |
 | S                              | Hold position / release the archive shunt                           |
-| F                              | Draw / stow selected weapons                                     |
+| F                              | Draw / stow selected weapons                                        |
 | E                              | Interact with a nearby landmark                                     |
 | H                              | Use a field dressing: one per operative, up to 55 health            |
 | X                              | Put down carried evidence                                           |
@@ -121,7 +121,7 @@ quiet and armed completion tests; new human runs for 05–06 are welcome. See
 | Hold Tab                       | Slow time to 20%                                                    |
 | Wheel / + and − buttons        | Zoom                                                                |
 | Arrows / middle-drag           | Pan                                                                 |
-| Home / Fit map                 | Reset camera                                                        |
+| Home / Follow                  | Follow the selected crew or operative                               |
 | Shift+R / Restart              | Restart operation                                                   |
 | V                              | Toggle guard sight cones                                            |
 
@@ -135,8 +135,16 @@ orders. Sight cones can be toggled beside **Fit map**. On narrow screens, orders
 appear directly below the map, followed by the crew and mission details.
 
 Recruitment, extraction readiness, injuries and messages never shrink the map.
-Viewport resizing preserves the camera's scale and position. **Fit map** / **Home** frames the mission in the available
-space; starting or restarting a mission also fits its map.
+Viewport resizing preserves the camera’s scale. **Fit map** frames the mission in the available
+space; operations 01–06 start with this overview. Operation 07 starts at a readable scale near the crew.
+
+**Follow** / **Home** returns to the selected crew at the last working zoom. When
+zoomed in, the camera follows their movement within a central screen area. Select
+a portrait or press **1–4** to follow an individual operative, including across a
+split team. Selection and movement never change zoom. A widely split group
+selection follows its largest nearby group (ties prefer the first selected
+operative). Manual panning and objective location focus pause following; selecting
+an operative resumes it. Wheel zoom is anchored at the centre of the view.
 
 Map clicks on an already selected operative keep the group selected. Use a portrait or number key to isolate someone deliberately. If the last selected operative falls, selection transfers to the survivors without changing their orders.
 
@@ -245,21 +253,27 @@ The access keys lead to auditor **Mara Quill**, held in a security transport at 
 
 For a quiet escape, take KIT, disable RADIO, file WARRANT, and collect Mara. Lead her north of the lower cargo containers, west through the service corridor, and out the west entrance to SERVICE. Send the rest of the crew up the public street. For an armed extraction, clear the transport bay before cutting the lock, leave Mara waiting behind cover while the crew secures the gate, then bring her to STREET.
 
-## Equipment in operations 05 and 06
+## Equipment in operations 05–07
 
-| Weapon | Range | Damage | Shots / magazine | Shot recovery | Automatic reload |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Pistol | 6 | 17 | 8 | 0.52s | 1.2s |
-| Carbine | 9 | 26 | 6 | 0.72s | 1.6s |
-| Shotgun | 3.8 | 44 | 2 | 1.05s | 1.8s |
+| Weapon            | Range | Damage | Shots / magazine | Shot recovery | Automatic reload |
+| ----------------- | ----: | -----: | ---------------: | ------------: | ---------------: |
+| Pistol            |     6 |     17 |                8 |         0.52s |             1.2s |
+| Carbine           |     9 |     26 |                6 |         0.72s |             1.6s |
+| Shotgun           |   3.8 |     44 |                2 |         1.05s |             1.8s |
+| Compact automatic |   6.4 |     12 |                9 |         0.16s |            1.65s |
+| Coil rifle        |    13 |     52 |                3 |         0.75s |             2.2s |
 
 Both sides use these rules. A carbine needs 0.35 seconds stationary after moving
-before it can fire. Pistols and shotguns can fire while moving. Empty magazines
+before it can fire. Pistols, shotguns and automatics can fire while moving. Each coil shot requires
+1.25 seconds charging while stationary with continuous sight of the same target;
+breaking sight, moving, working or stowing cancels the charge. A line and shrinking
+ring show the target, even with sight cones off. There is no damage through cover. Empty magazines
 reload automatically with unlimited reserve ammunition; movement, stowing, and
 new orders preserve the reload. Pause freezes readiness and slow time scales it.
 
 Morrow and Vale carry concealable pistols. Rook and Sable carry carbines in 05;
-Rook switches to a shotgun in 06. Long guns remain visible when stowed, including
+Rook switches to a shotgun in 06. In 07, Rook carries the compact automatic and
+Sable carries the coil rifle. Long guns remain visible when stowed, including
 while carrying cargo. **KIT** assigns an eligible selected pistol carrier and
 names them before they start moving. Briefings show all assignments; portraits
 show ammunition and reloads, and the selected operative panel shows weapon,
@@ -268,16 +282,19 @@ show that information while issuing the usual attack order. Small bars beneath
 characters show preparation and reload progress without obscuring faces.
 
 Enemy uniforms identify the role from any direction: **khaki site guards**,
-**blue carbine sentries**, and **red breach officers**. Officers also wear a
+**blue carbine sentries**, **red breach officers**, and **violet security marksmen**. Officers also wear a
 dark chest plate and visor. Regular guards use the same pistol model in every
 operation. At close zoom, pistols have a compact slide and grip,
 carbines have a box magazine and short stock, and shotguns have a long barrel,
 wooden stock and ribbed pump. Those shapes remain visible at low ready or slung
-on the back; concealed pistols stay hidden.
+on the back; concealed pistols stay hidden. The automatic has a short brass receiver,
+wire stock and deep magazine. The coil rifle has a long pale barrel housing, three
+cyan coils and a raised scope; marksmen also wear a single optical lens.
 
 Carbine sentries defend lanes and seek nearby physical cover when hit or reloading.
 Breach officers use short-range shotguns and approach last-seen threats through
-screened positions. Nearby specialists can share a directly observed contact;
+screened positions. Marksmen hold authored long-range posts, move into cover
+under pressure, and do not chase an unseen operative through the site. Nearby specialists can share a directly observed contact;
 hearing a shot supplies a location, not knowledge of an unseen person's movements.
 Operations 01–04 retain their existing combat rules. Further equipment ideas,
 including flash grenades, remain in [the future design notes](docs/combat-expansion.md).
@@ -354,6 +371,31 @@ loses and was retired. All fifteen retained human bundles remain unchanged and
 win under current rules; older builds require **Try current rules** because the
 simulation fingerprint has changed.
 
+## Margin call · Operation 07
+
+A 60 × 42 freight clearinghouse, nearly twice operation 06’s area. Recover the
+physical **KEYS** from the north vault and bring every survivor to **VAN**. The
+keys occupy both hands and attract suspicion, even in uniform. Extraction remains
+locked until a living operative carries them.
+
+**SHUNT** sits on the west street, far from the vault: leave one operative working
+there while another enters. Keep it held until the carrier clears the shutter.
+Alternatively, **CUT** forces the lock in eight noisy seconds. **RADIO** stops
+reinforcements; **GATE** opens the north-east exit quietly from inside.
+
+Violet marksmen cover two freight lanes. Use the warehouses and cargo stacks to
+break their charging lines, flank their posts, or cover a crossing with Sable’s
+coil rifle. Rook’s automatic rewards close fighting but empties its magazine
+quickly. The screened maintenance walk reaches the vault without crossing both
+lanes. A carrier still needs a window past the east road patrol. Do not leave the
+SHUNT operator behind when rallying at the van.
+
+Verification completes a quiet split-team route with all patrols active and an
+armed route through the screened approach, both with all four operatives alive.
+Both routes are recorded and replayed against exact simulation checkpoints.
+
+## Records
+
 Results track time, crew survival, evidence, and alarm status. Operation five also reports publication; operation six reports backup destruction. Each operation keeps
 separate **Full crew** (all four survive) and **Any crew** best times, plus its
 completion count. A faster run with casualties cannot replace the full-crew
@@ -380,7 +422,7 @@ Simulation runs at 30 Hz with interpolated rendering. All gameplay uses world co
 
 Characters use a small deformable mesh over the existing atlas for alternating steps, knee lift and arm motion. The walking cycle follows interpolated distance travelled, so idle characters stand still and pause/slow time also affect animation. Each character image is anchored between its soles, with contact shadows following the feet along the ground. Tram windscreens, lamps and trim are projected on their actual vertical face. The extraction van has a cab, sloped windscreen, cargo doors and tyres visible through open wheel arches; its original collision footprint is preserved.
 
-CI uses one Ubuntu job, Node 24, and Chromium. The simulation suite includes complete quiet and armed extractions for all six missions and checks for navigation clearance, local identification, disguise permissions, radio disruption, evidence custody, demolition safety, and extraction requirements.
+CI uses one Ubuntu job, Node 24, and Chromium. The simulation suite includes complete quiet and armed extractions for all seven missions and checks for navigation clearance, local identification, disguise permissions, radio disruption, evidence custody, demolition safety, and extraction requirements.
 Playwright launches Vite with `VITE_BROWSER_TEST=true`, capping its renderer at
 15 FPS, and runs one browser at a time so software rendering leaves CPU time for input and assertions.
 The fixed-step simulation still follows elapsed time; ordinary dev and production
@@ -388,6 +430,6 @@ rendering are uncapped. Local and CI browser tests use the same SwiftShader back
 
 ## Current scope
 
-Six ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, and mid-mission saves remain future work. Each operative has a distinct on-map model with 32 facings, a distance-driven walk, an armed stance, and a grounded fallen pose. Hair, skin, clothing, and build correspond to their portraits; disguises preserve their identity. Voss and Mara have their own models and portraits beside the wait/follow control.
+Seven ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, and mid-mission saves remain future work. Each operative has a distinct on-map model with 32 facings, a distance-driven walk, an armed stance, and a grounded fallen pose. Hair, skin, clothing, and build correspond to their portraits; disguises preserve their identity. Voss and Mara have their own models and portraits beside the wait/follow control.
 
 See [design notes](docs/design.md) and [art provenance](docs/art.md). Distributed under the repository's [MIT license](LICENSE).

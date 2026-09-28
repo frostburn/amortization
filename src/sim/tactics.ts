@@ -4,17 +4,21 @@ import { findPath, lineClear, passable } from './navigation';
 import { weaponRange } from './weapons';
 
 export const guardRole = (guard: Guard) =>
-  guard.tactics?.role === 'sentry'
-    ? 'Carbine sentry'
-    : guard.tactics?.role === 'breacher'
-      ? 'Breach officer'
-      : 'Site guard';
+  guard.tactics?.role === 'marksman'
+    ? 'Security marksman'
+    : guard.tactics?.role === 'sentry'
+      ? 'Carbine sentry'
+      : guard.tactics?.role === 'breacher'
+        ? 'Breach officer'
+        : 'Site guard';
 export const guardDescription = (guard: Guard) =>
-  guard.tactics?.role === 'sentry'
-    ? 'Holds a lane. Moves into cover under fire or to reload. Needs a steady firing position.'
-    : guard.tactics?.role === 'breacher'
-      ? 'Closes through screened positions. Dangerous nearby; withdraw during its long firing recovery.'
-      : 'Patrols, challenges intruders, and reports contact.';
+  guard.tactics?.role === 'marksman'
+    ? 'Violet uniform, long coil rifle. Charges a visible firing line for 1.25s. Break sight to cancel it; flank its fixed posts.'
+    : guard.tactics?.role === 'sentry'
+      ? 'Holds a lane. Moves into cover under fire or to reload. Needs a steady firing position.'
+      : guard.tactics?.role === 'breacher'
+        ? 'Closes through screened positions. Dangerous nearby; withdraw during its long firing recovery.'
+        : 'Patrols, challenges intruders, and reports contact.';
 
 /** Nearby partners can signal a sighting. This never copies an unseen person's live position. */
 export function shareContact(world: World, guard: Guard, target: Person) {
@@ -59,7 +63,7 @@ export function maneuver(world: World, guard: Guard, target: Person | undefined)
     .filter((point) => {
       if (!passable(world, point) || distance(guard, point) < 0.5) return false;
       if (cover) return !lineClear(world, point, threat);
-      if (tactic.role === 'sentry')
+      if (tactic.role === 'sentry' || tactic.role === 'marksman')
         return distance(point, threat) <= weaponRange(guard) && lineClear(world, point, threat);
       return distance(point, threat) < distance(guard, threat) - 0.75;
     })
@@ -67,6 +71,7 @@ export function maneuver(world: World, guard: Guard, target: Person | undefined)
   function score(point: Vec) {
     return (
       distance(guard, point) +
+      (tactic?.role === 'marksman' && !cover ? Math.abs(distance(point, threat) - 10) : 0) +
       (cover ? 0 : distance(point, threat) * 0.5 + (lineClear(world, point, threat) ? 3 : 0))
     );
   }

@@ -10,7 +10,7 @@ import {
 } from './orders';
 import { reportGunfire, updateAwareness } from './awareness';
 import { shoot } from './combat';
-import { updateWeapon, weaponRange } from './weapons';
+import { cancelCharge, updateWeapon, weaponRange } from './weapons';
 import { notify } from './world';
 import { updateShutter } from './shutter';
 import { updateCourier } from './courier';
@@ -118,11 +118,12 @@ export function step(world: World, dt = STEP) {
           lineClear(world, a, g),
       );
       candidates.sort((g, h) => distance(a, g) - distance(a, h));
-      if (candidates[0] && shoot(world, a, candidates[0], false)) {
+      if (!candidates[0]) cancelCharge(a);
+      if (candidates[0] && shoot(world, a, candidates[0], false, dt)) {
         a.exposed = true;
         reportGunfire(world, a);
       }
-    }
+    } else cancelCharge(a);
   }
   updateAwareness(world, dt);
   updateCourier(world, dt);

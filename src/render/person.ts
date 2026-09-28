@@ -1,5 +1,5 @@
 import type { Geometry, DestroyOptions } from 'pixi.js';
-import type { Person, WeaponKind } from '../sim/types';
+import type { GuardTactic, Person, WeaponKind } from '../sim/types';
 import { living } from '../sim/types';
 import { footfall, hipHeight, kneePosition, walkPhase } from './gait';
 import { coatRings, shoulderPadTransform } from './clothing';
@@ -12,7 +12,7 @@ export interface Outfit {
   uniform?: boolean;
   weapon?: WeaponKind;
   stowed?: boolean;
-  specialist?: 'sentry' | 'breacher';
+  specialist?: GuardTactic['role'];
   carrying?: boolean;
   flash?: boolean;
 }
@@ -123,6 +123,13 @@ const SPECIALISTS: Record<NonNullable<Outfit['specialist']>, Profile> = {
     shirt: 0xe2aa8a,
     helmet: 0x9b3d3c,
     pads: 0xe3937c,
+  },
+  marksman: {
+    ...PROFILES.guard,
+    coat: 0x8059aa,
+    shirt: 0xd7b8ef,
+    helmet: 0x67448c,
+    pads: 0xc298e2,
   },
 };
 
@@ -316,7 +323,8 @@ export class PersonSprite extends ModelMesh {
       !!outfit.weapon &&
       !outfit.stowed &&
       (!!outfit.flash ||
-        (!p.armament?.reload && (p.cooldown > 0 || (!!p.armament?.settle && !p.path.length))));
+        (!p.armament?.reload &&
+          (p.cooldown > 0 || !!p.armament?.charging || (!!p.armament?.settle && !p.path.length))));
     const key = [
       direction,
       alive,
@@ -377,6 +385,11 @@ export class PersonSprite extends ModelMesh {
         f.block([0.125, 0, 1.36 + bob], [0.04, 0.21, 0.065], 0x333e3c);
       }
       this.head(f, profile, [0, 0, 1.31 + bob], !!outfit.uniform, outfit.appearance === 'guard');
+      if (outfit.specialist === 'marksman') {
+        // A single bright optical lens reinforces the coat palette at close zoom.
+        f.block([0.132, 0.05, 1.345 + bob], [0.065, 0.08, 0.07], 0x293c43);
+        f.block([0.168, 0.05, 1.345 + bob], [0.01, 0.056, 0.048], 0xa8e5ed);
+      }
       const gun = weaponMount(outfit, aiming, bob, profile.shoulders, -feet[1][0] * 0.45);
       const drawn = gun && !outfit.stowed && !outfit.carrying;
       const long = outfit.weapon !== 'pistol';
@@ -522,6 +535,31 @@ export class PersonSprite extends ModelMesh {
       f.block([0.14, 0, 0.12], [0.024, 0.023, 0.02], dark);
       muzzle = 0.192;
       f.tube([muzzle, 0, 0.075], [muzzle + 0.003, 0, 0.075], 0.018, 0x172323);
+    } else if (kind === 'automatic') {
+      // Short receiver, folding wire stock and a conspicuous vertical magazine.
+      f.block([0.105, 0, 0.068], [0.32, 0.11, 0.125], 0xb59f6b);
+      f.block([0, 0, -0.025], [0.075, 0.074, 0.15], dark);
+      f.block([0.17, 0, -0.105], [0.085, 0.08, 0.245], dark);
+      for (const side of [-1, 1])
+        f.tube([-0.27, side * 0.055, 0.02], [-0.04, side * 0.055, 0.07], 0.013, steel);
+      f.block([-0.27, 0, -0.005], [0.025, 0.13, 0.12], steel);
+      f.block([0.275, 0, 0.03], [0.09, 0.09, 0.08], dark);
+      f.tube([0.25, 0, 0.09], [0.37, 0, 0.09], 0.032, steel);
+      f.block([0.12, 0, 0.15], [0.09, 0.04, 0.033], dark);
+      muzzle = 0.37;
+    } else if (kind === 'coil') {
+      // Pale rail housing, three cyan coils, long muzzle and raised scope.
+      f.block([-0.2, 0, 0.015], [0.3, 0.085, 0.14], 0xc0cbd0);
+      f.block([-0.34, 0, 0.015], [0.025, 0.105, 0.16], dark);
+      f.block([0.065, 0, 0.055], [0.27, 0.1, 0.14], dark);
+      f.block([0, 0, -0.055], [0.07, 0.07, 0.14], dark);
+      f.block([0.2, 0, -0.04], [0.13, 0.105, 0.095], 0x96b4c1);
+      f.block([0.42, 0, 0.065], [0.5, 0.075, 0.095], 0xc0cbd0);
+      for (const x of [0.32, 0.46, 0.6]) f.block([x, 0, 0.065], [0.046, 0.13, 0.15], 0x65ccd5);
+      f.tube([0.63, 0, 0.075], [0.88, 0, 0.075], 0.021, steel);
+      f.tube([-0.07, 0, 0.205], [0.2, 0, 0.205], 0.041, dark);
+      f.block([0.06, 0, 0.145], [0.09, 0.04, 0.06], steel);
+      muzzle = 0.88;
     } else if (kind === 'shotgun') {
       f.block([-0.18, 0, 0.005], [0.23, 0.085, 0.13], wood);
       f.block([-0.292, 0, 0.005], [0.028, 0.095, 0.145], dark);

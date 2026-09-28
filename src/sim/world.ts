@@ -1,6 +1,6 @@
 import { depot } from '../content/depot';
 import type { Guard, GuardTactic, Mission, Notice, Person, Vec, World, WeaponKind } from './types';
-import { equip } from './weapons';
+import { equip, guardWeapon } from './weapons';
 
 export function body(id: string, p: Vec, hp: number): Person {
   return {
@@ -71,13 +71,7 @@ export function createWorld(mission: Mission = depot): World {
           g.position,
           g.patrol,
           g.angle,
-          mission.loadout
-            ? g.tactic?.role === 'sentry'
-              ? 'carbine'
-              : g.tactic?.role === 'breacher'
-                ? 'shotgun'
-                : 'pistol'
-            : undefined,
+          mission.loadout ? guardWeapon(g.tactic) : undefined,
           g.tactic,
         ),
       ),

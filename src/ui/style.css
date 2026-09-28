@@ -167,6 +167,10 @@ kbd {
   border-color: #526155;
   font-size: 11px;
 }
+.map-controls [aria-pressed='true'] {
+  color: var(--mint);
+  border-color: var(--mint);
+}
 .map-controls [data-action='vision'] {
   margin-right: 8px;
 }
@@ -417,6 +421,8 @@ kbd {
   font-size: 9px;
   color: #859f8d;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .health-track {
   display: block;

@@ -38,7 +38,7 @@ function fixture() {
 describe('Severance', () => {
   it('connects the campaign and keeps targets, patrols and cover corners reachable', () => {
     expect(nextMission('broadcast')).toBe(severance);
-    expect(nextMission('severance')).toBeUndefined();
+    expect(nextMission('severance')?.id).toBe('clearing');
     const w = createWorld(severance);
     const points = [
       ...severance.landmarks,

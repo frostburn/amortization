@@ -10,7 +10,8 @@ import {
 } from '../sim/types';
 import type { ObjectKind, Person, Rect, Solid, Vec, World } from '../sim/types';
 import { available, landmark } from '../sim/orders';
-import { longGun, WEAPONS } from '../sim/weapons';
+import { COIL_CHARGE, longGun, WEAPONS } from '../sim/weapons';
+import { selectionFocus } from './camera';
 import { sightRange } from '../sim/awareness';
 import { findPath, lineClear } from '../sim/navigation';
 import { depthOrder } from './depth';
@@ -130,6 +131,9 @@ export class Scene {
   private resizeObserver: ResizeObserver;
   private resizePending = true;
   private homePending = true;
+  following = true;
+  private followScale = 0.95;
+  private selectionKey = '';
   private guideLayer = document.createElement('div');
   private guideMarkers = new Map<GuideTarget, HTMLElement>();
   private guidePanel: Rect = { x: 0, y: 0, w: 0, h: 0 };
@@ -188,6 +192,8 @@ export class Scene {
     // Fit once the new mission's HUD has replaced the previous layout.
     this.resizePending = true;
     this.homePending = true;
+    this.selectionKey = '';
+    this.followScale = 0.95;
   }
   private build() {
     const world = this.world,
@@ -288,6 +294,19 @@ export class Scene {
         this.addScenery(route, { x: 0, y: 0, w: 0, h: 0 });
       }
     }
+    if (mission.id === 'clearing') {
+      // Two freight lanes with a continuous, screened maintenance walk to the vault.
+      plane(g, 5.1, 3, 1.8, 37, 0x53615b);
+      plane(g, 10, 29.8, 43, 3.7, 0x35423e);
+      plane(g, 35.5, 20, 18, 4, 0x35423e);
+      plane(g, 10, 16.5, 43, 2.8, 0x566459);
+      plane(g, 10, 19.3, 25, 0.15, 0xa6ad8b);
+      for (let x = 12; x < 53; x += 3) plane(g, x, 31.6, 1.2, 0.12, 0xb4af8e);
+      for (let y = 6; y < 38; y += 3) plane(g, 56.6, y, 0.12, 1.2, 0xb4af8e);
+      const s = mission.secure;
+      plane(g, s.x, s.y, s.w, s.h, 0x746752, 0, 0.65);
+      for (let x = 44; x < 47; x += 0.5) plane(g, x, 16.5, 0.25, 0.18, COLORS.amber);
+    }
     if (mission.broadcast) {
       plane(g, 5.3, 2, 1.7, 25, 0x53615b);
       plane(g, 35, 3, 3.5, 24, 0x35423e);
@@ -375,7 +394,9 @@ export class Scene {
               ? 'BONDED TRANSFER / 09'
               : mission.id === 'depot'
                 ? 'MUNICIPAL TRANSIT / 06'
-                : 'CIVIC RECORDS / NO PUBLIC ACCESS',
+                : mission.id === 'clearing'
+                  ? 'BONDED FREIGHT / NO PUBLIC ACCESS'
+                  : 'CIVIC RECORDS / NO PUBLIC ACCESS',
       10,
       0x718277,
     );
@@ -646,24 +667,59 @@ export class Scene {
     };
     this.camera.position.set(this.offset.x, this.offset.y);
   }
-  home() {
-    this.fit = Math.min(
+  private overviewScale() {
+    return Math.min(
       this.app.screen.width /
         ((this.world.mission.width + this.world.mission.height) * TILE_X + 80),
       this.app.screen.height /
         ((this.world.mission.width + this.world.mission.height) * TILE_Y + 110),
     );
+  }
+  home() {
+    if (this.following) this.followScale = this.camera.scale.x;
+    this.following = false;
+    this.fit = this.overviewScale();
     this.zoom = 1;
     this.pan = { x: 0, y: 0 };
     this.updateCamera();
   }
   zoomBy(delta: number) {
-    this.zoom = Math.max(0.4, Math.min(2.8, this.zoom * delta));
+    const center = { x: this.app.screen.width / 2, y: this.app.screen.height / 2 };
+    const anchor = this.toWorld(center.x, center.y);
+    this.zoom = Math.max(0.4, Math.min(3 / this.fit, this.zoom * delta));
     this.updateCamera();
+    const after = this.screen(anchor);
+    this.pan.x += center.x - after.x;
+    this.pan.y += center.y - after.y;
+    this.updateCamera();
+    this.followScale = this.camera.scale.x;
   }
   panBy(x: number, y: number) {
+    this.following = false;
     this.pan.x += x;
     this.pan.y += y;
+    this.updateCamera();
+  }
+  follow(selected: string[], restoreScale = false) {
+    this.following = true;
+    if (restoreScale) {
+      this.zoom = Math.max(this.fit, this.followScale) / this.fit;
+      this.updateCamera();
+    }
+    this.trackSelection(selected, 1, true);
+  }
+  private trackSelection(selected: string[], alpha: number, center = false) {
+    // A fully visible map needs no translation. Zoom and selection never auto-fit the crew.
+    if (!this.following || this.camera.scale.x <= this.overviewScale() * 1.02) return;
+    const target = selectionFocus(this.world, selected, alpha);
+    if (!target) return;
+    const p = this.screen(target),
+      { width, height } = this.app.screen;
+    const x = center ? width * 0.5 : Math.max(width * 0.3, Math.min(width * 0.7, p.x));
+    const y = center ? height * 0.53 : Math.max(height * 0.32, Math.min(height * 0.68, p.y));
+    if (Math.abs(x - p.x) + Math.abs(y - p.y) < 0.01) return;
+    this.pan.x += x - p.x;
+    this.pan.y += y - p.y;
     this.updateCamera();
   }
   showGuidance(ids: GuideTarget[], panel: Rect) {
@@ -701,6 +757,7 @@ export class Scene {
       return p ? [project(p, p.z)] : [];
     });
     if (!points.length) return;
+    this.following = false;
     const wide = this.host.clientWidth > 800;
     const left = wide ? this.guidePanel.x + this.guidePanel.w + 45 : 45;
     const right = this.host.clientWidth - 45,
@@ -713,7 +770,7 @@ export class Scene {
     this.zoom = Math.max(
       0.4,
       Math.min(
-        2.8,
+        3 / this.fit,
         Math.max(50, right - left) / Math.max(240, maxX - minX) / this.fit,
         Math.max(50, bottom - top) / Math.max(140, maxY - minY) / this.fit,
       ),
@@ -899,7 +956,18 @@ export class Scene {
     if (this.homePending) {
       this.homePending = false;
       this.home();
+      this.following = true;
+      this.followScale = 0.95;
+      if (this.world.mission.trackingCamera) {
+        this.zoom = Math.max(this.fit, this.followScale) / this.fit;
+        this.updateCamera();
+        this.trackSelection(selected, alpha, true);
+      }
     }
+    const selectionKey = selected.join(',');
+    if (this.selectionKey && selectionKey !== this.selectionKey) this.following = true;
+    this.trackSelection(selected, alpha, selectionKey !== this.selectionKey);
+    this.selectionKey = selectionKey;
     const w = this.world;
     this.drawGuidance();
     this.transferRoutes.forEach((route, i) => {
@@ -986,8 +1054,9 @@ export class Scene {
       const gun = p.armament;
       if (gun && living(p) && (guard || (a && selected.includes(a.id)))) {
         const spec = WEAPONS[gun.kind];
-        const progress =
-          gun.reload > 0
+        const progress = gun.charging
+          ? 1 - gun.charging.remaining / COIL_CHARGE
+          : gun.reload > 0
             ? 1 - gun.reload / spec.reload
             : gun.settle > 0 && !p.path.length
               ? 1 - gun.settle / spec.settle
@@ -1039,6 +1108,24 @@ export class Scene {
       }
     }
     this.effects.clear();
+    // Telegraph charged shots independently of optional sight cones, without hiding bodies.
+    for (const shooter of people(w).filter(living)) {
+      const charge = shooter.armament?.charging;
+      if (!charge) continue;
+      const target = people(w).find((p) => p.id === charge.target && living(p));
+      if (!target || !lineClear(w, shooter, target)) continue;
+      const from = project(shooter),
+        to = project(target);
+      const progress = 1 - charge.remaining / COIL_CHARGE;
+      const color = w.guards.some((g) => g.id === shooter.id) ? 0xe599ff : 0x7be1e6;
+      this.effects
+        .moveTo(from.x, from.y)
+        .lineTo(to.x, to.y)
+        .stroke({ color, width: 1.5 + progress, alpha: 0.5 + progress * 0.4 });
+      this.effects
+        .ellipse(to.x, to.y, 16 - progress * 6, 8 - progress * 3)
+        .stroke({ color, width: 2, alpha: 0.9 });
+    }
     for (const core of this.cores) {
       core.intact.visible = !demolished(w);
       core.wreck.visible = demolished(w);

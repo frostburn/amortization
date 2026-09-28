@@ -38,7 +38,7 @@ not reveal an identity or permit shooting through a wall. Killing callers or
 disabling RADIO still interrupts escalation. Support arrives 6 and 30 seconds
 after the alarm, with countdowns shown in the HUD.
 
-Operations 05–06 use explicit, shared weapon definitions. Pistols are concealable
+Operations 05–07 use explicit, shared weapon definitions. Pistols are concealable
 and mobile (range 6, damage 17, eight shots); carbines reach farther but need a
 0.35-second stationary preparation (range 9, damage 26, six shots); shotguns
 favour close encounters (range 3.8, damage 44, two shots). Automatic reloads take
@@ -241,6 +241,45 @@ Mission goals expose the current requirements and point to their map locations. 
 
 A read-only goal model supplies both the HUD labels and context-sensitive help. It distinguishes a diverted courier from a called transfer, explains why a shunt operator must stay put, removes the forged-release suggestion after the maintenance identity is lost, and states the extraction requirements. The locator resolves people and cargo from current simulation positions, including handoffs and drops. It uses a screen overlay for legible labels and off-screen arrows, leaving world occlusion and map hit-testing intact.
 
+## Margin call and the tracking camera
+
+Operation 07 moves the crew into a 60 × 42 freight clearinghouse (operation 06 is
+40 × 32). The settlement keys can release the escrow frozen after the destroyed
+backups. Physical cargo requires a carrier and every survivor at the north road
+van. A remote SHUNT on the west street supports quiet split-team access to the
+vault; CUT is the permanent noisy alternative. Separate freight lanes, cargo
+stacks and a screened maintenance walk offer direct and indirect approaches. The
+east road patrol creates a final crossing window for the conspicuous carrier.
+
+Rook carries a compact automatic: range 6.4, damage 12, nine shots, 0.16-second
+firing recovery and 1.65-second reload. Sable and violet security marksmen carry
+coil rifles: range 13, damage 52, three shots, 0.75-second firing recovery and
+2.2-second reload. Every coil shot needs a continuous 1.25-second charge on the
+same visible target while stationary. Movement, lost sight, stowing, working or
+death cancels charging; switching targets starts a new charge. A floor line,
+shrinking target ring and readiness bar telegraph it independently of sight cones.
+Charges, rounds and reloads belong to simulation time and replay state. Marksmen
+use authored firing/cover posts and do not pursue unseen targets through buildings.
+
+Marksmen have violet coats and a single optical lens. The coil rifle’s long pale
+rail housing, three cyan coils and scope contrast with the automatic’s short brass
+receiver, wire stock and deep magazine. Both use the shared rigid attachment in
+aimed, lowered, slung and dropped poses.
+
+Operation 07 starts at 0.95 screen scale near the crew, independent of map area or
+viewport size. Fit map remains a deliberate overview. Follow / Home restores the
+last working scale and tracks the selection; fully visible maps need no movement.
+Tracking uses interpolated positions within a central screen area, without changing
+zoom. Selecting one operative recentres on them. Widely split multi-selections
+follow the largest local group, with stable selection-order ties. Manual pan and
+objective focus suspend tracking; selecting an operative resumes it. Wheel zoom
+keeps the centre world point fixed. Mission resets restore the authored start.
+
+Quiet and armed full-crew completions run with live patrols and are recorded then
+replayed exactly. Unit checks cover reachable posts and map edges, coil charge
+interruption, automatic reloads and split selection. Browser checks exercise
+launch, default framing, tracking, manual pan, overview and touch selection.
+
 ## Next useful work
 
-Collect human runs of the new operation 05 and 06 encounters and tune whether splitting the crew earns its cognitive cost. The [future combat ideas](combat-expansion.md) retain flash grenades, loadout choice, and further equipment and security suggestions for later missions.
+Collect human runs of operation 07 and tune its firing lanes, road crossing and split-team workload. The [future combat ideas](combat-expansion.md) retain flash grenades, loadout choice, and further equipment and security suggestions for later missions.

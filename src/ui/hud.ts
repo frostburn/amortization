@@ -51,6 +51,7 @@ export type Action =
   | 'drop'
   | 'vision'
   | 'home'
+  | 'follow'
   | 'zoom-in'
   | 'zoom-out';
 export interface HudState {
@@ -60,6 +61,7 @@ export interface HudState {
   sound: boolean;
   best: number | null;
   fullCrewBest?: number | null;
+  following?: boolean;
 }
 const icons: Record<string, string> = {
   pause: '<path d="M8 5v14M16 5v14"/>',
@@ -119,7 +121,7 @@ export class Hud {
           <section class="orders-section"><p class="section-label">ORDERS</p><div class="orders">${(['regroup', 'hold', 'weapons', 'interact'] as const).map((id, i) => `<button data-action="${id}" title="${['Regroup at the lead selected operative (G)', 'Hold position (S)', 'Draw or stow weapons (F)', 'Interact with nearest object (E)'][i]}">${icon(id)}<span id="${id}-label">${['Regroup', 'Hold', 'Draw weapons', 'Interact'][i]}</span><kbd>${['G', 'S', 'F', 'E'][i]}</kbd></button>`).join('')}</div><div class="utility"><button data-action="heal" id="heal-button"><span id="heal-label">Field dressing</span> <kbd>H</kbd></button><button data-action="drop" id="drop-button" disabled>Set unit down <kbd>X</kbd></button></div></section>
         </aside>
         <section class="map-column" aria-label="Operation map">
-          <div class="stage" id="stage"><div class="map-top"><span id="time-mode">PLANNING / ORDERS ACTIVE</span><span id="clock">00:00</span></div><div class="map-controls"><button data-action="vision" id="vision-button" aria-pressed="true">Sight cones: on</button><button data-action="zoom-out" aria-label="Zoom out">−</button><button data-action="home">Fit map</button><button data-action="zoom-in" aria-label="Zoom in">+</button></div><div class="map-caption"><span id="map-location"></span><small id="map-detail">Municipal assets division</small><small id="enemy-behavior" hidden></small></div><div class="selection-box" id="selection-box"></div><div id="objective-guide" class="objective-guide" role="region" aria-label="Objective guidance" hidden><div class="guide-heading"><span>MISSION GUIDE</span><button data-dismiss-guide aria-label="Close mission guide">×</button></div><h3 id="guide-title"></h3><p id="guide-detail"></p><div id="guide-locations" aria-label="Locate mission items"></div><p class="guide-instruction">Right-click a map diamond to act; on touch, tap it.</p></div></div>
+          <div class="stage" id="stage"><div class="map-top"><span id="time-mode">PLANNING / ORDERS ACTIVE</span><span id="clock">00:00</span></div><div class="map-controls"><button data-action="vision" id="vision-button" aria-pressed="true">Sight cones: on</button><button data-action="zoom-out" aria-label="Zoom out">−</button><button data-action="home" title="Overview of the whole site">Fit map</button><button data-action="follow" id="follow-button" aria-label="Follow selected operatives" title="Follow selection · Home. Select a portrait to resume after panning." aria-pressed="true">Follow</button><button data-action="zoom-in" aria-label="Zoom in">+</button></div><div class="map-caption"><span id="map-location"></span><small id="map-detail">Municipal assets division</small><small id="enemy-behavior" hidden></small></div><div class="selection-box" id="selection-box"></div><div id="objective-guide" class="objective-guide" role="region" aria-label="Objective guidance" hidden><div class="guide-heading"><span>MISSION GUIDE</span><button data-dismiss-guide aria-label="Close mission guide">×</button></div><h3 id="guide-title"></h3><p id="guide-detail"></p><div id="guide-locations" aria-label="Locate mission items"></div><p class="guide-instruction">Right-click a map diamond to act; on touch, tap it.</p></div></div>
           <footer class="controls-hint"><span><kbd>1–4</kbd> operative <kbd>Q</kbd> squad <kbd>RMB</kbd> order <kbd>Space</kbd> pause <kbd>Tab</kbd> slow</span><button data-action="restart" title="Restart operation (Shift+R)">Restart</button></footer>
         </section>
         <aside class="sidebar mission-sidebar" aria-label="Mission and status">
@@ -259,7 +261,7 @@ export class Hud {
   private briefing() {
     const m = this.mission;
     const equipment = m.loadout
-      ? `<p class="dialog-body" data-loadout><b>Equipment:</b> ${m.loadout.map((kind, i) => `${['Morrow', 'Vale', 'Rook', 'Sable'][i]} — ${WEAPONS[kind].name}`).join('; ')}. Morrow or Vale can take KIT. Stowed long guns remain visible. Carbines need 0.35 seconds to steady after moving. Reloads are automatic; reserve ammunition is unlimited.</p>`
+      ? `<p class="dialog-body" data-loadout><b>Equipment:</b> ${m.loadout.map((kind, i) => `${['Morrow', 'Vale', 'Rook', 'Sable'][i]} — ${WEAPONS[kind].name}`).join('; ')}. Morrow or Vale can take KIT. Stowed long guns remain visible. ${m.loadout.includes('carbine') ? 'Carbines need 0.35 seconds to steady after moving. ' : ''}${m.loadout.includes('coil') ? 'Coil rifles need 1.25 seconds charging with continuous sight while stationary. Automatics empty quickly: cover their reloads. ' : ''} Reloads are automatic; reserve ammunition is unlimited.</p>`
       : '';
     return `<div class="dialog-number">${m.number} / ${m.location}</div><h2 id="dialog-title">${m.title}</h2><p class="dialog-lead">${m.briefing.lead}</p><p class="dialog-body">${m.briefing.body}</p>${equipment}<div class="briefing-routes">${m.briefing.routes.map((route) => `<div><b>${route.title}</b><p>${route.body}</p></div>`).join('')}</div><p class="dialog-body">Guards can return an opening volley. Gunfire can be reported through walls. Use cover and field dressings; disable RADIO to stop support.</p><p class="briefing-controls"><kbd>1–4</kbd> select one · <kbd>Q</kbd> select all<br><kbd>RMB</kbd> move / interact / attack · <kbd>Space</kbd> pause<br><kbd>F</kbd> draw / stow · <kbd>S</kbd> hold / pause work<br>Drag to select · Wheel to zoom · Arrows / middle-drag to pan</p><button class="primary" data-action="begin">Begin operation <span>→</span></button><button class="dialog-secondary" data-action="operations">Choose operation</button><p class="dialog-foot">Orders remain active while paused. Selection changes preserve orders.</p>`;
   }
@@ -332,6 +334,7 @@ export class Hud {
     this.field('map-location').parentElement!.classList.toggle('inspecting', !!inspected);
     this.field('enemy-behavior').hidden = !inspected;
     this.set('enemy-behavior', inspected ? guardDescription(inspected) : '');
+    this.field('follow-button').setAttribute('aria-pressed', String(state.following ?? false));
     this.field('selected-equipment').hidden = !a?.armament;
     this.set(
       'selected-equipment',
@@ -477,9 +480,11 @@ export class Hud {
                           : 'Both hands occupied. Set the cargo down to fire.'
                       : visibleWeapon(a)
                         ? longGun(a)
-                          ? a.armament?.kind === 'carbine'
-                            ? 'Stop to aim. Stowing keeps it visible.'
-                            : 'Close range. Stowing keeps it visible.'
+                          ? a.armament?.kind === 'coil'
+                            ? 'Stop to charge a shot. Breaking sight cancels the charge. Stowing keeps it visible.'
+                            : a.armament?.kind === 'carbine'
+                              ? 'Stop to aim. Stowing keeps it visible.'
+                              : 'Close range. Stowing keeps it visible.'
                           : 'Visible weapon. Guards will challenge you.'
                         : suspicionRate(world, a) > 0
                           ? 'Restricted area. Stay out of sight.'
@@ -596,8 +601,8 @@ export class Hud {
       this.set(
         'intel',
         world.evidence === 'carried'
-          ? 'The ledger is conspicuous. Clear a path to the east gate, release the shunt operator, and bring everyone to VAN.'
-          : 'One operative holds SHUNT; another enters the archive. CUT is the noisy alternative. Prepare the east gate before lifting the ledger.',
+          ? `${landmark(world, 'evidence').tag} is conspicuous. Clear a path to the east gate, release the shunt operator once the carrier is outside, and bring everyone to VAN.`
+          : `One operative holds SHUNT; another enters the archive. CUT is the noisy alternative. Prepare the east gate before lifting ${landmark(world, 'evidence').tag}.`,
       );
     }
     if (world.courier) {

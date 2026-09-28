@@ -49,19 +49,20 @@ export interface Landmark extends Vec {
   label: string;
   detail: string;
 }
-export type WeaponKind = 'pistol' | 'carbine' | 'shotgun';
+export type WeaponKind = 'pistol' | 'carbine' | 'shotgun' | 'automatic' | 'coil';
 export interface Armament {
   kind: WeaponKind;
   rounds: number;
   reload: number;
   settle: number;
+  charging?: { target: string; remaining: number };
 }
 export interface GuardTactic {
-  role: 'sentry' | 'breacher';
+  role: 'sentry' | 'breacher' | 'marksman';
   posts: Vec[];
 }
 export interface Mission {
-  id: 'depot' | 'archive' | 'transfer' | 'custody' | 'broadcast' | 'severance';
+  id: 'depot' | 'archive' | 'transfer' | 'custody' | 'broadcast' | 'severance' | 'clearing';
   number: string;
   title: string;
   location: string;
@@ -73,6 +74,8 @@ export interface Mission {
   gateOutside: Vec;
   response: { spawns: Vec[]; patrol: Vec[]; specialists?: GuardTactic[] };
   loadout?: [WeaponKind, WeaponKind, WeaponKind, WeaponKind];
+  /** Large sites start near the crew at a readable scale, with an optional map overview. */
+  trackingCamera?: boolean;
   archive?: { door: Rect; inside: Vec };
   broadcast?: { duration: number; traceTime: number };
   demolition?: { armTime: number; blastRadius: number };
