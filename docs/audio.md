@@ -42,6 +42,27 @@ volume slider adjusts the master mix and remembers its value locally. Reloading
 the page starts muted even when a volume preference exists. Keyboard volume
 adjustments do not pan the map or change squad orders.
 
+Per-effect faders live in `src/audio/levels.ts`, separately from the synthesis
+recipes. They apply before spatial/context gain and the master compressor, both
+when a voice starts and when a warning loop moves or changes intensity. They are
+fixed authored gains, with no per-clip loudness normalization.
+
+| Role | Balance |
+| --- | --- |
+| Weapons | Compare sustained firing at each weapon's actual cadence. Individual automatic rounds stay lighter; heavier reports receive small trims. |
+| Footsteps | Preserve the very quiet, low-passed level from the preceding pass. |
+| Hits | Ordinary impacts sit below gunfire; damage to an operative retains its louder context gain. Falls and sentry wrecks receive a small trim. |
+| Reload and equipment | Bring reload/ready clicks up and doors, breakers and relay shutdown down, keeping pickups, clothing, healing and terminals in the same general range. |
+| Threats | Reduce the coil's sustained charge and raise turret acquisition so both warnings carry similar weight. Preserve the coil's increasing intensity as it charges. |
+| Radio and alarm | Radio onset remains above ordinary handling; the global alarm is distinct without reaching weapon-report level. |
+| Outcomes and blast | Bring success and failure cues together. Explosions stay heavier than gunfire with a smaller volume jump. |
+
+The balance pass compares all variations through the actual browser mixer at a
+common position and volume: peak level, a 100 ms RMS window after a 100 Hz
+high-pass, and energy over real firing sequences. These measurements expose
+outliers, but are not a perceptual loudness standard or a substitute for listening.
+The preview keeps these relative levels, including in overlapping fights.
+
 Stereo follows horizontal screen position after isometric projection, including
 camera panning and split-team follow. Distance attenuation and high-frequency
 loss use the camera's ground position, independently of zoom. Site alarms and

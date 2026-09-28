@@ -1,5 +1,6 @@
 import type { Vec } from '../sim/types';
 import { project } from '../render/isometric';
+import { mixGain } from './levels';
 import { loopSound, synthesize } from './palette';
 import type { SoundId } from './palette';
 
@@ -128,15 +129,16 @@ export class Mixer {
       gain = ctx.createGain(),
       pan = ctx.createStereoPanner(),
       filter = ctx.createBiquadFilter();
-    const variant = options.variant ?? (loopSound(id) ? 0 : this.serial++ % 3);
+    const variant = options.variant ?? (loopSound(id) ? 0 : this.serial++ % 3),
+      level = where.gain * (options.level ?? 1) * mixGain(id);
     source.buffer = this.buffer(id, variant);
     source.loop = loopSound(id);
     source.playbackRate.value = options.rate ?? 1;
     filter.type = 'lowpass';
     filter.frequency.value = where.cutoff;
     filter.Q.value = 0.5;
-    gain.gain.setValueAtTime(source.loop ? 0 : where.gain * (options.level ?? 1), when);
-    if (source.loop) gain.gain.setTargetAtTime(where.gain * (options.level ?? 1), when, 0.025);
+    gain.gain.setValueAtTime(source.loop ? 0 : level, when);
+    if (source.loop) gain.gain.setTargetAtTime(level, when, 0.025);
     pan.pan.value = where.pan;
     source.connect(filter);
     filter.connect(gain);
@@ -152,7 +154,7 @@ export class Mixer {
       end: source.loop ? Infinity : when + source.buffer.duration / source.playbackRate.value,
       stopped: false,
       targets: {
-        gain: where.gain * (options.level ?? 1),
+        gain: level,
         pan: where.pan,
         cutoff: where.cutoff,
         rate: options.rate ?? 1,
@@ -172,7 +174,12 @@ export class Mixer {
   position(voice: Voice, where: Placement, level = 1, rate = 1) {
     if (voice.stopped) return;
     const now = this.context.currentTime;
-    const targets = { gain: where.gain * level, pan: where.pan, cutoff: where.cutoff, rate };
+    const targets = {
+      gain: where.gain * level * mixGain(voice.id),
+      pan: where.pan,
+      cutoff: where.cutoff,
+      rate,
+    };
     const parameters = {
       gain: voice.gain.gain,
       pan: voice.pan.pan,
