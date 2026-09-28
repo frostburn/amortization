@@ -291,7 +291,11 @@ export function parseReplay(raw: string): ReplayBundle {
         );
       if (c.kind === 'attack')
         requireValue(
-          typeof c.target === 'string' && /^(guard-\d+|response-\d+-\d+|courier)$/.test(c.target),
+          typeof c.target === 'string' &&
+            (/^(guard-\d+|response-\d+-\d+|courier)$/.test(c.target) ||
+              (/^turret-(0|[1-9]\d*)$/.test(c.target) &&
+                Array.isArray(archived.security?.turrets) &&
+                Number(c.target.slice('turret-'.length)) < archived.security.turrets.length)),
           'Invalid attack target.',
         );
     }
