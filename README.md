@@ -19,7 +19,7 @@ Open the URL Vite prints. Everything runs in the browser, with no account, backe
 npm run check       # lint, simulation tests, typecheck, production build
 npx playwright install chromium
 npm run test:e2e:smoke # routine CI browser gate (10 checks)
-npm run test:e2e       # full Chromium regressions (28 checks)
+npm run test:e2e       # full Chromium regressions (30 checks)
 npm run preview    # serve the production build
 ```
 
@@ -96,7 +96,7 @@ tests completion under current rules. Both exit nonzero on failure. Selected pla
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
 distinct routes. Fifteen retained recordings cover operations 01–04. The two
 recordings for operations 05–06 no longer win with their new equipment and were
-retired without altering the submitted inputs. All seven missions have synthetic
+retired without altering the submitted inputs. All eight missions have synthetic
 quiet and armed completion tests; new human runs for 05–06 are welcome. See
 `tests/replays/README.md` for provenance, current outcomes, and retired routes.
 
@@ -137,7 +137,7 @@ appear directly below the map, followed by the crew and mission details.
 
 Recruitment, extraction readiness, injuries and messages never shrink the map.
 Viewport resizing preserves the camera’s scale. **Fit map** frames the mission in the available
-space; operations 01–06 start with this overview. Operation 07 starts at a readable scale near the crew.
+space; operations 01–06 start with this overview. Operations 07–08 start at a readable scale near the crew.
 
 **Follow** / **Home** returns to the selected crew at the last working zoom. When
 zoomed in, the camera looks ahead along their route, eases through turns, and
@@ -255,7 +255,7 @@ The access keys lead to auditor **Mara Quill**, held in a security transport at 
 
 For a quiet escape, take KIT, disable RADIO, file WARRANT, and collect Mara. Lead her north of the lower cargo containers, west through the service corridor, and out the west entrance to SERVICE. Send the rest of the crew up the public street. For an armed extraction, clear the transport bay before cutting the lock, leave Mara waiting behind cover while the crew secures the gate, then bring her to STREET.
 
-## Equipment in operations 05–07
+## Equipment in operations 05–08
 
 | Weapon            | Range | Damage | Shots / magazine | Shot recovery | Automatic reload |
 | ----------------- | ----: | -----: | ---------------: | ------------: | ---------------: |
@@ -274,7 +274,7 @@ reload automatically with unlimited reserve ammunition; movement, stowing, and
 new orders preserve the reload. Pause freezes readiness and slow time scales it.
 
 Morrow and Vale carry concealable pistols. Rook and Sable carry carbines in 05;
-Rook switches to a shotgun in 06. In 07, Rook carries the compact automatic and
+Rook switches to a shotgun in 06. In 07–08, Rook carries the compact automatic and
 Sable carries the coil rifle. Long guns remain visible when stowed, including
 while carrying cargo. **KIT** assigns an eligible selected pistol carrier and
 names them before they start moving. Briefings show all assignments; portraits
@@ -396,6 +396,37 @@ Verification completes a quiet split-team route with all patrols active and an
 armed route through the screened approach, both with all four operatives alive.
 Both routes are recorded and replayed against exact simulation checkpoints.
 
+## Adverse selection · Operation 08
+
+Recover the **MANDATE** from a 52 × 38 authorisation works, then bring the carrier
+and every survivor to the north-east **VAN**. The camera follows the selected crew
+at the same readable scale as operation 07.
+
+Four stationary turrets guard the crossing and records approach. Their amber
+and blue cables lead to **WEST** and **EAST**; each feed powers two guns.
+**RADIO only stops human reinforcement calls.** Turrets keep working without it,
+scan instead of chasing, and show a tracking line for 0.8 seconds before firing.
+Solid cover breaks tracking. Each mount has 180 health, a nine-unit carbine range,
+and a visible reload. Sable's coil outranges it.
+
+A concealed, unexposed KIT wearer can use **INSPECT** once for a **22-second**
+shutdown. Stage the crew first. Each feed takes **four seconds** with free hands
+to isolate permanently; the worker cannot fire. Outside inspection, guards
+recognise visible sabotage and investigate a tripped breaker. You can still cut
+the feeds or destroy the guns after the inspection expires or the disguise is
+blown. Disabling security alone does not unlock extraction: MANDATE is required.
+
+Use the west service walk behind reception and the passage north of the generator
+hall to reach the feeds. Prepare GATE before lifting the mandate. The screened
+records exit has a crossing window behind the east patrol; stage the rest of the
+crew before sending the carrier to the van.
+
+Verification covers a quiet, undamaged full-crew extraction and an armed full-crew
+extraction without using INSPECT, with exact replay checks for both. A focused
+radio-jam assault that ignores the feeds loses three operatives despite using
+field dressings. Human playtesting will determine whether the pressure and
+available counterplay feel right.
+
 ## Records
 
 Results track time, crew survival, evidence, and alarm status. Operation five also reports publication; operation six reports backup destruction. Each operation keeps
@@ -430,7 +461,7 @@ push runs the full lint, typecheck, build and simulation suite, followed by the
 squad/individual selection, touch orders, objective guides, locked extraction,
 stable layout, camera follow and replay export/playback/restore.
 
-The full 28-test browser suite remains available with `npm run test:e2e`, or in
+The full 30-test browser suite remains available with `npm run test:e2e`, or in
 GitHub Actions via **Check → Run workflow → Run the full browser regression suite**.
 That option replaces the smoke run rather than running both. Use it for mission
 UI, renderer, or broader input changes; extended mission journeys and detailed
@@ -438,7 +469,7 @@ graphics checks are not part of the routine gate. Keep `@smoke` for shared playe
 flows so each new mission does not add another real-time browser journey to CI.
 
 The full simulation suite still runs on every change, including all 18 retained
-human completions, complete quiet and armed extractions for all seven missions,
+human completions, complete quiet and armed extractions for all eight missions,
 navigation clearance, local identification, disguise permissions, radio disruption,
 evidence custody, demolition safety, and extraction requirements.
 Playwright launches Vite with `VITE_BROWSER_TEST=true`, capping its renderer at

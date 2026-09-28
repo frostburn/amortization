@@ -1,4 +1,4 @@
-import { distance, inside, isCharge, living } from './types';
+import { distance, inside, isCharge, isPower, living } from './types';
 import type { Guard, Operative, Person, Vec, World } from './types';
 import { findPath, lineClear } from './navigation';
 import { shoot } from './combat';
@@ -6,6 +6,7 @@ import { cancelCharge, guardWeapon, visibleWeapon, weaponRange } from './weapons
 import { maneuver, shareContact } from './tactics';
 import { makeGuard, notify } from './world';
 import { clearedCargo } from './courier';
+import { inspectionRemaining, turretPowered, updateTurret } from './security';
 
 export const RESPONSE_TIMES = [6, 30] as const;
 export const sightRange = (guard: Guard) =>
@@ -23,7 +24,9 @@ export function suspicionRate(world: World, agent: Operative): number {
   if (visibleWeapon(agent)) return 95;
   if (
     agent.order.kind === 'interact' &&
-    (agent.order.target === 'divert' || isCharge(agent.order.target)) &&
+    (agent.order.target === 'divert' ||
+      isCharge(agent.order.target) ||
+      (isPower(agent.order.target) && inspectionRemaining(world) === 0)) &&
     agent.interaction > 0
   )
     return 95;
@@ -46,6 +49,7 @@ export function raiseAlarm(world: World, ids: string[] = []) {
 }
 export function investigateNoise(world: World, point: Vec) {
   for (const g of world.guards.filter(living)) {
+    if (g.turret) continue;
     if (distance(g, point) > 12) continue;
     g.mode = 'combat';
     g.lastSeen = { ...point };
@@ -56,6 +60,16 @@ export function investigateNoise(world: World, point: Vec) {
 }
 export function reportGunfire(world: World, shooter: Operative) {
   for (const g of world.guards.filter(living)) {
+    if (g.turret) {
+      if (
+        turretPowered(world, g) &&
+        distance(g, shooter) <= weaponRange(g) &&
+        lineClear(world, g, shooter) &&
+        !g.known.includes(shooter.id)
+      )
+        g.known.push(shooter.id);
+      continue;
+    }
     if (distance(g, shooter) > 12) continue;
     g.lastSeen = { x: shooter.x, y: shooter.y };
     g.searchTime = 10;
@@ -79,6 +93,10 @@ export function reportGunfire(world: World, shooter: Operative) {
 }
 export function updateAwareness(world: World, dt: number) {
   for (const g of world.guards.filter(living)) {
+    if (g.turret) {
+      updateTurret(world, g, dt);
+      continue;
+    }
     g.repath -= dt;
     let highest = 0;
     let visibleTarget: Person | undefined;

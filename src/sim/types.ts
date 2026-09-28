@@ -38,9 +38,15 @@ export type ObjectKind =
   | 'dispatch'
   | 'mask'
   | 'upload'
+  | 'authorise'
+  | 'power-west'
+  | 'power-east'
   | 'charge-west'
   | 'charge-east';
 export type ChargeTarget = 'charge-west' | 'charge-east';
+export type PowerTarget = 'power-west' | 'power-east';
+export const isPower = (id: ObjectKind): id is PowerTarget =>
+  id === 'power-west' || id === 'power-east';
 export const isCharge = (id: ObjectKind): id is ChargeTarget =>
   id === 'charge-west' || id === 'charge-east';
 export interface Landmark extends Vec {
@@ -62,7 +68,15 @@ export interface GuardTactic {
   posts: Vec[];
 }
 export interface Mission {
-  id: 'depot' | 'archive' | 'transfer' | 'custody' | 'broadcast' | 'severance' | 'clearing';
+  id:
+    | 'depot'
+    | 'archive'
+    | 'transfer'
+    | 'custody'
+    | 'broadcast'
+    | 'severance'
+    | 'clearing'
+    | 'mandate';
   number: string;
   title: string;
   location: string;
@@ -79,6 +93,10 @@ export interface Mission {
   archive?: { door: Rect; inside: Vec };
   broadcast?: { duration: number; traceTime: number };
   demolition?: { armTime: number; blastRadius: number };
+  security?: {
+    inspectionTime: number;
+    turrets: { position: Vec; angle: number; circuit: PowerTarget; cable: Vec[] }[];
+  };
   transfer?: { start: Vec; patrol: Vec[]; checkpoint: Vec; inspection: Vec; junction: Vec };
   escort?: {
     id: string;
@@ -127,6 +145,7 @@ export interface Operative extends Person {
   interaction: number;
 }
 export interface Guard extends Person {
+  turret?: { circuit: PowerTarget; homeAngle: number; lock: number };
   patrol: Vec[];
   waypoint: number;
   suspicion: Record<string, number>;
@@ -200,6 +219,7 @@ export interface World {
     uploadBy: string | null;
   };
   demolition?: { armed: ChargeTarget[]; detonatedAt: number | null };
+  security?: { isolated: PowerTarget[]; inspectionUntil: number; inspectionUsed: boolean };
   alarm: boolean;
   alarmTime: number;
   waves: number;

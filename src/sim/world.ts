@@ -75,6 +75,12 @@ export function createWorld(mission: Mission = depot): World {
           g.tactic,
         ),
       ),
+      ...(mission.security?.turrets.map((t, i) => ({
+        ...makeGuard(`turret-${i}`, t.position, [t.position], t.angle, 'carbine'),
+        hp: 180,
+        maxHp: 180,
+        turret: { circuit: t.circuit, homeAngle: t.angle, lock: 0 },
+      })) ?? []),
       ...(mission.transfer
         ? [makeGuard('courier', mission.transfer.start, mission.transfer.patrol)]
         : []),
@@ -108,6 +114,9 @@ export function createWorld(mission: Mission = depot): World {
       ? { broadcast: { progress: 0, trace: 0, traced: false, maskBy: null, uploadBy: null } }
       : {}),
     ...(mission.demolition ? { demolition: { armed: [], detonatedAt: null } } : {}),
+    ...(mission.security
+      ? { security: { isolated: [], inspectionUntil: 0, inspectionUsed: false } }
+      : {}),
     alarm: false,
     alarmTime: 0,
     waves: 0,

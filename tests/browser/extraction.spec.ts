@@ -153,5 +153,7 @@ test('picks the nearest overlapping marker and maps both custody vehicles to the
     'extract', // severance marker and vehicle
     'extract',
     'extract', // clearinghouse marker and vehicle
+    'extract',
+    'extract', // authorisation works marker and vehicle
   ]);
 });

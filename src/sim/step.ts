@@ -1,4 +1,4 @@
-import { distance, isCharge, living, people } from './types';
+import { distance, isCharge, isPower, living, people } from './types';
 import type { Person, World } from './types';
 import { canWalk, findPath, lineClear } from './navigation';
 import {
@@ -46,6 +46,23 @@ function walk(world: World, p: Person, speed: number, dt: number) {
 export function step(world: World, dt = STEP) {
   if (world.status !== 'playing') return;
   world.time += dt;
+  if (
+    world.security &&
+    world.security.inspectionUntil > 0 &&
+    world.time >= world.security.inspectionUntil
+  ) {
+    world.security.inspectionUntil = 0;
+    const remaining = world.guards.filter(
+      (g) => living(g) && g.turret && !world.security!.isolated.includes(g.turret.circuit),
+    ).length;
+    notify(
+      world,
+      remaining
+        ? `Inspection ended. ${remaining} wired turrets are live again. Break sight or isolate their feeds.`
+        : 'Inspection ended. Isolated and destroyed turrets stay offline.',
+      remaining ? 'warning' : 'info',
+    );
+  }
   updateShutter(world);
   for (const p of people(world)) {
     updateWeapon(p, dt, distance(p, p.previous) > 1e-6);
@@ -107,6 +124,8 @@ export function step(world: World, dt = STEP) {
         a.order.target === 'mask' ||
         a.order.target === 'upload' ||
         isCharge(a.order.target) ||
+        isPower(a.order.target) ||
+        a.order.target === 'authorise' ||
         a.order.target === 'release');
     if (a.weapon && !a.carrying && !working) {
       const order = a.order;
