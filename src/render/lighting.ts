@@ -12,7 +12,13 @@ const MAX_LIGHTS = 5; // Four operatives and their recruited witness.
 export class OperativeLighting extends Mesh<MeshGeometry, Shader> {
   constructor() {
     super({
-      geometry: new MeshGeometry({}),
+      // refresh() scales a unit square to the viewport. Keep its positions and
+      // UVs explicit instead of depending on the library's default dimensions.
+      geometry: new MeshGeometry({
+        positions: new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]),
+        uvs: new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]),
+        indices: new Uint32Array([0, 1, 2, 0, 2, 3]),
+      }),
       shader: new Shader({
         glProgram: GlProgram.from({
           name: 'operative-light-pools',
