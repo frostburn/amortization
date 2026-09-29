@@ -499,14 +499,17 @@ disorienting the inspector resets it. Finishing a check identifies that person
 locally and starts the existing backup call; it grants no global knowledge.
 The registry inspector's patrol makes access behind the racks a timed crossing.
 
-Rook and Sable each start with one flash. A ground preview chooses and names one
-eligible thrower, shows the landing point and cover-clipped radius, and marks
-exposed crew. Selecting a point pins that operative, even if another moves
-closer. Aiming preserves orders and is absent from replay commands. Confirmation
-stops only the named thrower, cancels their weapon preparation and spends exactly
-one grenade; firing and work wait through the throw. Invalid range, trajectory
-or landing gives a reason without walking anyone forward. B, Escape and Enter
-supplement the same two-step targeting used on touch screens.
+Rook and Sable each start with one flash. After Flash / B, mouse hover previews
+the landing point and cover-clipped radius; clicking throws. Touch dragging
+previews the radius and releasing throws, without panning the map. The live
+preview names one eligible thrower and marks exposed crew. Aiming preserves
+orders and is absent from replay commands. A valid throw stops only that
+operative, cancels their weapon preparation and spends exactly one grenade;
+firing and work wait through the throw. Invalid range, trajectory or landing
+cancels targeting with a reason, preserving orders and supply. The release
+location is checked again, even if the gesture began at a valid point. Escape,
+Cancel, pointer cancellation and release outside the map cancel; no cancelled
+gesture falls through to a movement order. Enter throws at the current preview.
 
 Range is seven units, flight 0.45 seconds, fuse 0.6 seconds, radius three and
 recovery 1.5 seconds. Solid geometry blocks the throw and exposure; facing does
@@ -538,8 +541,8 @@ A direct squad rush leaves the shutter closed and RADIO active while the alarm
 brings reinforcements. Geometry checks include every patrol post, landmark and
 the inner checkpoint route. Focused checks cover friendly exposure, solid cover,
 ongoing reports, interrupted work and inspector checks. Desktop and touch tests
-cover the mission picker, guidance, invalid targeting, cancellation, the pinned
-thrower, one-grenade confirmation and recovery. These browser journeys stay
+cover the mission picker, guidance, hover/click and drag/release targeting,
+invalid attempts, cancellation, one-grenade throws and recovery. These browser journeys stay
 outside the unchanged ten-case CI smoke suite. Human difficulty and grenade
 utility remain playtesting questions.
 
@@ -629,6 +632,27 @@ completion bundles remain in the verification corpus. Desktop/touch journeys
 exercise the picker, compact briefing, progressive controls, camera scale and
 theme reset, while the existing night-lighting pixel regression checks the
 shared renderer. New browser journeys stay outside the ten-case CI smoke gate.
+
+The first human completion recovers REGISTER after losing Morrow, keeps its
+completed reconciliation, and uses Vale and Sable for the paired release. The
+other recording correctly fails when only Vale remains. Both original bundles
+retain exact state-checkpoint verification after the performance changes; see
+the [replay notes](../tests/replays/README.md#value-date-recovery-and-performance).
+
+Large-map rendering skips character pose construction and depth participation
+outside the viewport, with a generous margin for bodies, weapons and labels.
+Simulation continues everywhere. Panning or zooming back, including while
+paused, immediately draws the current interpolated pose. Sight rays reject
+distant rectangle bounds before exact intersection tests, read current door
+states and avoid allocating the combined obstacle list for every ray. These
+optimizations change neither visibility rules nor mission difficulty.
+
+A Chromium/SwiftShader CPU profile of the first 1,200 ticks of human run
+`1b29d03c` (2,400 rendered frames at 1100 × 720) reduced mean scene-update time
+from 3.65 to 0.70 ms and its 95th percentile from 14.5 to 3.0 ms. This isolates
+CPU scene updates: the accelerated software-GPU harness has submission stalls
+and does not measure normal frame rate or performance on the player's device.
+The replay bundles themselves contain no frame-time telemetry.
 
 ## Next useful work
 

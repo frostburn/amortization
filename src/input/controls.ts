@@ -33,7 +33,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     add = false,
     pointerType = 'mouse';
   let mouse: Vec | null = null;
-  let pressedPoint: Vec | null = null;
+  let aimingPress = false;
   let flash: { id: string; until: number } | null = null;
   let pointerWorld = target.world();
   const marker = document.createElement('div');
@@ -58,14 +58,18 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     }
     const overMap = mouse && document.elementFromPoint(mouse.x, mouse.y) === canvas;
     const bounds = canvas.getBoundingClientRect();
-    if (overMap && !start)
-      target.aim?.hover(scene.toWorld(mouse!.x - bounds.left, mouse!.y - bounds.top));
+    if (!start)
+      target.aim?.hover(
+        overMap ? scene.toWorld(mouse!.x - bounds.left, mouse!.y - bounds.top) : null,
+      );
     target.aim?.update();
-    const hit = start
-      ? pressed
-      : overMap
-        ? scene.hit(mouse!.x - bounds.left, mouse!.y - bounds.top)
-        : null;
+    const hit = target.aim?.active
+      ? null
+      : start
+        ? pressed
+        : overMap
+          ? scene.hit(mouse!.x - bounds.left, mouse!.y - bounds.top)
+          : null;
     const active = !hud.modal.open && w.status === 'playing';
     const guard =
       active && !drag && !target.aim?.active
@@ -81,8 +85,8 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     let cursor = active && armedSelection(w, selected).some((a) => a.weapon) ? 'combat' : 'default';
     if (active) {
       if (start && button === 1) cursor = 'pan';
-      else if (drag) cursor = pointerType === 'touch' ? 'pan' : 'box';
       else if (target.aim?.active) cursor = 'combat';
+      else if (drag) cursor = pointerType === 'touch' ? 'pan' : 'box';
       else if (hit?.kind === 'guard' && preview) cursor = preview.kind;
       else if (hit?.kind === 'agent') cursor = 'select';
       else if (hit?.kind === 'object')
@@ -121,8 +125,11 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     pointerType = e.pointerType;
     mouse = pointerType === 'touch' ? null : { x: e.clientX, y: e.clientY };
     flash = null;
-    pressed = scene.hit(start.x, start.y, button === 2 || pointerType === 'touch');
-    pressedPoint = scene.toWorld(start.x, start.y);
+    aimingPress = !!target.aim?.active && button !== 1;
+    pressed = aimingPress
+      ? null
+      : scene.hit(start.x, start.y, button === 2 || pointerType === 'touch');
+    if (aimingPress) target.aim!.hover(scene.toWorld(start.x, start.y));
     scene.setPointerActive(true);
     canvas.setPointerCapture(e.pointerId);
     e.preventDefault();
@@ -137,9 +144,11 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     if (!last || e.pointerId !== pointer) return;
     const p = position(e);
     if (Math.hypot(p.x - start.x, p.y - start.y) > 8) drag = true;
-    if (drag) {
+    if (aimingPress) {
+      // Touch targeting owns the drag, including movements below the pan threshold.
+      target.aim?.hover(scene.toWorld(p.x, p.y));
+    } else if (drag) {
       if (button === 1 || pointerType === 'touch') scene.panBy(p.x - last.x, p.y - last.y);
-      else if (target.aim?.active) target.aim.hover(scene.toWorld(p.x, p.y));
       else if (button === 0) {
         const r = selectionArea(start, p);
         hud.selectionBox(r, { x: r.x + r.w, y: r.y + r.h });
@@ -160,7 +169,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     start = null;
     last = null;
     pressed = null;
-    pressedPoint = null;
+    aimingPress = false;
     pointer = null;
     drag = false;
     hud.selectionBox(null);
@@ -168,13 +177,19 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
   };
   for (const event of ['pointercancel', 'lostpointercapture'] as const)
     canvas.addEventListener(event, (e) => {
-      if (e.pointerId === pointer) cancel();
+      if (e.pointerId === pointer) {
+        if (aimingPress) target.aim?.cancel();
+        cancel();
+      }
     });
   canvas.addEventListener('pointerup', (e) => {
     if (!start || e.pointerId !== pointer) return;
     const p = position(e);
-    if (target.aim?.active && button !== 1 && (!drag || pointerType !== 'touch')) {
-      target.aim.pick(drag ? scene.toWorld(p.x, p.y) : pressedPoint!);
+    if (aimingPress) {
+      // A cancelled/invalid gesture must never fall through to a movement order.
+      if (document.elementFromPoint(e.clientX, e.clientY) === canvas)
+        target.aim?.throwAt(scene.toWorld(p.x, p.y));
+      else target.aim?.cancel();
     } else if (drag && button === 0 && pointerType !== 'touch') {
       const r = selectionArea(start, p);
       const ids = target
@@ -309,6 +324,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     mouse = null;
     flash = null;
     inspect(null);
+    target.aim?.cancel();
     cancel();
   });
 }

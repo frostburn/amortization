@@ -97,6 +97,10 @@ two-handed aim and recoil, carried cargo,
 and a separate grounded fallen pose. A bounded shared cache reuses tessellated
 poses across strides and guards, keeps visible frames alive, and releases its
 geometry on mission reset. Foot contacts and shadows share the gait's ground projection.
+People beyond the viewport plus a margin for weapons, bodies and labels skip
+pose construction and character depth sorting. Their simulation continues;
+paused panning, zooming and movement back into view refresh the current pose
+before drawing. This changes rendering work, not character visibility rules.
 GPU depth testing resolves overlapping body surfaces rather than sorting whole
 faces by their average depth. Separate depth intervals preserve the map's painter
 order between characters and architecture.

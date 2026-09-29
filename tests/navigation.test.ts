@@ -1,11 +1,62 @@
 import { describe, expect, it } from 'vitest';
 import { createWorld } from '../src/sim/world';
-import { canWalk, findPath, passable } from '../src/sim/navigation';
+import {
+  canWalk,
+  findPath,
+  intersects,
+  lineClear,
+  obstacles,
+  passable,
+} from '../src/sim/navigation';
 import { moveAgents } from '../src/sim/orders';
 import { step } from '../src/sim/step';
 import { distance } from '../src/sim/types';
 import type { Vec, World } from '../src/sim/types';
 import { mandate } from '../src/content/mandate';
+import { missions } from '../src/content/missions';
+
+it('preserves exact sight and body-clearance rays through live mission geometry', () => {
+  let seed = 3511;
+  const random = () => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    return seed / 0x100000000;
+  };
+  for (const mission of missions) {
+    const w = createWorld(structuredClone(mission));
+    for (let state = 0; state < 4; state++) {
+      w.gateOpen = !!(state & 1);
+      w.shutterOpen = !!(state & 2);
+      if (w.detention) {
+        w.detention.open = state & 1 ? w.mission.detention!.gates.map((g) => g.id) : [];
+        w.mission.detention!.cells.forEach((c) => {
+          w.agents[c.agent].captive = !(state & 2);
+        });
+      }
+      // Geometry is editable in place: no stale bounds or door-state cache.
+      w.mission.solids[0].x += 0.1;
+      const solids = obstacles(w);
+      for (const margin of [0, 0.2 - 1e-7]) {
+        const check = (a: Vec, b: Vec) => {
+          expect(lineClear(w, a, b, margin), `${mission.id}, state ${state}`).toBe(
+            !solids.some((r) => intersects(a, b, r, margin)),
+          );
+        };
+        for (let i = 0; i < 100; i++) {
+          const point = () => ({ x: random() * mission.width, y: random() * mission.height });
+          check(point(), point());
+        }
+        for (const r of solids) {
+          const a = { x: r.x - margin, y: r.y - margin },
+            b = { x: r.x + r.w + margin, y: r.y - margin };
+          check(a, b); // Grazing an edge, including body margin, must still block.
+          check(b, a);
+          check(a, a); // A zero-length ray on the inclusive corner.
+          check({ ...a, y: a.y - 1e-8 }, { ...b, y: b.y - 1e-8 });
+        }
+      }
+    }
+  }
+});
 
 function expectWalkable(world: World, start: Vec, end: Vec, path: Vec[]) {
   expect(path.length).toBeGreaterThan(0);

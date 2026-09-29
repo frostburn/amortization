@@ -120,7 +120,7 @@ export function renderBriefing(m: Mission, medals: MedalId[] = []) {
           <div><dt><kbd>Space</kbd> / Pause</dt><dd>Plan with orders still active</dd></div>
           <div><dt><kbd>F</kbd> / Draw weapons</dt><dd>Draw or stow</dd></div>
           <div><dt><kbd>S</kbd> / Hold</dt><dd>Stop moving or working</dd></div>
-          ${m.flashGrenades ? '<div><dt><kbd>B</kbd> / Flash</dt><dd>Choose a landing point, then confirm</dd></div>' : ''}
+          ${m.flashGrenades ? '<div><dt><kbd>B</kbd> / Flash</dt><dd>Hover and click; on touch, drag and release. Out of range cancels.</dd></div>' : ''}
           <div><dt>Wheel / − +</dt><dd>Zoom</dd></div>
           <div><dt>Arrows / middle-drag</dt><dd>Pan; drag empty ground on touch</dd></div>
           <div><dt><kbd>Home</kbd> / Follow</dt><dd>Return to the selected crew</dd></div>
