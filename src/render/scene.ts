@@ -1,6 +1,7 @@
 import { Application, Container, Graphics, Polygon, Text } from 'pixi.js';
 import {
   controllable,
+  disoriented,
   distance,
   inside,
   isCharge,
@@ -28,6 +29,10 @@ import { objectRequirement } from '../ui/interactions';
 import { demolished } from '../sim/demolition';
 import { turretPowered, TURRET_ARC } from '../sim/security';
 import { circuitColor, drawTurret } from './turret';
+import { drawFlashes } from './flash';
+import type { FlashAimView } from './flash';
+import { FLASH_FLIGHT, FLASH_FUSE, FLASH_RECOVERY } from '../sim/flash';
+import { CREDENTIAL_TIME } from '../sim/inspection';
 
 const COLORS = {
   ground: 0x263331,
@@ -138,6 +143,9 @@ export type Hit =
   | { kind: 'object'; id: ObjectKind }
   | { kind: 'ground'; point: Vec };
 export class Scene {
+  flashAim: FlashAimView | null = null;
+  private flashGround = new Graphics();
+  private grenades = new Map<NonNullable<World['flashGrenades']>[number], Graphics>();
   readonly app = new Application();
   readonly camera = new Container();
   private floor = new Graphics();
@@ -207,13 +215,23 @@ export class Scene {
       'Tactical map. Select operatives with 1 to 4; right-click to order.',
     );
     this.app.canvas.setAttribute('role', 'img');
-    this.camera.addChild(this.floor, this.cones, this.objects, this.marks, this.effects);
+    this.camera.addChild(
+      this.floor,
+      this.cones,
+      this.flashGround,
+      this.objects,
+      this.marks,
+      this.effects,
+    );
     this.objects.sortableChildren = true;
     this.app.stage.addChild(this.camera);
     this.build();
     this.resizeObserver.observe(this.host);
   }
   reset(world: World) {
+    this.flashAim = null;
+    this.flashGround.clear();
+    this.grenades.clear();
     this.world = world;
     this.showGuidance([], { x: 0, y: 0, w: 0, h: 0 });
     this.views.clear();
@@ -367,7 +385,7 @@ export class Scene {
         g.ellipse(ring.x, ring.y, 27, 14).stroke({ color: circuitColor(turret.circuit), width: 2 });
       }
     }
-    if (mission.broadcast) {
+    if (mission.id === 'broadcast') {
       plane(g, 5.3, 2, 1.7, 25, 0x53615b);
       plane(g, 35, 3, 3.5, 24, 0x35423e);
       const s = mission.secure;
@@ -384,6 +402,15 @@ export class Scene {
       label.position.copyFrom(project({ x: 15, y: 22.7 }));
       label.skew.y = Math.atan(TILE_Y / TILE_X);
       this.addScenery(label, { x: 15, y: 22.7, w: 0, h: 0 });
+    }
+    if (mission.id === 'injunction') {
+      plane(g, 8.4, 29.4, 11.4, 3.2, 0x35423e);
+      plane(g, 9.1, 17, 2.4, 12.4, 0x52645b);
+      plane(g, 17.6, 20, 5.8, 4, 0x6b654a, 0, 0.6);
+      plane(g, 23.4, 5.9, 9.2, 9, 0x625e4b, 0, 0.5);
+      plane(g, 36.4, 6.4, 11.2, 11.2, 0x625e4b, 0, 0.5);
+      for (let y = 20.3; y < 24; y += 0.6) plane(g, 19.5, y, 1.7, 0.2, COLORS.amber, 0, 0.65);
+      for (let y = 5; y < 36; y += 3) plane(g, 52, y, 0.12, 1.2, 0x929d85);
     }
     if (mission.demolition) {
       plane(g, 10.35, 3.35, 9.65, 8.3, 0x53655f, 0, 0.5);
@@ -439,47 +466,53 @@ export class Scene {
       }
     }
     const office = this.label(
-      mission.detention
-        ? 'PERSONNEL RETENTION / 09'
-        : mission.security
-          ? 'RECORDS / 08'
-          : mission.demolition
-            ? 'RECOVERY CORES / RESTRICTED'
-            : mission.broadcast
-              ? 'RESTRICTED / UPLINK'
-              : mission.escort?.locked
-                ? 'TRANSFER RECORDS'
-                : mission.transfer
-                  ? 'CUSTOMS'
-                  : mission.archive
-                    ? 'SECURE ARCHIVE'
-                    : 'SECURE OFFICE',
+      mission.id === 'injunction'
+        ? 'ENFORCEMENT REGISTRY'
+        : mission.detention
+          ? 'PERSONNEL RETENTION / 09'
+          : mission.security
+            ? 'RECORDS / 08'
+            : mission.demolition
+              ? 'RECOVERY CORES / RESTRICTED'
+              : mission.broadcast
+                ? 'RESTRICTED / UPLINK'
+                : mission.escort?.locked
+                  ? 'TRANSFER RECORDS'
+                  : mission.transfer
+                    ? 'CUSTOMS'
+                    : mission.archive
+                      ? 'SECURE ARCHIVE'
+                      : 'SECURE OFFICE',
       10,
       0xf0c68b,
     );
     office.position.copyFrom(
-      mission.transfer
-        ? project({ x: 25, y: 6.5 }, 2.4)
-        : project({ x: mission.secure.x + mission.secure.w / 2, y: mission.secure.y + 0.5 }, 1.8),
+      mission.id === 'injunction'
+        ? project({ x: 28, y: 5.9 }, 1.8)
+        : mission.transfer
+          ? project({ x: 25, y: 6.5 }, 2.4)
+          : project({ x: mission.secure.x + mission.secure.w / 2, y: mission.secure.y + 0.5 }, 1.8),
     );
     office.anchor.set(0.5, 1);
     this.marks.addChild(office);
     const road = this.label(
-      mission.detention
-        ? 'VISITORS / WEST SERVICE STREET'
-        : mission.demolition
-          ? 'DEBT RECOVERY / 12'
-          : mission.broadcast
-            ? 'MUNICIPAL COMMUNICATIONS / 11'
-            : mission.escort?.locked
-              ? 'REMAND TRANSFERS / 04'
-              : mission.transfer
-                ? 'BONDED TRANSFER / 09'
-                : mission.id === 'depot'
-                  ? 'MUNICIPAL TRANSIT / 06'
-                  : mission.id === 'clearing'
-                    ? 'BONDED FREIGHT / NO PUBLIC ACCESS'
-                    : 'CIVIC RECORDS / NO PUBLIC ACCESS',
+      mission.id === 'injunction'
+        ? 'ENFORCEMENT / NO PUBLIC ACCESS'
+        : mission.detention
+          ? 'VISITORS / WEST SERVICE STREET'
+          : mission.demolition
+            ? 'DEBT RECOVERY / 12'
+            : mission.broadcast
+              ? 'MUNICIPAL COMMUNICATIONS / 11'
+              : mission.escort?.locked
+                ? 'REMAND TRANSFERS / 04'
+                : mission.transfer
+                  ? 'BONDED TRANSFER / 09'
+                  : mission.id === 'depot'
+                    ? 'MUNICIPAL TRANSIT / 06'
+                    : mission.id === 'clearing'
+                      ? 'BONDED FREIGHT / NO PUBLIC ACCESS'
+                      : 'CIVIC RECORDS / NO PUBLIC ACCESS',
       10,
       0x718277,
     );
@@ -1156,6 +1189,8 @@ export class Scene {
       depthItems.push({ root: v.root, footprint: { ...pos, w: 0, h: 0 } });
       const cargo = !!a?.carrying || (p.id === w.courier?.guardId && w.evidence === 'courier');
       v.sprite.visible = !guard?.turret;
+      const throwing =
+        living(p) && !!w.flashGrenades?.some((g) => g.thrower === p.id && g.age < FLASH_FLIGHT);
       if (!guard?.turret)
         v.sprite.pose(p, alpha, {
           appearance,
@@ -1171,7 +1206,9 @@ export class Scene {
                   : a?.weapon
                     ? 'pistol'
                     : undefined,
-          stowed: !!a && !a.weapon,
+          stowed: (!!a && !a.weapon) || disoriented(p) || throwing,
+          shielding: living(p) && disoriented(p),
+          throwing,
           specialist: guard?.tactics?.role,
           carrying: cargo,
           flash: living(p) && w.traces.some((t) => distance(t.from, p) < 0.2),
@@ -1212,6 +1249,20 @@ export class Scene {
         if (guard.radio > 0) v.ink.circle(14, -35, 4).stroke({ color: COLORS.red, width: 2 });
       }
       const gun = a?.disarmed ? undefined : p.armament;
+      if (living(p) && disoriented(p)) {
+        v.ink
+          .rect(-10, 11, 20, 3)
+          .fill(0x182522)
+          .rect(-10, 11, (20 * p.disoriented!) / FLASH_RECOVERY, 3)
+          .fill(0xe6eecb);
+      }
+      if (living(p) && guard?.inspection) {
+        v.ink
+          .rect(-12, -49, 24, 3)
+          .fill(0x182522)
+          .rect(-12, -49, (24 * guard.inspection.progress) / CREDENTIAL_TIME, 3)
+          .fill(0xdf8948);
+      }
       if (gun && living(p) && (guard || (a && selected.includes(a.id)))) {
         const spec = WEAPONS[gun.kind];
         const progress = gun.charging
@@ -1228,6 +1279,30 @@ export class Scene {
             .rect(-9, 7, 18 * progress, 2)
             .fill(gun.reload > 0 ? COLORS.amber : COLORS.mint);
       }
+    }
+    for (const [grenade, root] of this.grenades) {
+      if (!w.flashGrenades?.includes(grenade) || grenade.age >= FLASH_FLIGHT + FLASH_FUSE) {
+        root.destroy();
+        this.grenades.delete(grenade);
+      }
+    }
+    for (const grenade of w.flashGrenades ?? []) {
+      if (grenade.age >= FLASH_FLIGHT + FLASH_FUSE) continue;
+      let root = this.grenades.get(grenade);
+      if (!root) {
+        root = new Graphics();
+        this.grenades.set(grenade, root);
+        this.objects.addChild(root);
+      }
+      const flight = Math.min(1, grenade.age / FLASH_FLIGHT);
+      const p = {
+        x: grenade.from.x + (grenade.to.x - grenade.from.x) * flight,
+        y: grenade.from.y + (grenade.to.y - grenade.from.y) * flight,
+      };
+      root.position.copyFrom(project(p, 1 - flight + Math.sin(flight * Math.PI) * 1.7));
+      root.clear().circle(0, 0, 3).fill(0xd6dfc5).stroke({ color: 0x1b2822, width: 1.5 });
+      if (flight === 1) root.circle(0, 0, 6).stroke({ color: COLORS.amber, width: 2 });
+      depthItems.push({ root, footprint: { ...p, w: 0, h: 0 } });
     }
     depthOrder(depthItems).forEach((item, index) => {
       item.root.zIndex = index;
@@ -1267,6 +1342,18 @@ export class Scene {
       }
     }
     this.effects.clear();
+    this.flashGround.clear();
+    drawFlashes(this.flashGround, w, this.flashAim);
+    for (const g of w.guards.filter((g) => living(g) && g.inspection)) {
+      const a = w.agents.find((a) => a.id === g.inspection!.target);
+      if (!a) continue;
+      const from = project(g, 0.9),
+        to = project(a, 0.9);
+      this.effects
+        .moveTo(from.x, from.y)
+        .lineTo(to.x, to.y)
+        .stroke({ color: 0xdf8948, width: 1.5, alpha: 0.8 });
+    }
     // Telegraph charged shots independently of optional sight cones, without hiding bodies.
     for (const shooter of people(w).filter(living)) {
       const charge = shooter.armament?.charging;

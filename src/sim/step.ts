@@ -1,4 +1,4 @@
-import { distance, isCharge, isPower, isRescue, living, people } from './types';
+import { disoriented, distance, isCharge, isPower, isRescue, living, people } from './types';
 import type { Person, World } from './types';
 import { canWalk, findPath, lineClear } from './navigation';
 import {
@@ -16,6 +16,7 @@ import { updateShutter } from './shutter';
 import { updateCourier } from './courier';
 import { updateDetention } from './detention';
 import { updateBroadcast } from './broadcast';
+import { FLASH_FLIGHT, updateFlashes } from './flash';
 
 export const STEP = 1 / 30;
 function walk(world: World, p: Person, speed: number, dt: number) {
@@ -47,6 +48,7 @@ function walk(world: World, p: Person, speed: number, dt: number) {
 export function step(world: World, dt = STEP) {
   if (world.status !== 'playing') return;
   world.time += dt;
+  updateFlashes(world, dt);
   if (
     world.security &&
     world.security.inspectionUntil > 0 &&
@@ -73,6 +75,7 @@ export function step(world: World, dt = STEP) {
   }
   world.traces = world.traces.filter((t) => (t.life -= dt) > 0);
   for (const a of world.agents) {
+    const throwing = world.flashGrenades?.some((g) => g.thrower === a.id && g.age < FLASH_FLIGHT);
     if (a.captive) continue;
     if (!living(a)) {
       if (a.carrying) dropEvidence(world, [a.id]);
@@ -83,7 +86,7 @@ export function step(world: World, dt = STEP) {
       a.path = [];
       a.interaction = 0;
     }
-    if (a.order.kind === 'attack') {
+    if (a.order.kind === 'attack' && !disoriented(a)) {
       const id = a.order.target,
         target = world.guards.find((g) => g.id === id && living(g));
       if (!target) {
@@ -96,7 +99,7 @@ export function step(world: World, dt = STEP) {
     walk(world, a, a.carrying ? 2 : 3.2, dt);
     if (distance(a, a.previous) > 1e-6) updateWeapon(a, 0, true);
     if (a.order.kind === 'move' && !a.path.length) a.order = { kind: 'hold' };
-    if (a.order.kind === 'interact') {
+    if (a.order.kind === 'interact' && !disoriented(a) && !throwing) {
       const id = a.order.target,
         p = interactionPoint(world, a, id);
       if (distance(a, p) < 1.15 && lineClear(world, a, p)) {
@@ -135,7 +138,7 @@ export function step(world: World, dt = STEP) {
         isPower(a.order.target) ||
         a.order.target === 'authorise' ||
         a.order.target === 'release');
-    if (a.weapon && !a.disarmed && !a.carrying && !working) {
+    if (a.weapon && !a.disarmed && !a.carrying && !working && !disoriented(a) && !throwing) {
       const order = a.order;
       const candidates = world.guards.filter(
         (g) =>

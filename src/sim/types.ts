@@ -74,7 +74,7 @@ export interface Armament {
   charging?: { target: string; remaining: number };
 }
 export interface GuardTactic {
-  role: 'sentry' | 'breacher' | 'marksman';
+  role: 'sentry' | 'breacher' | 'marksman' | 'inspector';
   posts: Vec[];
 }
 export interface Mission {
@@ -87,7 +87,8 @@ export interface Mission {
     | 'severance'
     | 'clearing'
     | 'mandate'
-    | 'personnel';
+    | 'personnel'
+    | 'injunction';
   number: string;
   title: string;
   location: string;
@@ -97,16 +98,25 @@ export interface Mission {
   intro: string;
   evidenceName: string;
   gateOutside: Vec;
+  gateInsideOnly?: boolean;
   response: { spawns: Vec[]; patrol: Vec[]; specialists?: GuardTactic[] };
   loadout?: [WeaponKind, WeaponKind, WeaponKind, WeaponKind];
   /** Large sites start near the crew at a readable scale, with an optional map overview. */
   trackingCamera?: boolean;
+  flashGrenades?: boolean;
+  relayTime?: number;
   detention?: {
     gates: { id: AccessTarget; door: Rect }[];
     cells: { id: RescueTarget; agent: number; door: Rect }[];
   };
-  archive?: { door: Rect; inside: Vec };
-  broadcast?: { duration: number; traceTime: number };
+  archive?: { door: Rect; inside: Vec; name?: string };
+  broadcast?: {
+    duration: number;
+    traceTime: number;
+    subject?: string;
+    completed?: string;
+    guidance?: string;
+  };
   demolition?: { armTime: number; blastRadius: number };
   security?: {
     inspectionTime: number;
@@ -146,8 +156,10 @@ export interface Person extends Vec {
   cooldown: number;
   step: number;
   armament?: Armament;
+  disoriented?: number;
 }
 export interface Operative extends Person {
+  flashes?: number;
   captive?: boolean;
   disarmed?: boolean;
   name: string;
@@ -162,6 +174,7 @@ export interface Operative extends Person {
   interaction: number;
 }
 export interface Guard extends Person {
+  inspection?: { target: string; progress: number };
   turret?: { circuit: PowerTarget; homeAngle: number; lock: number };
   patrol: Vec[];
   waypoint: number;
@@ -207,8 +220,10 @@ export type SoundEvent = Vec &
     | { kind: 'interact'; action: ObjectKind | 'heal' | 'drop' }
     | { kind: 'alarm' }
     | { kind: 'blast' }
+    | { kind: 'flash' }
   );
 export interface World {
+  flashGrenades?: { thrower: string; from: Vec; to: Vec; age: number }[];
   mission: Mission;
   agents: Operative[];
   guards: Guard[];
@@ -262,6 +277,7 @@ export const distance = (a: Vec, b: Vec) => Math.hypot(a.x - b.x, a.y - b.y);
 export const inside = (p: Vec, r: Rect) =>
   p.x >= r.x && p.y >= r.y && p.x <= r.x + r.w && p.y <= r.y + r.h;
 export const living = (p: Person) => p.hp > 0;
+export const disoriented = (p: Person) => (p.disoriented ?? 0) > 0;
 export const controllable = (p: Operative) => living(p) && !p.captive;
 export const isExtraction = (id: ObjectKind): id is 'extract' | 'alternate' =>
   id === 'extract' || id === 'alternate';

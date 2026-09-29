@@ -3,6 +3,7 @@ import { courierGuard } from '../sim/courier';
 import { canAuthorise } from '../sim/security';
 import {
   controllable,
+  disoriented,
   distance,
   inside,
   isAccess,
@@ -17,7 +18,10 @@ import { lineClear } from '../sim/navigation';
 import { extractionRequirement } from './extraction';
 
 export const armedSelection = (w: World, selected: string[]) =>
-  w.agents.filter((a) => selected.includes(a.id) && controllable(a) && !a.carrying && !a.disarmed);
+  w.agents.filter(
+    (a) =>
+      selected.includes(a.id) && controllable(a) && !a.carrying && !a.disarmed && !disoriented(a),
+  );
 
 /** Geometry feedback, not a promise of an immediate shot: reloads, settling and
  * coil charging still apply. An attack order draws weapons and pursues as needed. */
@@ -68,6 +72,14 @@ export function objectRequirement(w: World, id: ObjectKind, selected: string[]):
   const agents = w.agents.filter((a) => selected.includes(a.id) && controllable(a));
   if (!agents.length) return 'Select a free operative to use this control.';
   const free = agents.filter((a) => !a.carrying);
+  if (
+    id === 'relay' &&
+    w.mission.archive &&
+    !w.shutterOpen &&
+    inside(landmark(w, id), w.mission.secure) &&
+    !agents.some((a) => inside(a, w.mission.secure))
+  )
+    return 'RADIO is behind the control-office shutter. Leave a partner holding the north-street SHUNT, or force CUT for eight seconds. Keep SHUNT held until the infiltrator leaves.';
   if (
     !free.length &&
     (isAccess(id) ||
@@ -132,7 +144,7 @@ export function objectRequirement(w: World, id: ObjectKind, selected: string[]):
       inside(w.evidencePosition, w.mission.secure) &&
       !agents.some((a) => inside(a, w.mission.secure))
     )
-      return 'Keep a partner holding SHUNT, or use CUT, to reach the cargo inside the archive.';
+      return `Keep a partner holding SHUNT, or use CUT, to reach the cargo inside the ${w.mission.archive.name ?? 'archive'}.`;
   }
   return null;
 }

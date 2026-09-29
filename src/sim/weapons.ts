@@ -1,4 +1,5 @@
 import type { Armament, GuardTactic, Operative, Person, WeaponKind } from './types';
+import { disoriented } from './types';
 
 export const COIL_CHARGE = 1.25;
 
@@ -101,6 +102,7 @@ export function updateWeapon(person: Person, dt: number, moved: boolean) {
 }
 
 export function weaponStatus(person: Person) {
+  if (disoriented(person)) return `Disoriented ${person.disoriented!.toFixed(1)}s`;
   if ('disarmed' in person && person.disarmed) return 'Unarmed · recover GEAR';
   const gun = person.armament;
   if (!gun) return '';

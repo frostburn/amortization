@@ -42,8 +42,17 @@ const priority = (id: SoundId) =>
         : 2;
 
 const combatSounds = new Set<SoundId>([
-  'pistol', 'carbine', 'shotgun', 'automatic', 'coil',
-  'body', 'metal', 'fall', 'wreck', 'blast',
+  'pistol',
+  'carbine',
+  'shotgun',
+  'automatic',
+  'coil',
+  'body',
+  'metal',
+  'fall',
+  'wreck',
+  'blast',
+  'flash',
 ]);
 const COMBAT_LEVEL = 0.66;
 

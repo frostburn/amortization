@@ -31,6 +31,7 @@ const durations = {
   charge: 1,
   tracking: 1,
   objective: 0.3,
+  flash: 0.45,
 } as const;
 export type SoundId = keyof typeof durations;
 export const SOUND_IDS = Object.keys(durations) as SoundId[];
@@ -252,6 +253,12 @@ export function synthesize(id: SoundId, sampleRate: number, variant = 0): Float3
         noise(at, 0.08, 750, 3300, 0.13);
       }
       tone(0.62, 0.25, 290, 290, 0.13, 2);
+      break;
+    case 'flash':
+      // Compact, band-limited pressure crack; no full-band wash or ear-ringing tone.
+      noise(0, 0.09, 350, 4200, 0.5, 7, { rate: 7200, interpolation: 'linear', modulation: 0.55 });
+      tone(0, 0.13, 180, 85, 0.22, 6);
+      noise(0.035, 0.24, 170, 1800, 0.16, 6, { rate: 2200, modulation: 0.4, sweep: 0.4 });
       break;
     case 'blast':
       noise(0, 0.08, 900, 10000, 1, 8, { rate: 19000, interpolation: 'constant' });

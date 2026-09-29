@@ -441,6 +441,75 @@ failure. Desktop and touch checks use the real mission picker and gate controls,
 then real map hits, prisoner selection, equipment and final extraction in a
 stepped fixture. Those browser checks remain outside the routine smoke suite.
 
+## Stay of execution: inspectors and flash grenades
+
+Operation 10 follows the detention rescue: all four are together, and Mara's
+restitution mandate needs to become a binding order in Mutual Indemnity's
+enforcement registry. The 56 × 42 map keeps the existing readable follow scale.
+A 20-second UPLINK upload and survivor extraction are mandatory; the physical
+raid log is optional. The screened west service walk reaches LOOP, where a
+partner can mask the five-second trace. Interrupted uploads preserve progress.
+
+The west entrance, inner checkpoint and north-east radio office form separate
+defensive positions. RADIO is behind the control-office shutter and racks.
+A partner holding the public north-street SHUNT opens that shutter quietly;
+the operator must remain until the infiltrator leaves. CUT provides the existing
+eight-second noisy, permanent breach. RADIO itself needs four seconds of work,
+and the office remains a secure area even in uniform. This makes disabling
+reinforcements a preparation task. The main objective can still succeed while
+RADIO is active. The east exit opens only from its inside handle, preventing a
+short approach from the public road from bypassing the checkpoint.
+
+Credential inspectors wear ivory uniforms, orange shoulder caps and glasses,
+and carry pistols. Within four units and their visible sight cone, they check
+an unfamiliar disguised operative for 2.5 continuous seconds. An orange line,
+progress bar and crew status show the check. Leaving range, breaking sight or
+disorienting the inspector resets it. Finishing a check identifies that person
+locally and starts the existing backup call; it grants no global knowledge.
+The registry inspector's patrol makes access behind the racks a timed crossing.
+
+Rook and Sable each start with one flash. A ground preview chooses and names one
+eligible thrower, shows the landing point and cover-clipped radius, and marks
+exposed crew. Selecting a point pins that operative, even if another moves
+closer. Aiming preserves orders and is absent from replay commands. Confirmation
+stops only the named thrower, cancels their weapon preparation and spends exactly
+one grenade; firing and work wait through the throw. Invalid range, trajectory
+or landing gives a reason without walking anyone forward. B, Escape and Enter
+supplement the same two-step targeting used on touch screens.
+
+Range is seven units, flight 0.45 seconds, fuse 0.6 seconds, radius three and
+recovery 1.5 seconds. Solid geometry blocks the throw and exposure; facing does
+not protect people. Exposed crew and guards cannot acquire targets, fire or
+work, but movement continues. Upload progress survives; an unfinished demolition
+placement restarts. Repeated flashes refresh recovery rather than adding time.
+Wired turrets are unaffected. Existing radio reports continue while an inspector
+or guard is disoriented. Witnessing a throw identifies its author; hearing the
+detonation gives an investigation point without identifying an unseen operative.
+
+Grenades use scenery depth ordering; previews and the restrained local pulse
+sit on the ground behind buildings. Exposure outlines use cached sight rays,
+without pathfinding in the aiming loop. Throwing and shielding poses and a small
+recovery indicator make the effect visible without obscuring the camera. The
+short filtered pressure crack joins the existing combat mix without ringing or
+site ambience. Flight, fuse and recovery all use simulation time.
+
+Only flash-enabled worlds receive the inventory and projectile fields. Inspection
+and disorientation state exists only while relevant, preserving earlier mission
+fingerprints. The new command is supported by replay import and deterministic
+playback. Broadcast text, relay duration and inside-only gate access are optional
+mission settings with the previous defaults.
+
+Verification records and replays an undamaged quiet completion and a prepared
+armed completion, each with all four alive and both flashes already spent.
+A direct squad rush leaves the shutter closed and RADIO active while the alarm
+brings reinforcements. Geometry checks include every patrol post, landmark and
+the inner checkpoint route. Focused checks cover friendly exposure, solid cover,
+ongoing reports, interrupted work and inspector checks. Desktop and touch tests
+cover the mission picker, guidance, invalid targeting, cancellation, the pinned
+thrower, one-grenade confirmation and recovery. These browser journeys stay
+outside the unchanged ten-case CI smoke suite. Human difficulty and grenade
+utility remain playtesting questions.
+
 ## Next useful work
 
-The first four human runs of operation 07 are analyzed in the [replay notes](../tests/replays/README.md#margin-call-human-assaults). They establish that direct assaults can win with casualties and that leaving RADIO active makes the forced shutter risky. They do not yet validate the human experience of the quiet route or establish that marksmen require deliberate flanking. Keep those questions open for further playtesting. The [future combat ideas](combat-expansion.md) retain flash grenades, loadout choice, and further equipment and security suggestions for later missions.
+The first four human runs of operation 07 are analyzed in the [replay notes](../tests/replays/README.md#margin-call-human-assaults). They establish that direct assaults can win with casualties and that leaving RADIO active makes the forced shutter risky. They do not yet validate the human experience of the quiet route or establish that marksmen require deliberate flanking. Keep those questions open for further playtesting. The [future combat ideas](combat-expansion.md) retain loadout choice and further equipment and security suggestions for later missions.

@@ -22,6 +22,7 @@ Quiet work and movement need texture without making every click an announcement.
 | Access / cargo | Latch and sliding mechanism versus handling a case; cloth and dressing sounds for KIT and treatment |
 | Escort recruited | A clear, centred two-note indicator when Voss or another escort joins, with combat briefly lowered underneath |
 | Demolition / outcomes | Pressure and debris for blasts; restrained completion or defeat cues |
+| Flash grenade | Short filtered, clocked-noise crack and low pressure body; no sustained ringing |
 
 The same weapon has the same identity on either side. Legacy operations use
 the pistol report. Three deterministic variations avoid identical repetitions.
@@ -93,6 +94,8 @@ low-rate interpolated noise source modulates the clock of selected layers, and
 falling clocks let blast debris and weapon tails lose brightness. Each layer
 then passes through a two-pole low-pass and a high-pass before its envelope.
 The pistol casing is a brief filtered contact rather than a long pitch sweep.
+The flash uses interpolated clocked noise and filters, with a −6 dB effect fader
+on the combat bus. Its small local pulse has no full-screen or ringing effect.
 
 PCM is synthesized in code and cached in the browser. Initial preparation is
 spread across event-loop turns; a first-use cache miss can still create its clip

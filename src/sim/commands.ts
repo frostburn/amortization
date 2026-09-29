@@ -13,10 +13,12 @@ import type { ObjectKind, Vec, World } from './types';
 import { updateBroadcast } from './broadcast';
 import { updateDetention } from './detention';
 import { detonate } from './demolition';
+import { throwFlash } from './flash';
 
 /** Resolved gameplay intent, independent of selection, camera, and input device. */
 export type Command =
   | { kind: 'move'; agents: string[]; point: Vec }
+  | { kind: 'flash'; agents: string[]; point: Vec }
   | { kind: 'interact'; agents: string[]; target: ObjectKind }
   | { kind: 'attack'; agents: string[]; target: string }
   | { kind: 'hold' | 'weapons' | 'heal' | 'drop' | 'escort-aid'; agents: string[] }
@@ -26,6 +28,9 @@ export type Command =
 export function applyCommand(world: World, command: Command) {
   if (world.status !== 'playing') return;
   switch (command.kind) {
+    case 'flash':
+      throwFlash(world, command.agents, command.point);
+      break;
     case 'move':
       moveAgents(world, command.agents, command.point);
       break;

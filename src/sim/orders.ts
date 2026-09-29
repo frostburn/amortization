@@ -1,5 +1,6 @@
 import {
   controllable,
+  disoriented,
   isAccess,
   isRescue,
   distance,
@@ -62,7 +63,8 @@ export function available(world: World, id: ObjectKind) {
   );
 }
 export function interactionPoint(world: World, agent: Operative, id: ObjectKind): Vec {
-  if (id === 'gate' && !inside(agent, world.mission.restricted)) return world.mission.gateOutside;
+  if (id === 'gate' && !world.mission.gateInsideOnly && !inside(agent, world.mission.restricted))
+    return world.mission.gateOutside;
   if (id === 'breach' && world.mission.archive && inside(agent, world.mission.secure))
     return world.mission.archive.inside;
   return landmark(world, id);
@@ -78,7 +80,7 @@ export function interactionDuration(world: World, agent: Operative, id: ObjectKi
   if (id === 'gate' && !inside(agent, world.mission.restricted)) return 3;
   if (id === 'mask' || id === 'upload') return BROADCAST_SETUP_TIME;
   if (isCharge(id)) return world.mission.demolition!.armTime;
-  return id === 'relay' ? 1.5 : id === 'override' ? 0.8 : 0.65;
+  return id === 'relay' ? (world.mission.relayTime ?? 1.5) : id === 'override' ? 0.8 : 0.65;
 }
 export function moveAgents(world: World, ids: string[], target: Vec) {
   const agents = world.agents.filter((a) => ids.includes(a.id) && controllable(a));
@@ -208,8 +210,8 @@ export function interact(world: World, ids: string[], id: ObjectKind) {
   notify(
     world,
     eligible.length
-      ? id === 'evidence' && world.mission.archive && !world.shutterOpen
-        ? 'Archive locked. Assign another operative to SHUNT, or use CUT at the shutter.'
+      ? (id === 'evidence' || id === 'relay') && world.mission.archive && !world.shutterOpen
+        ? `${world.mission.archive.name ? 'Control office' : 'Archive'} locked. Assign another operative to SHUNT, or use CUT at the shutter.`
         : `No selected operative can reach ${target.tag}.`
       : interactionRefusal(world, agents[0], id)!,
   );
@@ -316,7 +318,7 @@ export function extractionRallyBlocker(world: World): string | null {
   if (!world.mission.archive || world.shutterBreached || !world.overrideBy) return null;
   const insideArchive = world.agents.filter((p) => living(p) && inside(p, world.mission.secure));
   return insideArchive.length
-    ? `Move ${insideArchive.map((p) => p.name).join(', ')} outside the archive before rallying. Keep SHUNT held until they clear the shutter.`
+    ? `Move ${insideArchive.map((p) => p.name).join(', ')} outside the ${world.mission.archive.name ?? 'archive'} before rallying. Keep SHUNT held until they clear the shutter.`
     : null;
 }
 
@@ -335,7 +337,9 @@ export function extractionStatus(world: World, id: 'extract' | 'alternate') {
         : world.demolition && !demolished(world)
           ? 'Destroy both debt backups before requesting extraction.'
           : world.mission.broadcast && !published(world)
-            ? "Publish Mara's audit at UPLINK before requesting extraction."
+            ? world.mission.broadcast.subject
+              ? `Finish uploading ${world.mission.broadcast.subject} at UPLINK before requesting extraction.`
+              : "Publish Mara's audit at UPLINK before requesting extraction."
             : ['ledger', 'case'].includes(world.mission.objective) &&
                 (!carrier || distance(carrier, van) > EXTRACTION_RADIUS)
               ? `Bring the ${world.mission.evidenceName.toLowerCase()} to ${van.tag}. It is required for this contract.`
@@ -356,7 +360,7 @@ export function extractionStatus(world: World, id: 'extract' | 'alternate') {
   };
 }
 export function completeInteraction(world: World, a: Operative, id: ObjectKind) {
-  if (!controllable(a)) return;
+  if (!controllable(a) || disoriented(a)) return;
   const refusal = interactionRefusal(world, a, id);
   if (refusal) {
     a.order = { kind: 'hold' };
@@ -386,7 +390,7 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
       world.sounds.push({ kind: 'interact', action: 'override', x: a.x, y: a.y });
       notify(
         world,
-        `${a.name} is holding the archive shutter open. Move or Hold releases the shunt.`,
+        `${a.name} is holding the ${world.mission.archive?.name ?? 'archive'} shutter open. Move or Hold releases the shunt.`,
       );
     }
     world.overrideBy = a.id;
@@ -537,7 +541,7 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
       raiseAlarm(world);
       notify(
         world,
-        'Archive lock cut. The shutter stays open. Nearby guards are investigating.',
+        `${world.mission.archive?.name ? 'Control-office' : 'Archive'} lock cut. The shutter stays open. Nearby guards are investigating.`,
         'warning',
       );
       break;
@@ -553,7 +557,7 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
           : world.mission.objective === 'demolition'
             ? 'Contract fulfilled. The debt backups are destroyed. The crew is clear.'
             : world.mission.objective === 'broadcast'
-              ? "Contract fulfilled. Mara's audit is public. The crew is clear."
+              ? `Contract fulfilled. ${world.mission.broadcast?.completed ?? "Mara's audit is public"}. The crew is clear.`
               : world.mission.objective === 'escort'
                 ? `Contract fulfilled. ${world.escort!.name} is out. The crew is clear.`
                 : `Contract fulfilled. The ${world.mission.evidenceName.toLowerCase()} is secured. The crew is clear.`,

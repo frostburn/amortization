@@ -164,7 +164,9 @@ describe('mission guidance', () => {
       w.demolition.detonatedAt = 0;
     } else if (w.broadcast) {
       w.broadcast.progress = 0.9333333333333332; // First exit attempt in replay 52011baa.
-      expect(extractionRequirement(w)?.detail).toContain('3% uploaded');
+      expect(extractionRequirement(w)?.detail).toContain(
+        `${Math.floor((100 * w.broadcast.progress) / mission.broadcast!.duration)}% uploaded`,
+      );
       expect(goal(w, 'extract').targets).toContain('upload');
       w.broadcast.progress = mission.broadcast!.duration;
     } else if (w.escort) {

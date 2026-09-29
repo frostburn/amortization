@@ -33,7 +33,7 @@ export function extractionRequirement(
     );
     return {
       label: 'Finish UPLINK',
-      detail: `Extraction locked: finish UPLINK (${percent}% uploaded). Keep an operative working until the audit is published. LOG is optional.`,
+      detail: `Extraction locked: finish UPLINK (${percent}% uploaded). Keep an operative working until ${world.mission.broadcast.subject ? 'the mandate is served' : 'the audit is published'}. LOG is optional.`,
       goal: 'primary',
     };
   }

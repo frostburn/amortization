@@ -15,6 +15,7 @@ import { Sound } from './audio/sound';
 import { missionRecord, readRecords, recordWin } from './ui/storage';
 import { missions, nextMission } from './content/missions';
 import { extractionRequirement } from './ui/extraction';
+import { FlashAim } from './ui/flash-aim';
 
 async function boot() {
   let world: World = createWorld(),
@@ -206,6 +207,9 @@ async function boot() {
       return;
     }
     switch (type) {
+      case 'flash':
+        flashAim.toggle();
+        break;
       case 'objectives':
         hud.focusObjectives();
         break;
@@ -323,7 +327,13 @@ async function boot() {
       fullCrewBest: missionRecord(records, world.mission.id).fullCrewBest,
     });
   }
+  const flashAim = new FlashAim(scene, hud, {
+    world: () => world,
+    selection: () => selected,
+    command: issue,
+  });
   bindControls(scene, hud, {
+    aim: flashAim,
     world: () => world,
     selection: () => selected,
     select,

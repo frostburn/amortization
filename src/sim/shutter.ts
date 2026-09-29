@@ -1,4 +1,4 @@
-import { distance, living, people } from './types';
+import { disoriented, distance, living, people } from './types';
 import type { World } from './types';
 import { BODY_RADIUS } from './navigation';
 
@@ -10,6 +10,7 @@ export function updateShutter(world: World) {
     (a) =>
       a.id === world.overrideBy &&
       living(a) &&
+      !disoriented(a) &&
       !a.carrying &&
       a.order.kind === 'interact' &&
       a.order.target === 'override' &&

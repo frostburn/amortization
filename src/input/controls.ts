@@ -5,6 +5,7 @@ import { living } from '../sim/types';
 import type { Rect, Vec, World } from '../sim/types';
 import type { Hud, Action } from '../ui/hud';
 import { armedSelection, attackPreview, objectRequirement } from '../ui/interactions';
+import type { FlashAim } from '../ui/flash-aim';
 
 export interface ControlsTarget {
   world: () => World;
@@ -13,6 +14,7 @@ export interface ControlsTarget {
   order: (hit: Hit) => void;
   action: (action: Action) => void;
   slow: (enabled: boolean) => void;
+  aim?: FlashAim;
 }
 function selectionArea(a: Vec, b: Vec): Rect {
   const w = Math.max(12, Math.abs(b.x - a.x)),
@@ -31,6 +33,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     add = false,
     pointerType = 'mouse';
   let mouse: Vec | null = null;
+  let pressedPoint: Vec | null = null;
   let flash: { id: string; until: number } | null = null;
   let pointerWorld = target.world();
   const marker = document.createElement('div');
@@ -55,6 +58,9 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     }
     const overMap = mouse && document.elementFromPoint(mouse.x, mouse.y) === canvas;
     const bounds = canvas.getBoundingClientRect();
+    if (overMap && !start)
+      target.aim?.hover(scene.toWorld(mouse!.x - bounds.left, mouse!.y - bounds.top));
+    target.aim?.update();
     const hit = start
       ? pressed
       : overMap
@@ -62,7 +68,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
         : null;
     const active = !hud.modal.open && w.status === 'playing';
     const guard =
-      active && !drag
+      active && !drag && !target.aim?.active
         ? w.guards.find(
             (g) =>
               living(g) &&
@@ -76,6 +82,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     if (active) {
       if (start && button === 1) cursor = 'pan';
       else if (drag) cursor = pointerType === 'touch' ? 'pan' : 'box';
+      else if (target.aim?.active) cursor = 'combat';
       else if (hit?.kind === 'guard' && preview) cursor = preview.kind;
       else if (hit?.kind === 'agent') cursor = 'select';
       else if (hit?.kind === 'object')
@@ -84,7 +91,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     if (canvas.dataset.cursor !== cursor) canvas.dataset.cursor = cursor;
     // Re-hit a stationary mouse after camera, selection and weapon changes.
     // A held press retains its original target until release, just like orders.
-    if (mouse && !drag) inspect(active ? hit : null);
+    if (mouse && !drag) inspect(active && !target.aim?.active ? hit : null);
     marker.hidden = !guard || !!drag || (start !== null && button === 1);
     if (guard && preview) {
       const box = scene.agentBounds(guard);
@@ -115,6 +122,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     mouse = pointerType === 'touch' ? null : { x: e.clientX, y: e.clientY };
     flash = null;
     pressed = scene.hit(start.x, start.y, button === 2 || pointerType === 'touch');
+    pressedPoint = scene.toWorld(start.x, start.y);
     scene.setPointerActive(true);
     canvas.setPointerCapture(e.pointerId);
     e.preventDefault();
@@ -131,6 +139,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     if (Math.hypot(p.x - start.x, p.y - start.y) > 8) drag = true;
     if (drag) {
       if (button === 1 || pointerType === 'touch') scene.panBy(p.x - last.x, p.y - last.y);
+      else if (target.aim?.active) target.aim.hover(scene.toWorld(p.x, p.y));
       else if (button === 0) {
         const r = selectionArea(start, p);
         hud.selectionBox(r, { x: r.x + r.w, y: r.y + r.h });
@@ -151,6 +160,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     start = null;
     last = null;
     pressed = null;
+    pressedPoint = null;
     pointer = null;
     drag = false;
     hud.selectionBox(null);
@@ -163,7 +173,9 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
   canvas.addEventListener('pointerup', (e) => {
     if (!start || e.pointerId !== pointer) return;
     const p = position(e);
-    if (drag && button === 0 && pointerType !== 'touch') {
+    if (target.aim?.active && button !== 1 && (!drag || pointerType !== 'touch')) {
+      target.aim.pick(drag ? scene.toWorld(p.x, p.y) : pressedPoint!);
+    } else if (drag && button === 0 && pointerType !== 'touch') {
       const r = selectionArea(start, p);
       const ids = target
         .world()
@@ -221,6 +233,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     e: 'interact',
     h: 'heal',
     x: 'drop',
+    b: 'flash',
     ' ': 'pause',
     v: 'vision',
     Home: 'follow',
@@ -235,6 +248,12 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
       (e.target as HTMLElement).closest('[data-playtest]')
     )
       return;
+    if (target.aim?.active && (e.key === 'Escape' || e.key === 'Enter')) {
+      e.preventDefault();
+      if (e.key === 'Escape') target.aim.cancel();
+      else if (!e.repeat) target.aim.confirm();
+      return;
+    }
     if (e.key === 'Escape' && hud.guideOpen) {
       e.preventDefault();
       hud.clearGuide(true);

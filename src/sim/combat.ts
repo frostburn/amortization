@@ -1,4 +1,4 @@
-import { distance, living } from './types';
+import { disoriented, distance, living } from './types';
 import type { Person, World } from './types';
 import { lineClear } from './navigation';
 import { cancelCharge, COIL_CHARGE, WEAPONS, weaponRange } from './weapons';
@@ -11,6 +11,7 @@ export function shoot(
   dt = 1 / 30,
 ): boolean {
   if (
+    disoriented(from) ||
     ('disarmed' in from && from.disarmed === true) ||
     ('captive' in from && from.captive === true) ||
     ('captive' in to && to.captive === true) ||
