@@ -26,6 +26,7 @@ const decibels: Record<SoundId, number> = {
   radio: 2.5,
   alarm: -5,
   blast: -3,
+  flash: -6,
   confirm: 0,
   complete: -2,
   failed: -6.5,

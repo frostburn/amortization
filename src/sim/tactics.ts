@@ -1,4 +1,4 @@
-import { distance, living } from './types';
+import { disoriented, distance, living } from './types';
 import type { Guard, Person, Vec, World } from './types';
 import { findPath, lineClear, passable } from './navigation';
 import { weaponRange } from './weapons';
@@ -12,7 +12,9 @@ export const guardRole = (guard: Guard) =>
         ? 'Carbine sentry'
         : guard.tactics?.role === 'breacher'
           ? 'Breach officer'
-          : 'Site guard';
+          : guard.tactics?.role === 'inspector'
+            ? 'Credential inspector'
+            : 'Site guard';
 export const guardDescription = (guard: Guard) =>
   guard.turret
     ? `Stationary carbine mount · 180 armour · 9-unit range. Tracks for 0.8s before firing. Solid cover breaks tracking. Isolate ${guard.turret.circuit === 'power-west' ? 'WEST' : 'EAST'} or authorise INSPECT; RADIO has no effect.`
@@ -22,7 +24,9 @@ export const guardDescription = (guard: Guard) =>
         ? 'Holds a lane. Moves into cover under fire or to reload. Needs a steady firing position.'
         : guard.tactics?.role === 'breacher'
           ? 'Closes through screened positions. Dangerous nearby; withdraw during its long firing recovery.'
-          : 'Patrols, challenges intruders, and reports contact.';
+          : guard.tactics?.role === 'inspector'
+            ? 'Ivory uniform, orange shoulder caps. Checks maintenance identities within 4 units over 2.5s. Break sight or leave range to cancel the check. Carries a pistol.'
+            : 'Patrols, challenges intruders, and reports contact.';
 
 /** Nearby partners can signal a sighting. This never copies an unseen person's live position. */
 export function shareContact(world: World, guard: Guard, target: Person) {
@@ -32,6 +36,7 @@ export function shareContact(world: World, guard: Guard, target: Person) {
       other === guard ||
       !other.tactics ||
       !living(other) ||
+      disoriented(other) ||
       distance(guard, other) > 10 ||
       !lineClear(world, guard, other)
     )

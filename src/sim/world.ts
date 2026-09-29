@@ -53,6 +53,7 @@ export function createWorld(mission: Mission = depot): World {
     agents: mission.spawns.map((p, i) => ({
       ...body(`agent-${i}`, p, 100),
       ...(mission.loadout ? { armament: equip(mission.loadout[i]) } : {}),
+      ...(mission.flashGrenades && i >= 2 ? { flashes: 1 } : {}),
       ...(mission.detention?.cells.some((c) => c.agent === i)
         ? { captive: true, disarmed: true }
         : {}),
@@ -123,6 +124,7 @@ export function createWorld(mission: Mission = depot): World {
     ...(mission.detention
       ? { detention: { operator: null, circuit: null, open: [], released: false } }
       : {}),
+    ...(mission.flashGrenades ? { flashGrenades: [] } : {}),
     alarm: false,
     alarmTime: 0,
     waves: 0,

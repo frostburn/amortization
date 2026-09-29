@@ -255,6 +255,7 @@ export function parseReplay(raw: string): ReplayBundle {
         c &&
           [
             'move',
+            'flash',
             'interact',
             'attack',
             'hold',
@@ -275,7 +276,7 @@ export function parseReplay(raw: string): ReplayBundle {
             c.agents.every((id) => /^agent-[0-3]$/.test(id)),
           'Invalid command recipients.',
         );
-      if (c.kind === 'move')
+      if (c.kind === 'move' || c.kind === 'flash')
         requireValue(
           c.point &&
             Number.isFinite(c.point.x) &&

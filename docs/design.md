@@ -441,6 +441,117 @@ failure. Desktop and touch checks use the real mission picker and gate controls,
 then real map hits, prisoner selection, equipment and final extraction in a
 stepped fixture. Those browser checks remain outside the routine smoke suite.
 
+## Stay of execution: inspectors and flash grenades
+
+Operation 10 follows the detention rescue: all four are together, and Mara's
+restitution mandate needs to become a binding order in Mutual Indemnity's
+enforcement registry. The 56 × 42 map keeps the existing readable follow scale.
+A 20-second UPLINK upload and survivor extraction are mandatory; the physical
+raid log is optional. The screened west service walk reaches LOOP, where a
+partner can mask the five-second trace. Interrupted uploads preserve progress.
+
+The west entrance, inner checkpoint and north-east radio office form separate
+defensive positions. RADIO is behind the control-office shutter and racks.
+A partner holding the public north-street SHUNT opens that shutter quietly;
+the operator must remain until the infiltrator leaves. CUT provides the existing
+eight-second noisy, permanent breach. RADIO itself needs four seconds of work,
+and the office remains a secure area even in uniform. This makes disabling
+reinforcements a preparation task. The main objective can still succeed while
+RADIO is active. The east exit opens only from its inside handle, preventing a
+short approach from the public road from bypassing the checkpoint.
+
+Credential inspectors wear ivory uniforms, orange shoulder caps and glasses,
+and carry pistols. Within four units and their visible sight cone, they check
+an unfamiliar disguised operative for 2.5 continuous seconds. An orange line,
+progress bar and crew status show the check. Leaving range, breaking sight or
+disorienting the inspector resets it. Finishing a check identifies that person
+locally and starts the existing backup call; it grants no global knowledge.
+The registry inspector's patrol makes access behind the racks a timed crossing.
+
+Rook and Sable each start with one flash. A ground preview chooses and names one
+eligible thrower, shows the landing point and cover-clipped radius, and marks
+exposed crew. Selecting a point pins that operative, even if another moves
+closer. Aiming preserves orders and is absent from replay commands. Confirmation
+stops only the named thrower, cancels their weapon preparation and spends exactly
+one grenade; firing and work wait through the throw. Invalid range, trajectory
+or landing gives a reason without walking anyone forward. B, Escape and Enter
+supplement the same two-step targeting used on touch screens.
+
+Range is seven units, flight 0.45 seconds, fuse 0.6 seconds, radius three and
+recovery 1.5 seconds. Solid geometry blocks the throw and exposure; facing does
+not protect people. Exposed crew and guards cannot acquire targets, fire or
+work, but movement continues. Upload progress survives; an unfinished demolition
+placement restarts. Repeated flashes refresh recovery rather than adding time.
+Wired turrets are unaffected. Existing radio reports continue while an inspector
+or guard is disoriented. Witnessing a throw identifies its author; hearing the
+detonation gives an investigation point without identifying an unseen operative.
+
+Grenades use scenery depth ordering; previews and the restrained local pulse
+sit on the ground behind buildings. Exposure outlines use cached sight rays,
+without pathfinding in the aiming loop. Throwing and shielding poses and a small
+recovery indicator make the effect visible without obscuring the camera. The
+short filtered pressure crack joins the existing combat mix without ringing or
+site ambience. Flight, fuse and recovery all use simulation time.
+
+Only flash-enabled worlds receive the inventory and projectile fields. Inspection
+and disorientation state exists only while relevant, preserving earlier mission
+fingerprints. The new command is supported by replay import and deterministic
+playback. Broadcast text, relay duration and inside-only gate access are optional
+mission settings with the previous defaults.
+
+Verification records and replays an undamaged quiet completion and a prepared
+armed completion, each with all four alive and both flashes already spent.
+A third full-crew completion defends UPLINK with RADIO active, also with both
+flashes spent, then withdraws through the west entrance and around the perimeter.
+A direct squad rush leaves the shutter closed and RADIO active while the alarm
+brings reinforcements. Geometry checks include every patrol post, landmark and
+the inner checkpoint route. Focused checks cover friendly exposure, solid cover,
+ongoing reports, interrupted work and inspector checks. Desktop and touch tests
+cover the mission picker, guidance, invalid targeting, cancellation, the pinned
+thrower, one-grenade confirmation and recovery. These browser journeys stay
+outside the unchanged ten-case CI smoke suite. Human difficulty and grenade
+utility remain playtesting questions.
+
+### First human run: trace response and extraction routes
+
+The unchanged `640aec9a` recording originally won at 74.47 seconds with Vale
+alone. Morrow completed the unmasked upload after killing only the registry
+inspector. Tracing called the same twelve-unit investigation as a local noise;
+distant guards and both reinforcement waves never received the terminal location.
+The final squad extraction order then sent the two untouched long-gun carriers
+through the compound, while Vale followed the public north street.
+
+Operation 10 now sends a traced UPLINK location over a live RADIO to mobile site
+guards and newly arriving teams. Marksmen keep their fixed posts, and direct
+visual contact takes precedence over a remote dispatch. The report supplies a
+fixed incident point, not an unseen operative's identity or changing position.
+Thirty seconds of search time allows a cross-site approach. Disabling RADIO
+before the trace prevents the site dispatch and waves; local investigation still
+works. Guards already sent continue investigating after RADIO is disabled.
+LOOP remains the quiet alternative. These rules are opt-in mission settings;
+operation 05 keeps its previous trace response.
+
+With current rules, the submitted inputs lose Morrow around 44 seconds with
+UPLINK at 50%; waiting beyond the recorded end still cannot unlock extraction.
+The original file is preserved under `tests/fixtures/`, separate from the
+successful human completion corpus. This prevents making a known exploit a
+required win. A supported armed run with RADIO active still wins with all four
+alive, but Rook leaves on 5 HP and Sable on 32 HP.
+
+Operation 10 extraction orders now prefer a route that stays outside the
+restricted perimeter when both the operative and the exit are outside. This
+uses the existing cached navigation grid with the perimeter excluded; inside
+operatives and ordinary movement retain their usual routes. Door-state changes
+and geometry edits still invalidate collision connections. If no public route
+exists, ordinary reachable routing remains available. This is a perimeter
+preference, not automatic enemy avoidance or a guarantee of safety.
+
+Vale's two early reversals were legal routes around the west wall after clicks
+on its inner side. Substantial detours now explain themselves in the existing
+map caption, using the computed route without another search. Selected routes
+are clearer and a single selected operative has an arrow showing the first
+segment. Hovered mission items and enemies retain priority over route feedback.
+
 ## Next useful work
 
-The first four human runs of operation 07 are analyzed in the [replay notes](../tests/replays/README.md#margin-call-human-assaults). They establish that direct assaults can win with casualties and that leaving RADIO active makes the forced shutter risky. They do not yet validate the human experience of the quiet route or establish that marksmen require deliberate flanking. Keep those questions open for further playtesting. The [future combat ideas](combat-expansion.md) retain flash grenades, loadout choice, and further equipment and security suggestions for later missions.
+The first four human runs of operation 07 are analyzed in the [replay notes](../tests/replays/README.md#margin-call-human-assaults). They establish that direct assaults can win with casualties and that leaving RADIO active makes the forced shutter risky. They do not yet validate the human experience of the quiet route or establish that marksmen require deliberate flanking. Keep those questions open for further playtesting. The [future combat ideas](combat-expansion.md) retain loadout choice and further equipment and security suggestions for later missions.

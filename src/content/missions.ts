@@ -7,6 +7,7 @@ import { severance } from './severance';
 import { clearing } from './clearing';
 import { mandate } from './mandate';
 import { personnel } from './personnel';
+import { injunction } from './injunction';
 
 export const missions = [
   depot,
@@ -18,5 +19,6 @@ export const missions = [
   clearing,
   mandate,
   personnel,
+  injunction,
 ];
 export const nextMission = (id: string) => missions[missions.findIndex((m) => m.id === id) + 1];

@@ -1,6 +1,6 @@
-import { investigateNoise, raiseAlarm } from './awareness';
+import { dispatchInvestigation, investigateNoise, raiseAlarm } from './awareness';
 import { lineClear } from './navigation';
-import { distance, living } from './types';
+import { disoriented, distance, living } from './types';
 import type { Operative, World } from './types';
 import { notify } from './world';
 
@@ -27,7 +27,7 @@ export function workBroadcast(w: World, a: Operative, id: 'mask' | 'upload') {
     w,
     id === 'mask'
       ? `${a.name} is holding LOOP. Keep them here while another operative works UPLINK. Selection changes preserve the loop.`
-      : `${a.name} is uploading Mara's audit. Move or Hold pauses it; progress is saved. ${b.maskBy ? 'LOOP is masking the signal.' : 'Without LOOP, the signal can be traced.'}`,
+      : `${a.name} is uploading ${w.mission.broadcast?.subject ?? "Mara's audit"}. Move or Hold pauses it; progress is saved. ${b.maskBy ? 'LOOP is masking the signal.' : 'Without LOOP, the signal can be traced.'}`,
   );
 }
 
@@ -41,6 +41,7 @@ export function updateBroadcast(w: World, dt: number) {
     return (
       a &&
       living(a) &&
+      !disoriented(a) &&
       !a.carrying &&
       a.order.kind === 'interact' &&
       a.order.target === id &&
@@ -61,9 +62,13 @@ export function updateBroadcast(w: World, dt: number) {
       const terminal = w.mission.landmarks.find((o) => o.id === 'upload')!;
       investigateNoise(w, terminal);
       raiseAlarm(w);
+      const dispatched = config.dispatchOnTrace && !w.relayOff;
+      if (dispatched) dispatchInvestigation(w, terminal);
       notify(
         w,
-        `UPLINK traced. Nearby guards are converging.${w.relayOff ? ' RADIO is offline; no reinforcements.' : ' Reinforcements called.'} The upload can still finish.`,
+        dispatched
+          ? 'UPLINK traced. RADIO dispatched site guards and incoming teams to the registry. Defend the uploader or break off; progress is saved.'
+          : `UPLINK traced. Nearby guards are converging.${w.relayOff ? ' RADIO is offline; no reinforcements.' : ' Reinforcements called.'} The upload can still finish.`,
         'warning',
       );
     }
@@ -82,7 +87,9 @@ export function updateBroadcast(w: World, dt: number) {
     w.sounds.push({ kind: 'interact', action: 'upload', x: terminal.x, y: terminal.y });
     notify(
       w,
-      "Audit published. Mara's evidence is public. LOOP is released; bring every survivor to VAN. LOG is optional.",
+      config.completed
+        ? `${config.completed}. LOOP is released; bring every survivor to VAN. LOG is optional.`
+        : "Audit published. Mara's evidence is public. LOOP is released; bring every survivor to VAN. LOG is optional.",
     );
   }
 }

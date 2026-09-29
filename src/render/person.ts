@@ -15,6 +15,8 @@ export interface Outfit {
   specialist?: GuardTactic['role'];
   carrying?: boolean;
   flash?: boolean;
+  shielding?: boolean;
+  throwing?: boolean;
 }
 interface Profile {
   skin: number;
@@ -110,6 +112,14 @@ const PROFILES: Record<Appearance, Profile> = {
 
 // Read the role from either side of the coat, not just a tiny chest badge.
 const SPECIALISTS: Record<NonNullable<Outfit['specialist']>, Profile> = {
+  inspector: {
+    ...PROFILES.guard,
+    coat: 0xc5c6b1,
+    shirt: 0x434f49,
+    helmet: 0xb9bba6,
+    pads: 0xdf8948,
+    glasses: true,
+  },
   sentry: {
     ...PROFILES.guard,
     coat: 0x3e79a6,
@@ -320,6 +330,8 @@ export class PersonSprite extends ModelMesh {
     const frame = phase === null ? -1 : Math.round((((phase % 1) + 1) % 1) * 24) % 24;
     const aiming =
       alive &&
+      !outfit.shielding &&
+      !outfit.throwing &&
       !!outfit.weapon &&
       !outfit.stowed &&
       (!!outfit.flash ||
@@ -337,6 +349,8 @@ export class PersonSprite extends ModelMesh {
       outfit.specialist,
       outfit.carrying,
       outfit.flash,
+      outfit.shielding,
+      outfit.throwing,
     ].join(':');
     if (key === this.lastPose) return;
     this.lastPose = key;
@@ -397,7 +411,13 @@ export class PersonSprite extends ModelMesh {
         const side = i ? 1 : -1;
         const shoulder: Point = [0, side * profile.shoulders, 1.055 + bob];
         let elbow: Point, hand: Point;
-        if (drawn && aiming) {
+        if (outfit.shielding) {
+          elbow = [0.13, side * 0.22, 1.12 + bob];
+          hand = [0.16, side * 0.07, 1.36 + bob];
+        } else if (outfit.throwing && i === 1) {
+          elbow = [0.14, 0.23, 1.32 + bob];
+          hand = [0.38, 0.12, 1.46 + bob];
+        } else if (drawn && aiming) {
           elbow = [0.19, side * 0.18, 0.91 + bob];
           hand = gun(i ? [0, 0, 0] : long ? [0.26, 0, -0.025] : [-0.005, -0.045, 0]);
         } else if (outfit.carrying) {

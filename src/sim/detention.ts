@@ -1,4 +1,4 @@
-import { controllable, distance, isAccess, isRescue, living, people } from './types';
+import { controllable, disoriented, distance, isAccess, isRescue, living, people } from './types';
 import type { ObjectKind, Operative, World } from './types';
 import { notify } from './world';
 
@@ -22,6 +22,7 @@ export function updateDetention(w: World) {
     !operator ||
     !panel ||
     !controllable(operator) ||
+    disoriented(operator) ||
     operator.carrying ||
     operator.order.kind !== 'interact' ||
     operator.order.target !== d.circuit ||
