@@ -14,6 +14,11 @@ it.each(files)('completes the player recording %s under current rules', (file) =
   const result = verifyReplay(bundle, build, compatibility(bundle, build).length > 0);
   expect(result.error).toBeNull();
   expect(result.result.status).toBe('won');
+  if (file === 'personnel-gate-rescue-bd8f18da.replay.json') {
+    // The old all-at-once cell exit remains survivable, but the new patrol
+    // must catch it. A separate timed route verifies an undamaged escape.
+    expect(result.result.shots).toBeGreaterThan(bundle.result.shots);
+  }
 });
 
 it('finishes the depot return without the recorded corrective clicks after the first VAN order', () => {

@@ -1,4 +1,4 @@
-import { distance, isCharge, isPower, living, people } from './types';
+import { distance, isCharge, isPower, isRescue, living, people } from './types';
 import type { Person, World } from './types';
 import { canWalk, findPath, lineClear } from './navigation';
 import {
@@ -101,7 +101,8 @@ export function step(world: World, dt = STEP) {
         p = interactionPoint(world, a, id);
       if (distance(a, p) < 1.15 && lineClear(world, a, p)) {
         a.path = [];
-        a.interaction += dt;
+        if (isRescue(id) && world.detention?.circuit !== 'access-cells') a.interaction = 0;
+        else a.interaction += dt;
         const duration = interactionDuration(world, a, id);
         if (a.interaction >= duration) {
           completeInteraction(world, a, id);

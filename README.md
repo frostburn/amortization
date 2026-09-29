@@ -453,8 +453,9 @@ follow scale as operations 07–08.
 - Switch the operator to **CELLS** for the blue gate and local cell releases.
   Once the console is staffed, the gate buttons address that operator without
   changing the selected infiltrator. Moving or Hold releases remote power.
-- **VALE** and **ROOK** each need two seconds of local work while a different
-  operative holds CELLS. Guards, RADIO and the road barrier cannot bypass these
+- **VALE** and **ROOK** each need two continuously powered seconds of local work
+  while a different operative holds CELLS. Losing power restarts the release.
+  Guards, RADIO and the road barrier cannot bypass these
   locks. Door safety prevents crushing a crossing operative, but supplies no
   release power. Killing every guard cannot turn this into a solo operation.
 - Each rescued teammate becomes controllable immediately, initially unarmed.
@@ -464,7 +465,8 @@ follow scale as operations 07–08.
   Bring the console operator too; the extraction controls then rally everyone
   to **VAN**. The **REGISTER** is optional.
 
-The office screens the quiet return route through intake. The holding patrol and
+The cell-corridor patrol makes the unarmed escape a timed crossing: wait inside
+each cell, then slip out behind it. The office screens the return through intake. The holding patrol and
 breach officer make the equipment lockers risky: reunite the armed pair or time
 an approach. Exposed identities can still use the powered locks. Verification
 includes a quiet, undamaged escape with both prisoners unarmed and a prepared
@@ -511,7 +513,7 @@ UI, renderer, or broader input changes; extended mission journeys and detailed
 graphics checks are not part of the routine gate. Keep `@smoke` for shared player
 flows so each new mission does not add another real-time browser journey to CI.
 
-The full simulation suite still runs on every change, including all 21 retained
+The full simulation suite still runs on every change, including all 22 retained
 human completions, complete mission runs for all nine operations (including quiet rescue and armed withdrawal in 09),
 navigation clearance, local identification, disguise permissions, radio disruption,
 evidence custody, demolition safety, and extraction requirements.

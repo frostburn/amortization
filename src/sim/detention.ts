@@ -30,6 +30,11 @@ export function updateDetention(w: World) {
     d.operator = null;
     d.circuit = null;
   }
+  // A release needs continuous power. Reset even on paused commands, before a
+  // replacement operator can restore the circuit in the same simulation tick.
+  if (d.circuit !== 'access-cells')
+    for (const a of w.agents)
+      if (a.order.kind === 'interact' && isRescue(a.order.target)) a.interaction = 0;
   d.open = config.gates
     .filter(
       (g) =>

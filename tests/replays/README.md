@@ -7,9 +7,39 @@ is also verified. Otherwise this checks a route's continued viability, without
 claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All twenty-one retained files are byte-for-byte copies of submissions provided in chat:
-fifteen on 2026-09-27 and six on 2026-09-28, including their `unversioned` /
+All twenty-two retained files are byte-for-byte copies of submissions provided in chat:
+fifteen on 2026-09-27, six on 2026-09-28 and one on 2026-09-29, including their `unversioned` /
 local-changes metadata.
+
+## Key personnel: cell patrol and scenery
+
+All four September 29 recordings reproduced their original checkpoints and
+outcomes on `70b4da3` (mission `1c232d29`, simulation `1b285ee3…`).
+
+| Submission suffix | Original outcome | Feedback / route |
+| --- | --- | --- |
+| `bd8f18da` | Won, tick 1575 / 52.5s; four alive; zero shots | Disguised rescue, then one squad VAN order. Asked for a patrol to make leaving the cells require timing. |
+| `2b2c6c9d` | Lost, tick 1569; six shots | “Got curious about the gear...” Morrow approaches the guarded lockers. |
+| `ba99bd4c` | Lost, tick 2033; nine shots | Sable enters holding and engages its patrol. |
+| `4f7405c3` | Lost, tick 2342; four shots | The freed group approaches GEAR, then targets the breach officer. |
+
+`personnel-gate-rescue-bd8f18da.replay.json` retains the winning submission
+unchanged. With the added cell-corridor patrol it still wins at tick 1575, but
+now incurs three shots and Rook leaves with 49 HP. The current-rules test proves
+continued completion, not the old quiet outcome or original checkpoints. The
+three losses remain diagnostic inputs rather than required defeats.
+
+A separate synthetic verification waits for the patrol before moving each
+prisoner and finishes with all four undamaged, no alarm and no shots. The armed
+verification coordinates the rescue, deals with the cell patrol, and recovers
+both prisoners' equipment. Both record and replay exact current checkpoints.
+
+The attached screenshot exposed a van drawn across the wrong axis, an overlapping
+console caption and lamps positioned using the old depot's absolute coordinates.
+Rendering now respects vehicle orientation and supporting-wall extents; the
+redundant console caption is gone. Browser checks cover labels, lamp bounds and
+van extraction hits at four scales, alongside the existing desktop/touch rescue
+journeys. The additional graphics check is outside routine CI smoke tests.
 
 ## Adverse selection Rally stall
 

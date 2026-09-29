@@ -371,7 +371,9 @@ free-handed operative must remain working it; movement, Hold, death or another
 order cuts power immediately, including while paused. The worker cannot shoot.
 The other operative crosses INTAKE, waits inside while the partner switches,
 then enters holding through CELLS. The two-second local prisoner releases also
-recheck a distinct operator holding CELLS at completion. A safety edge can keep
+recheck a distinct operator holding CELLS at completion. Dropping power resets
+local progress immediately, even if paused commands restore it before the next
+tick; unpowered time never counts toward a release. A safety edge can keep
 an occupied doorway physically open, but it never substitutes for remote power.
 There is no CUT alternative or hidden radio bypass. The ordinary response road
 barrier is outside the detention perimeter.
@@ -385,10 +387,18 @@ is explicit in the briefing and defeat message. EXIT becomes useful after both
 are free: it permanently releases both gates and ends remote work, so the final
 rally cannot strand the console operator. Equipment and the register are optional.
 
+A pistol guard patrols the corridor between both cell doors. Freed operatives
+can wait inside their cells for him to pass, then cross to the blue gate. The
+original human rush still completes, but now exposes the prisoners and costs
+Rook 51 HP. A timed quiet route remains possible without damage or shots.
+
 The gate buttons switch the current operator without changing selection or
 pulling the follow camera away from the infiltrator. Map controls and goal
 locators show INTAKE, CELLS, both local cell releases, GEAR and EXIT. Captive
 portraits remain visible with an explicit status, then unlock immediately.
+The console's two labels use the matching amber/blue gate colors, without an
+overlapping decorative caption. Vehicle geometry follows its footprint's long
+axis, and north-wall lamps are placed relative to their actual supporting wall.
 
 Navigation includes the two controlled gates and both cell doors. A bounded
 sixteen-state cache handles the extra combinations; old sites still use at most

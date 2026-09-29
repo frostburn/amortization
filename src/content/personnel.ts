@@ -37,7 +37,7 @@ export const personnel: Mission = {
       },
       {
         title: 'Free them, then release the route',
-        body: 'Keep a partner holding CELLS while another works the local VALE and ROOK locks for two seconds each. Door safety cannot replace remote power. Each freed teammate becomes controllable and can recover their own weapon and dressing at GEAR; both can also leave unarmed. Once both are free, use EXIT inside detention to latch both gates open, then rally everyone to VAN. The register is optional. Blown cover still permits a coordinated armed rescue.',
+        body: 'Keep a partner holding CELLS while another works the local VALE and ROOK locks for two continuously powered seconds each. A power interruption restarts the release. Door safety cannot replace remote power. A guard patrols between the cells: keep freed teammates inside until they can slip out behind him. Each can recover their own weapon and dressing at GEAR, or leave unarmed. Once both are free, use EXIT to latch both gates open and bring the console operator. The register is optional. Blown cover still permits a coordinated armed rescue.',
       },
     ],
   },
@@ -229,6 +229,17 @@ export const personnel: Mission = {
         { x: 10, y: 13 },
       ],
       0,
+    ),
+    // The cell corridor is a moving crossing, not a permanently safe exit.
+    // Both cells provide cover while the warden passes their doors.
+    patrol(
+      [
+        { x: 32, y: 8 },
+        { x: 32, y: 28.5 },
+        { x: 33, y: 28.5 },
+        { x: 33, y: 8 },
+      ],
+      Math.PI / 2,
     ),
   ],
   spawns: [

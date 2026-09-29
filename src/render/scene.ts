@@ -404,10 +404,6 @@ export class Scene {
           this.marks.addChild(label);
         }
       }
-      const consoleLabel = this.label('REMOTE GATE CONSOLE', 9, 0xb8d4c5);
-      consoleLabel.position.copyFrom(project({ x: 12.7, y: 20.5 }, 1.5));
-      consoleLabel.anchor.set(0.5, 1);
-      this.marks.addChild(consoleLabel);
     }
     const office = this.label(
       mission.detention
@@ -465,9 +461,13 @@ export class Scene {
         ? COLORS.mint
         : o.id === 'escort' || o.id === 'evidence' || o.id === 'upload' || isCharge(o.id)
           ? COLORS.amber
-          : o.id === 'power-west' || o.id === 'power-east'
-            ? circuitColor(o.id)
-            : 0xa8c2b3;
+          : o.id === 'access-intake'
+            ? COLORS.amber
+            : o.id === 'access-cells'
+              ? 0x78becd
+              : o.id === 'power-west' || o.id === 'power-east'
+                ? circuitColor(o.id)
+                : 0xa8c2b3;
       mark
         .poly([0, -9, 7, 0, 0, 9, -7, 0])
         .fill({ color: 0x162722, alpha: 0.9 })
@@ -649,7 +649,7 @@ export class Scene {
     }
     // Wall-mounted details must inherit their wall's occlusion, too.
     if (s.id === 'north') {
-      for (let x = 10.5; x < 27; x += 3) {
+      for (let x = s.x + 1.5; x < s.x + s.w - 0.75; x += 3) {
         const y = s.y + s.h + 0.012;
         // Downward spill lies on the vertical wall face, with nested pools of light.
         for (const [width, bottom, opacity] of [

@@ -143,6 +143,37 @@ describe('Key personnel', () => {
     expect(extractionRequirement(w)?.label).toBe('Free Vale and Rook');
   });
 
+  it('requires two continuously powered seconds after any CELLS interruption, including paused orders', () => {
+    const w = createWorld(personnel),
+      runner = w.agents[0],
+      operator = w.agents[3];
+    w.guards = [];
+    place(operator, landmark(w, 'access-cells'));
+    place(runner, landmark(w, 'rescue-vale'));
+    completeInteraction(w, operator, 'access-cells');
+    applyCommand(w, { kind: 'interact', agents: [runner.id], target: 'rescue-vale' });
+    const advance = (ticks: number) => {
+      for (let i = 0; i < ticks; i++) step(w);
+    };
+    advance(15);
+    expect(runner.interaction).toBeCloseTo(0.5);
+    applyCommand(w, { kind: 'hold', agents: [operator.id] });
+    expect(runner.interaction).toBe(0);
+    advance(20);
+    expect(runner.interaction).toBe(0);
+    completeInteraction(w, operator, 'access-cells');
+    advance(15);
+    expect(runner.interaction).toBeCloseTo(0.5);
+    // Power drops and returns without a tick passing (orders while paused).
+    applyCommand(w, { kind: 'hold', agents: [operator.id] });
+    completeInteraction(w, operator, 'access-cells');
+    expect(runner.interaction).toBe(0);
+    advance(45);
+    expect(w.agents[1].captive).toBe(true);
+    advance(16);
+    expect(w.agents[1].captive).toBe(false);
+  });
+
   it('releases remote power on movement, supports handoff, and reports a lost rescuer', () => {
     const w = createWorld(personnel),
       operator = w.agents[3],
@@ -188,6 +219,8 @@ describe('Key personnel', () => {
 
   it('recovers equipment and completes an armed withdrawal after a coordinated rescue, with an exact replay', () => {
     const { w, act, move, send, wait, verify } = run(true);
+    // Observe the first intake circuit before beginning the approach.
+    wait(() => w.time >= 15);
     act(0, 'disguise', () => w.agents[0].disguised);
     act(3, 'access-intake', () => w.detention!.circuit === 'access-intake');
     move(0, { x: 18, y: 26.5 });
@@ -202,7 +235,8 @@ describe('Key personnel', () => {
     // Bring the console operator inside before exposing the infiltrator.
     move(0, { x: 18, y: 26.5 });
     move(3, { x: 18, y: 26.5 });
-    for (const index of [0, 1]) {
+    // Stop the approaching cell patrol before the northern intake guard.
+    for (const index of [0, 5, 1]) {
       send({ kind: 'attack', agents: ['agent-0', 'agent-3'], target: w.guards[index].id });
       wait(() => !living(w.guards[index]));
     }
@@ -214,17 +248,18 @@ describe('Key personnel', () => {
       send({ kind: 'move', agents: ['agent-0', 'agent-3'], point });
       wait(() => [w.agents[0], w.agents[3]].every((a) => !a.path.length));
     }
-    send({ kind: 'attack', agents: ['agent-0', 'agent-3'], target: 'guard-3' });
-    wait(() => !living(w.guards[3]));
-    move(0, { x: 32, y: 28 }); // Withdraw the wounded pistol carrier; Sable covers.
-    send({ kind: 'attack', agents: ['agent-3'], target: 'guard-2' });
+    // Clear the nearer patrol before the breacher; do not chase him past it.
+    send({ kind: 'attack', agents: ['agent-0', 'agent-3'], target: 'guard-2' });
     wait(() => !living(w.guards[2]));
+    move(0, { x: 32, y: 28 });
+    send({ kind: 'attack', agents: ['agent-3'], target: 'guard-3' });
+    wait(() => !living(w.guards[3]));
     act(2, 'equipment', () => !w.agents[2].disarmed);
     act(1, 'equipment', () => !w.agents[1].disarmed);
     send({ kind: 'interact', agents: w.agents.map((a) => a.id), target: 'extract' });
     wait(() => w.status === 'won');
     expect(w.shots).toBeGreaterThan(0);
-    expect(w.agents[0].exposed).toBe(true);
+    expect(w.agents[3].exposed).toBe(true);
     expect(w.agents.every((a) => !a.disarmed)).toBe(true);
     verify();
   });
@@ -243,6 +278,15 @@ describe('Key personnel', () => {
     act(0, 'rescue-rook', () => !w.agents[2].captive);
     act(0, 'escape-release', () => w.detention!.released);
     for (const index of [0, 1, 2]) {
+      if (index > 0) {
+        const warden = w.guards[5];
+        // Leave each cell behind the passing warden, then cross the blue gate.
+        wait(() =>
+          index === 1
+            ? warden.y > 15 && Math.sin(warden.angle) > 0.9
+            : warden.y < 19.2 && Math.sin(warden.angle) < -0.9,
+        );
+      }
       move(index, { x: 32, y: 16.5 });
       move(index, { x: 28, y: 16.5 });
       move(index, { x: 24, y: 16.5 });
