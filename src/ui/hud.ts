@@ -6,7 +6,7 @@ import {
   living,
   EXTRACTION_RADIUS,
 } from '../sim/types';
-import type { Mission, Rect, World } from '../sim/types';
+import type { Mission, ObjectKind, Rect, World } from '../sim/types';
 import { RESPONSE_TIMES, suspicionRate } from '../sim/awareness';
 import { WEAPONS, longGun, visibleWeapon, weaponRange, weaponStatus } from '../sim/weapons';
 import { guardDescription, guardRole } from '../sim/tactics';
@@ -14,6 +14,7 @@ import { lineClear } from '../sim/navigation';
 import { clearedCargo } from '../sim/courier';
 import { published } from '../sim/broadcast';
 import {
+  available,
   extractionRallyBlocker,
   extractionStatus,
   escortMedic,
@@ -26,6 +27,7 @@ import type { Records, MissionRecord } from './storage';
 import { missionGoals, transferFeedback } from './objectives';
 import type { Goal, GoalId, GuideTarget } from './objectives';
 import { extractionRequirement } from './extraction';
+import { objectRequirement } from './interactions';
 import { demolished, detonationStatus } from '../sim/demolition';
 import { activeTurrets, canAuthorise, inspectionRemaining, turretPowered } from '../sim/security';
 
@@ -111,6 +113,7 @@ export class Hud {
   private escortHp: number | null = null;
   private escortHitUntil = 0;
   private inspectedGuard: string | null = null;
+  private inspectedObject: ObjectKind | null = null;
   constructor(
     onAction: (action: Action) => void,
     onSelect: (index: number, add: boolean) => void,
@@ -210,6 +213,9 @@ export class Hud {
   inspectGuard(id: string | null) {
     this.inspectedGuard = id;
   }
+  inspectObject(id: ObjectKind | null) {
+    this.inspectedObject = id;
+  }
   private set(id: string, value: string) {
     const e = this.field(id);
     if (e.textContent !== value) e.textContent = value;
@@ -304,6 +310,7 @@ export class Hud {
   }
   reset(mission: Mission = this.mission) {
     this.inspectedGuard = null;
+    this.inspectedObject = null;
     this.escortHp = null;
     this.escortHitUntil = 0;
     this.hoveredGoal = this.pinnedGoal = null;
@@ -345,15 +352,48 @@ export class Hud {
     const inspected = world.guards.find(
       (g) => g.id === this.inspectedGuard && living(g) && g.armament,
     );
-    this.set('map-location', inspected ? guardRole(inspected) : world.mission.location);
+    const object = world.mission.landmarks.find(
+      (o) =>
+        o.id === this.inspectedObject &&
+        (available(world, o.id) ||
+          isCharge(o.id) ||
+          (o.id === 'escort' && world.escortLocked) ||
+          (o.id === 'evidence' && world.evidence === 'courier')),
+    );
+    const objectBlock = object ? objectRequirement(world, object.id, state.selected) : null;
+    const chargeStatus =
+      object && isCharge(object.id) && world.demolition?.armed.includes(object.id)
+        ? demolished(world)
+          ? 'DESTROYED'
+          : 'ARMED'
+        : null;
+    this.set(
+      'map-location',
+      object
+        ? `${object.tag} · ${chargeStatus ?? (objectBlock ? 'LOCKED' : 'READY')}`
+        : inspected
+          ? guardRole(inspected)
+          : world.mission.location,
+    );
     this.set(
       'map-detail',
-      inspected
-        ? `${inspected.turret && !turretPowered(world, inspected) ? 'Offline · ' : ''}${WEAPONS[inspected.armament!.kind].name} · ${weaponStatus(inspected)} · range ${weaponRange(inspected)}`
-        : 'Municipal assets division',
+      object
+        ? (objectBlock ??
+            (chargeStatus
+              ? demolished(world)
+                ? 'Both backups are destroyed. Bring the crew to VAN.'
+                : (detonationStatus(world).reason ??
+                  'Crew clear. Use Detonate to destroy both backups.')
+              : object.detail))
+        : inspected
+          ? `${inspected.turret && !turretPowered(world, inspected) ? 'Offline · ' : ''}${WEAPONS[inspected.armament!.kind].name} · ${weaponStatus(inspected)} · range ${weaponRange(inspected)}`
+          : 'Municipal assets division',
     );
-    this.field('map-location').parentElement!.classList.toggle('inspecting', !!inspected);
-    this.field('enemy-behavior').hidden = !inspected;
+    this.field('map-location').parentElement!.classList.toggle(
+      'inspecting',
+      !!inspected || !!object,
+    );
+    this.field('enemy-behavior').hidden = !inspected || !!object;
     this.set('enemy-behavior', inspected ? guardDescription(inspected) : '');
     this.field('follow-button').setAttribute('aria-pressed', String(state.following ?? false));
     this.field('selected-equipment').hidden = !a?.armament;

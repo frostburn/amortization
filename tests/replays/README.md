@@ -7,9 +7,33 @@ is also verified. Otherwise this checks a route's continued viability, without
 claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All twenty-two retained files are byte-for-byte copies of submissions provided in chat:
-fifteen on 2026-09-27, six on 2026-09-28 and one on 2026-09-29, including their `unversioned` /
+All twenty-three retained files are byte-for-byte copies of submissions provided in chat:
+fifteen on 2026-09-27, six on 2026-09-28 and two on 2026-09-29, including their `unversioned` /
 local-changes metadata.
+
+## Key personnel: locked EXIT feedback
+
+`personnel-split-exit-b6202c06.replay.json` is the unchanged submission
+`amortization-personnel-won-b6202c06.replay.json`, recorded with the cell patrol:
+mission `9e1c0d27`, simulation `72792e8a…`. It verifies every original checkpoint
+and wins at tick **2699 / 90.0s**, with **four survivors**, **five shots** and no
+alarm. Vale leaves with 15 HP; the other three are undamaged. Neither prisoner
+recovers GEAR and the optional register stays behind.
+
+Feedback: “Was EXIT unavailable? I tried to click it. If so, differentiate
+accessible diamonds from inaccessible ones.” Rook is freed at 31.9s. Five EXIT
+commands at 32.6–39.2s are refused because Vale is still captive; Vale's rescue
+order arrives at 55.8s. Rook later operates EXIT and leaves ahead of Morrow and
+Vale, before the final all-crew VAN order at 88.9s.
+
+Map markers now replace the actionable diamond with a muted padlock and explicit
+LOCKED label when a prerequisite is missing. Hovering or tapping explains the
+remaining requirement in the map caption, including the remaining prisoner's
+name. CELLS power, the separate operator, selected-operative equipment/identity,
+locked transports and archives, and extraction use the same presentation.
+Objective locators retain the locked styling. Blocked clicks still reach the
+normal refusal feedback and preserve standing orders. These are presentation
+changes only; the new recording remains exactly compatible.
 
 ## Key personnel: cell patrol and scenery
 

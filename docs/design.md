@@ -400,6 +400,16 @@ The console's two labels use the matching amber/blue gate colors, without an
 overlapping decorative caption. Vehicle geometry follows its footprint's long
 axis, and north-wall lamps are placed relative to their actual supporting wall.
 
+Mission actions with unmet prerequisites use a muted padlock and LOCKED caption,
+including in goal locators. Hover or tap displays the reason in the existing map
+caption. EXIT names whichever prisoners remain captive; powered locks require a
+different selected operative, and GEAR requires a freed, unarmed teammate. KIT,
+identity checks, archive/transport locks and extraction follow the same visual
+convention. A distant action is still actionable: this checks prerequisites, not
+pathfinding on every rendered frame. Inspection is read-only; refused clicks
+retain the simulation's existing feedback and orders. The second human rescue
+recording verifies all original checkpoints after these presentation changes.
+
 Navigation includes the two controlled gates and both cell doors. A bounded
 sixteen-state cache handles the extra combinations; old sites still use at most
 four. Detention and captivity fields exist only on missions that use them, so

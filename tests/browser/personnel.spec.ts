@@ -33,6 +33,19 @@ for (const mobile of [false, true]) {
       if (mobile) await page.locator(selector).tap();
       else await page.locator(selector).click();
     };
+    const clickMarker = async (id: ObjectKind, hover = false) => {
+      await page.evaluate((id) => {
+        const { scene } = window.personnelTest;
+        scene.showGuidance([id], { x: 0, y: 0, w: 0, h: 0 });
+        scene.focusGuidance();
+      }, id);
+      await page.locator('#stage').scrollIntoViewIfNeeded();
+      const marker = await page.evaluate((id) => window.personnelTest.scene.markerScreen(id)!, id);
+      const bounds = (await page.locator('canvas').boundingBox())!;
+      if (hover) await page.mouse.move(bounds.x + marker.x, bounds.y + marker.y);
+      else if (mobile) await page.touchscreen.tap(bounds.x + marker.x, bounds.y + marker.y);
+      else await page.mouse.click(bounds.x + marker.x, bounds.y + marker.y, { button: 'right' });
+    };
     await page.goto('/');
     await expect(page).toHaveTitle('Amortization');
     await press('dialog [data-action="operations"]');
@@ -174,13 +187,27 @@ for (const mobile of [false, true]) {
           if (hit.kind === 'object') send({ kind: 'interact', agents: selected, target: hit.id });
         },
       });
-      scene.app.ticker.add(() => scene.render(selected, 1));
+      scene.app.ticker.add(draw);
       const advance = (ticks: number) => {
         for (let i = 0; i < ticks; i++) step(world);
         draw();
       };
       window.personnelTest = { world, scene, send, advance };
       draw();
+    });
+    await clickMarker('escape-release', !mobile);
+    await expect(page.locator('#map-location')).toHaveText('EXIT · LOCKED');
+    await expect(page.locator('#map-detail')).toContainText('Free Vale and Rook first');
+    await expect(page.locator('.objective-locator[data-target="escape-release"]')).toHaveClass(
+      /is-locked/,
+    );
+    const orders = await page.evaluate(() => window.personnelTest.world.agents.map((a) => a.order));
+    await clickMarker('escape-release');
+    expect(
+      await page.evaluate(() => window.personnelTest.world.agents.map((a) => a.order)),
+    ).toEqual(orders);
+    await page.screenshot({
+      path: `/tmp/key-personnel/${mobile ? 'touch' : 'desktop'}-exit-locked.png`,
     });
     await press('#intake-button');
     await page.evaluate(() => window.personnelTest.advance(130));
@@ -194,6 +221,14 @@ for (const mobile of [false, true]) {
     await press('#cells-button');
     await page.evaluate(() => window.personnelTest.advance(70));
     await expect(page.locator('#detention-status')).toContainText('Sable holds CELLS');
+    await press('[data-agent="3"]');
+    await clickMarker('rescue-vale');
+    await expect(page.locator('#map-detail')).toContainText('Select a different operative');
+    await expect(page.locator('#detention-status')).toContainText('Sable holds CELLS');
+    await press('[data-agent="0"]');
+    await expect(page.locator('.objective-locator[data-target="rescue-vale"]')).not.toHaveClass(
+      /is-locked/,
+    );
     await page.evaluate(() => {
       const f = window.personnelTest;
       f.send({ kind: 'move', agents: ['agent-0'], point: { x: 32, y: 12 } });
@@ -217,6 +252,9 @@ for (const mobile of [false, true]) {
     await expect(page.locator('[data-agent="1"]')).toBeEnabled();
     await expect(page.locator('#condition-1')).toContainText('Unarmed');
     await expect(page.locator('#objective-primary')).toContainText('1 / 2 free');
+    await clickMarker('escape-release');
+    await expect(page.locator('#map-detail')).toContainText('Free Rook first');
+    await expect(page.locator('#detention-status')).toContainText('Sable holds CELLS');
     await press('[data-agent="1"]');
     await expect(page.locator('[data-action="weapons"]')).toBeDisabled();
     await page.evaluate(() => {
@@ -233,7 +271,15 @@ for (const mobile of [false, true]) {
     });
     await expect(page.locator('[data-agent="2"]')).toBeEnabled();
     await expect(page.locator('#objective-extract')).toContainText('Release EXIT');
-    await press('#release-exit-button');
+    await clickMarker('escape-release', !mobile);
+    await expect(page.locator('#map-location')).toHaveText('EXIT · READY');
+    await expect(page.locator('.objective-locator[data-target="escape-release"]')).not.toHaveClass(
+      /is-locked/,
+    );
+    await page.screenshot({
+      path: `/tmp/key-personnel/${mobile ? 'touch' : 'desktop'}-exit-ready.png`,
+    });
+    if (!mobile) await clickMarker('escape-release');
     await page.evaluate(() => window.personnelTest.advance(100));
     await expect(page.locator('#detention-status')).toContainText('Both gates released');
     await expect(page.locator('#exit-button-extract')).toBeVisible();

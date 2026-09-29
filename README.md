@@ -465,6 +465,11 @@ follow scale as operations 07–08.
   Bring the console operator too; the extraction controls then rally everyone
   to **VAN**. The **REGISTER** is optional.
 
+Unavailable mission actions show a grey padlock and **LOCKED** label instead of
+the usual diamond. Hover or tap to see the missing prerequisite in the map caption.
+Markers update as you free prisoners, switch power or select an eligible teammate;
+distance alone does not lock an action, since operatives walk to their targets.
+
 The cell-corridor patrol makes the unarmed escape a timed crossing: wait inside
 each cell, then slip out behind it. The office screens the return through intake. The holding patrol and
 breach officer make the equipment lockers risky: reunite the armed pair or time
@@ -513,7 +518,7 @@ UI, renderer, or broader input changes; extended mission journeys and detailed
 graphics checks are not part of the routine gate. Keep `@smoke` for shared player
 flows so each new mission does not add another real-time browser journey to CI.
 
-The full simulation suite still runs on every change, including all 22 retained
+The full simulation suite still runs on every change, including all 23 retained
 human completions, complete mission runs for all nine operations (including quiet rescue and armed withdrawal in 09),
 navigation clearance, local identification, disguise permissions, radio disruption,
 evidence custody, demolition safety, and extraction requirements.
