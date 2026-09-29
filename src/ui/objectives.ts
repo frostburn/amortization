@@ -170,6 +170,14 @@ export function missionGoals(w: World): Goal[] {
   } else if (w.broadcast) {
     const b = w.broadcast;
     const operator = w.agents.find((a) => a.id === b.maskBy);
+    const radioTargets: GuideTarget[] = w.relayOff
+      ? []
+      : [
+          'relay',
+          ...(m.broadcast?.dispatchOnTrace && m.archive && !w.shutterOpen
+            ? (['override', 'breach'] as const)
+            : []),
+        ];
     primary = {
       id: 'primary',
       label: published(w)
@@ -181,26 +189,14 @@ export function missionGoals(w: World): Goal[] {
       detail: published(w)
         ? `${m.broadcast?.completed ?? 'The audit is public'}. Both workstations are released. Bring everyone to VAN, including the LOOP operator. LOG is optional.`
         : b.traced
-          ? 'The terminal has been traced; LOOP can no longer hide it. Defend an operative working UPLINK to finish the upload. Progress is saved when interrupted. RADIO stops reinforcements, but nearby guards still investigate.'
+          ? `The terminal has been traced; LOOP can no longer hide it. ${m.broadcast?.dispatchOnTrace ? 'Site guards and incoming teams can receive the UPLINK location over RADIO. ' : ''}Defend an operative working UPLINK to finish the upload. Progress is saved when interrupted. RADIO stops new reinforcements; guards already dispatched keep investigating.`
           : (m.broadcast?.guidance ??
             `${operator ? `${operator.name} holds LOOP. Select another operative for UPLINK.` : 'Assign one operative to Hold LOOP on the west street, then select a second to Work UPLINK.'} UPLINK needs 24 seconds with free hands; the operator cannot fire while working. Moving or Hold pauses work and saves progress. Without LOOP, five seconds of uploading draws guards. KIT helps outside the server room. Its patrol challenges uniforms: withdraw behind the racks when challenged, then resume.`),
       targets: published(w)
         ? ['extract']
         : b.traced
-          ? ['upload', ...(!w.relayOff ? ['relay' as const] : [])]
-          : [
-              'mask',
-              'upload',
-              ...kit,
-              ...(m.broadcast?.guidance && !w.relayOff
-                ? [
-                    'relay' as const,
-                    ...(m.archive && !w.shutterOpen
-                      ? ['override' as const, 'breach' as const]
-                      : []),
-                  ]
-                : []),
-            ],
+          ? ['upload', ...radioTargets]
+          : ['mask', 'upload', ...kit, ...(m.broadcast?.guidance ? radioTargets : [])],
     };
   } else if (c && w.evidence === 'courier') {
     const feedback = transferFeedback(w)!;

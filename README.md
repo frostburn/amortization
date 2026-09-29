@@ -495,8 +495,11 @@ armed withdrawal with recovered equipment, each recorded and replayed exactly.
 With the crew reunited, serve Mara's restitution mandate at the enforcement
 registry to halt collection orders. The 56 × 42 site keeps the readable follow
 zoom. Upload for **20 seconds at UPLINK**, then bring every survivor to **VAN**.
-A partner holding **LOOP** masks the five-second terminal trace. Progress survives
-interruptions; the physical **LOG** is optional.
+A partner holding **LOOP** masks the five-second terminal trace. With RADIO live,
+a trace dispatches mobile site guards and incoming teams to UPLINK. They receive
+the terminal location, not the identity or position of an unseen operative.
+Bring armed partners to defend the upload, or break off; progress survives
+interruptions. The physical **LOG** is optional.
 
 **RADIO is inside the north-east control office**, beyond the inner checkpoint.
 A partner must hold the north-street **SHUNT** until the infiltrator leaves,
@@ -524,11 +527,20 @@ continues. Witnessing a throw identifies its author; hearing the blast supplies
 only an investigation location. Wired turrets are unaffected. The local pulse,
 shielding pose and recovery bar keep the map readable.
 
-Live-patrol verification completes both a quiet, undamaged route and a prepared
-armed route with all four alive, after spending both flashes. A separate direct
+Live-patrol verification completes a quiet, undamaged route, a prepared
+radio-disabled assault, and a defended upload with RADIO active. All three
+extract the full crew after spending both flashes. A separate direct
 radio rush raises the alarm and calls reinforcements while the shutter still
-blocks access. All three runs record and replay exactly. Human playtesting is
+blocks access. All four runs record and replay exactly. Human playtesting is
 still needed to judge the difficulty and the usefulness of those short crossings.
+
+The first human run exposed an ineffective trace response and a bad extraction
+shortcut. Its unchanged inputs now stall halfway through UPLINK when the
+unsupported uploader is caught. It is retained as a diagnostic regression, not
+a required victory. Extraction orders for operatives already outside now take
+a public perimeter route when available, even after the response team opens
+GATE. Ordinary move orders can still enter the site. Substantial detours appear
+in the existing map caption, with a clearer route line and initial direction arrow.
 
 ## Records
 

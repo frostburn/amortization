@@ -1,21 +1,24 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { injunction } from '../src/content/injunction';
 import { nextMission } from '../src/content/missions';
 import { createWorld } from '../src/sim/world';
 import { applyCommand } from '../src/sim/commands';
 import type { Command } from '../src/sim/commands';
-import { landmark } from '../src/sim/orders';
-import { findPath, passable } from '../src/sim/navigation';
+import { completeInteraction, landmark } from '../src/sim/orders';
+import { updateAwareness } from '../src/sim/awareness';
+import { canWalk, findPath, intersects, passable } from '../src/sim/navigation';
+import { extractionPath } from '../src/sim/extraction-routing';
 import { distance, living } from '../src/sim/types';
 import type { ObjectKind, Vec } from '../src/sim/types';
 import { STEP, step } from '../src/sim/step';
-import { published } from '../src/sim/broadcast';
+import { published, updateBroadcast } from '../src/sim/broadcast';
 import { extractionRequirement } from '../src/ui/extraction';
 import { guideLocation, missionGoals } from '../src/ui/objectives';
-import { Recorder, parseReplay, verifyReplay } from '../src/replay/core';
+import { Recorder, ReplayPlayer, parseReplay, verifyReplay } from '../src/replay/core';
 import { buildInfo } from '../scripts/build-info';
 
-function run() {
+function run(treatInjuries = false) {
   const w = createWorld(injunction),
     ids = w.agents.map((a) => a.id);
   const build = buildInfo(process.cwd());
@@ -25,6 +28,10 @@ function run() {
     applyCommand(w, c);
   };
   const tick = () => {
+    if (treatInjuries) {
+      const hurt = w.agents.filter((a) => living(a) && a.medkit && a.hp <= 55).map((a) => a.id);
+      if (hurt.length) send({ kind: 'heal', agents: hurt });
+    }
     step(w);
     recorder.afterStep();
   };
@@ -73,6 +80,109 @@ function run() {
 }
 
 describe('Stay of execution', () => {
+  it('dispatches the terminal location to distant guards and reinforcements only through a live relay', () => {
+    for (const relayOff of [false, true]) {
+      const w = createWorld(injunction),
+        uploader = w.agents[0],
+        terminal = landmark(w, 'upload');
+      Object.assign(uploader, { x: terminal.x, y: terminal.y, disguised: true });
+      uploader.order = { kind: 'interact', target: 'upload' };
+      uploader.interaction = 0.8;
+      w.relayOff = relayOff;
+      completeInteraction(w, uploader, 'upload');
+      updateBroadcast(w, 5.1);
+      expect(w.broadcast!.traced).toBe(true);
+      expect(w.guards[1].lastSeen).toEqual(relayOff ? null : { x: terminal.x, y: terminal.y });
+      expect(w.guards[1].known).toEqual([]);
+      expect(w.guards[1].target).toBeNull();
+      expect(w.guards[2].mode).toBe('patrol'); // Marksmen keep their fixed posts.
+      w.time = 6.1;
+      updateAwareness(w, STEP);
+      const response = w.guards.filter((g) => g.id.startsWith('response-'));
+      expect(response).toHaveLength(relayOff ? 0 : 3);
+      for (const g of response) {
+        expect(g.lastSeen).toEqual({ x: terminal.x, y: terminal.y });
+        expect(g.known).toEqual([]);
+        expect(g.target).toBeNull();
+      }
+    }
+  });
+  it('stops the recorded unsupported upload before it can unlock an outside-only escape', () => {
+    const bundle = parseReplay(
+      readFileSync('tests/fixtures/injunction-unmasked-solo-640aec9a.replay.json', 'utf8'),
+    );
+    expect(bundle.result).toMatchObject({ status: 'won', alive: 1 });
+    const replay = new ReplayPlayer(bundle, buildInfo(process.cwd()), true);
+    while (!replay.done) replay.advance();
+    expect(replay.error).toContain('current outcome is playing; recorded outcome was won');
+    expect(replay.world.agents[0].hp).toBe(0);
+    expect(replay.world.broadcast!.progress).toBeGreaterThan(0);
+    expect(replay.world.broadcast!.progress).toBeLessThan(15);
+    expect(replay.world.waves).toBe(2);
+    // This is not merely a slower trip to the van: the objective stays unfinished.
+    for (let i = 0; i < 30 / STEP; i++) step(replay.world);
+    expect(published(replay.world)).toBe(false);
+    expect(replay.world.status).not.toBe('won');
+  });
+
+  it('keeps outside extraction routes outside, including after reinforcements open the gate', () => {
+    const w = createWorld(injunction),
+      van = landmark(w, 'extract');
+    for (const gateOpen of [false, true, false]) {
+      w.gateOpen = gateOpen;
+      for (const start of [...injunction.spawns, { x: 7.71, y: 4.34 }, { x: 53, y: 20 }]) {
+        const path = extractionPath(w, start, van);
+        expect(path.at(-1)).toMatchObject({ x: van.x, y: van.y });
+        let from = start;
+        for (const point of path) {
+          expect(canWalk(w, from, point)).toBe(true);
+          expect(intersects(from, point, injunction.restricted)).toBe(false);
+          from = point;
+        }
+      }
+    }
+    w.gateOpen = true;
+    const inside = { x: 34.8, y: 19.5 };
+    expect(extractionPath(w, inside, van)).toEqual(findPath(w, inside, van));
+    const ids = w.agents.map((a) => a.id);
+    applyCommand(w, { kind: 'interact', agents: ids, target: 'extract' });
+    expect(w.agents[2].path).toEqual(extractionPath(w, w.agents[2], van));
+    applyCommand(w, { kind: 'move', agents: [ids[2]], point: { x: 18, y: 22 } });
+    expect(w.agents[2].path.at(-1)).toEqual({ x: 18, y: 22 });
+  });
+
+  it('defends the traced upload and withdraws with the whole crew, RADIO active and flashes spent', () => {
+    const { w, ids, spend, send, move, wait, act, verify } = run(true);
+    spend();
+    send({ kind: 'weapons', agents: ids });
+    const fight = (target: string) => {
+      const g = w.guards.find((g) => g.id === target)!;
+      if (!living(g)) return;
+      send({ kind: 'attack', agents: ids, target });
+      wait(() => !living(g), 45);
+      send({ kind: 'hold', agents: ids });
+    };
+    move(ids, { x: 10.5, y: 31 });
+    fight('guard-0');
+    fight('guard-1');
+    move(ids, { x: 18, y: 22 });
+    move(ids, { x: 22, y: 16.3 });
+    fight('guard-4');
+    move(ids, { x: 24, y: 13 });
+    move([ids[0]], { x: 24, y: 8 });
+    move(ids.slice(1), { x: 24, y: 13 });
+    act([ids[0]], 'upload', () => published(w));
+    expect(w.broadcast!.traced).toBe(true);
+    expect(w.waves).toBe(2);
+    expect(w.relayOff).toBe(false);
+    move(ids, { x: 24, y: 13 });
+    move(ids, { x: 22, y: 16.3 });
+    move(ids, { x: 18, y: 22 });
+    move(ids, { x: 9.3, y: 29 });
+    move(ids, { x: 5, y: 31 });
+    act(ids, 'extract', () => w.status === 'won');
+    verify();
+  });
   it('keeps RADIO inaccessible after an armed rush reaches the office entrance under a live alarm', () => {
     const { w, ids, send, tick, recorder } = run();
     send({ kind: 'weapons', agents: ids });

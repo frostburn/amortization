@@ -501,6 +501,8 @@ mission settings with the previous defaults.
 
 Verification records and replays an undamaged quiet completion and a prepared
 armed completion, each with all four alive and both flashes already spent.
+A third full-crew completion defends UPLINK with RADIO active, also with both
+flashes spent, then withdraws through the west entrance and around the perimeter.
 A direct squad rush leaves the shutter closed and RADIO active while the alarm
 brings reinforcements. Geometry checks include every patrol post, landmark and
 the inner checkpoint route. Focused checks cover friendly exposure, solid cover,
@@ -509,6 +511,46 @@ cover the mission picker, guidance, invalid targeting, cancellation, the pinned
 thrower, one-grenade confirmation and recovery. These browser journeys stay
 outside the unchanged ten-case CI smoke suite. Human difficulty and grenade
 utility remain playtesting questions.
+
+### First human run: trace response and extraction routes
+
+The unchanged `640aec9a` recording originally won at 74.47 seconds with Vale
+alone. Morrow completed the unmasked upload after killing only the registry
+inspector. Tracing called the same twelve-unit investigation as a local noise;
+distant guards and both reinforcement waves never received the terminal location.
+The final squad extraction order then sent the two untouched long-gun carriers
+through the compound, while Vale followed the public north street.
+
+Operation 10 now sends a traced UPLINK location over a live RADIO to mobile site
+guards and newly arriving teams. Marksmen keep their fixed posts, and direct
+visual contact takes precedence over a remote dispatch. The report supplies a
+fixed incident point, not an unseen operative's identity or changing position.
+Thirty seconds of search time allows a cross-site approach. Disabling RADIO
+before the trace prevents the site dispatch and waves; local investigation still
+works. Guards already sent continue investigating after RADIO is disabled.
+LOOP remains the quiet alternative. These rules are opt-in mission settings;
+operation 05 keeps its previous trace response.
+
+With current rules, the submitted inputs lose Morrow around 44 seconds with
+UPLINK at 50%; waiting beyond the recorded end still cannot unlock extraction.
+The original file is preserved under `tests/fixtures/`, separate from the
+successful human completion corpus. This prevents making a known exploit a
+required win. A supported armed run with RADIO active still wins with all four
+alive, but Rook leaves on 5 HP and Sable on 32 HP.
+
+Operation 10 extraction orders now prefer a route that stays outside the
+restricted perimeter when both the operative and the exit are outside. This
+uses the existing cached navigation grid with the perimeter excluded; inside
+operatives and ordinary movement retain their usual routes. Door-state changes
+and geometry edits still invalidate collision connections. If no public route
+exists, ordinary reachable routing remains available. This is a perimeter
+preference, not automatic enemy avoidance or a guarantee of safety.
+
+Vale's two early reversals were legal routes around the west wall after clicks
+on its inner side. Substantial detours now explain themselves in the existing
+map caption, using the computed route without another search. Selected routes
+are clearer and a single selected operative has an arrow showing the first
+segment. Hovered mission items and enemies retain priority over route feedback.
 
 ## Next useful work
 

@@ -1,4 +1,4 @@
-import { investigateNoise, raiseAlarm } from './awareness';
+import { dispatchInvestigation, investigateNoise, raiseAlarm } from './awareness';
 import { lineClear } from './navigation';
 import { disoriented, distance, living } from './types';
 import type { Operative, World } from './types';
@@ -62,9 +62,13 @@ export function updateBroadcast(w: World, dt: number) {
       const terminal = w.mission.landmarks.find((o) => o.id === 'upload')!;
       investigateNoise(w, terminal);
       raiseAlarm(w);
+      const dispatched = config.dispatchOnTrace && !w.relayOff;
+      if (dispatched) dispatchInvestigation(w, terminal);
       notify(
         w,
-        `UPLINK traced. Nearby guards are converging.${w.relayOff ? ' RADIO is offline; no reinforcements.' : ' Reinforcements called.'} The upload can still finish.`,
+        dispatched
+          ? 'UPLINK traced. RADIO dispatched site guards and incoming teams to the registry. Defend the uploader or break off; progress is saved.'
+          : `UPLINK traced. Nearby guards are converging.${w.relayOff ? ' RADIO is offline; no reinforcements.' : ' Reinforcements called.'} The upload can still finish.`,
         'warning',
       );
     }

@@ -99,6 +99,8 @@ export interface Mission {
   evidenceName: string;
   gateOutside: Vec;
   gateInsideOnly?: boolean;
+  /** Extraction from the public street should stay outside the restricted perimeter. */
+  perimeterExtraction?: boolean;
   response: { spawns: Vec[]; patrol: Vec[]; specialists?: GuardTactic[] };
   loadout?: [WeaponKind, WeaponKind, WeaponKind, WeaponKind];
   /** Large sites start near the crew at a readable scale, with an optional map overview. */
@@ -116,6 +118,7 @@ export interface Mission {
     subject?: string;
     completed?: string;
     guidance?: string;
+    dispatchOnTrace?: boolean;
   };
   demolition?: { armTime: number; blastRadius: number };
   security?: {

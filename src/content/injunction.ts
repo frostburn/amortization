@@ -32,7 +32,7 @@ export const injunction: Mission = {
     'Mara: all four of you are back. Now we make the mandate binding. Serve it at the registry UPLINK. Ivory inspectors check maintenance identities; break sight before their check completes. RADIO is in the north-east control office, beyond the inner checkpoint. Rook and Sable each brought one flash.',
   briefing: {
     lead: 'An order is only paper until someone has to obey it.',
-    body: 'The mandate survived and the crew is together again. Upload it to the enforcement registry for 20 seconds, then extract every survivor at the north-east VAN. A partner holding LOOP masks the terminal trace; upload progress survives interruptions. The raid log is optional. RADIO is deep inside a secure office: the entrance offers no quick way to stop reinforcements.',
+    body: 'The mandate survived and the crew is together again. Upload it to the enforcement registry for 20 seconds, then extract every survivor at the north-east VAN. A partner holding LOOP masks the terminal trace; otherwise a live RADIO dispatches site guards and incoming teams to UPLINK. Upload progress survives interruptions. The raid log is optional. RADIO is deep inside a secure office: the entrance offers no quick way to stop reinforcements.',
     routes: [
       {
         title: 'Past the credentials desk',
@@ -44,7 +44,7 @@ export const injunction: Mission = {
       },
       {
         title: 'Keep the alarm expensive',
-        body: 'The entrance, inner checkpoint, and control office are separate defensive positions. Advancing as one firing line can alert the office before anyone reaches RADIO. Use the service buildings, split firing angles, and cover Sable while the coil charges. Disabling RADIO stops further reports and response waves; it does not erase identities or silence local guards. A traced UPLINK remains usable, and the upload can be completed after both flashes are spent.',
+        body: 'The entrance, inner checkpoint, and control office are separate defensive positions. Advancing as one firing line can alert the office before anyone reaches RADIO. Use the service buildings, split firing angles, and cover Sable while the coil charges. Disabling RADIO stops further reports and response waves; it does not erase identities or silence local guards. A traced UPLINK remains usable, but site guards and incoming response teams receive its location over a live RADIO. Bring armed partners to defend the registry, or break off and return. The upload can be completed after both flashes are spent.',
       },
     ],
   },
@@ -55,18 +55,20 @@ export const injunction: Mission = {
   gate: { x: 50, y: 9, w: 0.35, h: 4 },
   gateOutside: { x: 51.5, y: 11 },
   gateInsideOnly: true,
+  perimeterExtraction: true,
   archive: {
     door: { x: 40, y: 18, w: 3, h: 0.35 },
     inside: { x: 41.5, y: 16.8 },
     name: 'control office',
   },
   broadcast: {
+    dispatchOnTrace: true,
     duration: 20,
     traceTime: 5,
     subject: 'the restitution mandate',
     completed: 'Mandate served',
     guidance:
-      'Use the screened west service walk to staff LOOP, then send a partner to UPLINK behind the north registry racks. Uploading takes 20 seconds; progress is saved if work stops. Ivory inspectors check uniforms within four units: break sight before their 2.5-second check ends. RADIO is optional, in the secure north-east office beyond the checkpoint. Use a partner on the north-street SHUNT or force CUT for eight seconds, then work RADIO for four seconds. Keep SHUNT held until the infiltrator leaves. Flashes create a crossing but do not interrupt a backup call.',
+      'Use the screened west service walk to staff LOOP, then send a partner to UPLINK behind the north registry racks. Uploading takes 20 seconds; progress is saved if work stops. Without LOOP, a five-second trace sends site guards and incoming teams to UPLINK over a live RADIO. Station armed partners to defend the worker. Ivory inspectors check uniforms within four units: break sight before their 2.5-second check ends. RADIO is optional, in the secure north-east office beyond the checkpoint. Use a partner on the north-street SHUNT or force CUT for eight seconds, then work RADIO for four seconds. Keep SHUNT held until the infiltrator leaves. Flashes create a crossing but do not interrupt a backup call.',
   },
   response: {
     spawns: [
@@ -178,7 +180,7 @@ export const injunction: Mission = {
       x: 25.5,
       y: 8,
       detail:
-        'Twenty seconds with free hands. Progress survives interruptions. Without LOOP, five seconds of uploading draws guards. Flashes interrupt the worker too.',
+        'Twenty seconds with free hands. Progress survives interruptions. Without LOOP, five seconds of uploading dispatches site guards and incoming teams here if RADIO is live. Bring armed cover. Flashes interrupt the worker too.',
     },
     {
       id: 'relay',
@@ -213,7 +215,7 @@ export const injunction: Mission = {
       x: 52,
       y: 8,
       detail:
-        'Serve the mandate, then order every survivor here. Bring the LOOP operator too. LOG is optional.',
+        'Serve the mandate, then order every survivor here. Bring the LOOP operator too. Crew already outside use the public perimeter. LOG is optional.',
     },
   ],
   spawns: [

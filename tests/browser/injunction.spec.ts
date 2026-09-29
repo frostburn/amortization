@@ -158,7 +158,9 @@ for (const mobile of [false, true]) {
         },
         action,
         slow: () => {},
-        order: () => {},
+        order: (hit: { kind: string; point: Vec }) => {
+          if (hit.kind === 'ground') send({ kind: 'move', agents: selected, point: hit.point });
+        },
       });
       scene.app.ticker.add(draw);
       window.injunctionTest = {
@@ -235,6 +237,53 @@ for (const mobile of [false, true]) {
     });
     await page.evaluate(() => window.injunctionTest.advance(46));
     await expect(page.locator('#condition-0')).not.toContainText('Disoriented');
+
+    // Reproduce Vale's cross-wall move from human run 640aec9a with actual map input.
+    await page.evaluate(() => {
+      const { world, scene } = window.injunctionTest;
+      world.guards = [];
+      const a = world.agents[1];
+      Object.assign(a, { x: 5.709494566159405, y: 21.460730524467742 });
+      a.previous = { x: a.x, y: a.y };
+      scene.zoomBy(0.62 / scene.camera.scale.x);
+      const centre = scene.screen({ x: 9, y: 20 });
+      scene.panBy(scene.app.screen.width / 2 - centre.x, scene.app.screen.height / 2 - centre.y);
+    });
+    await press('[data-agent="1"]');
+    await page.locator('canvas').scrollIntoViewIfNeeded();
+    const point = await page.evaluate(() => {
+      const { scene } = window.injunctionTest;
+      const p = scene.screen({ x: 9.933711354459884, y: 11.450122634612335 }),
+        rect = scene.app.canvas.getBoundingClientRect();
+      return { x: p.x + rect.x, y: p.y + rect.y };
+    });
+    if (mobile) await page.touchscreen.tap(point.x, point.y);
+    else await page.mouse.click(point.x, point.y, { button: 'right' });
+    await expect(page.locator('#map-location')).toHaveText('Movement · detour');
+    await expect(page.locator('#map-detail')).toContainText('Vale:');
+    await expect(page.locator('#map-detail')).toContainText('around obstacles');
+    expect(
+      await page.evaluate(() => {
+        const a = window.injunctionTest.world.agents[1];
+        return a.path[0].y > a.y;
+      }),
+    ).toBe(true);
+    await page.evaluate(() => window.injunctionTest.advance(0));
+    await page.screenshot({
+      path: `/tmp/mission-10-feedback/${mobile ? 'touch' : 'desktop'}-detour.png`,
+    });
+    await press('[data-action="hold"]');
+    await expect(page.locator('#map-location')).not.toHaveText('Movement · detour');
+    await page.evaluate(() => {
+      const { world, advance } = window.injunctionTest;
+      world.broadcast!.traced = true;
+      world.broadcast!.progress = 10;
+      advance(0);
+    });
+    await press('#objective-primary');
+    await expect(page.locator('#guide-detail')).toContainText('Site guards and incoming teams');
+    await expect(page.locator('#guide-locations')).toContainText('SHUNT');
+    await expect(page.locator('#guide-locations')).toContainText('CUT');
     await expect(page.locator('vite-error-overlay')).toHaveCount(0);
     expect(errors).toEqual([]);
     await context.close();

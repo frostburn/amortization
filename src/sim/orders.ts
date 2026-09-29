@@ -23,6 +23,7 @@ import { demolished, detonationStatus } from './demolition';
 import { cancelCharge, longGun } from './weapons';
 import { detentionAvailable, detentionRefusal, workDetention, rescueComplete } from './detention';
 import { canAuthorise, inspectionRemaining } from './security';
+import { extractionPath } from './extraction-routing';
 
 export function landmark(world: World, id: ObjectKind): Landmark {
   const source = world.mission.landmarks.find((o) => o.id === id)!;
@@ -177,7 +178,7 @@ export function interact(world: World, ids: string[], id: ObjectKind) {
       a.order = { kind: 'interact', target: id };
       cancelCharge(a);
       a.interaction = 0;
-      a.path = findPath(world, a, target);
+      a.path = extractionPath(world, a, target);
     }
     if (agents.length)
       notify(

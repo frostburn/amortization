@@ -11,6 +11,35 @@ All twenty-three retained files are byte-for-byte copies of submissions provided
 fifteen on 2026-09-27, six on 2026-09-28 and two on 2026-09-29, including their `unversioned` /
 local-changes metadata.
 
+## Stay of execution: unsupported upload diagnostic
+
+The unchanged submission `amortization-injunction-won-640aec9a.replay.json` is
+kept at [`../fixtures/injunction-unmasked-solo-640aec9a.replay.json`](../fixtures/injunction-unmasked-solo-640aec9a.replay.json),
+separate from the required successful runs. It matched every original checkpoint
+on `6b1c6df`: tick **2234 / 74.47s**, **one survivor (Vale)**, **23 shots**, alarm
+active, optional LOG left behind. Feedback: “Got confused and accidentally
+cheesed the level. That path-finding, tho XD.”
+
+Morrow took KIT and uploaded without LOOP or RADIO preparation. The trace at
+35.53s reached only the nearby registry inspector. After killing that inspector,
+Morrow resumed and finished at 56.97s. The two response teams patrolled the east
+side instead of responding to UPLINK. At 59.17s, the all-crew extraction order
+sent Morrow and the two idle long-gun carriers through guarded lanes; they died,
+leaving Vale's public north-street approach to satisfy the survivors-only exit.
+
+The current regression runs the original commands and confirms that dispatched
+site guards stop the unsupported upload at approximately 50%. Waiting another
+30 seconds beyond the submitted duration still cannot unlock the van. No inputs,
+checkpoints, metadata or comments were edited to produce this result. Separate
+quiet, prepared assault and defended radio-live runs verify full-crew wins after
+both flash grenades are spent.
+
+The final extraction also motivated a public-perimeter preference for outside
+operatives. Vale's earlier northward clicks at ticks 1561 and 1576 landed across
+the west wall: going south first was the real route to its opening. Desktop and
+touch checks reproduce the former coordinate and verify the new detour caption,
+route arrow and Hold cancellation without changing that intended destination.
+
 ## Key personnel: locked EXIT feedback
 
 `personnel-split-exit-b6202c06.replay.json` is the unchanged submission

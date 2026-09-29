@@ -12,7 +12,7 @@ import {
   isRescue,
   living,
 } from '../sim/types';
-import type { ObjectKind, World } from '../sim/types';
+import type { ObjectKind, Vec, World } from '../sim/types';
 import { longGun, weaponRange } from '../sim/weapons';
 import { lineClear } from '../sim/navigation';
 import { extractionRequirement } from './extraction';
@@ -22,6 +22,23 @@ export const armedSelection = (w: World, selected: string[]) =>
     (a) =>
       selected.includes(a.id) && controllable(a) && !a.carrying && !a.disarmed && !disoriented(a),
   );
+
+/** Explain a substantial detour using the existing route, without another path search. */
+export function movementHint(w: World, selected: string[]): string | null {
+  for (const a of w.agents) {
+    if (!selected.includes(a.id) || !controllable(a) || a.path.length < 2) continue;
+    let length = 0;
+    let from: Vec = a;
+    for (const point of a.path) {
+      length += distance(from, point);
+      from = point;
+    }
+    const direct = distance(a, a.path.at(-1)!);
+    if (length > direct * 1.5 && length > direct + 6)
+      return `${a.name}: ${Math.ceil(length)}-unit route around obstacles. Follow the mint line; Hold / S stops movement.`;
+  }
+  return null;
+}
 
 /** Geometry feedback, not a promise of an immediate shot: reloads, settling and
  * coil charging still apply. An attack order draws weapons and pursues as needed. */

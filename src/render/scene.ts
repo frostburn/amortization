@@ -1411,7 +1411,23 @@ export class Scene {
             points.flatMap((p) => [p.x, p.y]),
             false,
           )
-          .stroke({ color: COLORS.mint, width: 1, alpha: 0.45 });
+          .stroke({ color: COLORS.mint, width: selected.length === 1 ? 1.8 : 1, alpha: 0.65 });
+        if (selected.length === 1) {
+          const from = points[0],
+            to = points[1],
+            length = distance(from, to);
+          if (length > 12) {
+            const dx = (to.x - from.x) / length,
+              dy = (to.y - from.y) / length,
+              x = from.x + dx * Math.min(24, length / 2),
+              y = from.y + dy * Math.min(24, length / 2);
+            this.effects
+              .moveTo(x - dx * 6 - dy * 4, y - dy * 6 + dx * 4)
+              .lineTo(x, y)
+              .lineTo(x - dx * 6 + dy * 4, y - dy * 6 - dx * 4)
+              .stroke({ color: COLORS.mint, width: 2, alpha: 0.9 });
+          }
+        }
         const dest = points[points.length - 1];
         this.effects.ellipse(dest.x, dest.y, 7, 4).stroke({ color: COLORS.mint, width: 1.5 });
       }

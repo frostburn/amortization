@@ -60,6 +60,27 @@ export function investigateNoise(world: World, point: Vec) {
     g.repath = 0;
   }
 }
+/** A radio dispatch names a fixed incident location, never an unseen person's position. */
+export function dispatchInvestigation(world: World, point: Vec, guards = world.guards) {
+  for (const g of guards.filter(living)) {
+    if (g.turret || g.tactics?.role === 'marksman') continue;
+    // Keep a guard's direct contact instead of replacing it with a remote report.
+    const target = world.agents.find((a) => a.id === g.target && controllable(a));
+    if (target && sees(world, g, target)) continue;
+    g.mode = 'combat';
+    g.lastSeen = { x: point.x, y: point.y };
+    g.searchTime = 30;
+    g.path = [];
+    g.repath = 0;
+    if (g.tactics) {
+      g.tactics.goal = null;
+      g.tactics.cover = false;
+      g.tactics.until = 0;
+      g.tactics.nextMove = world.time;
+    }
+  }
+}
+
 export function reportGunfire(world: World, shooter: Operative) {
   for (const g of world.guards.filter(living)) {
     if (g.turret) {
@@ -227,6 +248,10 @@ export function updateAwareness(world: World, dt: number) {
       );
       g.known = [...world.known];
       world.guards.push(g);
+      if (world.mission.broadcast?.dispatchOnTrace && world.broadcast?.traced) {
+        const terminal = world.mission.landmarks.find((o) => o.id === 'upload')!;
+        dispatchInvestigation(world, terminal, [g]);
+      }
     }
     world.waves++;
     world.gateOpen = true;

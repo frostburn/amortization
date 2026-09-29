@@ -28,7 +28,7 @@ import type { Records, MissionRecord } from './storage';
 import { missionGoals, transferFeedback } from './objectives';
 import type { Goal, GoalId, GuideTarget } from './objectives';
 import { extractionRequirement } from './extraction';
-import { attackPreview, objectRequirement } from './interactions';
+import { attackPreview, movementHint, objectRequirement } from './interactions';
 import { demolished, detonationStatus } from '../sim/demolition';
 import { activeTurrets, canAuthorise, inspectionRemaining, turretPowered } from '../sim/security';
 import { flashReady } from '../sim/flash';
@@ -365,6 +365,7 @@ export class Hud {
           (o.id === 'evidence' && world.evidence === 'courier')),
     );
     const objectBlock = object ? objectRequirement(world, object.id, state.selected) : null;
+    const routeHint = movementHint(world, state.selected);
     const chargeStatus =
       object && isCharge(object.id) && world.demolition?.armed.includes(object.id)
         ? demolished(world)
@@ -377,7 +378,9 @@ export class Hud {
         ? `${object.tag} · ${chargeStatus ?? (objectBlock ? 'LOCKED' : 'READY')}`
         : inspected
           ? guardRole(inspected)
-          : world.mission.location,
+          : routeHint
+            ? 'Movement · detour'
+            : world.mission.location,
     );
     this.set(
       'map-detail',
@@ -391,11 +394,11 @@ export class Hud {
               : object.detail))
         : inspected
           ? `${inspected.turret && !turretPowered(world, inspected) ? 'Offline · ' : ''}${WEAPONS[inspected.armament!.kind].name} · ${weaponStatus(inspected)} · range ${weaponRange(inspected)}`
-          : 'Municipal assets division',
+          : (routeHint ?? 'Municipal assets division'),
     );
     this.field('map-location').parentElement!.classList.toggle(
       'inspecting',
-      !!inspected || !!object,
+      !!inspected || !!object || !!routeHint,
     );
     this.field('enemy-behavior').hidden = !inspected || !!object;
     this.set(
@@ -737,7 +740,9 @@ export class Hud {
         done
           ? 'Both stations released · rally crew'
           : b.traced
-            ? 'Signal traced · defend UPLINK'
+            ? config.dispatchOnTrace && !world.relayOff
+              ? 'Traced · radio response to UPLINK'
+              : 'Signal traced · defend UPLINK'
             : operator
               ? `LOOP held by ${operator.name}`
               : `LOOP open · trace in ${Math.ceil(config.traceTime - b.trace)}s of upload`,
