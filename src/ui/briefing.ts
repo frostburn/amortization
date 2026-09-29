@@ -1,4 +1,4 @@
-import type { Mission } from '../sim/types';
+import type { Mission, WeaponKind } from '../sim/types';
 import { COIL_CHARGE, WEAPONS } from '../sim/weapons';
 import { medalList } from './medal-display';
 import type { MedalId } from './medals';
@@ -64,15 +64,18 @@ const summaries: Record<Mission['id'], { objective: string; extract: string; rul
 };
 
 function equipment(m: Mission) {
-  const kinds = m.loadout ?? ['pistol', 'pistol', 'pistol', 'pistol'];
+  const kinds: readonly WeaponKind[] = m.loadout ?? [];
+  const names = ['Morrow', 'Vale', 'Rook', 'Sable'];
+  const free = names.filter((_, i) => !m.detention?.cells.some((c) => c.agent === i));
   return `<section aria-label="Starting equipment" data-loadout>
-    <dl class="briefing-loadout">${['Morrow', 'Vale', 'Rook', 'Sable']
+    <dl class="briefing-loadout">${names
       .map((name, i) => {
         const captive = m.detention?.cells.some((c) => c.agent === i);
-        return `<div><dt>${name}</dt><dd>${captive ? 'Detained · unarmed' : WEAPONS[kinds[i]].name}${!captive && m.flashGrenades && i >= 2 ? ' · 1 flash' : ''}</dd></div>`;
+        return `<div><dt>${name}</dt><dd>${captive ? 'Detained · unarmed' : m.loadout ? WEAPONS[m.loadout[i]].name : 'Sidearm'}${!captive && m.flashGrenades && i >= 2 ? ' · 1 flash' : ''}</dd></div>`;
       })
       .join('')}</dl>
-    <p>Each deployed operative has one field dressing. Long guns stay visible when stowed. Reloads are automatic; reserve ammunition is unlimited.</p>
+    <p>${m.detention ? `${free.join(' and ')} each start with one field dressing. Detained operatives recover their dressings at GEAR.` : 'Each operative starts with one field dressing.'}</p>
+    <p>${m.loadout ? 'Long guns stay visible when stowed. Reloads are automatic; reserve ammunition is unlimited.' : 'Sidearms have an eight-unit range and need no reloads.'}</p>
     ${kinds.includes('carbine') ? `<p>Carbines steady for ${WEAPONS.carbine.settle}s after moving.</p>` : ''}
     ${kinds.includes('coil') ? `<p>Coil rifles charge for ${COIL_CHARGE}s while stationary with continuous sight.</p>` : ''}
   </section>`;

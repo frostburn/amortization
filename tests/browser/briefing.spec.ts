@@ -36,6 +36,11 @@ for (const touch of [false, true]) {
     await expect(dialog.locator('.briefing-routes')).toBeHidden();
     await bounds();
     await page.screenshot({ path: testInfo.outputPath('first-briefing.png') });
+    await press(dialog.getByText('Equipment & controls', { exact: true }));
+    await expect(dialog.locator('[data-loadout]')).toContainText(
+      'eight-unit range and need no reloads',
+    );
+    await expect(dialog.locator('[data-loadout]')).not.toContainText('Reloads are automatic');
     const ids = [
       'archive',
       'transfer',
@@ -63,6 +68,12 @@ for (const touch of [false, true]) {
           await expect(
             dialog.locator('.briefing-loadout > div').filter({ hasText: name }),
           ).toContainText('Detained · unarmed');
+        await expect(dialog.locator('[data-loadout]')).toContainText(
+          'Morrow and Sable each start with one field dressing',
+        );
+        await expect(dialog.locator('[data-loadout]')).toContainText(
+          'Detained operatives recover their dressings at GEAR',
+        );
       }
     }
     await expect(begin).toBeFocused();
