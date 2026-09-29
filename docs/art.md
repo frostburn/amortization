@@ -1,5 +1,40 @@
 # Art provenance
 
+## Visual direction
+
+An aging municipal city absorbed by corporate ownership. The early operations
+establish a serious, grounded baseline: ordinary infrastructure, restrained
+signage, and evidence of use. Humorous props and slogans should wait until that
+baseline is established. Painterly portraits and faceted map models remain the
+shared character language.
+
+The environment uses chalky concrete, dirty cream coping, faded brick, blue-grey
+glass, slate roofs, timber crates and oxblood transit paint against cool asphalt.
+Warm windows suggest occupied buildings. Mortar joints, damp bases, roof seams,
+service vents and downpipes provide quiet material detail. Wear is sparse and
+flat; architectural details follow the existing world projection and footprints.
+Contact shadows anchor solid scenery without adding obstacles.
+
+Every living, free operative carries a soft seven-unit light pool, including
+unselected teammates. A recruited witness carries one too, even while waiting.
+Pools follow interpolated movement and merge by their brightest contribution,
+so a clustered team does not wash out the scene. Outside them, a cool ambient
+shade retains at least 60% of the underlying color. The complete map, enemies and
+sight cones remain visible; this lighting does not affect guard perception,
+line of sight, disguises or replay state. Objective markers, orders and selection
+indicators sit above the shade.
+
+During extraction, pools follow passengers to the van, then accompany its
+departure. Fallen or captive characters do not emit light. Defeat retains the
+same readable ambient floor. The renderer uses one viewport-sized GPU pass with
+five fixed light slots, without per-frame texture generation or offscreen
+filters. Camera pan, zoom, viewport resizing and display density all use the same
+projection as the models. `tests/browser/lighting.spec.ts` verifies actual
+rendered pixels for overlap, split crew, captivity, death, witness recruitment,
+movement interpolation and camera transforms.
+
+## Portrait assets
+
 The production portrait atlases were generated for Amortization using OpenAI's built-in image-generation tool: the squad on 2026-09-25, and witnesses on 2026-09-27. Both depict original fictional characters. PNG outputs were converted to WebP. CSS background positions select the appropriate portrait. The witness atlas is 768×384 pixels and 44 KB.
 
 | Asset                          | Layout                                              | Usage                        |

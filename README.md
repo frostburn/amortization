@@ -161,6 +161,11 @@ Recruitment, extraction readiness, injuries and messages never shrink the map.
 Viewport resizing preserves the camera’s scale. **Fit map** frames the mission in the available
 space; operations 01–06 start with this overview. Operations 07–10 start at a readable scale near the crew.
 
+Soft light pools follow every free, living operative and recruited witness,
+including separated teammates. The surrounding map, enemies and sight cones
+remain visible in cooler ambient light. Lighting is atmospheric; it does not
+change detection, disguise rules or targeting.
+
 **Follow** / **Home** returns to the selected crew at the last working zoom. When
 zoomed in, the camera uses a modest, smoothed look ahead along their route and
 a shorter facing lead at rest. A central quiet area absorbs small formation and
