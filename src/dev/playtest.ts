@@ -6,6 +6,7 @@ import type { World } from '../sim/types';
 import { STEP } from '../sim/step';
 import { compatibility, MAX_FILE_SIZE, parseReplay, Recorder, ReplayPlayer } from '../replay/core';
 import type { ReplayBundle } from '../replay/core';
+import { bindBackdropDismiss } from '../ui/dialog';
 
 const STORAGE_KEY = 'amortization.playtests.v1';
 const clock = (seconds: number) =>
@@ -92,6 +93,7 @@ export class Playtest {
       dialog.dataset.playtest = '';
       dialog.setAttribute('aria-labelledby', `playtest-${kind}-title`);
       document.body.append(dialog);
+      bindBackdropDismiss(dialog);
       dialog.querySelector('[data-close]')!.addEventListener('click', () => dialog.close());
       dialog.addEventListener('close', () => this.persist());
       dialog.querySelector('[data-return]')!.addEventListener('click', () => {

@@ -558,7 +558,11 @@ when browser storage is disabled.
 amber and unearned medals faded. Hover, focus with the keyboard, or tap a medal
 to read its exact conditions. Escape dismisses the tooltip first. Medal controls
 are separate from the button that starts an operation. Results show medals from
-the current run and highlight new awards in mint.
+the current run and highlight new awards in mint. Briefings repeat the mission's
+medals as small icons beside the title, with the same tooltips and earned states.
+
+Click or tap outside any dialog to dismiss it. The game remains paused; with
+stacked dialogs, only the top one closes. Escape also remains available.
 
 Medals accumulate across successful attempts. Apart from **Settled**, every
 challenge requires **all four operatives to extract alive** in the same run.

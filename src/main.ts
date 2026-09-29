@@ -101,7 +101,7 @@ async function boot() {
     hud.reset(mission);
     playtest?.newAttempt(world, briefing ? 'mission-change' : 'restart');
     hud.vision(scene.showVision);
-    if (briefing) hud.showBriefing();
+    if (briefing) hud.showBriefing(records);
     updateHud();
   }
   function issue(command: Command) {
@@ -244,7 +244,7 @@ async function boot() {
         break;
       case 'briefing':
         paused = true;
-        if (world.status === 'playing') hud.showBriefing();
+        if (world.status === 'playing') hud.showBriefing(records);
         else hud.showEnd(world, missionRecord(records, world.mission.id), true, newMedals);
         break;
       case 'restart': {
@@ -415,7 +415,7 @@ async function boot() {
   });
   updateHud();
   scene.render(selected, 1);
-  hud.showBriefing();
+  hud.showBriefing(records);
 }
 void boot().catch((error: unknown) => {
   console.error(error);

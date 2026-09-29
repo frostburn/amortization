@@ -28,7 +28,39 @@ for (const touch of [false, true]) {
     });
     await page.goto('/');
     await expect(page).toHaveTitle('Amortization');
-    await expect(page.getByRole('dialog')).toContainText('The release clause');
+    const briefing = page.getByRole('dialog', { name: 'The release clause', exact: true });
+    await expect(briefing).toBeVisible();
+    await expect(briefing.getByRole('button', { name: 'Begin operation' })).toBeFocused();
+    const tip = page.getByRole('tooltip');
+    await expect(tip).toBeHidden();
+    const compact = briefing.locator('.briefing-heading');
+    await expect(compact.locator('[data-medal]')).toHaveCount(7);
+    await expect(compact.locator('[data-earned="true"]')).toHaveCount(2);
+    await expect(compact.locator('.medal-name').first()).toBeHidden();
+    const compactQuiet = compact.locator('[data-medal="quiet"]');
+    await expect(compactQuiet).toHaveAccessibleName(/Low profile. Unearned./);
+    if (touch) await compactQuiet.tap();
+    else {
+      // The icons share the title line without growing the desktop briefing.
+      expect((await compact.boundingBox())!.height).toBe(26);
+      await compactQuiet.hover();
+    }
+    await expect(tip).toContainText('without ever triggering the site alarm');
+    const briefingRule = await tip.locator('p').textContent();
+    await page.screenshot({
+      path: `/tmp/amortization-briefing-medals-${touch ? 'touch' : 'desktop'}.png`,
+    });
+    // A top-layer tooltip may extend beyond the dialog. It is not the backdrop.
+    if (touch) await compact.locator('[data-medal]').first().tap();
+    else await compact.locator('[data-medal]').last().hover();
+    const tipBounds = (await tip.boundingBox())!,
+      dialogBounds = (await briefing.boundingBox())!;
+    const outsideX =
+      tipBounds.x < dialogBounds.x ? tipBounds.x + 2 : tipBounds.x + tipBounds.width - 2;
+    expect(outsideX < dialogBounds.x || outsideX > dialogBounds.x + dialogBounds.width).toBe(true);
+    if (touch) await page.touchscreen.tap(outsideX, tipBounds.y + tipBounds.height / 2);
+    else await page.mouse.click(outsideX, tipBounds.y + tipBounds.height / 2);
+    await expect(briefing).toBeVisible();
     const choose = page.getByRole('button', { name: 'Choose operation', exact: true });
     if (touch) await choose.tap();
     else await choose.click();
@@ -42,10 +74,10 @@ for (const touch of [false, true]) {
     await expect(unearned.locator('.medal-emblem')).toHaveCSS('opacity', '0.42');
     if (touch) await unearned.tap();
     else await unearned.hover();
-    const tip = page.getByRole('tooltip');
     await expect(tip).toBeVisible();
     await expect(tip).toContainText('Unearned');
     await expect(tip).toContainText('without ever triggering the site alarm');
+    await expect(tip.locator('p')).toHaveText(briefingRule!);
     await expect(dialog).toBeVisible();
     await expect(page.locator('#mission-title')).toHaveText('The release clause');
     if (touch) {
@@ -94,6 +126,9 @@ for (const touch of [false, true]) {
     else await launch.click();
     await expect(page.getByRole('dialog')).toContainText('An order is only paper');
     await expect(page.locator('#mission-title')).toHaveText('Stay of execution');
+    await expect(page.locator('.briefing-heading [data-medal]')).toHaveCount(8);
+    await expect(page.locator('.briefing-heading [data-earned="true"]')).toHaveCount(0);
+    await expect(page.locator('.briefing-heading [data-medal="untraced"]')).toBeAttached();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
@@ -177,6 +212,13 @@ test('winning debrief awards persist and a later casualty cannot erase medals', 
   await expect(page.getByRole('region', { name: 'Medals this run' })).toContainText('5 new');
   await expect(page.locator('.debrief-medals [data-new="true"]')).toHaveCount(5);
   await page.screenshot({ path: '/tmp/amortization-medals-awards.png' });
+  await page.mouse.click(8, 8);
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await page.evaluate(() => {
+    const { hud, w } = (window as unknown as { medalFixture: { hud: Hud; w: World } }).medalFixture;
+    hud.showEnd(w, { best: 60, fullCrewBest: 60, completions: 1, medals: [] });
+  });
+  await expect(page.getByRole('dialog')).toBeHidden(); // The next frame must not reopen it.
   await page.getByRole('button', { name: 'Operations', exact: true }).last().click();
   await expect(page.locator('[data-operation="depot"] [data-earned="true"]')).toHaveCount(5);
   await page.evaluate(() =>
@@ -188,6 +230,7 @@ test('winning debrief awards persist and a later casualty cannot erase medals', 
   await expect(depot.locator('[data-earned="true"]')).toHaveCount(5);
   await expect(depot).toContainText('Any crew: 00:50');
   await page.goto('/');
+  await expect(page.locator('.briefing-heading [data-earned="true"]')).toHaveCount(5);
   await page.getByRole('button', { name: 'Choose operation', exact: true }).click();
   await expect(page.locator('[data-operation="depot"] [data-earned="true"]')).toHaveCount(5);
 });

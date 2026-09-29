@@ -1548,6 +1548,43 @@ dialog h2 {
 .medal[data-new='true'] {
   color: var(--mint);
 }
+.briefing-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  /* Fit the icons into the title's existing vertical space. */
+  margin: -5px 0;
+  min-height: 26px;
+}
+.briefing-heading .medal-list {
+  flex-shrink: 0;
+  gap: 2px;
+}
+.briefing-heading .medal {
+  width: 26px;
+  min-height: 26px;
+  padding: 2px;
+}
+.briefing-heading .medal-emblem {
+  width: 20px;
+  height: 20px;
+}
+.briefing-heading .medal svg {
+  width: 16px;
+  height: 16px;
+}
+.briefing-heading .medal-mark {
+  right: -4px;
+  bottom: -2px;
+  width: 10px;
+  font-size: 9px;
+  line-height: 10px;
+}
+.briefing-heading .medal-name {
+  display: none;
+}
 .medal-tooltip {
   position: fixed;
   inset: auto;

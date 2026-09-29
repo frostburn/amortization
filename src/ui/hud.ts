@@ -27,6 +27,7 @@ import { missionRecord } from './storage';
 import { earnedMedals, medalsFor } from './medals';
 import type { MedalId } from './medals';
 import { bindMedalTips, medalList } from './medal-display';
+import { bindBackdropDismiss } from './dialog';
 import type { Records, MissionRecord } from './storage';
 import { missionGoals, transferFeedback } from './objectives';
 import type { Goal, GoalId, GuideTarget } from './objectives';
@@ -159,6 +160,7 @@ export class Hud {
       <dialog id="mission-dialog" aria-labelledby="dialog-title"></dialog>`;
     this.stage = this.app.querySelector('#stage')!;
     this.modal = this.app.querySelector('#mission-dialog')!;
+    bindBackdropDismiss(this.modal);
     this.closeMedalTip = bindMedalTips(this.modal);
     this.app
       .querySelector<HTMLInputElement>('#sound-volume')!
@@ -292,17 +294,17 @@ export class Hud {
       h: bounds.height,
     });
   }
-  private briefing() {
+  private briefing(medals: MedalId[] = []) {
     const m = this.mission;
     const equipment = m.loadout
       ? `<p class="dialog-body" data-loadout><b>Equipment:</b> ${m.loadout.map((kind, i) => `${['Morrow', 'Vale', 'Rook', 'Sable'][i]} — ${WEAPONS[kind].name}`).join('; ')}. Morrow or Vale can take KIT. Stowed long guns remain visible. ${m.loadout.includes('carbine') ? 'Carbines need 0.35 seconds to steady after moving. ' : ''}${m.loadout.includes('coil') ? 'Coil rifles need 1.25 seconds charging with continuous sight while stationary. Automatics empty quickly: cover their reloads. ' : ''} Reloads are automatic; reserve ammunition is unlimited.</p>`
       : '';
-    return `<div class="dialog-number">${m.number} / ${m.location}</div><h2 id="dialog-title">${m.title}</h2><p class="dialog-lead">${m.briefing.lead}</p><p class="dialog-body">${m.briefing.body}</p>${equipment}<div class="briefing-routes">${m.briefing.routes.map((route) => `<div><b>${route.title}</b><p>${route.body}</p></div>`).join('')}</div><p class="dialog-body">Guards can return an opening volley. Gunfire can be reported through walls. Use cover and field dressings; disable RADIO to stop support.</p><p class="briefing-controls"><kbd>1–4</kbd> select one · <kbd>Q</kbd> select all<br><kbd>RMB</kbd> move / interact / attack · <kbd>Space</kbd> pause<br><kbd>F</kbd> draw / stow · <kbd>S</kbd> hold / pause work<br>Drag to select · Wheel to zoom · Arrows / middle-drag to pan</p><button class="primary" data-action="begin">Begin operation <span>→</span></button><button class="dialog-secondary" data-action="operations">Choose operation</button><p class="dialog-foot">Orders remain active while paused. Selection changes preserve orders.</p>`;
+    return `<div class="dialog-number">${m.number} / ${m.location}</div><div class="briefing-heading"><h2 id="dialog-title">${m.title}</h2>${medalList(m, medals)}</div><p class="dialog-lead">${m.briefing.lead}</p><p class="dialog-body">${m.briefing.body}</p>${equipment}<div class="briefing-routes">${m.briefing.routes.map((route) => `<div><b>${route.title}</b><p>${route.body}</p></div>`).join('')}</div><p class="dialog-body">Guards can return an opening volley. Gunfire can be reported through walls. Use cover and field dressings; disable RADIO to stop support.</p><p class="briefing-controls"><kbd>1–4</kbd> select one · <kbd>Q</kbd> select all<br><kbd>RMB</kbd> move / interact / attack · <kbd>Space</kbd> pause<br><kbd>F</kbd> draw / stow · <kbd>S</kbd> hold / pause work<br>Drag to select · Wheel to zoom · Arrows / middle-drag to pan</p><button class="primary" autofocus data-action="begin">Begin operation <span>→</span></button><button class="dialog-secondary" data-action="operations">Choose operation</button><p class="dialog-foot">Orders remain active while paused. Selection changes preserve orders.</p>`;
   }
-  showBriefing() {
+  showBriefing(records: Records) {
     this.closeMedalTip();
     this.modal.classList.remove('operations-dialog');
-    this.modal.innerHTML = this.briefing();
+    this.modal.innerHTML = this.briefing(missionRecord(records, this.mission.id).medals);
     if (!this.modal.open) this.modal.showModal();
   }
   showOperations(records: Records) {
