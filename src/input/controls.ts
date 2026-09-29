@@ -1,7 +1,10 @@
+import { UPDATE_PRIORITY } from 'pixi.js';
 import type { Scene } from '../render/scene';
 import type { Hit } from '../render/scene';
+import { living } from '../sim/types';
 import type { Rect, Vec, World } from '../sim/types';
 import type { Hud, Action } from '../ui/hud';
+import { armedSelection, attackPreview, objectRequirement } from '../ui/interactions';
 
 export interface ControlsTarget {
   world: () => World;
@@ -27,6 +30,14 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     drag = false,
     add = false,
     pointerType = 'mouse';
+  let mouse: Vec | null = null;
+  let flash: { id: string; until: number } | null = null;
+  let pointerWorld = target.world();
+  const marker = document.createElement('div');
+  marker.className = 'combat-target';
+  marker.hidden = true;
+  marker.setAttribute('aria-hidden', 'true');
+  stage.appendChild(marker);
   const position = (e: PointerEvent) => {
     const r = canvas.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
@@ -35,6 +46,61 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     hud.inspectGuard(hit?.kind === 'guard' ? hit.id : null);
     hud.inspectObject(hit?.kind === 'object' ? hit.id : null);
   };
+  const updatePointer = () => {
+    const w = target.world(),
+      selected = target.selection();
+    if (w !== pointerWorld) {
+      pointerWorld = w;
+      flash = null;
+    }
+    const overMap = mouse && document.elementFromPoint(mouse.x, mouse.y) === canvas;
+    const bounds = canvas.getBoundingClientRect();
+    const hit = start
+      ? pressed
+      : overMap
+        ? scene.hit(mouse!.x - bounds.left, mouse!.y - bounds.top)
+        : null;
+    const active = !hud.modal.open && w.status === 'playing';
+    const guard =
+      active && !drag
+        ? w.guards.find(
+            (g) =>
+              living(g) &&
+              (hit?.kind === 'guard'
+                ? g.id === hit.id
+                : !mouse && flash && performance.now() < flash.until && g.id === flash.id),
+          )
+        : undefined;
+    const preview = guard ? attackPreview(w, selected, guard) : null;
+    let cursor = active && armedSelection(w, selected).some((a) => a.weapon) ? 'combat' : 'default';
+    if (active) {
+      if (start && button === 1) cursor = 'pan';
+      else if (drag) cursor = pointerType === 'touch' ? 'pan' : 'box';
+      else if (hit?.kind === 'guard' && preview) cursor = preview.kind;
+      else if (hit?.kind === 'agent') cursor = 'select';
+      else if (hit?.kind === 'object')
+        cursor = objectRequirement(w, hit.id, selected) ? 'locked' : 'interact';
+    }
+    if (canvas.dataset.cursor !== cursor) canvas.dataset.cursor = cursor;
+    // Re-hit a stationary mouse after camera, selection and weapon changes.
+    // A held press retains its original target until release, just like orders.
+    if (mouse && !drag) inspect(active ? hit : null);
+    marker.hidden = !guard || !!drag || (start !== null && button === 1);
+    if (guard && preview) {
+      const box = scene.agentBounds(guard);
+      marker.dataset.target = guard.id;
+      marker.dataset.state = preview.kind;
+      marker.style.transform = `translate(${box.x - 4}px, ${box.y - 4}px)`;
+      marker.style.width = `${box.w + 8}px`;
+      marker.style.height = `${box.h + 8}px`;
+    }
+  };
+  // Follow the current rendered camera, not its position before the gameplay tick.
+  scene.app.ticker.add(updatePointer, undefined, UPDATE_PRIORITY.LOW);
+  canvas.addEventListener('pointerenter', (e) => {
+    if (e.pointerType !== 'touch') mouse = { x: e.clientX, y: e.clientY };
+    updatePointer();
+  });
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas.addEventListener('pointerdown', (e) => {
     if (!e.isPrimary || start || e.button > 2) return;
@@ -46,16 +112,18 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     drag = false;
     add = e.shiftKey;
     pointerType = e.pointerType;
+    mouse = pointerType === 'touch' ? null : { x: e.clientX, y: e.clientY };
+    flash = null;
     pressed = scene.hit(start.x, start.y, button === 2 || pointerType === 'touch');
     scene.setPointerActive(true);
     canvas.setPointerCapture(e.pointerId);
     e.preventDefault();
+    updatePointer();
   });
   canvas.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'touch') mouse = { x: e.clientX, y: e.clientY };
     if (!start) {
-      const p = position(e),
-        hit = scene.hit(p.x, p.y);
-      inspect(hit);
+      updatePointer();
       return;
     }
     if (!last || e.pointerId !== pointer) return;
@@ -69,9 +137,14 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
       }
     }
     last = p;
+    updatePointer();
   });
   canvas.addEventListener('pointerleave', (e) => {
-    if (e.pointerType !== 'touch') inspect(null);
+    if (e.pointerType !== 'touch') {
+      mouse = null;
+      if (!start) inspect(null);
+      updatePointer();
+    }
   });
   const cancel = () => {
     scene.setPointerActive(false);
@@ -79,7 +152,9 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     last = null;
     pressed = null;
     pointer = null;
+    drag = false;
     hud.selectionBox(null);
+    updatePointer();
   };
   for (const event of ['pointercancel', 'lostpointercapture'] as const)
     canvas.addEventListener(event, (e) => {
@@ -122,6 +197,8 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
       else {
         inspect(hit);
         target.order(hit);
+        if (pointerType === 'touch' && hit.kind === 'guard')
+          flash = { id: hit.id, until: performance.now() + 800 };
       }
     }
     cancel();
@@ -206,6 +283,9 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
   });
   window.addEventListener('blur', () => {
     target.slow(false);
+    mouse = null;
+    flash = null;
+    inspect(null);
     cancel();
   });
 }

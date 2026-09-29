@@ -201,11 +201,69 @@ kbd {
 }
 .map-caption {
   position: absolute;
+  z-index: 2;
   bottom: 20px;
   left: 22px;
   pointer-events: none;
   display: grid;
   gap: 5px;
+}
+/* Pixi writes an inline cursor; the DOM controls own tactical cursor feedback. */
+canvas[data-cursor='combat'] {
+  cursor:
+    url('./cursors/combat.svg') 16 16,
+    crosshair !important;
+}
+canvas[data-cursor='attack'] {
+  cursor:
+    url('./cursors/attack.svg') 16 16,
+    crosshair !important;
+}
+canvas[data-cursor='blocked'] {
+  cursor:
+    url('./cursors/blocked.svg') 16 16,
+    crosshair !important;
+}
+canvas[data-cursor='unarmed'] {
+  cursor: not-allowed !important;
+}
+canvas[data-cursor='interact'],
+canvas[data-cursor='select'] {
+  cursor: pointer !important;
+}
+canvas[data-cursor='locked'] {
+  cursor: help !important;
+}
+canvas[data-cursor='pan'] {
+  cursor: grabbing !important;
+}
+canvas[data-cursor='box'] {
+  cursor: crosshair !important;
+}
+.combat-target {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  pointer-events: none;
+  color: #ff8d7d;
+  background:
+    linear-gradient(currentColor, currentColor) left top / 8px 2px,
+    linear-gradient(currentColor, currentColor) left top / 2px 8px,
+    linear-gradient(currentColor, currentColor) right top / 8px 2px,
+    linear-gradient(currentColor, currentColor) right top / 2px 8px,
+    linear-gradient(currentColor, currentColor) left bottom / 8px 2px,
+    linear-gradient(currentColor, currentColor) left bottom / 2px 8px,
+    linear-gradient(currentColor, currentColor) right bottom / 8px 2px,
+    linear-gradient(currentColor, currentColor) right bottom / 2px 8px;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 1px 1px #08120f);
+}
+.combat-target[data-state='blocked'] {
+  color: var(--amber);
+}
+.combat-target[data-state='unarmed'] {
+  color: #a5aba8;
 }
 .map-caption span {
   font-size: 10px;

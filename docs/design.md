@@ -293,15 +293,32 @@ filtered over time; a central quiet area absorbs formation settling and small ai
 changes. Ordinary pans ease at a capped speed. One moving teammate contributes
 only their share of the group's lead, rather than pulling the camera at full strength.
 An off-screen selection returns immediately to the visible area. Zoom never changes.
-Selecting a nearby operative or losing a teammate never snaps the camera. Only
-mission launch, an explicit Follow / Home command, or an off-screen focus cuts
-directly to the new framing. Holding a mouse button or touch on the map suspends
+Explicitly switching to a single operative snaps to the new framing without
+changing zoom, including for a nearby operative. Changes to group membership
+and automatic survivor selection still ease. Follow / Home explicitly recentres
+and restores the working zoom. Holding a mouse button or touch on the map suspends
 automatic tracking through release and a short settling interval; clicks retain
-the target identified at press time. Manual panning still works during the hold.
+the target identified at press time. A pending explicit selection snap happens
+on release without that delay. A later Fit map or pan cancels the pending snap.
+Manual panning still works during the hold.
 Widely split multi-selections
 follow the largest local group, with stable selection-order ties. Manual pan and
 objective focus suspend tracking; selecting an operative resumes it. Wheel zoom
 keeps the centre world point fixed. Mission resets restore the authored start.
+
+The map cursor reflects the selected crew: drawn weapons show a crosshair,
+mission actions a hand, and locked prerequisites a help cursor. Enemy hover
+adds brackets around the actual target and previews the selected operatives'
+range and sight lines. Red means at least one can reach the target with fire;
+amber means range or cover blocks every shot. Unarmed prisoners and cargo
+carriers cannot attack. These checks describe geometry; reloads, settling and
+coil charge are still required. The caption explains that attack orders draw
+weapons and pursue as needed. Range and cover warnings describe the current shot,
+not a refusal to move; Hold / S stops pursuit.
+Feedback refreshes under a stationary mouse as weapons, selection, targets and
+camera change. A held press retains its target and a touch attack briefly shows
+the same brackets. This is presentation only, with no path searches or replay
+state changes.
 
 Quiet and armed full-crew completions run with live patrols and are recorded then
 replayed exactly. Unit checks cover reachable posts and map edges, coil charge

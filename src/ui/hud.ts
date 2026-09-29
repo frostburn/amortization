@@ -27,7 +27,7 @@ import type { Records, MissionRecord } from './storage';
 import { missionGoals, transferFeedback } from './objectives';
 import type { Goal, GoalId, GuideTarget } from './objectives';
 import { extractionRequirement } from './extraction';
-import { objectRequirement } from './interactions';
+import { attackPreview, objectRequirement } from './interactions';
 import { demolished, detonationStatus } from '../sim/demolition';
 import { activeTurrets, canAuthorise, inspectionRemaining, turretPowered } from '../sim/security';
 
@@ -394,7 +394,12 @@ export class Hud {
       !!inspected || !!object,
     );
     this.field('enemy-behavior').hidden = !inspected || !!object;
-    this.set('enemy-behavior', inspected ? guardDescription(inspected) : '');
+    this.set(
+      'enemy-behavior',
+      inspected
+        ? `${attackPreview(world, state.selected, inspected).detail} ${guardDescription(inspected)}`
+        : '',
+    );
     this.field('follow-button').setAttribute('aria-pressed', String(state.following ?? false));
     this.field('selected-equipment').hidden = !a?.armament;
     this.set(
