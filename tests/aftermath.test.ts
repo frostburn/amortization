@@ -24,11 +24,16 @@ it.each(exits)(
     const original = structuredClone(w),
       medals = earnedMedals(w),
       ending = new Aftermath(w);
-    for (let i = 0; i < 49; i++) ending.update(0.1);
+    expect(ending.resultsReady).toBe(false);
+    for (let i = 0; i < 49; i++) {
+      if (ending.phase !== 'departed') expect(ending.resultsReady).toBe(false);
+      ending.update(0.1);
+    }
     expect(ending.boarded.size).toBe(w.agents.length + (w.escort ? 1 : 0));
     expect(ending.phase).not.toBe('boarding');
     for (let i = 0; i < 200; i++) ending.update(0.1);
     expect(ending.phase).toBe('departed');
+    expect(ending.resultsReady).toBe(true);
     expect(Math.hypot(ending.offset.x, ending.offset.y)).toBeGreaterThan(5);
     expect(w).toEqual(original);
     expect(earnedMedals(w)).toEqual(medals);
@@ -44,7 +49,10 @@ it('keeps surviving guards moving after a defeat while bodies and the scored wor
   w.traces.push({ from: w.guards[0], to: w.agents[0], hostile: true, life: 0.2 });
   const original = structuredClone(w),
     ending = new Aftermath(w);
-  for (let i = 0; i < 60; i++) ending.update(0.1);
+  for (let i = 0; i < 29; i++) ending.update(0.1);
+  expect(ending.resultsReady).toBe(false);
+  for (let i = 29; i < 60; i++) ending.update(0.1);
+  expect(ending.resultsReady).toBe(true);
   expect(ending.world.guards.some((g, i) => g.x !== w.guards[i].x || g.y !== w.guards[i].y)).toBe(
     true,
   );

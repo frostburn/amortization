@@ -563,8 +563,9 @@ medals as small icons beside the title, with the same tooltips and earned states
 
 Click or tap outside any dialog to dismiss it. The game remains paused; with
 stacked dialogs, only the top one closes. Escape also remains available. After
-a result, dismissing the dialog reveals a **MISSION COMPLETE** or **MISSION
-FAILED** splash with results/restart/next controls. Winners and the witness board
+a result, the **MISSION COMPLETE** or **MISSION FAILED** splash appears first.
+Results open after the van leaves on victory, or after three seconds on defeat.
+Dismiss the dialog to return to the splash with results/restart/next controls. Winners and the witness board
 the extraction van and drive off; guards keep patrolling. This presentation
 does not change the recorded outcome, time, medals or replay. Shift+R works in
 mission dialogs, including an unfinished mission’s briefing.

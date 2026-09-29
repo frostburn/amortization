@@ -66,17 +66,16 @@ for (const touch of [false, true]) {
       );
     });
     await page.getByRole('button', { name: 'Resume', exact: true }).click();
-    await expect(dialog).toContainText('Account settled.');
-    await expect(
-      dialog.getByRole('button', { name: 'Restart mission', exact: true }),
-    ).toBeVisible();
+    await expect(stage).toHaveAttribute('data-aftermath', /boarding|departing/);
+    await expect(dialog).toBeHidden();
+    await expect(page.locator('#outcome-results')).toBeHidden();
+    await expect(page.locator('#briefing-button')).toBeDisabled();
     const before = await page.evaluate(() => ({
       world: JSON.stringify(window.aftermathWorld),
       records: localStorage.getItem('amortization.records.v4'),
       replay: localStorage.getItem('amortization.playtests.v1'),
     }));
     const close = () => (touch ? page.touchscreen.tap(8, 8) : page.mouse.click(8, 8));
-    await close();
     await expect(
       page.getByRole('heading', { name: 'MISSION COMPLETE', exact: true }),
     ).toBeVisible();
@@ -88,6 +87,12 @@ for (const touch of [false, true]) {
       path: `/tmp/amortization-departure-${touch ? 'touch' : 'desktop'}.png`,
     });
     await expect(stage).toHaveAttribute('data-aftermath', 'departed', { timeout: 12_000 });
+    await expect(dialog).toContainText('Account settled.');
+    await expect(dialog).toBeVisible();
+    await expect(
+      dialog.getByRole('button', { name: 'Restart mission', exact: true }),
+    ).toBeVisible();
+    await close();
     await page.keyboard.press('e');
     await page.keyboard.press('f');
     expect(
@@ -128,15 +133,20 @@ for (const touch of [false, true]) {
         a.hp = 0;
       });
     });
-    await expect(dialog).toContainText('The balance is due.');
+    await expect(stage).toHaveAttribute('data-aftermath', 'failed');
+    await expect(dialog).toBeHidden();
+    await expect(page.locator('#outcome-results')).toBeHidden();
     const failed = await page.evaluate(() => JSON.stringify(window.aftermathWorld));
-    await close();
     await expect(page.getByRole('heading', { name: 'MISSION FAILED', exact: true })).toBeVisible();
     await expect(stage).toHaveAttribute('data-aftermath', 'failed');
     const frame = await page.locator('canvas').screenshot();
     await expect
       .poll(async () => !(await page.locator('canvas').screenshot()).equals(frame))
       .toBe(true);
+    await expect(dialog).toBeVisible({ timeout: 8_000 });
+    await expect(dialog).toContainText('The balance is due.');
+    await close();
+    await expect(page.locator('#outcome-results')).toBeVisible();
     await page.keyboard.press('e');
     await page.keyboard.press('f');
     expect(await page.evaluate(() => JSON.stringify(window.aftermathWorld))).toBe(failed);

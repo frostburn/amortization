@@ -230,6 +230,9 @@ export class Scene {
     this.build();
     this.resizeObserver.observe(this.host);
   }
+  get resultsReady() {
+    return this.aftermath?.resultsReady ?? false;
+  }
   reset(world: World) {
     this.aftermath = null;
     delete this.host.dataset.aftermath;

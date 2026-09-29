@@ -86,6 +86,7 @@ export interface HudState {
   best: number | null;
   fullCrewBest?: number | null;
   following?: boolean;
+  resultsReady?: boolean;
 }
 const icons: Record<string, string> = {
   pause: '<path d="M8 5v14M16 5v14"/>',
@@ -149,7 +150,7 @@ export class Hud {
           <section class="orders-section"><p class="section-label">ORDERS</p><div class="orders">${(['regroup', 'hold', 'weapons', 'interact'] as const).map((id, i) => `<button data-action="${id}" title="${['Regroup at the lead selected operative (G)', 'Hold position (S)', 'Draw or stow weapons (F)', 'Interact with nearest object (E)'][i]}">${icon(id)}<span id="${id}-label">${['Regroup', 'Hold', 'Draw weapons', 'Interact'][i]}</span><kbd>${['G', 'S', 'F', 'E'][i]}</kbd></button>`).join('')}</div><div class="utility"><button data-action="flash" id="flash-button" hidden>Flash · B</button><button data-action="heal" id="heal-button"><span id="heal-label">Field dressing</span> <kbd>H</kbd></button><button data-action="drop" id="drop-button" disabled>Set unit down <kbd>X</kbd></button></div></section>
         </aside>
         <section class="map-column" aria-label="Operation map">
-          <div class="stage" id="stage"><div id="mission-outcome" class="mission-outcome" hidden role="region" aria-labelledby="outcome-title"><p id="outcome-detail"></p><h2 id="outcome-title"></h2><div class="outcome-actions"><button data-action="briefing">View results</button><button data-action="restart">Restart mission</button><button data-action="next" id="outcome-next" hidden>Next operation →</button></div></div><div class="map-top"><span id="time-mode">PLANNING / ORDERS ACTIVE</span><span id="clock">00:00</span></div><div class="map-controls"><button data-action="vision" id="vision-button" aria-pressed="true">Sight cones: on</button><button data-action="zoom-out" aria-label="Zoom out">−</button><button data-action="home" title="Overview of the whole site">Fit map</button><button data-action="follow" id="follow-button" aria-label="Follow selected operatives" title="Follow selection · Home. Select a portrait to resume after panning." aria-pressed="true">Follow</button><button data-action="zoom-in" aria-label="Zoom in">+</button></div><div class="map-caption"><span id="map-location"></span><small id="map-detail">Municipal assets division</small><small id="enemy-behavior" hidden></small></div><div class="selection-box" id="selection-box"></div><div id="objective-guide" class="objective-guide" role="region" aria-label="Objective guidance" hidden><div class="guide-heading"><span>MISSION GUIDE</span><button data-dismiss-guide aria-label="Close mission guide">×</button></div><h3 id="guide-title"></h3><p id="guide-detail"></p><div id="guide-locations" aria-label="Locate mission items"></div><p class="guide-instruction">Right-click a map diamond to act; on touch, tap it.</p></div></div>
+          <div class="stage" id="stage"><div id="mission-outcome" class="mission-outcome" hidden role="region" aria-labelledby="outcome-title"><p id="outcome-detail"></p><h2 id="outcome-title"></h2><div class="outcome-actions"><button data-action="briefing" id="outcome-results">View results</button><button data-action="restart">Restart mission</button><button data-action="next" id="outcome-next" hidden>Next operation →</button></div></div><div class="map-top"><span id="time-mode">PLANNING / ORDERS ACTIVE</span><span id="clock">00:00</span></div><div class="map-controls"><button data-action="vision" id="vision-button" aria-pressed="true">Sight cones: on</button><button data-action="zoom-out" aria-label="Zoom out">−</button><button data-action="home" title="Overview of the whole site">Fit map</button><button data-action="follow" id="follow-button" aria-label="Follow selected operatives" title="Follow selection · Home. Select a portrait to resume after panning." aria-pressed="true">Follow</button><button data-action="zoom-in" aria-label="Zoom in">+</button></div><div class="map-caption"><span id="map-location"></span><small id="map-detail">Municipal assets division</small><small id="enemy-behavior" hidden></small></div><div class="selection-box" id="selection-box"></div><div id="objective-guide" class="objective-guide" role="region" aria-label="Objective guidance" hidden><div class="guide-heading"><span>MISSION GUIDE</span><button data-dismiss-guide aria-label="Close mission guide">×</button></div><h3 id="guide-title"></h3><p id="guide-detail"></p><div id="guide-locations" aria-label="Locate mission items"></div><p class="guide-instruction">Right-click a map diamond to act; on touch, tap it.</p></div></div>
           <footer class="controls-hint"><span><kbd>1–4</kbd> operative <kbd>Q</kbd> squad <kbd>RMB</kbd> order <kbd>Space</kbd> pause <kbd>Tab</kbd> slow</span><button data-action="restart" title="Restart operation (Shift+R)">Restart</button></footer>
         </section>
         <aside class="sidebar mission-sidebar" aria-label="Mission and status">
@@ -374,12 +375,15 @@ export class Hud {
   }
   update(world: World, state: HudState) {
     const ended = world.status !== 'playing';
+    const resultsPending = ended && state.resultsReady === false;
     this.app.classList.toggle('mission-ended', ended);
     this.field('mission-outcome').hidden = !ended;
     this.field('mission-outcome').dataset.result = world.status;
     this.set('outcome-title', world.status === 'won' ? 'MISSION COMPLETE' : 'MISSION FAILED');
     this.set('outcome-detail', `${world.mission.number} / ${world.mission.title}`);
     this.field('outcome-next').hidden = world.status !== 'won' || !nextMission(world.mission.id);
+    this.field('outcome-results').hidden = resultsPending;
+    (this.field('briefing-button') as HTMLButtonElement).disabled = resultsPending;
     this.field('pause-button').hidden = ended;
     this.set('briefing-button', ended ? 'Results' : 'Briefing');
     this.field('briefing-button').title = ended

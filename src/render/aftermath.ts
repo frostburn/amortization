@@ -39,6 +39,9 @@ export class Aftermath {
   private door: Vec | null = null;
   private departure = 0;
   private age = 0;
+  get resultsReady() {
+    return this.age >= 3 && (this.phase === 'departed' || this.phase === 'failed');
+  }
   constructor(source: World) {
     this.world = structuredClone(source);
     // Share immutable map geometry and its navigation cache, not actor state.

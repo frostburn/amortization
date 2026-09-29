@@ -261,6 +261,7 @@ async function boot() {
         paused = false;
         break;
       case 'briefing':
+        if (world.status !== 'playing' && !playtest?.isPlayback && !scene.resultsReady) break;
         paused = true;
         if (world.status === 'playing') hud.showBriefing(records);
         else hud.showEnd(world, missionRecord(records, world.mission.id), true, newMedals);
@@ -350,6 +351,7 @@ async function boot() {
       sound: sound.enabled,
       volume: sound.volume,
       following: scene.following,
+      resultsReady: !!playtest?.isPlayback || scene.resultsReady,
       best: missionRecord(records, world.mission.id).best,
       fullCrewBest: missionRecord(records, world.mission.id).fullCrewBest,
     });
@@ -412,7 +414,6 @@ async function boot() {
         );
         saved = true;
       }
-      hud.showEnd(world, missionRecord(records, world.mission.id), false, newMedals);
     }
     scene.render(
       selected,
@@ -420,6 +421,8 @@ async function boot() {
       elapsed,
       world.status !== 'playing' && !playtest?.isPlayback && !hud.modal.open && !document.hidden,
     );
+    if (scene.resultsReady && !playtest?.isPlayback && !hud.modal.open)
+      hud.showEnd(world, missionRecord(records, world.mission.id), false, newMedals);
     sound.update(
       world,
       {
