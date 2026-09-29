@@ -701,6 +701,20 @@ kbd {
 .objective-locator.label-below span {
   top: 25px;
 }
+.objective-locator.is-locked span {
+  color: #bbc1bd;
+  border-color: #777f7a;
+  background: #202a25f5;
+}
+.objective-locator.is-locked .locator-ring {
+  border-color: #a5aba8;
+  border-style: dashed;
+  background: transparent;
+  animation: none;
+}
+.objective-locator.is-locked .locator-arrow {
+  border-left-color: #a5aba8;
+}
 .locator-arrow {
   display: none;
   position: absolute;
@@ -1320,4 +1334,19 @@ dialog h2 {
     padding: 14px;
     gap: 8px;
   }
+}
+
+/* Captivity is distinct from a casualty; the health bar remains visible. */
+.agent-card.captive {
+  opacity: 0.65;
+  border-color: #8f7954;
+}
+#intake-button {
+  border-bottom-color: #e2b369;
+}
+#cells-button {
+  border-bottom-color: #78becd;
+}
+#detention-switches button[aria-pressed='true'] {
+  background: #28443a;
 }

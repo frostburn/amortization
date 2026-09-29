@@ -2,7 +2,7 @@
 
 A real-time squad tactics game for the browser. Control four operatives together or individually. One maintenance disguise admits a single person; the rest of the crew can prepare access or provide armed backup.
 
-**Seven operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing any of the first six. Restart and Shift+R restart the selected mission.
+**Nine operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing any of the first eight. Restart and Shift+R restart the selected mission.
 
 ## Development
 
@@ -107,7 +107,7 @@ tests completion under current rules. Both exit nonzero on failure. Selected pla
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
 distinct routes. Fifteen retained recordings cover operations 01–04. The two
 recordings for operations 05–06 no longer win with their new equipment and were
-retired without altering the submitted inputs. All eight missions have synthetic
+retired without altering the submitted inputs. All nine missions have synthetic
 quiet and armed completion tests; new human runs for 05–06 are welcome. See
 `tests/replays/README.md` for provenance, current outcomes, and retired routes.
 
@@ -148,7 +148,7 @@ appear directly below the map, followed by the crew and mission details.
 
 Recruitment, extraction readiness, injuries and messages never shrink the map.
 Viewport resizing preserves the camera’s scale. **Fit map** frames the mission in the available
-space; operations 01–06 start with this overview. Operations 07–08 start at a readable scale near the crew.
+space; operations 01–06 start with this overview. Operations 07–09 start at a readable scale near the crew.
 
 **Follow** / **Home** returns to the selected crew at the last working zoom. When
 zoomed in, the camera uses a modest, smoothed look ahead along their route and
@@ -269,7 +269,7 @@ The access keys lead to auditor **Mara Quill**, held in a security transport at 
 
 For a quiet escape, take KIT, disable RADIO, file WARRANT, and collect Mara. Lead her north of the lower cargo containers, west through the service corridor, and out the west entrance to SERVICE. Send the rest of the crew up the public street. For an armed extraction, clear the transport bay before cutting the lock, leave Mara waiting behind cover while the crew secures the gate, then bring her to STREET.
 
-## Equipment in operations 05–08
+## Equipment in operations 05–09
 
 | Weapon            | Range | Damage | Shots / magazine | Shot recovery | Automatic reload |
 | ----------------- | ----: | -----: | ---------------: | ------------: | ---------------: |
@@ -441,6 +441,42 @@ radio-jam assault that ignores the feeds loses three operatives despite using
 field dressings. Human playtesting will determine whether the pressure and
 available counterplay feel right.
 
+## Key personnel · Operation 09
+
+The mandate is safe with Mara. A subsequent safehouse raid took Vale and Rook;
+Morrow and Sable must recover them from personnel retention. This rescue requires
+**all four operatives alive**. The 48 × 36 site starts at the same comfortable
+follow scale as operations 07–08.
+
+- **KIT** gives Morrow a maintenance identity. Start a partner on **Hold INTAKE**
+  at the west remote console, then move the infiltrator through the amber gate.
+- Switch the operator to **CELLS** for the blue gate and local cell releases.
+  Once the console is staffed, the gate buttons address that operator without
+  changing the selected infiltrator. Moving or Hold releases remote power.
+- **VALE** and **ROOK** each need two continuously powered seconds of local work
+  while a different operative holds CELLS. Losing power restarts the release.
+  Guards, RADIO and the road barrier cannot bypass these
+  locks. Door safety prevents crushing a crossing operative, but supplies no
+  release power. Killing every guard cannot turn this into a solo operation.
+- Each rescued teammate becomes controllable immediately, initially unarmed.
+  They can individually recover their weapon and dressing at **GEAR**, or leave
+  without equipment. Their portraits distinguish captivity from being down.
+- After freeing both, use **EXIT** inside detention to latch both gates open.
+  Bring the console operator too; the extraction controls then rally everyone
+  to **VAN**. The **REGISTER** is optional.
+
+Unavailable mission actions show a grey padlock and **LOCKED** label instead of
+the usual diamond. Hover or tap to see the missing prerequisite in the map caption.
+Markers update as you free prisoners, switch power or select an eligible teammate;
+distance alone does not lock an action, since operatives walk to their targets.
+
+The cell-corridor patrol makes the unarmed escape a timed crossing: wait inside
+each cell, then slip out behind it. The office screens the return through intake. The holding patrol and
+breach officer make the equipment lockers risky: reunite the armed pair or time
+an approach. Exposed identities can still use the powered locks. Verification
+includes a quiet, undamaged escape with both prisoners unarmed and a prepared
+armed withdrawal with recovered equipment, each recorded and replayed exactly.
+
 ## Records
 
 Results track time, crew survival, evidence, and alarm status. Operation five also reports publication; operation six reports backup destruction. Each operation keeps
@@ -482,8 +518,8 @@ UI, renderer, or broader input changes; extended mission journeys and detailed
 graphics checks are not part of the routine gate. Keep `@smoke` for shared player
 flows so each new mission does not add another real-time browser journey to CI.
 
-The full simulation suite still runs on every change, including all 21 retained
-human completions, complete quiet and armed extractions for all eight missions,
+The full simulation suite still runs on every change, including all 23 retained
+human completions, complete mission runs for all nine operations (including quiet rescue and armed withdrawal in 09),
 navigation clearance, local identification, disguise permissions, radio disruption,
 evidence custody, demolition safety, and extraction requirements.
 Playwright launches Vite with `VITE_BROWSER_TEST=true`, capping its renderer at
@@ -493,6 +529,6 @@ rendering are uncapped. Local and CI browser tests use the same SwiftShader back
 
 ## Current scope
 
-Eight ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, and mid-mission saves remain future work. Each operative has a distinct on-map model with 32 facings, a distance-driven walk, an armed stance, and a grounded fallen pose. Hair, skin, clothing, and build correspond to their portraits; disguises preserve their identity. Voss and Mara have their own models and portraits beside the wait/follow control.
+Nine ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, and mid-mission saves remain future work. Each operative has a distinct on-map model with 32 facings, a distance-driven walk, an armed stance, and a grounded fallen pose. Hair, skin, clothing, and build correspond to their portraits; disguises preserve their identity. Voss and Mara have their own models and portraits beside the wait/follow control.
 
 See [design notes](docs/design.md) and [art provenance](docs/art.md). Distributed under the repository's [MIT license](LICENSE).

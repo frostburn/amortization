@@ -53,6 +53,9 @@ export function createWorld(mission: Mission = depot): World {
     agents: mission.spawns.map((p, i) => ({
       ...body(`agent-${i}`, p, 100),
       ...(mission.loadout ? { armament: equip(mission.loadout[i]) } : {}),
+      ...(mission.detention?.cells.some((c) => c.agent === i)
+        ? { captive: true, disarmed: true }
+        : {}),
       name: names[i],
       role: roles[i],
       index: i,
@@ -60,7 +63,7 @@ export function createWorld(mission: Mission = depot): World {
       disguised: false,
       exposed: false,
       order: { kind: 'hold' },
-      medkit: true,
+      medkit: !mission.detention?.cells.some((c) => c.agent === i),
       carrying: false,
       interaction: 0,
     })),
@@ -116,6 +119,9 @@ export function createWorld(mission: Mission = depot): World {
     ...(mission.demolition ? { demolition: { armed: [], detonatedAt: null } } : {}),
     ...(mission.security
       ? { security: { isolated: [], inspectionUntil: 0, inspectionUsed: false } }
+      : {}),
+    ...(mission.detention
+      ? { detention: { operator: null, circuit: null, open: [], released: false } }
       : {}),
     alarm: false,
     alarmTime: 0,

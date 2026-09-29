@@ -86,7 +86,29 @@ export function missionGoals(w: World): Goal[] {
   const kit: GuideTarget[] = w.disguiseTaken ? [] : ['disguise'];
   const evidenceInArchive = !!m.archive && inside(w.evidencePosition, m.secure);
   let primary: Goal;
-  if (w.security) {
+  if (w.detention) {
+    const remaining = m.detention!.cells.filter((c) => w.agents[c.agent].captive);
+    const operator = w.agents.find((a) => a.id === w.detention!.operator);
+    primary = {
+      id: 'primary',
+      complete: w.detention.released,
+      label: remaining.length
+        ? `○ Rescue the crew · ${2 - remaining.length} / 2 free`
+        : w.detention.released
+          ? '✓ Crew free · gates released'
+          : '○ Use EXIT to release the gates',
+      detail: w.detention.released
+        ? 'Both gates stay open. Time each unarmed teammate’s exit behind the cell patrol, then bring all four to VAN. GEAR and the register are optional. All four must survive.'
+        : remaining.length
+          ? `${operator ? `${operator.name} holds ${w.detention.circuit === 'access-intake' ? 'INTAKE' : 'CELLS'}. The gate buttons switch that operator without changing selection. ` : 'Send Sable to Hold INTAKE at the west remote console. '}Give Morrow KIT and cross the amber gate, then switch the console to CELLS for the blue gate. Keep the console staffed while a different operative works each local prisoner lock. Door safety does not power a cell release; RADIO does not disable locks. Rescued teammates become controllable but unarmed. Use EXIT after freeing both.`
+          : 'Vale and Rook are controllable. Use EXIT inside holding to latch both gates open; the console operator can then leave. Each prisoner can recover their own GEAR, or leave unarmed.',
+      targets: remaining.length
+        ? [...kit, 'access-intake', 'access-cells', ...remaining.map((c) => c.id)]
+        : w.detention.released
+          ? ['equipment', 'extract']
+          : ['escape-release'],
+    };
+  } else if (w.security) {
     const remaining = (['power-west', 'power-east'] as const).filter(
       (id) =>
         w.guards.some((g) => g.turret?.circuit === id && living(g)) &&

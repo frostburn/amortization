@@ -150,7 +150,14 @@ describe('mission guidance', () => {
     // Optional evidence in rescue/broadcast missions must never enable the end action.
     w.evidence = 'carried';
     w.agents[0].carrying = true;
-    if (w.demolition) {
+    if (w.detention) {
+      expect(extractionRequirement(w)).not.toBeNull();
+      w.agents.forEach((a) => {
+        a.captive = false;
+      });
+      expect(extractionRequirement(w)?.label).toBe('Release EXIT');
+      w.detention.released = true;
+    } else if (w.demolition) {
       expect(extractionRequirement(w)?.detail).toContain('Detonate');
       w.demolition.armed = ['charge-west', 'charge-east'];
       expect(extractionRequirement(w)).not.toBeNull();
@@ -166,7 +173,7 @@ describe('mission guidance', () => {
     }
     expect(extractionRequirement(w)).toBeNull();
     expect(goal(w, 'extract').targets).toContain('extract');
-    if (!w.broadcast && !w.escort && !w.demolition) {
+    if (!w.broadcast && !w.escort && !w.demolition && !w.detention) {
       dropEvidence(w, [w.agents[0].id]);
       expect(extractionRequirement(w)?.goal).toBe('evidence');
       expect(goal(w, 'extract').targets).toContain('evidence');

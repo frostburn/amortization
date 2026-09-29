@@ -1,5 +1,6 @@
 import { Application, Container, Graphics, Polygon, Text } from 'pixi.js';
 import {
+  controllable,
   distance,
   inside,
   isCharge,
@@ -23,6 +24,7 @@ import { courierGuard } from '../sim/courier';
 import { guideLocation } from '../ui/objectives';
 import type { GuideTarget } from '../ui/objectives';
 import { extractionRequirement } from '../ui/extraction';
+import { objectRequirement } from '../ui/interactions';
 import { demolished } from '../sim/demolition';
 import { turretPowered, TURRET_ARC } from '../sim/security';
 import { circuitColor, drawTurret } from './turret';
@@ -35,6 +37,34 @@ const COLORS = {
   amber: 0xefbd73,
   red: 0xf57869,
 };
+const markerColor = (id: ObjectKind) =>
+  isExtraction(id)
+    ? COLORS.mint
+    : id === 'escort' ||
+        id === 'evidence' ||
+        id === 'upload' ||
+        isCharge(id) ||
+        id === 'access-intake'
+      ? COLORS.amber
+      : id === 'access-cells'
+        ? 0x78becd
+        : id === 'power-west' || id === 'power-east'
+          ? circuitColor(id)
+          : 0xa8c2b3;
+function drawMarker(mark: Graphics, id: ObjectKind, locked: boolean) {
+  mark.clear();
+  if (locked) {
+    // A padlock replaces the diamond: state is readable without relying on color.
+    mark.roundRect(-4, -9, 8, 10, 4).stroke({ color: 0xa5aba8, width: 1.5 });
+    mark.roundRect(-6, -3, 12, 11, 2).fill(0x25312d).stroke({ color: 0xa5aba8, width: 1.5 });
+    mark.circle(0, 1, 1.3).fill(0xa5aba8).rect(-0.6, 1, 1.2, 3).fill(0xa5aba8);
+  } else {
+    mark
+      .poly([0, -9, 7, 0, 0, 9, -7, 0])
+      .fill({ color: 0x162722, alpha: 0.9 })
+      .stroke({ color: markerColor(id), width: 1.5 });
+  }
+}
 const polygon = (g: Graphics, points: Vec[], color: number, alpha = 1) =>
   g.poly(points.flatMap((p) => [p.x, p.y])).fill({ color, alpha });
 const plane = (
@@ -119,11 +149,13 @@ export class Scene {
   private scenery: { root: Container; footprint: Rect }[] = [];
   private cores: { intact: Graphics; wreck: Graphics }[] = [];
   private icons = new Map<ObjectKind, Container>();
+  private markerLocks = new Map<ObjectKind, boolean>();
   private transferRoutes: Graphics[] = [];
   private labels = new Set<Text>();
   private labelResolution = 2;
   private gate: Graphics | null = null;
   private shutter: Graphics | null = null;
+  private detentionGates: { root: Graphics; id: ObjectKind }[] = [];
   private world: World;
   private fit = 1;
   zoom = 1;
@@ -188,8 +220,10 @@ export class Scene {
     this.scenery = [];
     this.cores = [];
     this.shutter = null;
+    this.detentionGates = [];
     this.coneTime = -1;
     this.icons.clear();
+    this.markerLocks.clear();
     this.transferRoutes = [];
     this.objects.removeChildren().forEach((c) => c.destroy({ children: true }));
     this.marks.removeChildren().forEach((c) => c.destroy({ children: true }));
@@ -385,20 +419,39 @@ export class Scene {
       box(this.shutter, d.x, d.y, d.w, d.h, 1.6, 0x9b8e70, 0x695d47, 0x4e554b);
       this.addScenery(this.shutter, d);
     }
+    if (mission.detention) {
+      for (const { id, door: d } of [...mission.detention.gates, ...mission.detention.cells]) {
+        const root = new Graphics();
+        const color =
+          id === 'access-intake' ? 0xe2b369 : id === 'access-cells' ? 0x78becd : 0x9faaa1;
+        box(root, d.x, d.y, d.w, d.h, 1.4, color, 0x485e55, 0x344a42);
+        this.addScenery(root, d);
+        this.detentionGates.push({ root, id });
+        plane(g, d.x - 0.7, d.y, 1.7, d.h, color, 0, 0.22);
+        if (id === 'access-intake' || id === 'access-cells') {
+          const label = this.label(id === 'access-intake' ? 'INTAKE' : 'CELLS', 10, color);
+          label.position.copyFrom(project({ x: d.x, y: d.y + d.h / 2 }, 1.65));
+          label.anchor.set(0.5, 1);
+          this.marks.addChild(label);
+        }
+      }
+    }
     const office = this.label(
-      mission.security
-        ? 'RECORDS / 08'
-        : mission.demolition
-          ? 'RECOVERY CORES / RESTRICTED'
-          : mission.broadcast
-            ? 'RESTRICTED / UPLINK'
-            : mission.escort?.locked
-              ? 'TRANSFER RECORDS'
-              : mission.transfer
-                ? 'CUSTOMS'
-                : mission.archive
-                  ? 'SECURE ARCHIVE'
-                  : 'SECURE OFFICE',
+      mission.detention
+        ? 'PERSONNEL RETENTION / 09'
+        : mission.security
+          ? 'RECORDS / 08'
+          : mission.demolition
+            ? 'RECOVERY CORES / RESTRICTED'
+            : mission.broadcast
+              ? 'RESTRICTED / UPLINK'
+              : mission.escort?.locked
+                ? 'TRANSFER RECORDS'
+                : mission.transfer
+                  ? 'CUSTOMS'
+                  : mission.archive
+                    ? 'SECURE ARCHIVE'
+                    : 'SECURE OFFICE',
       10,
       0xf0c68b,
     );
@@ -410,19 +463,21 @@ export class Scene {
     office.anchor.set(0.5, 1);
     this.marks.addChild(office);
     const road = this.label(
-      mission.demolition
-        ? 'DEBT RECOVERY / 12'
-        : mission.broadcast
-          ? 'MUNICIPAL COMMUNICATIONS / 11'
-          : mission.escort?.locked
-            ? 'REMAND TRANSFERS / 04'
-            : mission.transfer
-              ? 'BONDED TRANSFER / 09'
-              : mission.id === 'depot'
-                ? 'MUNICIPAL TRANSIT / 06'
-                : mission.id === 'clearing'
-                  ? 'BONDED FREIGHT / NO PUBLIC ACCESS'
-                  : 'CIVIC RECORDS / NO PUBLIC ACCESS',
+      mission.detention
+        ? 'VISITORS / WEST SERVICE STREET'
+        : mission.demolition
+          ? 'DEBT RECOVERY / 12'
+          : mission.broadcast
+            ? 'MUNICIPAL COMMUNICATIONS / 11'
+            : mission.escort?.locked
+              ? 'REMAND TRANSFERS / 04'
+              : mission.transfer
+                ? 'BONDED TRANSFER / 09'
+                : mission.id === 'depot'
+                  ? 'MUNICIPAL TRANSIT / 06'
+                  : mission.id === 'clearing'
+                    ? 'BONDED FREIGHT / NO PUBLIC ACCESS'
+                    : 'CIVIC RECORDS / NO PUBLIC ACCESS',
       10,
       0x718277,
     );
@@ -433,18 +488,9 @@ export class Scene {
     for (const o of world.mission.landmarks) {
       const root = new Container();
       const mark = new Graphics();
-      const color = isExtraction(o.id)
-        ? COLORS.mint
-        : o.id === 'escort' || o.id === 'evidence' || o.id === 'upload' || isCharge(o.id)
-          ? COLORS.amber
-          : o.id === 'power-west' || o.id === 'power-east'
-            ? circuitColor(o.id)
-            : 0xa8c2b3;
-      mark
-        .poly([0, -9, 7, 0, 0, 9, -7, 0])
-        .fill({ color: 0x162722, alpha: 0.9 })
-        .stroke({ color, width: 1.5 });
-      const label = this.label(o.tag, 10, color);
+      drawMarker(mark, o.id, false);
+      this.markerLocks.set(o.id, false);
+      const label = this.label(o.tag, 10, markerColor(o.id));
       label.anchor.set(0.5, 1);
       label.y = -12;
       root.addChild(mark, label, new Graphics());
@@ -621,7 +667,7 @@ export class Scene {
     }
     // Wall-mounted details must inherit their wall's occlusion, too.
     if (s.id === 'north') {
-      for (let x = 10.5; x < 27; x += 3) {
+      for (let x = s.x + 1.5; x < s.x + s.w - 0.75; x += 3) {
         const y = s.y + s.h + 0.012;
         // Downward spill lies on the vertical wall face, with nested pools of light.
         for (const [width, bottom, opacity] of [
@@ -730,6 +776,11 @@ export class Scene {
   }
   follow(selected: string[], restoreScale = false) {
     this.following = true;
+    // Consume explicit selection now. A later Fit map/pan before the next
+    // frame must not be mistaken for an unseen selection change during render.
+    const key = selected.join(',');
+    if (key !== this.selectionKey) this.followLead = null;
+    this.selectionKey = key;
     // A portrait/key selection is a new navigation intent, not part of the previous map gesture.
     if (!this.pointerActive) this.followDelay = 0;
     if (restoreScale) {
@@ -864,6 +915,11 @@ export class Scene {
     for (const [id, marker] of this.guideMarkers) {
       const p = guideLocation(this.world, id);
       if (!p) continue;
+      const locked = id !== 'inspection' && this.markerLocks.get(id);
+      marker.classList.toggle('is-locked', !!locked);
+      const label = `${p.tag}${locked ? ' · LOCKED' : ''}`;
+      const caption = marker.querySelector('span')!;
+      if (caption.textContent !== label) caption.textContent = label;
       const actual = this.markerScreen(id)!;
       let x = Math.max(45, Math.min(width - 45, actual.x));
       let y = Math.max(80, Math.min(height - 60, actual.y));
@@ -984,8 +1040,16 @@ export class Scene {
     // Ordinary left-click selection keeps operatives first.
     if (prioritizeObjects && exit) return { kind: 'object', id: exit.id };
     if (prioritizeObjects && object) return { kind: 'object', id: object.id };
+    const prisoner = this.world.agents.find(
+      (a) => a.captive && distance(p, this.screen(a, 0.5)) < 20,
+    );
+    if (prisoner)
+      return {
+        kind: 'object',
+        id: this.world.mission.detention!.cells.find((c) => c.agent === prisoner.index)!.id,
+      };
     const agent = this.world.agents
-      .filter(living)
+      .filter(controllable)
       .map((a) => ({ a, distance: distance(p, this.screen(a, 0.5)) }))
       .sort((a, b) => a.distance - b.distance)[0];
     if (agent && agent.distance < 20) return { kind: 'agent', id: agent.a.id };
@@ -1046,6 +1110,11 @@ export class Scene {
     });
     if (this.gate) this.gate.visible = !w.gateOpen;
     if (this.shutter) this.shutter.visible = !w.shutterOpen;
+    for (const gate of this.detentionGates)
+      gate.root.visible =
+        gate.id === 'access-intake' || gate.id === 'access-cells'
+          ? !w.detention!.open.includes(gate.id)
+          : !!w.agents[w.mission.detention!.cells.find((c) => c.id === gate.id)!.agent].captive;
     if (w.time - this.coneTime > 0.12 || w.time < this.coneTime) {
       this.drawVision();
       this.coneTime = w.time;
@@ -1076,15 +1145,17 @@ export class Scene {
         v.sprite.pose(p, alpha, {
           appearance,
           uniform: a?.disguised,
-          weapon: longGun(p)
-            ? p.armament!.kind
-            : cargo
-              ? undefined
-              : guard
-                ? p.armament?.kind || 'pistol'
-                : a?.weapon
-                  ? 'pistol'
-                  : undefined,
+          weapon: a?.disarmed
+            ? undefined
+            : longGun(p)
+              ? p.armament!.kind
+              : cargo
+                ? undefined
+                : guard
+                  ? p.armament?.kind || 'pistol'
+                  : a?.weapon
+                    ? 'pistol'
+                    : undefined,
           stowed: !!a && !a.weapon,
           specialist: guard?.tactics?.role,
           carrying: cargo,
@@ -1125,7 +1196,7 @@ export class Scene {
           .fill(color);
         if (guard.radio > 0) v.ink.circle(14, -35, 4).stroke({ color: COLORS.red, width: 2 });
       }
-      const gun = p.armament;
+      const gun = a?.disarmed ? undefined : p.armament;
       if (gun && living(p) && (guard || (a && selected.includes(a.id)))) {
         const spec = WEAPONS[gun.kind];
         const progress = gun.charging
@@ -1156,6 +1227,16 @@ export class Scene {
         (id === 'escort' && w.escortLocked) ||
         (id === 'evidence' && w.evidence === 'courier');
       icon.alpha = id === 'override' && w.overrideBy ? 0.6 : 1;
+      const locked = !!objectRequirement(w, id, selected);
+      if (locked !== this.markerLocks.get(id)) {
+        drawMarker(icon.children[0] as Graphics, id, locked);
+        this.markerLocks.set(id, locked);
+      }
+      const label = icon.children[1] as Text;
+      const armed = isCharge(id) && w.demolition?.armed.includes(id);
+      label.text = `${landmark(w, id).tag}${armed ? (demolished(w) ? ' · DESTROYED' : ' · ARMED') : locked ? ' · LOCKED' : ''}`;
+      label.style.fill = locked ? 0xa5aba8 : markerColor(id);
+      if (armed) icon.alpha = demolished(w) ? 0.55 : 1;
       icon.children[1].visible = !this.guideMarkers.has(id);
       const marker = this.markerScreen(id)!,
         scale = this.camera.scale.x;
@@ -1168,17 +1249,6 @@ export class Scene {
           .moveTo(0, 10)
           .lineTo(0, (head.y - marker.y - 5) / scale)
           .stroke({ color: COLORS.amber, width: 1, alpha: 0.4 });
-      }
-      if (isExtraction(id)) {
-        const label = icon.children[1] as Text;
-        label.text = `${landmark(w, id).tag}${exitLocked ? ' · LOCKED' : ''}`;
-        label.style.fill = exitLocked ? 0x9aa69f : COLORS.mint;
-        icon.children[0].tint = exitLocked ? 0x9aa69f : 0xffffff;
-      }
-      if (isCharge(id)) {
-        const label = icon.children[1] as Text;
-        label.text = `${landmark(w, id).tag}${demolished(w) ? ' · DESTROYED' : w.demolition?.armed.includes(id) ? ' · ARMED' : ''}`;
-        icon.alpha = demolished(w) ? 0.55 : 1;
       }
     }
     this.effects.clear();

@@ -69,7 +69,10 @@ export const equip = (kind: WeaponKind): Armament => ({
 });
 export const weaponRange = (person: Person) =>
   person.armament ? WEAPONS[person.armament.kind].range : 8;
-export const longGun = (person: Person) => !!person.armament && person.armament.kind !== 'pistol';
+export const longGun = (person: Person) =>
+  !('disarmed' in person && person.disarmed) &&
+  !!person.armament &&
+  person.armament.kind !== 'pistol';
 export const visibleWeapon = (person: Operative) => person.weapon || longGun(person);
 export const guardWeapon = (tactic?: GuardTactic): WeaponKind =>
   tactic?.role === 'marksman'
@@ -98,6 +101,7 @@ export function updateWeapon(person: Person, dt: number, moved: boolean) {
 }
 
 export function weaponStatus(person: Person) {
+  if ('disarmed' in person && person.disarmed) return 'Unarmed · recover GEAR';
   const gun = person.armament;
   if (!gun) return '';
   if (gun.reload > 0) return `Reloading ${gun.reload.toFixed(1)}s`;

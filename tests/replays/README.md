@@ -7,9 +7,63 @@ is also verified. Otherwise this checks a route's continued viability, without
 claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All twenty-one retained files are byte-for-byte copies of submissions provided in chat:
-fifteen on 2026-09-27 and six on 2026-09-28, including their `unversioned` /
+All twenty-three retained files are byte-for-byte copies of submissions provided in chat:
+fifteen on 2026-09-27, six on 2026-09-28 and two on 2026-09-29, including their `unversioned` /
 local-changes metadata.
+
+## Key personnel: locked EXIT feedback
+
+`personnel-split-exit-b6202c06.replay.json` is the unchanged submission
+`amortization-personnel-won-b6202c06.replay.json`, recorded with the cell patrol:
+mission `9e1c0d27`, simulation `72792e8a…`. It verifies every original checkpoint
+and wins at tick **2699 / 90.0s**, with **four survivors**, **five shots** and no
+alarm. Vale leaves with 15 HP; the other three are undamaged. Neither prisoner
+recovers GEAR and the optional register stays behind.
+
+Feedback: “Was EXIT unavailable? I tried to click it. If so, differentiate
+accessible diamonds from inaccessible ones.” Rook is freed at 31.9s. Five EXIT
+commands at 32.6–39.2s are refused because Vale is still captive; Vale's rescue
+order arrives at 55.8s. Rook later operates EXIT and leaves ahead of Morrow and
+Vale, before the final all-crew VAN order at 88.9s.
+
+Map markers now replace the actionable diamond with a muted padlock and explicit
+LOCKED label when a prerequisite is missing. Hovering or tapping explains the
+remaining requirement in the map caption, including the remaining prisoner's
+name. CELLS power, the separate operator, selected-operative equipment/identity,
+locked transports and archives, and extraction use the same presentation.
+Objective locators retain the locked styling. Blocked clicks still reach the
+normal refusal feedback and preserve standing orders. These are presentation
+changes only; the new recording remains exactly compatible.
+
+## Key personnel: cell patrol and scenery
+
+All four September 29 recordings reproduced their original checkpoints and
+outcomes on `70b4da3` (mission `1c232d29`, simulation `1b285ee3…`).
+
+| Submission suffix | Original outcome | Feedback / route |
+| --- | --- | --- |
+| `bd8f18da` | Won, tick 1575 / 52.5s; four alive; zero shots | Disguised rescue, then one squad VAN order. Asked for a patrol to make leaving the cells require timing. |
+| `2b2c6c9d` | Lost, tick 1569; six shots | “Got curious about the gear...” Morrow approaches the guarded lockers. |
+| `ba99bd4c` | Lost, tick 2033; nine shots | Sable enters holding and engages its patrol. |
+| `4f7405c3` | Lost, tick 2342; four shots | The freed group approaches GEAR, then targets the breach officer. |
+
+`personnel-gate-rescue-bd8f18da.replay.json` retains the winning submission
+unchanged. With the added cell-corridor patrol it still wins at tick 1575, but
+now incurs three shots and Rook leaves with 49 HP. The current-rules test proves
+continued completion, not the old quiet outcome or original checkpoints. The
+three losses remain diagnostic inputs rather than required defeats.
+
+A separate synthetic verification waits for the patrol before moving each
+prisoner and finishes with all four undamaged, no alarm and no shots. The armed
+verification coordinates the rescue, deals with the cell patrol, and recovers
+both prisoners' equipment. Both record and replay exact current checkpoints.
+
+The attached screenshot exposed a van drawn across the wrong axis, an overlapping
+console caption and lamps positioned using the old depot's absolute coordinates.
+Rendering now respects vehicle orientation and supporting-wall extents; the
+redundant console caption is gone. Browser checks cover labels, lamp bounds and
+van extraction hits at four scales, alongside the existing desktop/touch rescue
+journeys. The additional graphics check is outside routine CI smoke tests.
 
 ## Adverse selection Rally stall
 

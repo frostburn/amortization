@@ -7,7 +7,13 @@ type Point = [number, number, number];
 /** Cargo van with a cab, raked glass and wheel openings, inside the mission footprint. */
 export function drawVan(g: Graphics, s: Solid) {
   const custody = s.kind === 'transport';
-  const point = ([x, y, z]: Point) => project({ x: s.x + x * s.w, y: s.y + y * s.h }, z * s.height);
+  // Model x is the axle width and y is the wheelbase, regardless of parking direction.
+  const length = Math.max(s.w, s.h);
+  const point = ([x, y, z]: Point) =>
+    project(
+      s.w > s.h ? { x: s.x + y * s.w, y: s.y + x * s.h } : { x: s.x + x * s.w, y: s.y + y * s.h },
+      z * s.height,
+    );
   const shape = (vertices: Point[], color: number, alpha = 1) =>
     g
       .poly(
@@ -64,7 +70,7 @@ export function drawVan(g: Graphics, s: Solid) {
     shape(
       Array.from({ length: 24 }, (_, i): Point => {
         const a = (i / 24) * Math.PI * 2;
-        return [x, y + (Math.cos(a) * r) / s.h, 0.18 + (Math.sin(a) * r) / s.height];
+        return [x, y + (Math.cos(a) * r) / length, 0.18 + (Math.sin(a) * r) / s.height];
       }),
       color,
     );

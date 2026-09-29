@@ -1,4 +1,4 @@
-import { distance, isCharge, isPower, living, people } from './types';
+import { distance, isCharge, isPower, isRescue, living, people } from './types';
 import type { Person, World } from './types';
 import { canWalk, findPath, lineClear } from './navigation';
 import {
@@ -14,6 +14,7 @@ import { cancelCharge, updateWeapon, weaponRange } from './weapons';
 import { notify } from './world';
 import { updateShutter } from './shutter';
 import { updateCourier } from './courier';
+import { updateDetention } from './detention';
 import { updateBroadcast } from './broadcast';
 
 export const STEP = 1 / 30;
@@ -64,6 +65,7 @@ export function step(world: World, dt = STEP) {
     );
   }
   updateShutter(world);
+  updateDetention(world);
   for (const p of people(world)) {
     updateWeapon(p, dt, distance(p, p.previous) > 1e-6);
     p.previous = { x: p.x, y: p.y };
@@ -71,6 +73,7 @@ export function step(world: World, dt = STEP) {
   }
   world.traces = world.traces.filter((t) => (t.life -= dt) > 0);
   for (const a of world.agents) {
+    if (a.captive) continue;
     if (!living(a)) {
       if (a.carrying) dropEvidence(world, [a.id]);
       continue;
@@ -98,7 +101,8 @@ export function step(world: World, dt = STEP) {
         p = interactionPoint(world, a, id);
       if (distance(a, p) < 1.15 && lineClear(world, a, p)) {
         a.path = [];
-        a.interaction += dt;
+        if (isRescue(id) && world.detention?.circuit !== 'access-cells') a.interaction = 0;
+        else a.interaction += dt;
         const duration = interactionDuration(world, a, id);
         if (a.interaction >= duration) {
           completeInteraction(world, a, id);
@@ -119,7 +123,11 @@ export function step(world: World, dt = STEP) {
     }
     const working =
       a.order.kind === 'interact' &&
-      (a.order.target === 'override' ||
+      (a.order.target.startsWith('access-') ||
+        a.order.target.startsWith('rescue-') ||
+        a.order.target === 'escape-release' ||
+        a.order.target === 'equipment' ||
+        a.order.target === 'override' ||
         a.order.target === 'breach' ||
         a.order.target === 'mask' ||
         a.order.target === 'upload' ||
@@ -127,7 +135,7 @@ export function step(world: World, dt = STEP) {
         isPower(a.order.target) ||
         a.order.target === 'authorise' ||
         a.order.target === 'release');
-    if (a.weapon && !a.carrying && !working) {
+    if (a.weapon && !a.disarmed && !a.carrying && !working) {
       const order = a.order;
       const candidates = world.guards.filter(
         (g) =>
@@ -144,6 +152,7 @@ export function step(world: World, dt = STEP) {
       }
     } else cancelCharge(a);
   }
+  updateDetention(world);
   updateAwareness(world, dt);
   updateCourier(world, dt);
   updateBroadcast(world, dt);
@@ -163,7 +172,14 @@ export function step(world: World, dt = STEP) {
     if (v.waiting || (leader && distance(v, leader) <= 1.1)) v.path = [];
     walk(world, v, world.mission.escort!.speed, dt);
   }
-  if (v && !living(v)) {
+  if (world.detention && world.agents.some((a) => !living(a))) {
+    world.status = 'lost';
+    notify(
+      world,
+      `${world.agents.find((a) => !living(a))!.name} was killed. This rescue requires all four operatives alive. Restart the operation.`,
+      'warning',
+    );
+  } else if (v && !living(v)) {
     world.status = 'lost';
     notify(
       world,

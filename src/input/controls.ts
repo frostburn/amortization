@@ -31,6 +31,10 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     const r = canvas.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   };
+  const inspect = (hit: Hit | null) => {
+    hud.inspectGuard(hit?.kind === 'guard' ? hit.id : null);
+    hud.inspectObject(hit?.kind === 'object' ? hit.id : null);
+  };
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas.addEventListener('pointerdown', (e) => {
     if (!e.isPrimary || start || e.button > 2) return;
@@ -51,7 +55,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     if (!start) {
       const p = position(e),
         hit = scene.hit(p.x, p.y);
-      hud.inspectGuard(hit.kind === 'guard' ? hit.id : null);
+      inspect(hit);
       return;
     }
     if (!last || e.pointerId !== pointer) return;
@@ -67,7 +71,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     last = p;
   });
   canvas.addEventListener('pointerleave', (e) => {
-    if (e.pointerType !== 'touch') hud.inspectGuard(null);
+    if (e.pointerType !== 'touch') inspect(null);
   });
   const cancel = () => {
     scene.setPointerActive(false);
@@ -91,7 +95,12 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
         .agents.filter((a) => {
           const q = scene.agentBounds(a);
           return (
-            a.hp > 0 && q.x + q.w >= r.x && q.x <= r.x + r.w && q.y + q.h >= r.y && q.y <= r.y + r.h
+            !a.captive &&
+            a.hp > 0 &&
+            q.x + q.w >= r.x &&
+            q.x <= r.x + r.w &&
+            q.y + q.h >= r.y &&
+            q.y <= r.y + r.h
           );
         })
         .map((a) => a.id);
@@ -111,7 +120,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
               : [hit.id],
         );
       else {
-        hud.inspectGuard(hit.kind === 'guard' ? hit.id : null);
+        inspect(hit);
         target.order(hit);
       }
     }

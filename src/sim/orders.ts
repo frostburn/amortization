@@ -1,4 +1,7 @@
 import {
+  controllable,
+  isAccess,
+  isRescue,
   distance,
   inside,
   isCharge,
@@ -17,6 +20,7 @@ import { courierGuard, routeCourier } from './courier';
 import { BROADCAST_SETUP_TIME, published, workBroadcast } from './broadcast';
 import { demolished, detonationStatus } from './demolition';
 import { cancelCharge, longGun } from './weapons';
+import { detentionAvailable, detentionRefusal, workDetention, rescueComplete } from './detention';
 import { canAuthorise, inspectionRemaining } from './security';
 
 export function landmark(world: World, id: ObjectKind): Landmark {
@@ -35,6 +39,7 @@ export function landmark(world: World, id: ObjectKind): Landmark {
 export function available(world: World, id: ObjectKind) {
   return (
     world.mission.landmarks.some((o) => o.id === id) &&
+    detentionAvailable(world, id) &&
     !(
       (id === 'disguise' && world.disguiseTaken) ||
       (id === 'gate' && world.gateOpen) ||
@@ -63,6 +68,8 @@ export function interactionPoint(world: World, agent: Operative, id: ObjectKind)
   return landmark(world, id);
 }
 export function interactionDuration(world: World, agent: Operative, id: ObjectKind) {
+  if (isRescue(id)) return 2;
+  if (id === 'equipment' || id === 'escape-release') return 1.5;
   if (isPower(id)) return 4;
   if (id === 'authorise') return 2;
   if (id === 'breach') return 8;
@@ -74,7 +81,7 @@ export function interactionDuration(world: World, agent: Operative, id: ObjectKi
   return id === 'relay' ? 1.5 : id === 'override' ? 0.8 : 0.65;
 }
 export function moveAgents(world: World, ids: string[], target: Vec) {
-  const agents = world.agents.filter((a) => ids.includes(a.id) && living(a));
+  const agents = world.agents.filter((a) => ids.includes(a.id) && controllable(a));
   const destinations = formationTargets(world, agents, target);
   agents.forEach((a, i) => {
     const destination = destinations[i];
@@ -87,6 +94,8 @@ export function moveAgents(world: World, ids: string[], target: Vec) {
   });
 }
 function interactionRefusal(world: World, a: Operative, id: ObjectKind): string | null {
+  const detentionReason = detentionRefusal(world, a, id);
+  if (detentionReason) return detentionReason;
   if (id === 'disguise' && longGun(a))
     return 'KIT needs a concealable pistol. Select Morrow or Vale; long guns remain visible when stowed.';
   if (
@@ -156,7 +165,7 @@ export function interact(world: World, ids: string[], id: ObjectKind) {
       );
     return;
   }
-  const agents = world.agents.filter((a) => ids.includes(a.id) && living(a));
+  const agents = world.agents.filter((a) => ids.includes(a.id) && controllable(a));
   const target = landmark(world, id);
   if (isExtraction(id)) {
     // Extraction is a crew order. Sending only the nearest operative strands
@@ -207,14 +216,16 @@ export function interact(world: World, ids: string[], id: ObjectKind) {
 }
 export function hold(world: World, ids: string[]) {
   for (const a of world.agents)
-    if (ids.includes(a.id)) {
+    if (ids.includes(a.id) && !a.captive) {
       a.order = { kind: 'hold' };
       a.path = [];
       a.interaction = 0;
     }
 }
 export function toggleWeapons(world: World, ids: string[]) {
-  const agents = world.agents.filter((a) => ids.includes(a.id) && living(a) && !a.carrying);
+  const agents = world.agents.filter(
+    (a) => ids.includes(a.id) && controllable(a) && !a.carrying && !a.disarmed,
+  );
   const draw = agents.some((a) => !a.weapon);
   for (const a of agents) {
     a.weapon = draw;
@@ -227,7 +238,7 @@ export function toggleWeapons(world: World, ids: string[]) {
 }
 export function attack(world: World, ids: string[], target: string) {
   for (const a of world.agents)
-    if (ids.includes(a.id) && living(a) && !a.carrying) {
+    if (ids.includes(a.id) && controllable(a) && !a.carrying && !a.disarmed) {
       a.weapon = true;
       if (a.armament?.charging?.target !== target) cancelCharge(a);
       a.order = { kind: 'attack', target };
@@ -236,7 +247,7 @@ export function attack(world: World, ids: string[], target: string) {
 }
 export function heal(world: World, ids: string[]) {
   for (const a of world.agents)
-    if (ids.includes(a.id) && living(a) && a.medkit && a.hp < a.maxHp) {
+    if (ids.includes(a.id) && controllable(a) && a.medkit && a.hp < a.maxHp) {
       a.hp = Math.min(a.maxHp, a.hp + 55);
       a.medkit = false;
       notify(world, `${a.name} used a field dressing.`);
@@ -300,6 +311,8 @@ export function dropEvidence(world: World, ids: string[]) {
 }
 /** A whole-crew rally must not abandon a held shutter with people still inside. */
 export function extractionRallyBlocker(world: World): string | null {
+  if (world.detention && !world.detention.released)
+    return 'Keep a partner at the remote console. Free both prisoners, then use EXIT inside detention before rallying.';
   if (!world.mission.archive || world.shutterBreached || !world.overrideBy) return null;
   const insideArchive = world.agents.filter((p) => living(p) && inside(p, world.mission.secure));
   return insideArchive.length
@@ -315,22 +328,26 @@ export function extractionStatus(world: World, id: 'extract' | 'alternate') {
     carrier = survivors.find((p) => p.carrying),
     v = world.escort;
   const waiting =
-    world.demolition && !demolished(world)
-      ? 'Destroy both debt backups before requesting extraction.'
-      : world.mission.broadcast && !published(world)
-        ? "Publish Mara's audit at UPLINK before requesting extraction."
-        : ['ledger', 'case'].includes(world.mission.objective) &&
-            (!carrier || distance(carrier, van) > EXTRACTION_RADIUS)
-          ? `Bring the ${world.mission.evidenceName.toLowerCase()} to ${van.tag}. It is required for this contract.`
-          : v && (!v.recruited || !living(v))
-            ? `Bring ${v.name} out alive before requesting extraction.`
-            : v && distance(v, van) > EXTRACTION_RADIUS
-              ? v.waiting
-                ? `Waiting for ${v.name}. Use the Escort controls to ask them to follow.`
-                : `Waiting for ${v.name} at ${van.tag}. Bring their escort to the van.`
-              : missing.length
-                ? `Waiting for ${missing.map((p) => p.name).join(', ')}. Bring every survivor inside the extraction ring.`
-                : null;
+    world.detention && (!rescueComplete(world) || world.agents.some((p) => !living(p)))
+      ? 'Free Vale and Rook and bring all four operatives home alive.'
+      : world.detention && !world.detention.released
+        ? 'Use EXIT inside detention to release both gates before leaving.'
+        : world.demolition && !demolished(world)
+          ? 'Destroy both debt backups before requesting extraction.'
+          : world.mission.broadcast && !published(world)
+            ? "Publish Mara's audit at UPLINK before requesting extraction."
+            : ['ledger', 'case'].includes(world.mission.objective) &&
+                (!carrier || distance(carrier, van) > EXTRACTION_RADIUS)
+              ? `Bring the ${world.mission.evidenceName.toLowerCase()} to ${van.tag}. It is required for this contract.`
+              : v && (!v.recruited || !living(v))
+                ? `Bring ${v.name} out alive before requesting extraction.`
+                : v && distance(v, van) > EXTRACTION_RADIUS
+                  ? v.waiting
+                    ? `Waiting for ${v.name}. Use the Escort controls to ask them to follow.`
+                    : `Waiting for ${v.name} at ${van.tag}. Bring their escort to the van.`
+                  : missing.length
+                    ? `Waiting for ${missing.map((p) => p.name).join(', ')}. Bring every survivor inside the extraction ring.`
+                    : null;
   return {
     ready: survivors.length > 0 && !waiting,
     waiting,
@@ -339,12 +356,20 @@ export function extractionStatus(world: World, id: 'extract' | 'alternate') {
   };
 }
 export function completeInteraction(world: World, a: Operative, id: ObjectKind) {
+  if (!controllable(a)) return;
   const refusal = interactionRefusal(world, a, id);
   if (refusal) {
     a.order = { kind: 'hold' };
     a.path = [];
     a.interaction = 0;
     notify(world, refusal, 'warning');
+    return;
+  }
+  if (
+    world.detention &&
+    (isAccess(id) || isRescue(id) || id === 'equipment' || id === 'escape-release')
+  ) {
+    if (available(world, id)) workDetention(world, a, id);
     return;
   }
   if ((id === 'mask' || id === 'upload') && available(world, id)) {
@@ -523,13 +548,15 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
       if (world.evidence === 'carried') world.evidence = 'extracted';
       notify(
         world,
-        world.mission.objective === 'demolition'
-          ? 'Contract fulfilled. The debt backups are destroyed. The crew is clear.'
-          : world.mission.objective === 'broadcast'
-            ? "Contract fulfilled. Mara's audit is public. The crew is clear."
-            : world.mission.objective === 'escort'
-              ? `Contract fulfilled. ${world.escort!.name} is out. The crew is clear.`
-              : `Contract fulfilled. The ${world.mission.evidenceName.toLowerCase()} is secured. The crew is clear.`,
+        world.detention
+          ? 'Vale and Rook recovered. All four are clear; the mandate stays with Mara.'
+          : world.mission.objective === 'demolition'
+            ? 'Contract fulfilled. The debt backups are destroyed. The crew is clear.'
+            : world.mission.objective === 'broadcast'
+              ? "Contract fulfilled. Mara's audit is public. The crew is clear."
+              : world.mission.objective === 'escort'
+                ? `Contract fulfilled. ${world.escort!.name} is out. The crew is clear.`
+                : `Contract fulfilled. The ${world.mission.evidenceName.toLowerCase()} is secured. The crew is clear.`,
       );
       break;
     }

@@ -11,6 +11,9 @@ export function shoot(
   dt = 1 / 30,
 ): boolean {
   if (
+    ('disarmed' in from && from.disarmed === true) ||
+    ('captive' in from && from.captive === true) ||
+    ('captive' in to && to.captive === true) ||
     from.cooldown > 0 ||
     !living(from) ||
     !living(to) ||

@@ -1,3 +1,4 @@
+import { detentionDoors } from './detention';
 import { distance } from './types';
 import type { Mission, Rect, Vec, World } from './types';
 
@@ -8,6 +9,7 @@ const EPSILON = 1e-7;
 export function obstacles(world: World): Rect[] {
   return [
     ...world.mission.solids,
+    ...detentionDoors(world),
     ...(world.gateOpen ? [] : [world.mission.gate]),
     ...(world.mission.archive && !world.shutterOpen ? [world.mission.archive.door] : []),
   ];
@@ -103,7 +105,8 @@ interface NavigationGrid {
 }
 
 // Derived geometry stays outside World and replay state. At most four door
-// combinations are retained per mission; discarded missions can be collected.
+// combinations are retained on older sites; detention retains at most sixteen.
+// Discarded missions can be collected.
 const grids = new WeakMap<Mission, { geometry: string; states: Map<number, NavigationGrid> }>();
 
 function navigationGrid(world: World): NavigationGrid {
@@ -112,6 +115,14 @@ function navigationGrid(world: World): NavigationGrid {
     mission.width,
     mission.height,
     mission.solids.length,
+    ...(mission.detention
+      ? [...mission.detention.gates, ...mission.detention.cells].flatMap(({ door: r }) => [
+          r.x,
+          r.y,
+          r.w,
+          r.h,
+        ])
+      : []),
     Number(!!mission.archive),
     ...mission.solids.flatMap((r) => [r.x, r.y, r.w, r.h]),
     mission.gate.x,
@@ -133,7 +144,15 @@ function navigationGrid(world: World): NavigationGrid {
     cached = { geometry, states: new Map() };
     grids.set(mission, cached);
   }
-  const state = Number(world.gateOpen) | (Number(world.shutterOpen) << 1);
+  const state =
+    Number(world.gateOpen) |
+    (Number(world.shutterOpen) << 1) |
+    ((world.detention?.open.includes('access-intake') ? 1 : 0) << 2) |
+    ((world.detention?.open.includes('access-cells') ? 1 : 0) << 3) |
+    (mission.detention?.cells.reduce(
+      (bits, cell, i) => bits | (Number(!!world.agents[cell.agent].captive) << (4 + i)),
+      0,
+    ) ?? 0);
   const existing = cached.states.get(state);
   if (existing) return existing;
 
@@ -180,6 +199,7 @@ function navigationGrid(world: World): NavigationGrid {
       }
   }
   const grid = { width, height, points, edges };
+  if (cached.states.size >= 16) cached.states.delete(cached.states.keys().next().value!);
   cached.states.set(state, grid);
   return grid;
 }
