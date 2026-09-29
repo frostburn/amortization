@@ -42,6 +42,10 @@ describe('extraction orders', () => {
       const w = createWorld(mission);
       // Isolate the return order from combat; full mission routes test live opposition.
       w.guards = [];
+      if (w.settlement) {
+        w.settlement.reconciled = true;
+        w.settlement.progress = mission.settlement!.duration;
+      }
       for (const [i, a] of w.agents.entries()) Object.assign(a, { x: 6.5, y: 15 + i });
       if (w.detention) {
         w.agents.forEach((a) => {
@@ -65,7 +69,7 @@ describe('extraction orders', () => {
         w.agents.map((a) => a.id),
         exit.id,
       );
-      advance(w, 40);
+      advance(w, mission.settlement ? 60 : 40);
       expect(w.status, w.message).toBe('won');
       expect(w.extractedAt).toBe(exit.id);
       expect(w.agents.every((a) => distance(a, exit) <= 4)).toBe(true);

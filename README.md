@@ -2,7 +2,7 @@
 
 A real-time squad tactics game for the browser. Control four operatives together or individually. One maintenance disguise admits a single person; the rest of the crew can prepare access or provide armed backup.
 
-**Ten operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing any of the first nine. Restart and Shift+R restart the selected mission, including unfinished attempts. Briefings and results also offer **Restart mission**.
+**Eleven operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing any of the first ten. Restart and Shift+R restart the selected mission, including unfinished attempts. Briefings and results also offer **Restart mission**.
 
 ## Development
 
@@ -19,7 +19,7 @@ Open the URL Vite prints. Everything runs in the browser, with no account, backe
 npm run check       # lint, simulation tests, typecheck, production build
 npx playwright install chromium
 npm run test:e2e:smoke # routine CI browser gate (10 checks)
-npm run test:e2e       # full Chromium regressions (30 checks)
+npm run test:e2e       # full Chromium regressions
 npm run preview    # serve the production build
 ```
 
@@ -108,7 +108,7 @@ tests completion under current rules. Both exit nonzero on failure. Selected pla
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
 distinct routes. Fifteen retained recordings cover operations 01–04. The two
 recordings for operations 05–06 no longer win with their new equipment and were
-retired without altering the submitted inputs. All ten missions have synthetic
+retired without altering the submitted inputs. All eleven missions have synthetic
 quiet and armed completion tests; new human runs for 05–06 are welcome. See
 `tests/replays/README.md` for provenance, current outcomes, and retired routes.
 
@@ -129,7 +129,7 @@ quiet and armed completion tests; new human runs for 05–06 are welcome. See
 | F                              | Draw / stow selected weapons                                        |
 | E                              | Interact with a nearby landmark                                     |
 | H                              | Use a field dressing: one per operative, up to 55 health            |
-| B                              | Aim a flash in operation 10; choose a point, then confirm one throw |
+| B                              | Aim a flash in operations 10–11; choose a point, then confirm one throw |
 | X                              | Put down carried evidence                                           |
 | Space                          | Pause / resume; orders work while paused                            |
 | Hold Tab                       | Slow time to 20%                                                    |
@@ -554,9 +554,44 @@ a public perimeter route when available, even after the response team opens
 GATE. Ordinary move orders can still enter the site. Substantial detours appear
 in the existing map caption, with a clearer route line and initial direction arrow.
 
+## Value date · Operation 11
+
+The restitution mandate has reached the bank. Enter Mutual Indemnity's
+**60 × 44 settlement court in daylight** to release the first repayments.
+The follow camera starts at the same readable scale as the recent operations;
+**Fit map** gives an overview and **Follow** restores the play scale.
+
+Daylight uses pale concrete, cool directional shadows and unlit windows, without
+night-time operative light pools. **Human guards see 50% farther**; their cones
+show the actual range. Solid cover, firing ranges, close credential checks and
+wired optics keep their existing rules. Earlier operations retain their night
+palette and perception.
+
+The job has three stages:
+
+1. Recover the original **REGISTER** from the shuttered records office. A partner
+   on the north-street **SHUNT** opens access; noisy **CUT** is the permanent
+   alternative. **RADIO** is inside the office, away from the entrance.
+2. Bring the carrier to the west **CHECK** office for six uninterrupted seconds.
+   Completed reconciliation stays valid if the register changes hands.
+3. Leave a separate operative with free hands holding **SIGN**, while the
+   REGISTER carrier works **CLEAR** across the court. Both must work together
+   for twelve seconds and neither can fire. Moving, Hold, lost cargo or
+   disorientation pauses the transfer; completed progress is saved.
+
+Two operatives must survive until the transfer completes. Afterward, bring
+REGISTER and every survivor to **VAN**, including the signer. Disabling RADIO or
+killing guards cannot bypass the bank's two-person requirement. Objectives and
+controls advance with each stage; route advice stays collapsed in the briefing.
+
+Live-patrol regression runs complete a nonlethal register handoff and a prepared
+assault, with all four extracting and exact replay checks. The nonlethal run
+still takes incoming fire at the eastern crossing. These establish solvability;
+human replays are needed to judge clarity and difficulty.
+
 ## Records
 
-Results track time, crew survival, evidence, and alarm status. Operation five also reports publication; operation six reports backup destruction; operation ten reports the mandate being served. Each operation keeps
+Results track time, crew survival, evidence, and alarm status. Operation five also reports publication; operation six reports backup destruction; operation ten reports the mandate being served; operation eleven reports the repayments being released. Each operation keeps
 separate **Full crew** (all four survive) and **Any crew** best times, plus its
 completion count. A faster run with casualties cannot replace the full-crew
 record. Version 1/2 records migrate into Any crew because their survivor count
@@ -565,7 +600,7 @@ when browser storage is disabled.
 
 ### Operation medals
 
-**Operations** shows **73 medals across ten missions**, with earned medals in
+**Operations** shows **79 medals across eleven missions**, with earned medals in
 amber and unearned medals faded. Hover, focus with the keyboard, or tap a medal
 to read its exact conditions. Escape dismisses the tooltip first. Medal controls
 are separate from the button that starts an operation. Results show medals from
@@ -642,7 +677,7 @@ graphics checks are not part of the routine gate. Keep `@smoke` for shared playe
 flows so each new mission does not add another real-time browser journey to CI.
 
 The full simulation suite still runs on every change, including all 35 retained
-human completions, complete mission runs for all ten operations (including quiet rescue and armed withdrawal in 09, and both routes in 10 with the flashes already spent),
+human completions, complete mission runs for all eleven operations (including quiet rescue and armed withdrawal in 09, both routes in 10 with the flashes already spent, and nonlethal and prepared armed completions in 11),
 navigation clearance, local identification, disguise permissions, radio disruption,
 evidence custody, demolition safety, and extraction requirements.
 Playwright launches Vite with `VITE_BROWSER_TEST=true`, capping its renderer at
@@ -652,6 +687,6 @@ rendering are uncapped. Local and CI browser tests use the same SwiftShader back
 
 ## Current scope
 
-Ten ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, and mid-mission saves remain future work. Each operative has a distinct on-map model with 32 facings, a distance-driven walk, an armed stance, and a grounded fallen pose. Hair, skin, clothing, and build correspond to their portraits; disguises preserve their identity. Voss and Mara have their own models and portraits beside the wait/follow control.
+Eleven ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, and mid-mission saves remain future work. Each operative has a distinct on-map model with 32 facings, a distance-driven walk, an armed stance, and a grounded fallen pose. Hair, skin, clothing, and build correspond to their portraits; disguises preserve their identity. Voss and Mara have their own models and portraits beside the wait/follow control.
 
 See [design notes](docs/design.md) and [art provenance](docs/art.md). Distributed under the repository's [MIT license](LICENSE).

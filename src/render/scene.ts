@@ -225,13 +225,15 @@ export class Scene {
       g = this.floor;
     g.clear();
     const mission = world.mission;
+    this.host.dataset.theme = mission.daylight ? 'day' : 'night';
+    this.app.renderer.background.color = mission.daylight ? 0x9baeb5 : 0x111c29;
     plane(g, 0, 0, mission.width, mission.height, COLORS.ground);
     for (let x = 0; x < mission.width; x++)
       for (let y = 0; y < mission.height; y++) {
         const depot = inside({ x, y }, mission.restricted);
         const street =
           x < mission.restricted.x - 1 || y > mission.restricted.y + mission.restricted.h;
-        plane(g, x, y, 1, 1, groundColor(x, y, depot, street));
+        plane(g, x, y, 1, 1, groundColor(x, y, depot, street, mission.daylight));
         if (depot && (x * 17 + y * 23) % 47 === 0) drawYardDetail(g, x, y);
       }
     // Each site's ground markings use the same coordinates as its collision map.
@@ -364,6 +366,23 @@ export class Scene {
       for (let y = 20.3; y < 24; y += 0.6) plane(g, 19.5, y, 1.7, 0.2, COLORS.amber, 0, 0.65);
       for (let y = 5; y < 36; y += 3) plane(g, 52, y, 0.12, 1.2, 0x929d85);
     }
+    if (mission.settlement) {
+      plane(g, 8.4, 31.4, 16.2, 3.3, 0x9eaaa9);
+      plane(g, 25.4, 26.5, 18.2, 3, 0xa6b1ad);
+      plane(g, 25.4, 8.2, 8.1, 2.8, 0xa6b1ad);
+      for (const room of [
+        { x: 11.4, y: 9.4, w: 11.2, h: 11.2 },
+        { x: 11.4, y: 26.4, w: 6.2, h: 4.2 },
+        { x: 44.4, y: 26.4, w: 7.2, h: 6.2 },
+      ]) {
+        plane(g, room.x, room.y, room.w, room.h, 0xd0c8b4);
+        for (let y = room.y + 1; y < room.y + room.h; y += 1.5)
+          plane(g, room.x, y, room.w, 0.025, 0xb2ad9e);
+      }
+      plane(g, 34.4, 6.4, 13.8, 10.2, 0xc2b9a4);
+      for (let y = 7; y < 38; y += 3) plane(g, 56, y, 0.12, 1.2, 0xe0dcca);
+      for (let y = 22.3; y < 26; y += 0.65) plane(g, 24.5, y, 1.4, 0.2, 0xe5d1a3);
+    }
     if (mission.demolition) {
       plane(g, 10.35, 3.35, 9.65, 8.3, 0x53655f, 0, 0.5);
       plane(g, 20.35, 3.35, 13.65, 8.3, 0x53655f, 0, 0.5);
@@ -390,7 +409,7 @@ export class Scene {
       this.addScenery(label, { x: 12, y: 14, w: 0, h: 0 });
     }
     for (const solid of world.mission.solids) {
-      drawContactShadow(g, solid);
+      drawContactShadow(g, solid, mission.daylight);
       this.addSolid(solid);
     }
     this.gate = new Graphics();
@@ -421,23 +440,25 @@ export class Scene {
       }
     }
     const office = this.label(
-      mission.id === 'injunction'
-        ? 'ENFORCEMENT REGISTRY'
-        : mission.detention
-          ? 'PERSONNEL RETENTION / 09'
-          : mission.security
-            ? 'RECORDS / 08'
-            : mission.demolition
-              ? 'RECOVERY CORES / RESTRICTED'
-              : mission.broadcast
-                ? 'RESTRICTED / UPLINK'
-                : mission.escort?.locked
-                  ? 'TRANSFER RECORDS'
-                  : mission.transfer
-                    ? 'CUSTOMS'
-                    : mission.archive
-                      ? 'SECURE ARCHIVE'
-                      : 'SECURE OFFICE',
+      mission.settlement
+        ? 'BENEFICIARY RECORDS'
+        : mission.id === 'injunction'
+          ? 'ENFORCEMENT REGISTRY'
+          : mission.detention
+            ? 'PERSONNEL RETENTION / 09'
+            : mission.security
+              ? 'RECORDS / 08'
+              : mission.demolition
+                ? 'RECOVERY CORES / RESTRICTED'
+                : mission.broadcast
+                  ? 'RESTRICTED / UPLINK'
+                  : mission.escort?.locked
+                    ? 'TRANSFER RECORDS'
+                    : mission.transfer
+                      ? 'CUSTOMS'
+                      : mission.archive
+                        ? 'SECURE ARCHIVE'
+                        : 'SECURE OFFICE',
       10,
       0xf0c68b,
     );
@@ -451,23 +472,25 @@ export class Scene {
     office.anchor.set(0.5, 1);
     this.marks.addChild(office);
     const road = this.label(
-      mission.id === 'injunction'
-        ? 'ENFORCEMENT / NO PUBLIC ACCESS'
-        : mission.detention
-          ? 'VISITORS / WEST SERVICE STREET'
-          : mission.demolition
-            ? 'DEBT RECOVERY / 12'
-            : mission.broadcast
-              ? 'MUNICIPAL COMMUNICATIONS / 11'
-              : mission.escort?.locked
-                ? 'REMAND TRANSFERS / 04'
-                : mission.transfer
-                  ? 'BONDED TRANSFER / 09'
-                  : mission.id === 'depot'
-                    ? 'MUNICIPAL TRANSIT / 06'
-                    : mission.id === 'clearing'
-                      ? 'BONDED FREIGHT / NO PUBLIC ACCESS'
-                      : 'CIVIC RECORDS / NO PUBLIC ACCESS',
+      mission.settlement
+        ? 'SETTLEMENT COURT / 09:10'
+        : mission.id === 'injunction'
+          ? 'ENFORCEMENT / NO PUBLIC ACCESS'
+          : mission.detention
+            ? 'VISITORS / WEST SERVICE STREET'
+            : mission.demolition
+              ? 'DEBT RECOVERY / 12'
+              : mission.broadcast
+                ? 'MUNICIPAL COMMUNICATIONS / 11'
+                : mission.escort?.locked
+                  ? 'REMAND TRANSFERS / 04'
+                  : mission.transfer
+                    ? 'BONDED TRANSFER / 09'
+                    : mission.id === 'depot'
+                      ? 'MUNICIPAL TRANSIT / 06'
+                      : mission.id === 'clearing'
+                        ? 'BONDED FREIGHT / NO PUBLIC ACCESS'
+                        : 'CIVIC RECORDS / NO PUBLIC ACCESS',
       10,
       0x718277,
     );
@@ -491,6 +514,8 @@ export class Scene {
   private label(value: string, size = 12, color = 0xd4ded6) {
     const label = text(value, size, color);
     label.resolution = this.labelResolution;
+    if (this.world.mission.daylight)
+      label.style.stroke = { color: 0x283c3e, width: 2.5, join: 'round' };
     this.labels.add(label);
     return label;
   }
@@ -648,12 +673,12 @@ export class Scene {
         0x46505a,
       );
     } else if (s.kind === 'building') {
-      drawBuilding(g, s);
+      drawBuilding(g, s, this.world.mission.daylight);
     } else {
       drawWall(g, s);
     }
     // Wall-mounted details must inherit their wall's occlusion, too.
-    if (s.id === 'north') {
+    if (s.id === 'north' && !this.world.mission.daylight) {
       for (let x = s.x + 1.5; x < s.x + s.w - 0.75; x += 3) {
         const y = s.y + s.h + 0.012;
         // Downward spill lies on the vertical wall face, with nested pools of light.
@@ -1464,7 +1489,7 @@ export class Scene {
       for (let i = 0; i <= 22; i++) {
         const angle = guard.angle - arc + (i / 22) * arc * 2;
         let low = 0,
-          high = sightRange(guard);
+          high = sightRange(guard, this.world);
         for (let j = 0; j < 7; j++) {
           const mid = (low + high) / 2;
           const p = { x: guard.x + Math.cos(angle) * mid, y: guard.y + Math.sin(angle) * mid };
@@ -1479,11 +1504,15 @@ export class Scene {
         g,
         points,
         guard.mode === 'combat'
-          ? COLORS.red
+          ? this.world.mission.daylight
+            ? 0xbd4939
+            : COLORS.red
           : guard.turret
             ? circuitColor(guard.turret.circuit)
-            : COLORS.amber,
-        guard.mode === 'combat' ? 0.13 : 0.09,
+            : this.world.mission.daylight
+              ? 0x9b711f
+              : COLORS.amber,
+        this.world.mission.daylight ? 0.22 : guard.mode === 'combat' ? 0.13 : 0.09,
       );
     }
   }

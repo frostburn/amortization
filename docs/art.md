@@ -15,7 +15,7 @@ service vents and downpipes provide quiet material detail. Wear is sparse and
 flat; architectural details follow the existing world projection and footprints.
 Contact shadows anchor solid scenery without adding obstacles.
 
-Every living, free operative carries a soft seven-unit light pool, including
+At night, every living, free operative carries a soft seven-unit light pool, including
 unselected teammates. A recruited witness carries one too, even while waiting.
 Pools follow interpolated movement and merge by their brightest contribution,
 so a clustered team does not wash out the scene. Outside them, a cool ambient
@@ -32,6 +32,15 @@ filters. Camera pan, zoom, viewport resizing and display density all use the sam
 projection as the models. `tests/browser/lighting.spec.ts` verifies actual
 rendered pixels for overlap, split crew, captivity, death, witness recruitment,
 movement interpolation and camera transforms.
+
+Operation 11 establishes the daytime palette: pale stone paving, blue-grey
+street surfaces, sage verges, unlit blue glass and lighter slate roofs. Cool,
+directional scenery shadows establish the sun angle while contact shadows keep
+feet and buildings grounded. The operative light-pool pass is hidden in daylight;
+map text gains a dark edge and the location caption sits on a pale backing.
+Daylight's longer guard vision is a separate simulation setting; decorative
+shadows supply no concealment. Switching back to a night operation restores its
+palette and light pools.
 
 ## Portrait assets
 

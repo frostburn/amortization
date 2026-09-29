@@ -583,6 +583,53 @@ map caption, using the computed route without another search. Selected routes
 are clearer and a single selected operative has an arrow showing the first
 segment. Hovered mission items and enemies retain priority over route feedback.
 
+## Value date: a daytime settlement court (Operation 11)
+
+Operation 10 stops collections; operation 11 turns the mandate into actual
+repayments. The 60 × 44 court separates records, reconciliation, countersignature
+and clearing into connected work areas around a central hall. The records
+shutter and deep RADIO require preparation. The west office, loading screen,
+central hall and east service passage break up the longer daylight sight lines.
+Pistol patrols, ivory credential inspectors, a sentry, a marksman and a breach
+officer cover different approaches. Existing pistols, automatic fire, coil rifle
+and two flashes remain the crew's equipment.
+
+REGISTER is required physical cargo. Its carrier must complete six uninterrupted
+seconds at CHECK before authorisation; this reconciliation belongs to the
+register rather than the carrier and survives a handoff. SIGN then needs a
+free-handed operative while CLEAR needs a different operative carrying REGISTER.
+After 0.8 seconds of setup at each terminal, twelve seconds of simultaneous work
+releases the repayments. Neither worker fires. Every tick validates both owners,
+position, line of sight, custody, orders and disorientation. Commands issued
+while paused invalidate released operators immediately. A new owner releases
+the previous one. Interrupted transfer progress is retained; completion frees
+both stations. Falling below two survivors before release explicitly fails the
+mission, and extraction requires the register plus every survivor afterward.
+
+The panel shows the current stage, eligible actions, operator names and saved
+progress. Existing hover/tap objective guides locate the next relevant items.
+Briefings remain compact with route advice closed by default. The epilogue stays
+with Mara and the first beneficiary's receipt. Six existing medals apply.
+
+`Mission.daylight` controls the daytime renderer and multiplies human guard
+vision by 1.5. It changes neither firing range nor the short credential-check
+radius. Wired sentries retain their fixed optics. The rendered guard cones use
+the same range function as perception; cover still clips both. There is no fog
+of war or extra character visibility gate. Follow scale and manual camera
+controls are unchanged. Daylight rendering skips the operative shading pass and
+adds static directional scenery shadows; no per-frame shadow geometry is needed.
+
+Only this mission allocates settlement state. Earlier mission definitions and
+night simulation remain unchanged. Focused tests cover custody, paired work,
+interruptions, weapons, failure, extraction and map connectivity. Two command-only
+live-patrol runs complete with all four alive and verify every replay checkpoint:
+a nonlethal handoff and a radio-prepared assault. The nonlethal route receives
+fire while crossing east; it is not an undamaged-run claim. Existing human
+completion bundles remain in the verification corpus. Desktop/touch journeys
+exercise the picker, compact briefing, progressive controls, camera scale and
+theme reset, while the existing night-lighting pixel regression checks the
+shared renderer. New browser journeys stay outside the ten-case CI smoke gate.
+
 ## Next useful work
 
 The first four human runs of operation 07 are analyzed in the [replay notes](../tests/replays/README.md#margin-call-human-assaults). They establish that direct assaults can win with casualties and that leaving RADIO active makes the forced shutter risky. They do not yet validate the human experience of the quiet route or establish that marksmen require deliberate flanking. Keep those questions open for further playtesting. The [future combat ideas](combat-expansion.md) retain loadout choice and further equipment and security suggestions for later missions.

@@ -6,6 +6,13 @@ import type { MedalId } from './medals';
 // Presentation copy stays outside the recorded mission definition. Editing a
 // briefing must not make an otherwise compatible human replay look outdated.
 const summaries: Record<Mission['id'], { objective: string; extract: string; rules: string }> = {
+  settlement: {
+    objective:
+      'Recover REGISTER, reconcile it at CHECK, then operate SIGN and CLEAR together to release repayments.',
+    extract: 'Bring REGISTER and every survivor to VAN after the funds clear.',
+    rules:
+      'Daylight extends human sight by 50%. Two operatives must survive until the transfer is complete. Its progress survives interruptions.',
+  },
   depot: {
     objective: 'Recruit engineer Iona Voss from the secure office.',
     extract: 'Bring Voss and every surviving operative to VAN.',
@@ -87,7 +94,7 @@ export function briefingObjective(m: Mission) {
 
 export function renderBriefing(m: Mission, medals: MedalId[] = []) {
   const summary = summaries[m.id];
-  const optional = !['ledger', 'case'].includes(m.objective);
+  const optional = !['ledger', 'case', 'settlement'].includes(m.objective);
   const cargo = m.landmarks.find((o) => o.id === 'evidence')!;
   return `<header class="briefing-header">
     <div class="dialog-number">${m.number} / ${m.location}</div>

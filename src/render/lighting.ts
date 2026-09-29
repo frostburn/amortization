@@ -75,6 +75,8 @@ export class OperativeLighting extends Mesh<MeshGeometry, Shader> {
     viewport: { width: number; height: number },
     ending: Aftermath | null,
   ) {
+    this.visible = !world.mission.daylight;
+    if (!this.visible) return;
     const scale = camera.scale.x,
       group = this.shader!.resources.lightUniforms,
       lights: Float32Array = group.uniforms.uLights;

@@ -40,6 +40,7 @@ import { demolished, detonationStatus } from '../sim/demolition';
 import { activeTurrets, canAuthorise, inspectionRemaining, turretPowered } from '../sim/security';
 import { flashReady } from '../sim/flash';
 import { CREDENTIAL_TIME } from '../sim/inspection';
+import { settled, settlementStatus } from '../sim/settlement';
 
 export type Action =
   | 'flash'
@@ -67,6 +68,7 @@ export type Action =
   | 'escort-wait'
   | 'escort-aid'
   | 'call-transfer'
+  | `settlement:${'reconcile' | 'countersign' | 'settle'}`
   | 'work:mask'
   | 'work:upload'
   | 'work:breach'
@@ -139,6 +141,7 @@ export class Hud {
     const detentionControls = `<section id="detention-controls" class="objective-actions" aria-label="Detention gates" hidden><p id="detention-status" role="status"></p><div class="broadcast-actions" id="detention-switches"><button data-action="detention:access-intake" id="intake-button">Hold INTAKE</button><button data-action="detention:access-cells" id="cells-button">Hold CELLS</button></div><button data-action="detention:escape-release" id="release-exit-button" hidden>Release EXIT</button></section>`;
     const securityControls = `<section id="security-controls" class="objective-actions" aria-label="Wired security" hidden><p id="security-status" role="status"></p><div class="broadcast-actions"><button data-action="security:power-west" id="power-west-button" title="Amber circuit · four seconds with free hands">Isolate WEST · 4s</button><button data-action="security:power-east" id="power-east-button" title="Blue circuit · four seconds with free hands">Isolate EAST · 4s</button></div><button data-action="security:authorise" id="authorise-button" aria-describedby="authorise-status">Authorise INSPECT · 22s</button><p id="authorise-status"></p></section>`;
     const demolitionControls = `<section id="demolition-controls" class="objective-actions" aria-label="Demolition" hidden><div id="plant-actions" class="broadcast-actions">${(['charge-west', 'charge-east'] as const).map((id) => `<div><button data-action="plant:${id}" id="${id}-button" aria-describedby="${id}-status"></button><p id="${id}-status"></p></div>`).join('')}</div><button data-action="detonate" id="detonate-button" aria-describedby="detonation-status">Detonate both cores</button><p id="detonation-status" role="status"></p></section>`;
+    const settlementControls = `<section id="settlement-controls" class="objective-actions" aria-label="Repayments" hidden><p id="settlement-status" role="status"></p><progress id="settlement-progress" value="0" max="1" aria-label="Repayments released"></progress><button data-action="settlement:reconcile" id="reconcile-button">Carrier to CHECK · 6s</button><div class="broadcast-actions" id="settlement-actions"><button data-action="settlement:countersign" id="countersign-button">Hold SIGN</button><button data-action="settlement:settle" id="settle-button">Carrier to CLEAR</button></div></section>`;
     const broadcastControls = `<section id="broadcast-controls" class="objective-actions" aria-label="Transmission" hidden><p id="broadcast-progress-label"></p><progress id="broadcast-progress" value="0" max="1" aria-label="Upload progress"></progress><p id="broadcast-status" role="status"></p><div id="broadcast-actions" class="broadcast-actions"><button data-action="work:mask" id="mask-button" title="Send a selected operative with free hands to hold LOOP. Moving or Hold releases it.">Hold LOOP</button><button data-action="work:upload" id="upload-button" title="Send a selected operative with free hands to UPLINK. Moving or Hold pauses the upload; progress is saved.">Work UPLINK</button></div></section>`;
     this.app.innerHTML = `
       <header class="topbar"><h1>AMORTIZATION</h1><span class="operation" id="operation-title"></span><div class="top-actions"><button data-action="operations">Operations</button><button id="briefing-button" data-action="briefing" title="Mission briefing and controls">Briefing</button><button data-action="pause" id="pause-button">${icon('play')}<span id="pause-label">Resume</span></button><div class="audio-controls"><button data-action="sound" id="sound-button" aria-pressed="false">Sound off</button><label class="volume-control" title="Master volume"><span>Vol</span><input id="sound-volume" aria-label="Sound volume" type="range" min="0" max="100" value="65" step="1"></label></div></div></header>
@@ -155,7 +158,7 @@ export class Hud {
           <footer class="controls-hint"><span><kbd>1–4</kbd> operative <kbd>Q</kbd> squad <kbd>RMB</kbd> order <kbd>Space</kbd> pause <kbd>Tab</kbd> slow</span><button data-action="restart" title="Restart operation (Shift+R)">Restart</button></footer>
         </section>
         <aside class="sidebar mission-sidebar" aria-label="Mission and status">
-          <section class="mission-section"><h2 id="mission-title"></h2><div class="objectives">${(['primary', 'evidence', 'extract'] as const).map((id) => `<div class="objective-group" id="objective-group-${id}"><button id="objective-${id}" data-goal="${id}" aria-controls="objective-guide" aria-describedby="objective-help" title="Locate relevant mission items"></button>${id === 'primary' ? `<section id="archive-escape" class="objective-actions" hidden><p id="archive-escape-hint"></p><button id="archive-cut-button" data-action="work:breach">Send selected to CUT · 8s</button></section>` + escortControls + courierControls + broadcastControls + demolitionControls + securityControls + detentionControls : id === 'extract' ? extractionControls : ''}</div>`).join('')}</div><p id="objective-help">Hover or tap goals to locate · <kbd>?</kbd> help</p></section>
+          <section class="mission-section"><h2 id="mission-title"></h2><div class="objectives">${(['primary', 'evidence', 'extract'] as const).map((id) => `<div class="objective-group" id="objective-group-${id}"><button id="objective-${id}" data-goal="${id}" aria-controls="objective-guide" aria-describedby="objective-help" title="Locate relevant mission items"></button>${id === 'primary' ? `<section id="archive-escape" class="objective-actions" hidden><p id="archive-escape-hint"></p><button id="archive-cut-button" data-action="work:breach">Send selected to CUT · 8s</button></section>` + escortControls + courierControls + broadcastControls + demolitionControls + securityControls + detentionControls + settlementControls : id === 'extract' ? extractionControls : ''}</div>`).join('')}</div><p id="objective-help">Hover or tap goals to locate · <kbd>?</kbd> help</p></section>
           <section class="alert-section" aria-label="Alert status"><p class="alert" id="alert">● Site quiet</p><p class="fine" id="radio-status">Radio network online</p><p class="fine" id="archive-status" hidden></p></section>
           <section class="dispatch" aria-label="Comms"><span>COMMS</span><p id="message" role="status">Preparing the operation…</p></section>
           <details class="intel-section"><summary>Field notes &amp; records</summary><div class="intel-content"><p class="description" id="mission-description"></p><p id="intel"></p><p class="best" id="best"></p></div></details>
@@ -359,6 +362,7 @@ export class Hud {
     this.field('archive-status').hidden = !mission.archive;
     this.field('courier-controls').hidden = !mission.transfer;
     this.field('broadcast-controls').hidden = !mission.broadcast;
+    this.field('settlement-controls').hidden = !mission.settlement;
     this.field('demolition-controls').hidden = !mission.demolition;
     this.field('security-controls').hidden = !mission.security;
     this.field('detention-controls').hidden = !mission.detention;
@@ -373,7 +377,7 @@ export class Hud {
     this.modal.classList.remove('operations-dialog', 'briefing-dialog');
     const won = world.status === 'won',
       alive = world.agents.filter(living).length;
-    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? epilogues[world.mission.id].lead : world.escort && !living(world.escort) ? `${world.escort.name} was killed.` : world.detention ? world.message : 'The crew is down.'}</p><p class="dialog-body">${won ? epilogues[world.mission.id].body : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results"><div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div>${world.demolition ? `<div><dt>Backups</dt><dd>${demolished(world) ? 'Destroyed' : `${world.demolition.armed.length}/2 armed`}</dd></div>` : ''}${world.broadcast ? `<div><dt>${world.mission.broadcast?.subject ? 'Mandate' : 'Audit'}</dt><dd>${published(world) ? (world.mission.broadcast?.completed ?? 'Published') : 'Incomplete'}</dd></div>` : ''}<div><dt>${world.demolition ? 'Optional register' : world.broadcast ? 'Optional LOG' : 'Evidence'}</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div>${won && world.mission.landmarks.some((o) => o.id === 'alternate') && world.extractedAt ? `<div><dt>Extraction</dt><dd>${landmark(world, world.extractedAt).tag}</dd></div>` : ''}</dl>${record.best !== null ? `<p class="fine">${recordTimes(record.best, record.fullCrewBest)}</p>` : ''}${won ? `<section class="debrief-medals" aria-label="Medals this run"><p class="medal-summary">Medals this run <span>${fresh.length ? `${fresh.length} new` : 'Already earned'}</span></p>${medalList(world.mission, earnedMedals(world), fresh, true)}</section>` : ''}<button class="primary" autofocus data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Restart mission'} <span>→</span></button><div class="dialog-actions">${won && nextMission(world.mission.id) ? '<button class="dialog-secondary" data-action="restart">Restart mission</button>' : ''}<button class="dialog-secondary" data-action="operations">Operations</button></div>`;
+    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? epilogues[world.mission.id].lead : world.escort && !living(world.escort) ? `${world.escort.name} was killed.` : world.detention || world.settlement ? world.message : 'The crew is down.'}</p><p class="dialog-body">${won ? epilogues[world.mission.id].body : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results">${world.settlement ? `<div><dt>Repayments</dt><dd>${settled(world) ? 'Released' : 'Incomplete'}</dd></div>` : ''}<div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div>${world.demolition ? `<div><dt>Backups</dt><dd>${demolished(world) ? 'Destroyed' : `${world.demolition.armed.length}/2 armed`}</dd></div>` : ''}${world.broadcast ? `<div><dt>${world.mission.broadcast?.subject ? 'Mandate' : 'Audit'}</dt><dd>${published(world) ? (world.mission.broadcast?.completed ?? 'Published') : 'Incomplete'}</dd></div>` : ''}<div><dt>${world.demolition ? 'Optional register' : world.broadcast ? 'Optional LOG' : 'Evidence'}</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div>${won && world.mission.landmarks.some((o) => o.id === 'alternate') && world.extractedAt ? `<div><dt>Extraction</dt><dd>${landmark(world, world.extractedAt).tag}</dd></div>` : ''}</dl>${record.best !== null ? `<p class="fine">${recordTimes(record.best, record.fullCrewBest)}</p>` : ''}${won ? `<section class="debrief-medals" aria-label="Medals this run"><p class="medal-summary">Medals this run <span>${fresh.length ? `${fresh.length} new` : 'Already earned'}</span></p>${medalList(world.mission, earnedMedals(world), fresh, true)}</section>` : ''}<button class="primary" autofocus data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Restart mission'} <span>→</span></button><div class="dialog-actions">${won && nextMission(world.mission.id) ? '<button class="dialog-secondary" data-action="restart">Restart mission</button>' : ''}<button class="dialog-secondary" data-action="operations">Operations</button></div>`;
     if (!this.modal.open) this.modal.showModal();
   }
   update(world: World, state: HudState) {
@@ -602,39 +606,43 @@ export class Hud {
             ? `Disoriented for ${a.disoriented!.toFixed(1)}s. Movement continues; firing and work resume after recovery.`
             : world.guards.some((g) => living(g) && g.inspection?.target === a.id)
               ? 'Credentials being checked! Break sight or leave the ivory inspector’s range.'
-              : world.detention?.operator === a.id
-                ? 'Holding remote power; cannot fire. Select a partner to advance. Moving or Hold releases the circuit.'
-                : a.disarmed
-                  ? 'No weapon or dressing. Recover your equipment at GEAR, or follow the prepared escape route.'
-                  : a.order.kind === 'interact' && isCharge(a.order.target)
-                    ? 'Planting needs five uninterrupted seconds and free hands. Cannot fire while planting; moving or Hold cancels unfinished work.'
-                    : world.broadcast?.maskBy === a.id
-                      ? 'Holding LOOP. Select a teammate for UPLINK. Moving or Hold releases the loop.'
-                      : world.broadcast?.uploadBy === a.id
-                        ? 'Uploading; cannot fire while working. Moving or Hold pauses it and saves progress.'
-                        : world.overrideBy === a.id
-                          ? 'Holding the shutter open. Select a teammate; moving or Hold releases the shunt.'
-                          : a.exposed
-                            ? 'Identity compromised. Break sight and prepare an exit.'
-                            : a.carrying
-                              ? clearedCargo(world, a)
-                                ? 'Signed cargo clearance. Keep the uniform; dropping CASE voids clearance. Both hands occupied.'
-                                : world.mission.objective !== 'escort'
-                                  ? 'This cargo attracts suspicion even in uniform. Both hands occupied; X sets it down.'
-                                  : 'Both hands occupied. Set the cargo down to fire.'
-                              : visibleWeapon(a)
-                                ? longGun(a)
-                                  ? a.armament?.kind === 'coil'
-                                    ? 'Stop to charge a shot. Breaking sight cancels the charge. Stowing keeps it visible.'
-                                    : a.armament?.kind === 'carbine'
-                                      ? 'Stop to aim. Stowing keeps it visible.'
-                                      : 'Close range. Stowing keeps it visible.'
-                                  : 'Visible weapon. Guards will challenge you.'
-                                : suspicionRate(world, a) > 0
-                                  ? 'Restricted area. Stay out of sight.'
-                                  : a.disguised
-                                    ? 'Maintenance access. Keep your weapon concealed.'
-                                    : 'Civilian access. The compound is restricted.',
+              : world.settlement?.signer === a.id
+                ? 'Holding SIGN; cannot fire. Keep this operative here while the REGISTER carrier works CLEAR.'
+                : world.settlement?.clerk === a.id
+                  ? 'Working CLEAR with REGISTER. A separate operative must hold SIGN; progress survives interruptions.'
+                  : world.detention?.operator === a.id
+                    ? 'Holding remote power; cannot fire. Select a partner to advance. Moving or Hold releases the circuit.'
+                    : a.disarmed
+                      ? 'No weapon or dressing. Recover your equipment at GEAR, or follow the prepared escape route.'
+                      : a.order.kind === 'interact' && isCharge(a.order.target)
+                        ? 'Planting needs five uninterrupted seconds and free hands. Cannot fire while planting; moving or Hold cancels unfinished work.'
+                        : world.broadcast?.maskBy === a.id
+                          ? 'Holding LOOP. Select a teammate for UPLINK. Moving or Hold releases the loop.'
+                          : world.broadcast?.uploadBy === a.id
+                            ? 'Uploading; cannot fire while working. Moving or Hold pauses it and saves progress.'
+                            : world.overrideBy === a.id
+                              ? 'Holding the shutter open. Select a teammate; moving or Hold releases the shunt.'
+                              : a.exposed
+                                ? 'Identity compromised. Break sight and prepare an exit.'
+                                : a.carrying
+                                  ? clearedCargo(world, a)
+                                    ? 'Signed cargo clearance. Keep the uniform; dropping CASE voids clearance. Both hands occupied.'
+                                    : world.mission.objective !== 'escort'
+                                      ? 'This cargo attracts suspicion even in uniform. Both hands occupied; X sets it down.'
+                                      : 'Both hands occupied. Set the cargo down to fire.'
+                                  : visibleWeapon(a)
+                                    ? longGun(a)
+                                      ? a.armament?.kind === 'coil'
+                                        ? 'Stop to charge a shot. Breaking sight cancels the charge. Stowing keeps it visible.'
+                                        : a.armament?.kind === 'carbine'
+                                          ? 'Stop to aim. Stowing keeps it visible.'
+                                          : 'Close range. Stowing keeps it visible.'
+                                      : 'Visible weapon. Guards will challenge you.'
+                                    : suspicionRate(world, a) > 0
+                                      ? 'Restricted area. Stay out of sight.'
+                                      : a.disguised
+                                        ? 'Maintenance access. Keep your weapon concealed.'
+                                        : 'Civilian access. The compound is restricted.',
     );
     const weaponsButton = this.app.querySelector<HTMLButtonElement>('[data-action="weapons"]')!;
     const flashButton = this.field('flash-button') as HTMLButtonElement;
@@ -661,22 +669,56 @@ export class Hud {
     const work = worker?.order.kind === 'interact' ? worker.order.target : null;
     this.field('work-status').hidden = !worker;
     if (worker && work) {
+      const clearing = work === 'settle' && world.settlement?.clerk === worker.id;
       const uploading = work === 'upload' && world.broadcast?.uploadBy === worker.id;
-      const duration = uploading
-        ? world.mission.broadcast!.duration
-        : interactionDuration(world, worker, work);
-      const progress = uploading ? world.broadcast!.progress : worker.interaction;
+      const duration = clearing
+        ? world.mission.settlement!.duration
+        : uploading
+          ? world.mission.broadcast!.duration
+          : interactionDuration(world, worker, work);
+      const progress = clearing
+        ? world.settlement!.progress
+        : uploading
+          ? world.broadcast!.progress
+          : worker.interaction;
       this.set(
         'work-label',
-        world.detention?.operator === worker.id
-          ? `${worker.name}: holding ${world.detention.circuit === 'access-intake' ? 'INTAKE' : 'CELLS'} · S releases`
-          : world.broadcast?.maskBy === worker.id
-            ? `${worker.name}: holding LOOP · S releases`
-            : world.overrideBy === worker.id
-              ? `${worker.name}: holding SHUNT · S releases`
-              : `${worker.name}: ${landmark(world, work).tag} · ${Math.min(progress, duration).toFixed(1)} / ${duration}s`,
+        world.settlement?.signer === worker.id
+          ? `${worker.name}: holding SIGN · S releases`
+          : world.detention?.operator === worker.id
+            ? `${worker.name}: holding ${world.detention.circuit === 'access-intake' ? 'INTAKE' : 'CELLS'} · S releases`
+            : world.broadcast?.maskBy === worker.id
+              ? `${worker.name}: holding LOOP · S releases`
+              : world.overrideBy === worker.id
+                ? `${worker.name}: holding SHUNT · S releases`
+                : `${worker.name}: ${landmark(world, work).tag} · ${Math.min(progress, duration).toFixed(1)} / ${duration}s`,
       );
       (this.field('work-progress') as HTMLProgressElement).value = Math.min(1, progress / duration);
+    }
+    if (world.settlement) {
+      const s = world.settlement,
+        done = settled(world);
+      this.set('settlement-status', settlementStatus(world));
+      const bar = this.field('settlement-progress') as HTMLProgressElement;
+      bar.hidden = !s.reconciled;
+      bar.value = s.progress / world.mission.settlement!.duration;
+      const check = this.field('reconcile-button') as HTMLButtonElement;
+      check.hidden = s.reconciled || ended;
+      check.disabled = !selected.some((a) => a.carrying);
+      check.title = check.disabled
+        ? 'Select the REGISTER carrier.'
+        : 'Carry the original to CHECK; six seconds of work.';
+      this.field('settlement-actions').hidden = !s.reconciled || done || ended;
+      const sign = this.field('countersign-button') as HTMLButtonElement;
+      sign.disabled = !selected.some((a) => !a.carrying);
+      sign.title = sign.disabled
+        ? 'Select a separate operative with free hands.'
+        : 'Leave this operative holding SIGN while a partner works CLEAR.';
+      const clear = this.field('settle-button') as HTMLButtonElement;
+      clear.disabled = !selected.some((a) => a.carrying);
+      clear.title = clear.disabled
+        ? 'Select the REGISTER carrier.'
+        : 'Work CLEAR with a separate operative holding SIGN.';
     }
     if (world.detention) {
       const d = world.detention,
@@ -905,35 +947,39 @@ export class Hud {
                     ? 'Credentials check! Break sight'
                     : p.disarmed
                       ? 'Unarmed · recover GEAR'
-                      : world.detention?.operator === p.id
-                        ? `Holding ${world.detention.circuit === 'access-intake' ? 'INTAKE' : 'CELLS'}`
-                        : p.order.kind === 'interact' &&
-                            isCharge(p.order.target) &&
-                            p.interaction > 0
-                          ? `Planting ${landmark(world, p.order.target).tag}`
-                          : world.broadcast?.maskBy === p.id
-                            ? 'Holding loop'
-                            : world.broadcast?.uploadBy === p.id
-                              ? 'Uploading'
-                              : world.overrideBy === p.id
-                                ? 'Holding shunt'
-                                : p.carrying
-                                  ? `Carrying ${landmark(world, 'evidence').tag.toLowerCase()}`
-                                  : p.exposed
-                                    ? 'Compromised'
-                                    : p.disguised
-                                      ? 'Maintenance'
-                                      : p.weapon
-                                        ? gun
-                                          ? WEAPONS[gun.kind].name
-                                          : 'Weapon drawn'
-                                        : p.path.length
-                                          ? 'Moving'
-                                          : longGun(p)
-                                            ? `${WEAPONS[gun!.kind].name} visible`
-                                            : gun
-                                              ? 'Pistol concealed'
-                                              : 'Concealed',
+                      : world.settlement?.signer === p.id
+                        ? 'Holding SIGN'
+                        : world.settlement?.clerk === p.id
+                          ? 'Working CLEAR'
+                          : world.detention?.operator === p.id
+                            ? `Holding ${world.detention.circuit === 'access-intake' ? 'INTAKE' : 'CELLS'}`
+                            : p.order.kind === 'interact' &&
+                                isCharge(p.order.target) &&
+                                p.interaction > 0
+                              ? `Planting ${landmark(world, p.order.target).tag}`
+                              : world.broadcast?.maskBy === p.id
+                                ? 'Holding loop'
+                                : world.broadcast?.uploadBy === p.id
+                                  ? 'Uploading'
+                                  : world.overrideBy === p.id
+                                    ? 'Holding shunt'
+                                    : p.carrying
+                                      ? `Carrying ${landmark(world, 'evidence').tag.toLowerCase()}`
+                                      : p.exposed
+                                        ? 'Compromised'
+                                        : p.disguised
+                                          ? 'Maintenance'
+                                          : p.weapon
+                                            ? gun
+                                              ? WEAPONS[gun.kind].name
+                                              : 'Weapon drawn'
+                                            : p.path.length
+                                              ? 'Moving'
+                                              : longGun(p)
+                                                ? `${WEAPONS[gun!.kind].name} visible`
+                                                : gun
+                                                  ? 'Pistol concealed'
+                                                  : 'Concealed',
       );
     }
     const escort = world.escort;

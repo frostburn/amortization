@@ -5,8 +5,16 @@ import { project } from './isometric';
 
 const yard = [0x697079, 0x666d76, 0x6b7178, 0x636b75, 0x676f77];
 const verge = [0x343e47, 0x374048, 0x333d45, 0x38414a, 0x353e46];
-export function groundColor(x: number, y: number, restricted: boolean, street: boolean) {
+const dayYard = [0xb8b6aa, 0xb4b3a6, 0xbab8ad, 0xb2b2a7, 0xb7b5a9];
+export function groundColor(
+  x: number,
+  y: number,
+  restricted: boolean,
+  street: boolean,
+  daylight = false,
+) {
   const n = (Math.floor(x / 2) * 17 + Math.floor(y / 2) * 23) % 5;
+  if (daylight) return restricted ? dayYard[n] : street ? 0x858f93 : 0x91a084;
   return restricted ? yard[n] : street ? 0x303944 : verge[n];
 }
 
@@ -17,8 +25,25 @@ function seed(id: string) {
   return n;
 }
 
-export function drawContactShadow(g: Graphics, s: Solid) {
+export function drawContactShadow(g: Graphics, s: Solid, daylight = false) {
   if (s.kind === 'van' || s.kind === 'transport') return; // Vehicle art owns its moving shadow.
+  if (daylight) {
+    const dx = s.height * 0.7,
+      dy = s.height * 0.45;
+    polygon(
+      g,
+      [
+        { x: s.x, y: s.y },
+        { x: s.x + s.w, y: s.y },
+        { x: s.x + s.w + dx, y: s.y + dy },
+        { x: s.x + s.w + dx, y: s.y + s.h + dy },
+        { x: s.x + dx, y: s.y + s.h + dy },
+        { x: s.x, y: s.y + s.h },
+      ].map((p) => project(p)),
+      0x34495b,
+      0.22,
+    );
+  }
   for (const [pad, alpha] of [
     [0.28, 0.09],
     [0.14, 0.13],
@@ -50,7 +75,7 @@ export function drawWall(g: Graphics, s: Solid) {
 }
 
 /** Quiet municipal facades. Details stay within the existing solid footprint. */
-export function drawBuilding(g: Graphics, s: Solid) {
+export function drawBuilding(g: Graphics, s: Solid, daylight = false) {
   const brick = /kiosk|office-block|street-workshop|street-block/.test(s.id),
     utility = /substation|service|power/.test(s.id),
     n = seed(s.id),
@@ -60,7 +85,15 @@ export function drawBuilding(g: Graphics, s: Solid) {
   box(g, s.x, s.y, s.w, s.h, s.height, coping, face, side);
   // A recessed slate roof, coping and simple service ducts break up flat boxes.
   const inset = Math.min(0.25, s.w / 8, s.h / 8);
-  plane(g, s.x + inset, s.y + inset, s.w - 2 * inset, s.h - 2 * inset, 0x454f5c, s.height + 0.01);
+  plane(
+    g,
+    s.x + inset,
+    s.y + inset,
+    s.w - 2 * inset,
+    s.h - 2 * inset,
+    daylight ? 0x778388 : 0x454f5c,
+    s.height + 0.01,
+  );
   for (let y = s.y + 0.7; y < s.y + s.h - 0.25; y += 1.5)
     plane(g, s.x + inset, y, s.w - 2 * inset, 0.025, 0x65717b, s.height + 0.015, 0.5);
   if (s.w > 2 && s.h > 1.4) {
@@ -103,8 +136,16 @@ export function drawBuilding(g: Graphics, s: Solid) {
       horizontal ? { x: s.x + d, y: s.y + s.h + 0.006 } : { x: s.x + s.w + 0.006, y: s.y + d };
     for (let d = 0.42, i = 0; d < length - 0.65; d += 1.15, i++) {
       const width = Math.min(0.68, length - d - 0.25),
-        lit = (n + i + Number(horizontal)) % 4 === 0,
-        glass = lit ? 0xc4b38c : horizontal ? 0x374d5f : 0x2a3e50;
+        lit = !daylight && (n + i + Number(horizontal)) % 4 === 0,
+        glass = daylight
+          ? horizontal
+            ? 0x94b0b9
+            : 0x6b8899
+          : lit
+            ? 0xc4b38c
+            : horizontal
+              ? 0x374d5f
+              : 0x2a3e50;
       panel(g, at(d - 0.05), at(d + width + 0.05), bottom - 0.07, top + 0.07, 0x475560);
       panel(g, at(d), at(d + width), bottom, top, glass);
       panel(g, at(d), at(d + width), top - 0.13, top, lit ? 0xead4a0 : 0x718691);

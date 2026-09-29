@@ -125,6 +125,9 @@ export function createWorld(mission: Mission = depot): World {
       ? { detention: { operator: null, circuit: null, open: [], released: false } }
       : {}),
     ...(mission.flashGrenades ? { flashGrenades: [] } : {}),
+    ...(mission.settlement
+      ? { settlement: { reconciled: false, progress: 0, signer: null, clerk: null } }
+      : {}),
     alarm: false,
     alarmTime: 0,
     waves: 0,

@@ -12,6 +12,7 @@ import {
 import type { ObjectKind, Vec, World } from './types';
 import { updateBroadcast } from './broadcast';
 import { updateDetention } from './detention';
+import { updateSettlement } from './settlement';
 import { detonate } from './demolition';
 import { throwFlash } from './flash';
 
@@ -66,4 +67,5 @@ export function applyCommand(world: World, command: Command) {
   // the HUD reflects those orders without advancing upload or trace time.
   updateBroadcast(world, 0);
   updateDetention(world);
+  updateSettlement(world, 0);
 }
