@@ -65,6 +65,14 @@ hair, and facial details, including Vale's glasses and beard, Rook's shaved head
 Morrow's dark swept hair, and Sable's silver bob. Voss and Mara match their witness
 portraits. The maintenance outfit preserves the person beneath the uniform.
 
+Heads have separate chin, jaw, cheek, temple and crown sections, with individual
+proportions and visible ears. Rook has a shorter, broader skull and a stronger
+jaw and neck; the other profiles retain their slimmer or longer faces. Hair caps
+wrap the new crown, and eyes, brows, noses and glasses follow each face's width.
+Shoulders slope into the collar, with the neck extending inside the skull to
+avoid a visible cap across the nape. The same head geometry is used under
+headgear and in the fallen pose.
+
 Models have 32 facings, articulated knees with fixed thigh and shin lengths,
 two-handed aim and recoil, carried cargo,
 and a separate grounded fallen pose. A bounded shared cache reuses tessellated
