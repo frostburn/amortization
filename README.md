@@ -158,6 +158,12 @@ orders. Sight cones can be toggled beside **Fit map**. On narrow screens, orders
 appear directly below the map, followed by the crew and mission details.
 
 Recruitment, extraction readiness, injuries and messages never shrink the map.
+Briefings open with a short objective, extraction requirements and critical rules.
+**Equipment & controls** expands the reference; **Tactical advice · spoilers**
+reveals suggested approaches only when requested. Both start closed on each visit.
+The reading area scrolls inside a bounded dialog, keeping its title, compact medals
+and launch controls visible. Opening COMMS repeats the objective, without route advice.
+
 Viewport resizing preserves the camera’s scale. **Fit map** frames the mission in the available
 space; operations 01–06 start with this overview. Operations 07–10 start at a readable scale near the crew.
 

@@ -27,8 +27,13 @@ test('launches Severance, queues separate planters, and resets its controls', as
   await expect(page.getByRole('dialog')).toContainText(
     'Completed charges stay armed without a timer',
   );
-  await expect(page.locator('[data-loadout]')).toContainText('Rook — Shotgun; Sable — Carbine');
-  await expect(page.locator('[data-loadout]')).toContainText('Morrow or Vale can take KIT');
+  await page.getByText('Equipment & controls', { exact: true }).click();
+  await expect(page.locator('.briefing-loadout > div').filter({ hasText: 'Rook' })).toContainText(
+    'Shotgun',
+  );
+  await expect(page.locator('.briefing-loadout > div').filter({ hasText: 'Sable' })).toContainText(
+    'Carbine',
+  );
   await page.getByRole('button', { name: 'Begin operation' }).click();
   await page.getByRole('button', { name: 'Pause', exact: true }).click();
   await page.getByRole('button', { name: 'Select Morrow', exact: true }).click();

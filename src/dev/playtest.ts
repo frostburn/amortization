@@ -406,7 +406,7 @@ export class Playtest {
         this.entry('Export attempt', this.exportDialog, () => this.openExport('live')),
         this.entry('Import replay', this.replayDialog, () => this.openReplay()),
       );
-      this.host.modal.append(actions);
+      (this.host.modal.querySelector('[data-dialog-tools]') ?? this.host.modal).append(actions);
     }
   }
 }

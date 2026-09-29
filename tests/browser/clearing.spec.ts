@@ -39,9 +39,13 @@ for (const mobile of [false, true]) {
     await expect(page).toHaveTitle('Amortization');
     await press('dialog [data-action="operations"]');
     await press('[data-action="mission:clearing"]');
-    await expect(page.locator('[data-loadout]')).toContainText(
-      'Rook — Compact automatic; Sable — Coil rifle',
+    await press('.briefing-disclosure:not(.briefing-advice) > summary');
+    await expect(page.locator('.briefing-loadout > div').filter({ hasText: 'Rook' })).toContainText(
+      'Compact automatic',
     );
+    await expect(
+      page.locator('.briefing-loadout > div').filter({ hasText: 'Sable' }),
+    ).toContainText('Coil rifle');
     await press('[data-action="begin"]');
     await press('[data-action="pause"]');
     await expect(page.locator('#mission-title')).toHaveText('Margin call');

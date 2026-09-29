@@ -29,6 +29,8 @@ import { earnedMedals, medalsFor } from './medals';
 import type { MedalId } from './medals';
 import { bindMedalTips, medalList } from './medal-display';
 import { bindBackdropDismiss } from './dialog';
+import { briefingObjective, renderBriefing } from './briefing';
+import { epilogues } from './epilogues';
 import type { Records, MissionRecord } from './storage';
 import { missionGoals, transferFeedback } from './objectives';
 import type { Goal, GoalId, GuideTarget } from './objectives';
@@ -296,21 +298,22 @@ export class Hud {
       h: bounds.height,
     });
   }
-  private briefing(medals: MedalId[] = []) {
-    const m = this.mission;
-    const equipment = m.loadout
-      ? `<p class="dialog-body" data-loadout><b>Equipment:</b> ${m.loadout.map((kind, i) => `${['Morrow', 'Vale', 'Rook', 'Sable'][i]} — ${WEAPONS[kind].name}`).join('; ')}. Morrow or Vale can take KIT. Stowed long guns remain visible. ${m.loadout.includes('carbine') ? 'Carbines need 0.35 seconds to steady after moving. ' : ''}${m.loadout.includes('coil') ? 'Coil rifles need 1.25 seconds charging with continuous sight while stationary. Automatics empty quickly: cover their reloads. ' : ''} Reloads are automatic; reserve ammunition is unlimited.</p>`
-      : '';
-    return `<div class="dialog-number">${m.number} / ${m.location}</div><div class="briefing-heading"><h2 id="dialog-title">${m.title}</h2>${medalList(m, medals)}</div><p class="dialog-lead">${m.briefing.lead}</p><p class="dialog-body">${m.briefing.body}</p>${equipment}<div class="briefing-routes">${m.briefing.routes.map((route) => `<div><b>${route.title}</b><p>${route.body}</p></div>`).join('')}</div><p class="dialog-body">Guards can return an opening volley. Gunfire can be reported through walls. Use cover and field dressings; disable RADIO to stop support.</p><p class="briefing-controls"><kbd>1–4</kbd> select one · <kbd>Q</kbd> select all<br><kbd>RMB</kbd> move / interact / attack · <kbd>Space</kbd> pause<br><kbd>F</kbd> draw / stow · <kbd>S</kbd> hold / pause work<br>Drag to select · Wheel to zoom · Arrows / middle-drag to pan</p><button class="primary" autofocus data-action="begin">Begin operation <span>→</span></button><div class="dialog-actions"><button class="dialog-secondary" data-action="operations">Choose operation</button><button class="dialog-secondary" data-action="restart">Restart mission</button></div><p class="dialog-foot">Orders remain active while paused. Selection changes preserve orders.</p>`;
-  }
   showBriefing(records: Records) {
     this.closeMedalTip();
     this.modal.classList.remove('operations-dialog');
-    this.modal.innerHTML = this.briefing(missionRecord(records, this.mission.id).medals);
+    this.modal.classList.add('briefing-dialog');
+    this.modal.innerHTML = renderBriefing(
+      this.mission,
+      missionRecord(records, this.mission.id).medals,
+    );
     if (!this.modal.open) this.modal.showModal();
+    this.modal
+      .querySelector<HTMLButtonElement>('[data-action="begin"]')!
+      .focus({ preventScroll: true });
   }
   showOperations(records: Records) {
     this.closeMedalTip();
+    this.modal.classList.remove('briefing-dialog');
     this.modal.classList.add('operations-dialog');
     const total = missions.reduce((sum, m) => sum + medalsFor(m).length, 0),
       earned = missions.reduce((sum, m) => sum + missionRecord(records, m.id).medals.length, 0);
@@ -332,6 +335,7 @@ export class Hud {
     this.app.classList.remove('mission-ended');
     this.closeMedalTip();
     this.modal.classList.remove('operations-dialog');
+    this.modal.classList.add('briefing-dialog');
     this.inspectedGuard = null;
     this.inspectedObject = null;
     this.escortHp = null;
@@ -345,7 +349,7 @@ export class Hud {
     this.field('archive-escape').hidden = true;
     this.endShown = false;
     this.lastMessage = '';
-    this.modal.innerHTML = this.briefing();
+    this.modal.innerHTML = renderBriefing(this.mission);
     this.set('operation-title', `${mission.number} / ${mission.title}`);
     this.set('map-location', mission.location);
     this.set('mission-title', mission.title);
@@ -366,10 +370,10 @@ export class Hud {
     if (this.endShown && !force) return;
     this.endShown = true;
     this.closeMedalTip();
-    this.modal.classList.remove('operations-dialog');
+    this.modal.classList.remove('operations-dialog', 'briefing-dialog');
     const won = world.status === 'won',
       alive = world.agents.filter(living).length;
-    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? (world.detention ? 'All four are home. The mandate stays with Mara.' : world.mission.objective === 'demolition' ? 'The debt backups are gone.' : world.mission.objective === 'escort' ? `${world.escort!.name} is free.` : world.mission.objective === 'broadcast' ? `${world.mission.broadcast?.completed ?? 'The audit is public'}.` : world.mission.objective === 'case' ? 'The account keys are ours.' : 'The original is in our hands.') : world.escort && !living(world.escort) ? `${world.escort.name} was killed.` : world.detention ? world.message : 'The crew is down.'}</p><p class="dialog-body">${won ? 'The van crosses the district line before anyone agrees who should pay for this.' : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results"><div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div>${world.demolition ? `<div><dt>Backups</dt><dd>${demolished(world) ? 'Destroyed' : `${world.demolition.armed.length}/2 armed`}</dd></div>` : ''}${world.broadcast ? `<div><dt>${world.mission.broadcast?.subject ? 'Mandate' : 'Audit'}</dt><dd>${published(world) ? (world.mission.broadcast?.completed ?? 'Published') : 'Incomplete'}</dd></div>` : ''}<div><dt>${world.demolition ? 'Optional register' : world.broadcast ? 'Optional LOG' : 'Evidence'}</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div>${won && world.mission.landmarks.some((o) => o.id === 'alternate') && world.extractedAt ? `<div><dt>Extraction</dt><dd>${landmark(world, world.extractedAt).tag}</dd></div>` : ''}</dl>${record.best !== null ? `<p class="fine">${recordTimes(record.best, record.fullCrewBest)}</p>` : ''}${won ? `<section class="debrief-medals" aria-label="Medals this run"><p class="medal-summary">Medals this run <span>${fresh.length ? `${fresh.length} new` : 'Already earned'}</span></p>${medalList(world.mission, earnedMedals(world), fresh, true)}</section>` : ''}<button class="primary" autofocus data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Restart mission'} <span>→</span></button><div class="dialog-actions">${won && nextMission(world.mission.id) ? '<button class="dialog-secondary" data-action="restart">Restart mission</button>' : ''}<button class="dialog-secondary" data-action="operations">Operations</button></div>`;
+    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? epilogues[world.mission.id].lead : world.escort && !living(world.escort) ? `${world.escort.name} was killed.` : world.detention ? world.message : 'The crew is down.'}</p><p class="dialog-body">${won ? epilogues[world.mission.id].body : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results"><div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div>${world.demolition ? `<div><dt>Backups</dt><dd>${demolished(world) ? 'Destroyed' : `${world.demolition.armed.length}/2 armed`}</dd></div>` : ''}${world.broadcast ? `<div><dt>${world.mission.broadcast?.subject ? 'Mandate' : 'Audit'}</dt><dd>${published(world) ? (world.mission.broadcast?.completed ?? 'Published') : 'Incomplete'}</dd></div>` : ''}<div><dt>${world.demolition ? 'Optional register' : world.broadcast ? 'Optional LOG' : 'Evidence'}</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div>${won && world.mission.landmarks.some((o) => o.id === 'alternate') && world.extractedAt ? `<div><dt>Extraction</dt><dd>${landmark(world, world.extractedAt).tag}</dd></div>` : ''}</dl>${record.best !== null ? `<p class="fine">${recordTimes(record.best, record.fullCrewBest)}</p>` : ''}${won ? `<section class="debrief-medals" aria-label="Medals this run"><p class="medal-summary">Medals this run <span>${fresh.length ? `${fresh.length} new` : 'Already earned'}</span></p>${medalList(world.mission, earnedMedals(world), fresh, true)}</section>` : ''}<button class="primary" autofocus data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Restart mission'} <span>→</span></button><div class="dialog-actions">${won && nextMission(world.mission.id) ? '<button class="dialog-secondary" data-action="restart">Restart mission</button>' : ''}<button class="dialog-secondary" data-action="operations">Operations</button></div>`;
     if (!this.modal.open) this.modal.showModal();
   }
   update(world: World, state: HudState) {
@@ -478,7 +482,12 @@ export class Hud {
     volume.value = String(Math.round((state.volume ?? 0.65) * 100));
     volume.setAttribute('aria-valuetext', `${volume.value}%`);
     if (this.lastMessage !== world.message) {
-      this.set('message', world.message);
+      // Opening comms should not immediately reveal the advice the player
+      // declined in the briefing. Live reports and feedback remain unchanged.
+      this.set(
+        'message',
+        world.message === world.mission.intro ? briefingObjective(world.mission) : world.message,
+      );
       this.lastMessage = world.message;
     }
     this.goals = missionGoals(world);
