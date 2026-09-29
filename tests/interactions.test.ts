@@ -6,7 +6,7 @@ import { personnel } from '../src/content/personnel';
 import { createWorld } from '../src/sim/world';
 import { applyCommand } from '../src/sim/commands';
 import { completeInteraction, landmark } from '../src/sim/orders';
-import { objectRequirement } from '../src/ui/interactions';
+import { attackPreview, objectRequirement } from '../src/ui/interactions';
 import type { ObjectKind, Operative, World } from '../src/sim/types';
 
 const place = (w: World, a: Operative, id: ObjectKind) => {
@@ -16,6 +16,34 @@ const place = (w: World, a: Operative, id: ObjectKind) => {
 };
 
 describe('mission marker prerequisites', () => {
+  it('previews attack geometry for the eligible selection without changing weapons or orders', () => {
+    const w = createWorld(personnel),
+      a = w.agents[0],
+      guard = w.guards[0];
+    a.x = 5;
+    a.y = 32;
+    guard.x = 7;
+    guard.y = 32;
+    const before = structuredClone(w);
+    expect(attackPreview(w, [a.id], guard).kind).toBe('attack');
+    expect(w).toEqual(before);
+    a.x = 0;
+    expect(attackPreview(w, [a.id], guard).detail).toContain('Out of range');
+    a.x = 5;
+    w.mission = {
+      ...w.mission,
+      solids: [
+        ...w.mission.solids,
+        { id: 'test-cover', kind: 'wall', x: 6, y: 31, w: 0.5, h: 2, height: 2 },
+      ],
+    };
+    expect(attackPreview(w, [a.id], guard).detail).toContain('Line of fire blocked');
+    a.carrying = true;
+    expect(attackPreview(w, [a.id, 'agent-1'], guard).kind).toBe('unarmed');
+    a.carrying = false;
+    a.disarmed = true;
+    expect(attackPreview(w, [a.id], guard).kind).toBe('unarmed');
+  });
   it('keeps EXIT locked after the first rescue and preserves orders on a refused click', () => {
     const w = createWorld(personnel),
       a = w.agents[0];

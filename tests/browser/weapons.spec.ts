@@ -45,7 +45,12 @@ async function mountCombat(page: Page) {
     };
     const action = (action: Action) => {
       if (action === 'weapons' || action === 'hold') command({ kind: action, agents: selected });
-      if (action === 'all') selected = world.agents.map((p) => p.id);
+      if (action === 'all') {
+        selected = world.agents.map((p) => p.id);
+        // Keep this paused presentation stage fixed. Live follow has its own fixture.
+        scene.follow(selected);
+        scene.panBy(0, 0);
+      }
       update();
     };
     const hud: Hud = new Hud(action, (i: number) => {
@@ -159,6 +164,11 @@ test('explains equipment and enemy readiness with mouse and touch without growin
       }, index);
       if (phone) await page.touchscreen.tap(target.x, target.y);
       else await page.mouse.move(target.x, target.y);
+      await expect(page.locator('.combat-target')).toBeVisible();
+      await expect(page.locator('.combat-target')).toHaveAttribute(
+        'data-target',
+        await page.evaluate((i) => window.combatUi.world.guards[i].id, index),
+      );
       await expect(page.locator('#map-location')).toHaveText(role);
       await expect(page.locator('#enemy-behavior')).toContainText(behavior);
       await expect(page.locator('#map-detail')).toContainText('range');
@@ -176,4 +186,101 @@ test('explains equipment and enemy readiness with mouse and touch without growin
     expect(errors).toEqual([]);
     await context.close();
   }
+});
+
+test('combat cursors and target brackets follow weapons, geometry and selection under a stationary mouse', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text());
+  });
+  await mountCombat(page);
+  await expect(page).toHaveTitle('Amortization combat fixture');
+  await page.getByRole('button', { name: 'Select Morrow', exact: true }).click();
+  await page.evaluate(() => {
+    const { world, scene } = window.combatUi;
+    const a = world.agents[0];
+    Object.assign(a, { x: 20, y: 27, previous: { x: 20, y: 27 } });
+    scene.render([a.id], 1);
+    scene.following = false;
+    const p = scene.screen({ x: 21, y: 28 });
+    scene.panBy(scene.app.screen.width / 2 - p.x, scene.app.screen.height / 2 - p.y);
+  });
+  const canvas = page.locator('canvas');
+  const point = async (guard = false) =>
+    page.evaluate((guard) => {
+      const { scene, world } = window.combatUi;
+      const p = scene.screen(guard ? world.guards[0] : { x: 19, y: 29 }, guard ? 0.5 : 0);
+      const b = scene.app.canvas.getBoundingClientRect();
+      return { x: b.x + p.x, y: b.y + p.y };
+    }, guard);
+  const ground = await point();
+  await page.mouse.move(ground.x, ground.y);
+  await expect(canvas).toHaveAttribute('data-cursor', 'default');
+  await page.keyboard.press('f');
+  await expect(canvas).toHaveAttribute('data-cursor', 'combat');
+  expect(await canvas.evaluate((c) => getComputedStyle(c).cursor)).toContain('crosshair');
+  await page.mouse.down();
+  await page.mouse.move(ground.x + 20, ground.y + 20, { steps: 3 });
+  await expect(canvas).toHaveAttribute('data-cursor', 'box');
+  await page.mouse.up();
+  await expect(canvas).toHaveAttribute('data-cursor', 'combat');
+  await page.keyboard.press('f');
+  await expect(canvas).toHaveAttribute('data-cursor', 'default');
+  const enemy = await point(true);
+  await page.mouse.move(enemy.x, enemy.y);
+  await expect(canvas).toHaveAttribute('data-cursor', 'attack');
+  await expect(page.locator('#enemy-behavior')).toContainText(
+    '1 selected operative has a clear line of fire',
+  );
+  expect(await page.evaluate(() => window.combatUi.world.agents[0].weapon)).toBe(false);
+  await page.screenshot({ path: '/tmp/combat-ux/desktop-target.png' });
+  await page.mouse.down({ button: 'middle' });
+  await expect(canvas).toHaveAttribute('data-cursor', 'pan');
+  await expect(page.locator('.combat-target')).toBeHidden();
+  await page.mouse.up({ button: 'middle' });
+  await page.mouse.click(enemy.x, enemy.y, { button: 'right' });
+  expect(await page.evaluate(() => window.combatUi.world.agents[0].order)).toEqual({
+    kind: 'attack',
+    target: await page.evaluate(() => window.combatUi.world.guards[0].id),
+  });
+  expect(await page.evaluate(() => window.combatUi.world.agents[0].weapon)).toBe(true);
+  await page.evaluate(() => {
+    window.combatUi.world.agents[0].x = 10;
+  });
+  await expect(canvas).toHaveAttribute('data-cursor', 'blocked');
+  await expect(page.locator('#enemy-behavior')).toContainText('Out of range');
+  await page.evaluate(() => {
+    const { world } = window.combatUi;
+    world.agents[0].x = 20;
+    world.mission = {
+      ...world.mission,
+      solids: [
+        ...world.mission.solids,
+        { id: 'test-cover', kind: 'wall', x: 21, y: 26, w: 0.4, h: 2, height: 2 },
+      ],
+    };
+  });
+  await expect(page.locator('#enemy-behavior')).toContainText('Line of fire blocked');
+  await page.evaluate(() => {
+    window.combatUi.world.agents[0].disarmed = true;
+  });
+  await expect(canvas).toHaveAttribute('data-cursor', 'unarmed');
+  await expect(page.locator('#enemy-behavior')).toContainText('Selected crew cannot fire');
+  await page.evaluate(() => {
+    const { world } = window.combatUi;
+    world.mission.solids = world.mission.solids.filter((s) => s.id !== 'test-cover');
+  });
+  await page.keyboard.press('q');
+  await expect(canvas).toHaveAttribute('data-cursor', 'attack');
+  // An enemy leaving the hover point must stop looking targeted without a mouse move.
+  await page.evaluate(() => {
+    window.combatUi.world.guards[0].hp = 0;
+  });
+  await expect(page.locator('.combat-target')).toBeHidden();
+  await expect(canvas).not.toHaveAttribute('data-cursor', 'attack');
+  await expect(page.locator('vite-error-overlay')).toHaveCount(0);
+  expect(errors).toEqual([]);
 });

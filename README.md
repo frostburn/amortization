@@ -139,6 +139,14 @@ quiet and armed completion tests; new human runs for 05–06 are welcome. See
 
 On touch screens, tap portraits to select, tap ground or a landmark to order, and drag to pan. The Orders panel provides the main actions. Desktop mouse and keyboard offer the most precise control. Losing tab focus pauses play.
 
+Drawn weapons give the map a crosshair cursor. Hovering an enemy brackets the
+target: red means at least one selected operative is in range with clear sight;
+amber means range or cover blocks the shot. The map caption explains which.
+Attack orders draw weapons and hold position, so move closer or around cover
+first. Unarmed prisoners and cargo carriers show a blocked cursor. Reloads and
+weapon preparation still apply. Touch attacks briefly show the same brackets.
+Usable mission items use a hand cursor; locked items use a help cursor.
+
 On desktop, crew portraits and orders occupy the left panel; mission goals,
 witness/extraction actions and status occupy the right. Orders stay in fixed
 positions, including the disabled cargo-drop action when nobody is carrying.
@@ -153,11 +161,13 @@ space; operations 01–06 start with this overview. Operations 07–09 start at 
 **Follow** / **Home** returns to the selected crew at the last working zoom. When
 zoomed in, the camera uses a modest, smoothed look ahead along their route and
 a shorter facing lead at rest. A central quiet area absorbs small formation and
-aim changes. Nearby selections and casualties do not snap the view; a distant
-operative is brought into view immediately. The camera stays still while you
+aim changes. Explicitly switching to one operative snaps to their position and
+facing lead at the current zoom, even if they were already visible. Group changes
+and casualties retain smooth tracking. The camera stays still while you
 press or drag on the map, and orders use the target you pressed. Select
 a portrait or press **1–4** to follow an individual operative, including across a
-split team. Selection and movement never change zoom. A widely split group
+split team. A map selection snaps after the pointer is released, keeping its
+pressed target stable. Selection and movement never change zoom. A widely split group
 selection follows its largest nearby group (ties prefer the first selected
 operative). Manual panning and objective location focus pause following; selecting
 an operative resumes it. Wheel zoom is anchored at the centre of the view.

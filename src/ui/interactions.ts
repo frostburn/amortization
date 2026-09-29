@@ -12,8 +12,39 @@ import {
   living,
 } from '../sim/types';
 import type { ObjectKind, World } from '../sim/types';
-import { longGun } from '../sim/weapons';
+import { longGun, weaponRange } from '../sim/weapons';
+import { lineClear } from '../sim/navigation';
 import { extractionRequirement } from './extraction';
+
+export const armedSelection = (w: World, selected: string[]) =>
+  w.agents.filter((a) => selected.includes(a.id) && controllable(a) && !a.carrying && !a.disarmed);
+
+/** Geometry feedback, not a promise of an immediate shot: reloads, settling and
+ * coil charging still apply. An attack order draws weapons and holds position. */
+export function attackPreview(w: World, selected: string[], target: World['guards'][number]) {
+  const armed = armedSelection(w, selected);
+  if (!armed.length)
+    return {
+      kind: 'unarmed' as const,
+      detail: 'Selected crew cannot fire. Select an armed operative with free hands.',
+    };
+  const near = armed.filter((a) => distance(a, target) <= weaponRange(a));
+  if (!near.length)
+    return {
+      kind: 'blocked' as const,
+      detail: 'Out of range. Move closer; attack orders hold position.',
+    };
+  const clear = near.filter((a) => lineClear(w, a, target)).length;
+  if (!clear)
+    return {
+      kind: 'blocked' as const,
+      detail: 'Line of fire blocked. Move to clear sight; attack orders hold position.',
+    };
+  return {
+    kind: 'attack' as const,
+    detail: `${clear} selected ${clear === 1 ? 'operative has' : 'operatives have'} a clear line of fire. Attack draws weapons and holds position.`,
+  };
+}
 
 /** Read-only prerequisites for map affordances, independent of travel distance.
  * The simulation still owns command acceptance; inspection never issues an order

@@ -170,6 +170,7 @@ export class Scene {
   private followLead: Vec | null = null;
   private pointerActive = false;
   private followDelay = 0;
+  private selectionSnap = false;
   private selectionKey = '';
   private guideLayer = document.createElement('div');
   private guideMarkers = new Map<GuideTarget, HTMLElement>();
@@ -236,6 +237,7 @@ export class Scene {
     this.followLead = null;
     this.pointerActive = false;
     this.followDelay = 0;
+    this.selectionSnap = false;
   }
   private build() {
     const world = this.world,
@@ -752,6 +754,7 @@ export class Scene {
   home() {
     if (this.following) this.followScale = this.camera.scale.x;
     this.following = false;
+    this.selectionSnap = false;
     this.fit = this.overviewScale();
     this.zoom = 1;
     this.pan = { x: 0, y: 0 };
@@ -770,6 +773,7 @@ export class Scene {
   }
   panBy(x: number, y: number) {
     this.following = false;
+    this.selectionSnap = false;
     this.pan.x += x;
     this.pan.y += y;
     this.updateCamera();
@@ -779,18 +783,25 @@ export class Scene {
     // Consume explicit selection now. A later Fit map/pan before the next
     // frame must not be mistaken for an unseen selection change during render.
     const key = selected.join(',');
-    if (key !== this.selectionKey) this.followLead = null;
+    if (key !== this.selectionKey) {
+      this.followLead = null;
+      this.selectionSnap = selected.length === 1;
+    }
     this.selectionKey = key;
     // A portrait/key selection is a new navigation intent, not part of the previous map gesture.
     if (!this.pointerActive) this.followDelay = 0;
     if (restoreScale) {
       this.zoom = Math.max(this.fit, this.followScale) / this.fit;
       this.updateCamera();
+      this.selectionSnap = true;
+    }
+    if (this.selectionSnap && !this.pointerActive) {
       this.trackSelection(selected, 1, true);
+      this.selectionSnap = false;
     }
   }
   setPointerActive(active: boolean) {
-    if (this.pointerActive && !active) this.followDelay = 0.25;
+    if (this.pointerActive && !active) this.followDelay = this.selectionSnap ? 0 : 0.25;
     this.pointerActive = active;
   }
   private trackSelection(
@@ -1100,8 +1111,12 @@ export class Scene {
     if (this.selectionKey && selectionKey !== this.selectionKey) {
       this.following = true;
       this.followLead = null;
+      // Automatic survivor selection retains smooth tracking. Explicit switches
+      // enter through follow(), which consumes the selection before this frame.
+      this.selectionSnap = false;
     }
-    this.trackSelection(selected, alpha, false, seconds);
+    this.trackSelection(selected, alpha, this.selectionSnap, seconds);
+    if (!this.pointerActive && this.followDelay <= 0) this.selectionSnap = false;
     this.selectionKey = selectionKey;
     const w = this.world;
     this.drawGuidance();

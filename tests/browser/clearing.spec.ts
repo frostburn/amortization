@@ -274,7 +274,76 @@ for (const mobile of [false, true]) {
     ).toBeLessThan(80);
     expect(turning.scale).toBe(initial.scale);
 
-    // A local selection and casualty may change framing, but must not snap the map.
+    // Explicitly switching to a nearby, already visible operative snaps before
+    // another render. Ordinary group changes and casualties still ease below.
+    const snapped = await page.evaluate(() => {
+      const { world, scene } = window.clearingTest;
+      const a = world.agents[0],
+        b = world.agents[2];
+      Object.assign(b, {
+        x: a.x + 3,
+        y: a.y,
+        previous: { x: a.x + 3, y: a.y },
+        angle: a.angle,
+        path: [],
+      });
+      scene.follow([a.id], true);
+      const anchor = scene.screen(a),
+        before = scene.screen(b),
+        scale = scene.camera.scale.x;
+      const orders = JSON.stringify(world.agents.map((a) => a.order));
+      scene.follow([b.id]);
+      const after = scene.screen(b);
+      const result = {
+        anchor,
+        before,
+        after,
+        scale,
+        afterScale: scene.camera.scale.x,
+        width: scene.app.screen.width,
+        height: scene.app.screen.height,
+        ordersKept: JSON.stringify(world.agents.map((a) => a.order)) === orders,
+      };
+      scene.follow([a.id], true);
+      return result;
+    });
+    expect(snapped.before.x).toBeGreaterThan(0);
+    expect(snapped.before.x).toBeLessThan(snapped.width);
+    expect(snapped.before.y).toBeGreaterThan(0);
+    expect(snapped.before.y).toBeLessThan(snapped.height);
+    expect(snapped.after.x).toBeCloseTo(snapped.anchor.x);
+    expect(snapped.after.y).toBeCloseTo(snapped.anchor.y);
+    expect(snapped.afterScale).toBe(snapped.scale);
+    expect(snapped.ordersKept).toBe(true);
+    const deferred = await page.evaluate(() => {
+      const { world, scene } = window.clearingTest;
+      const a = world.agents[0],
+        b = world.agents[2];
+      const anchor = scene.screen(a),
+        before = { x: scene.camera.x, y: scene.camera.y };
+      scene.setPointerActive(true);
+      scene.follow([b.id]);
+      scene.render([b.id], 1, 0);
+      const held = { x: scene.camera.x, y: scene.camera.y };
+      scene.setPointerActive(false);
+      scene.render([b.id], 1, 0);
+      const after = scene.screen(b);
+      // A later manual camera action also cancels a deferred selection snap.
+      scene.setPointerActive(true);
+      scene.follow([a.id]);
+      scene.home();
+      scene.setPointerActive(false);
+      scene.render([a.id], 1, 0);
+      const stayedManual = !scene.following;
+      scene.follow([a.id], true);
+      return { anchor, before, held, after, stayedManual };
+    });
+    expect(deferred.held).toEqual(deferred.before);
+    expect(deferred.after.x).toBeCloseTo(deferred.anchor.x);
+    expect(deferred.after.y).toBeCloseTo(deferred.anchor.y);
+    expect(deferred.stayedManual).toBe(true);
+
+    // A multi-selection and casualty may change framing, but must not snap the map.
     const local = await page.evaluate(() => {
       const { world, scene, draw } = window.clearingTest;
       scene.app.stop();
