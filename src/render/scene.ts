@@ -34,11 +34,12 @@ import type { FlashAimView } from './flash';
 import { FLASH_FLIGHT, FLASH_FUSE, FLASH_RECOVERY } from '../sim/flash';
 import { CREDENTIAL_TIME } from '../sim/inspection';
 import { Aftermath } from './aftermath';
+import { box, panel, plane, polygon } from './primitives';
+import { drawBuilding, drawWall, drawContactShadow, drawYardDetail, groundColor } from './scenery';
+import { OperativeLighting } from './lighting';
 
 const COLORS = {
-  ground: 0x263331,
-  concrete: 0x43504a,
-  road: 0x202b2b,
+  ground: 0x343e47,
   mint: 0x8be8c4,
   amber: 0xefbd73,
   red: 0xf57869,
@@ -70,54 +71,6 @@ function drawMarker(mark: Graphics, id: ObjectKind, locked: boolean) {
       .fill({ color: 0x162722, alpha: 0.9 })
       .stroke({ color: markerColor(id), width: 1.5 });
   }
-}
-const polygon = (g: Graphics, points: Vec[], color: number, alpha = 1) =>
-  g.poly(points.flatMap((p) => [p.x, p.y])).fill({ color, alpha });
-const plane = (
-  g: Graphics,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  color: number,
-  z = 0,
-  alpha = 1,
-) =>
-  polygon(
-    g,
-    [
-      project({ x, y }, z),
-      project({ x: x + w, y }, z),
-      project({ x: x + w, y: y + h }, z),
-      project({ x, y: y + h }, z),
-    ],
-    color,
-    alpha,
-  );
-function box(
-  g: Graphics,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  z: number,
-  top: number,
-  left: number,
-  right: number,
-) {
-  const a = project({ x, y: y + h }),
-    b = project({ x: x + w, y: y + h }),
-    c = project({ x: x + w, y });
-  const at = project({ x, y: y + h }, z),
-    bt = project({ x: x + w, y: y + h }, z),
-    ct = project({ x: x + w, y }, z);
-  polygon(g, [a, b, bt, at], left);
-  polygon(g, [b, c, ct, bt], right);
-  plane(g, x, y, w, h, top, z);
-}
-// Details on vertical faces use the same world projection as the body beneath them.
-function panel(g: Graphics, a: Vec, b: Vec, bottom: number, top: number, color: number) {
-  polygon(g, [project(a, bottom), project(b, bottom), project(b, top), project(a, top)], color);
 }
 function text(label: string, size = 12, color = 0xd4ded6) {
   return new Text({
@@ -152,6 +105,7 @@ export class Scene {
   private floor = new Graphics();
   private cones = new Graphics();
   private objects = new Container();
+  private lighting = new OperativeLighting();
   private marks = new Container();
   private effects = new Graphics();
   private views = new Map<string, PersonView>();
@@ -197,7 +151,7 @@ export class Scene {
   }
   async init() {
     await this.app.init({
-      background: 0x1a2626,
+      background: 0x111c29,
       antialias: true,
       autoDensity: true,
       resolution: Math.min(devicePixelRatio, 2),
@@ -222,6 +176,7 @@ export class Scene {
       this.cones,
       this.flashGround,
       this.objects,
+      this.lighting,
       this.marks,
       this.effects,
     );
@@ -276,19 +231,8 @@ export class Scene {
         const depot = inside({ x, y }, mission.restricted);
         const street =
           x < mission.restricted.x - 1 || y > mission.restricted.y + mission.restricted.h;
-        const noise = (x * 17 + y * 23) % 5;
-        plane(
-          g,
-          x,
-          y,
-          0.985,
-          0.985,
-          depot
-            ? [0x4b5650, 0x49554f, 0x4d5952, 0x46534c, 0x4c5851][noise]
-            : street
-              ? COLORS.road
-              : [0x303e37, 0x344039, 0x33413b, 0x35413b, 0x303d37][noise],
-        );
+        plane(g, x, y, 1, 1, groundColor(x, y, depot, street));
+        if (depot && (x * 17 + y * 23) % 47 === 0) drawYardDetail(g, x, y);
       }
     // Each site's ground markings use the same coordinates as its collision map.
     if (mission.id === 'depot') {
@@ -445,7 +389,10 @@ export class Scene {
       label.skew.y = Math.atan(TILE_Y / TILE_X);
       this.addScenery(label, { x: 12, y: 14, w: 0, h: 0 });
     }
-    for (const solid of world.mission.solids) this.addSolid(solid);
+    for (const solid of world.mission.solids) {
+      drawContactShadow(g, solid);
+      this.addSolid(solid);
+    }
     this.gate = new Graphics();
     const gate = world.mission.gate;
     box(this.gate, gate.x, gate.y, gate.w, gate.h, 1.1, 0x9eaa96, 0x627669, 0x394d43);
@@ -654,11 +601,12 @@ export class Scene {
         g.moveTo(a.x, a.y).lineTo(b.x, b.y).stroke({ color: 0xadc0b2, width: 1.4 });
       }
     } else if (s.kind === 'tram') {
-      box(g, s.x, s.y, s.w, s.h, s.height, 0x6b4b40, 0x8a4f40, 0x533e37);
+      box(g, s.x, s.y, s.w, s.h, s.height, 0x887f75, 0x8a5549, 0x623f3c);
+      panel(g, { x: s.x + s.w, y: s.y }, { x: s.x + s.w, y: s.y + s.h }, 0.61, 0.74, 0xb6aa8e);
       for (let y = s.y + 0.6; y < s.y + s.h - 0.5; y += 1.25) {
-        panel(g, { x: s.x + s.w, y }, { x: s.x + s.w, y: y + 0.9 }, 0.7, 1.3, 0x223934);
+        panel(g, { x: s.x + s.w, y }, { x: s.x + s.w, y: y + 0.9 }, 0.76, 1.3, 0x304a5b);
       }
-      plane(g, s.x + 0.35, s.y + 0.45, s.w - 0.7, s.h - 0.9, 0x34433d, s.height + 0.05);
+      plane(g, s.x + 0.35, s.y + 0.45, s.w - 0.7, s.h - 0.9, 0x47535e, s.height + 0.05);
       for (let y = s.y + 1; y < s.y + s.h - 0.5; y += 1.6)
         plane(g, s.x + 0.5, y, 1.2, 0.55, 0x65756b, s.height + 0.07);
       const front = s.y + s.h;
@@ -666,8 +614,8 @@ export class Scene {
         panel(g, { x: s.x + x, y: front }, { x: s.x + x + width, y: front }, bottom, top, color);
       fascia(0.18, s.w - 0.36, 0.82, 1.45, 0x302f2b);
       for (const x of [0.25, s.w / 2 + 0.06]) {
-        fascia(x, s.w / 2 - 0.31, 0.9, 1.37, 0x294a40);
-        fascia(x, s.w / 2 - 0.31, 1.29, 1.33, 0x6e8a78);
+        fascia(x, s.w / 2 - 0.31, 0.9, 1.37, 0x304a5b);
+        fascia(x, s.w / 2 - 0.31, 1.29, 1.33, 0x8699a0);
       }
       fascia(0.1, s.w - 0.2, 0.2, 0.36, 0x343d36);
       for (const x of [0.38, s.w - 0.38]) {
@@ -685,28 +633,24 @@ export class Scene {
       }
       for (const z of [0.48, 0.58, 0.68]) fascia(0.78, s.w - 1.56, z, z + 0.025, 0x493e35);
     } else if (s.kind === 'crate') {
-      box(g, s.x, s.y, s.w, s.h, s.height, 0x87836a, 0x5b6655, 0x65715e);
-      plane(g, s.x + s.w * 0.4, s.y, 0.12, s.h, 0xa6a589, s.height + 0.01);
-    } else {
-      box(
-        g,
-        s.x,
-        s.y,
-        s.w,
-        s.h,
-        s.height,
-        s.kind === 'building' ? 0x30423b : 0x818773,
-        0x515e50,
-        0x3d5046,
-      );
-      if (s.kind === 'building') {
-        for (let x = s.x + 0.5; x < s.x + s.w - 0.3; x += 0.8) {
-          const a = project({ x, y: s.y + s.h + 0.01 }, 1.3),
-            b = project({ x: x + 0.4, y: s.y + s.h + 0.01 }, 1.3);
-          polygon(g, [a, b, { x: b.x, y: b.y + 13 }, { x: a.x, y: a.y + 13 }], 0xb09d6c);
-        }
-        plane(g, s.x + 0.4, s.y + 0.4, s.w - 0.8, s.h - 0.8, 0x46544a, s.height + 0.03);
+      box(g, s.x, s.y, s.w, s.h, s.height, 0xa18e70, 0x887257, 0x6e6151);
+      for (let z = 0.25; z < s.height; z += 0.3) {
+        panel(g, { x: s.x, y: s.y + s.h }, { x: s.x + s.w, y: s.y + s.h }, z, z + 0.025, 0x625848);
+        panel(g, { x: s.x + s.w, y: s.y }, { x: s.x + s.w, y: s.y + s.h }, z, z + 0.025, 0x534d45);
       }
+      plane(g, s.x + s.w * 0.4, s.y, 0.12, s.h, 0x555f64, s.height + 0.01);
+      panel(
+        g,
+        { x: s.x + s.w * 0.4, y: s.y + s.h },
+        { x: s.x + s.w * 0.4 + 0.12, y: s.y + s.h },
+        0,
+        s.height,
+        0x46505a,
+      );
+    } else if (s.kind === 'building') {
+      drawBuilding(g, s);
+    } else {
+      drawWall(g, s);
     }
     // Wall-mounted details must inherit their wall's occlusion, too.
     if (s.id === 'north') {
@@ -1180,6 +1124,7 @@ export class Scene {
     if (!this.pointerActive && this.followDelay <= 0) this.selectionSnap = false;
     this.selectionKey = selectionKey;
     const w = this.world;
+    this.lighting.refresh(w, alpha, this.camera, this.app.screen, this.aftermath);
     this.drawGuidance();
     this.transferRoutes.forEach((route, i) => {
       route.visible = w.evidence === 'courier' && i === Number(w.courier?.diverted);

@@ -101,7 +101,18 @@ no such restriction. Individual map orders remain under player control.
 
 ## Visual system
 
-Near-black green chrome, slate industrial surfaces, mint selection and health, amber objectives and suspicion, coral combat alerts. Arial/Helvetica with spaced uppercase labels; monospace for clocks and shortcuts. A left crew/command panel and right mission/status panel frame the map. Orders
+Near-black green chrome, cool asphalt, pale concrete, faded brick and oxblood
+transit paint. Warm occupied windows punctuate a sober municipal nightscape;
+the early missions establish that tone before any humorous environmental detail.
+Mint selection and health, amber objectives and suspicion, coral combat alerts
+retain their tactical meanings. Every free, living operative and recruited witness
+has a soft light radius. Distant scenery and guards retain at least 60% ambient
+brightness, with exact objective and order indicators above the shade. Pools
+follow split teammates independently and merge without adding brightness.
+This presentation lighting leaves all perception and simulation rules unchanged.
+See [art direction and implementation](art.md#visual-direction).
+
+Arial/Helvetica with spaced uppercase labels; monospace for clocks and shortcuts. A left crew/command panel and right mission/status panel frame the map. Orders
 remain anchored at the bottom of the left panel; roster and selected-operative
 information sit above them. A disabled drop button reserves its place even
 without cargo. Secondary field notes and records open within the right panel,
