@@ -13,6 +13,7 @@ import type { Action } from './ui/hud';
 import { bindControls } from './input/controls';
 import { Sound } from './audio/sound';
 import { missionRecord, readRecords, recordWin } from './ui/storage';
+import type { MedalId } from './ui/medals';
 import { missions, nextMission } from './content/missions';
 import { extractionRequirement } from './ui/extraction';
 import { FlashAim } from './ui/flash-aim';
@@ -24,10 +25,17 @@ async function boot() {
     slow = false,
     records = readRecords(),
     saved = false;
+  let newMedals: MedalId[] = [];
   let accumulator = 0,
     last = performance.now(),
     lastHud = 0;
   const sound = new Sound();
+  const unlockSound = (event: Event) => {
+    if (!sound.enabled) return;
+    // The sound button handles its own gesture, including muting before resume.
+    if (event.target instanceof Element && event.target.closest('#sound-button')) return;
+    void sound.unlock().then(updateHud);
+  };
   const hud = new Hud(
     action,
     (index, add) => {
@@ -86,13 +94,14 @@ async function boot() {
     paused = briefing;
     slow = false;
     saved = false;
+    newMedals = [];
     accumulator = 0;
     scene.reset(world);
     hud.close();
     hud.reset(mission);
     playtest?.newAttempt(world, briefing ? 'mission-change' : 'restart');
     hud.vision(scene.showVision);
-    if (briefing) hud.showBriefing();
+    if (briefing) hud.showBriefing(records);
     updateHud();
   }
   function issue(command: Command) {
@@ -235,8 +244,8 @@ async function boot() {
         break;
       case 'briefing':
         paused = true;
-        if (world.status === 'playing') hud.showBriefing();
-        else hud.showEnd(world, missionRecord(records, world.mission.id), true);
+        if (world.status === 'playing') hud.showBriefing(records);
+        else hud.showEnd(world, missionRecord(records, world.mission.id), true, newMedals);
         break;
       case 'restart': {
         startMission(world.mission, false);
@@ -343,6 +352,8 @@ async function boot() {
       slow = enabled;
     },
   });
+  document.addEventListener('click', unlockSound, { capture: true });
+  document.addEventListener('keydown', unlockSound, { capture: true });
   const autoPause = () => {
     sound.silence();
     if (world.status === 'playing') {
@@ -387,10 +398,14 @@ async function boot() {
     if (world.status !== 'playing' && !playtest?.isPlayback) {
       paused = true;
       if (world.status === 'won' && !saved) {
-        records = recordWin(world.mission.id, world.time, world.agents.filter(living).length);
+        const prior = missionRecord(records, world.mission.id).medals;
+        records = recordWin(world);
+        newMedals = missionRecord(records, world.mission.id).medals.filter(
+          (id) => !prior.includes(id),
+        );
         saved = true;
       }
-      hud.showEnd(world, missionRecord(records, world.mission.id));
+      hud.showEnd(world, missionRecord(records, world.mission.id), false, newMedals);
     }
     playtest?.update(now, wallElapsed, paused || hud.modal.open, slow);
     if (now - lastHud > 90) {
@@ -400,7 +415,7 @@ async function boot() {
   });
   updateHud();
   scene.render(selected, 1);
-  hud.showBriefing();
+  hud.showBriefing(records);
 }
 void boot().catch((error: unknown) => {
   console.error(error);

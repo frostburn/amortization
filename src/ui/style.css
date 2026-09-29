@@ -1293,13 +1293,6 @@ dialog h2 {
   gap: 12px;
   margin: 24px 0;
 }
-.operation-card {
-  display: grid;
-  gap: 10px;
-  padding: 20px;
-  text-align: left;
-  width: 100%;
-}
 .operation-card strong {
   font-size: 22px;
   font-weight: 400;
@@ -1388,10 +1381,6 @@ dialog h2 {
     padding: 7px 6px;
     font-size: 9px;
   }
-  .operation-card {
-    padding: 14px;
-    gap: 8px;
-  }
 }
 
 /* Captivity is distinct from a casualty; the health bar remains visible. */
@@ -1440,4 +1429,219 @@ dialog h2 {
 }
 .stage[data-aiming='flash'] .map-caption {
   visibility: hidden;
+}
+
+/* Contract medals stay separate from the button that starts a new attempt. */
+.operations-dialog {
+  max-width: 760px;
+  max-height: calc(100dvh - 30px);
+}
+.operations-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.medal-total {
+  color: var(--amber);
+  font:
+    12px 'Courier New',
+    monospace;
+  white-space: nowrap;
+}
+.operation-card {
+  display: block;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: #16251e;
+}
+.operation-launch {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 18px 20px;
+  border: 0;
+  border-radius: 0;
+}
+.operation-launch > span:not(.section-label) {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #a8bbaa;
+}
+.operation-medals {
+  padding: 12px 20px 16px;
+  border-top: 1px solid #2b3d30;
+}
+.medal-summary {
+  color: #99ab9f;
+  font:
+    10px 'Courier New',
+    monospace;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.medal-summary > span {
+  margin-left: 8px;
+  color: var(--amber);
+}
+.medal-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.medal {
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 66px;
+  min-height: 78px;
+  padding: 5px 2px;
+  border-color: transparent;
+  color: var(--amber);
+}
+.medal-emblem {
+  display: grid;
+  place-items: center;
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: #b68c4114;
+}
+.medal svg {
+  width: 22px;
+  height: 22px;
+}
+.medal-name {
+  font-size: 10px;
+  line-height: 1.2;
+}
+.medal-mark {
+  position: absolute;
+  right: -5px;
+  bottom: -2px;
+  font-size: 11px;
+  background: #16251e;
+  border-radius: 50%;
+  width: 14px;
+  line-height: 14px;
+}
+.medal[data-earned='false'] {
+  color: #a0b1a4;
+}
+.medal[data-earned='false'] > span {
+  opacity: 0.42;
+}
+.medal[data-earned='false'] > .medal-name {
+  opacity: 0.7;
+}
+.medal[data-earned='false']:hover > span,
+.medal[data-earned='false']:focus-visible > span {
+  opacity: 0.8;
+}
+.medal[data-new='true'] {
+  color: var(--mint);
+}
+.briefing-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  /* Fit the icons into the title's existing vertical space. */
+  margin: -5px 0;
+  min-height: 26px;
+}
+.briefing-heading .medal-list {
+  flex-shrink: 0;
+  gap: 2px;
+}
+.briefing-heading .medal {
+  width: 26px;
+  min-height: 26px;
+  padding: 2px;
+}
+.briefing-heading .medal-emblem {
+  width: 20px;
+  height: 20px;
+}
+.briefing-heading .medal svg {
+  width: 16px;
+  height: 16px;
+}
+.briefing-heading .medal-mark {
+  right: -4px;
+  bottom: -2px;
+  width: 10px;
+  font-size: 9px;
+  line-height: 10px;
+}
+.briefing-heading .medal-name {
+  display: none;
+}
+.medal-tooltip {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: min(280px, calc(100vw - 24px));
+  padding: 15px 17px;
+  border: 1px solid #8b9c78;
+  border-radius: 3px;
+  background: #0c1812;
+  color: #dce3dc;
+  box-shadow: 0 6px 24px #0008;
+}
+.medal-tip-status {
+  display: block;
+  color: var(--amber);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font:
+    9px 'Courier New',
+    monospace;
+  margin-bottom: 6px;
+}
+.medal-tooltip b {
+  font-size: 14px;
+  font-weight: 500;
+}
+.medal-tooltip p {
+  color: #b4c5b8;
+  font-size: 12px;
+  line-height: 1.6;
+  margin-top: 7px;
+}
+.debrief-medals {
+  margin: 22px 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+@media (max-width: 750px) {
+  .operation-launch {
+    padding: 14px;
+  }
+  .operation-medals {
+    padding: 12px 14px;
+  }
+  .medal-list {
+    gap: 4px;
+  }
+  .medal {
+    width: 56px;
+  }
+  .operation-card strong {
+    font-size: 20px;
+  }
+  .operations-heading {
+    gap: 8px;
+  }
+  .medal-total {
+    font-size: 10px;
+  }
 }

@@ -209,7 +209,7 @@ test('shows saved upload, trace and completion states without scrolling laptop m
   expect(await page.evaluate(() => window.transmission.world.status)).toBe('won');
   await page.evaluate(() => {
     const { world, hud } = window.transmission;
-    hud.showEnd(world, { best: 100, fullCrewBest: 100, completions: 1 });
+    hud.showEnd(world, { best: 100, fullCrewBest: 100, medals: [], completions: 1 });
   });
   await expect(page.getByRole('dialog')).toContainText('The audit is public.');
   await expect(page.getByRole('dialog')).toContainText('Published');

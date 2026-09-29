@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 for (const touch of [false, true]) {
-  test(`sound controls: ${touch ? 'touch' : 'desktop'} gesture, mute and remembered volume`, async ({
+  test(`sound controls: ${touch ? 'touch' : 'desktop'} gesture, mute and remembered sound settings`, async ({
     browser,
   }) => {
     const context = await browser.newContext({
@@ -89,6 +89,37 @@ for (const touch of [false, true]) {
         () => (window as unknown as { audioProbe: { contexts: number } }).audioProbe.contexts,
       ),
     ).toBe(0);
+    // An enabled preference survives reload, but does not create an audio
+    // context until the next real desktop/touch gesture.
+    await press('Begin operation');
+    await press('Sound off');
+    await expect(page.locator('#sound-button')).toHaveText('Sound on');
+    await page.reload();
+    await expect(page.locator('#sound-button')).toHaveText('Sound on');
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { audioProbe: { contexts: number } }).audioProbe.contexts,
+      ),
+    ).toBe(0);
+    await press('Begin operation');
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            (window as unknown as { audioProbe: { contexts: number; resumes: number } }).audioProbe,
+        ),
+      )
+      .toEqual({ contexts: 1, resumes: 1 });
+    await press('Sound on');
+    await page.reload();
+    await expect(page.locator('#sound-button')).toHaveText('Sound off');
+    await press('Begin operation');
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { audioProbe: { contexts: number } }).audioProbe.contexts,
+      ),
+    ).toBe(0);
+    await expect(volume).toHaveValue(String(chosen + 1));
     expect(await page.locator('vite-error-overlay').count()).toBe(0);
     expect(errors).toEqual([]);
     await context.close();

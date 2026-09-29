@@ -29,8 +29,9 @@ To play from another device on your local network, use `npm run dev -- --host 0.
 
 ## Sound
 
-Use **Sound off** in the top bar to enable audio; the adjacent **Vol** slider
-remembers your chosen volume. The page always starts muted. Each weapon has its
+Use **Sound off** in the top bar to enable audio; both that choice and the adjacent
+**Vol** slider are remembered. After reloading, enabled sound resumes on the first
+click, tap or key press. New players start muted. Each weapon has its
 own report, coil charges and turret tracking give audible warnings, and movement,
 reloads, impacts and mission equipment have distinct cues. Footsteps are quiet
 and muffled; there is no site ambience yet. Stereo follows the camera's isometric view.
@@ -62,7 +63,7 @@ recording, and replay playback are excluded from the production build.
    viewer and do not replace the attempt selected in the export dialog.
    Use the replay bar to play/pause,
    select 1×/4×/16× speed, or **Return to attempt**. Playback preserves the live
-   world's orders and progress and never awards completions or best times.
+   world's orders and progress and never awards medals, completions or best times.
    Restart and mission switching are disabled during playback; return to the live
    attempt first.
 
@@ -547,9 +548,48 @@ in the existing map caption, with a clearer route line and initial direction arr
 Results track time, crew survival, evidence, and alarm status. Operation five also reports publication; operation six reports backup destruction; operation ten reports the mandate being served. Each operation keeps
 separate **Full crew** (all four survive) and **Any crew** best times, plus its
 completion count. A faster run with casualties cannot replace the full-crew
-record. Earlier records migrate into Any crew; their survivor count was never
-stored, so Full crew starts empty. Play remains available when browser storage
-is disabled.
+record. Version 1/2 records migrate into Any crew because their survivor count
+was never stored; version 3 full-crew times are preserved. Play remains available
+when browser storage is disabled.
+
+### Operation medals
+
+**Operations** shows **73 medals across ten missions**, with earned medals in
+amber and unearned medals faded. Hover, focus with the keyboard, or tap a medal
+to read its exact conditions. Escape dismisses the tooltip first. Medal controls
+are separate from the button that starts an operation. Results show medals from
+the current run and highlight new awards in mint. Briefings repeat the mission's
+medals as small icons beside the title, with the same tooltips and earned states.
+
+Click or tap outside any dialog to dismiss it. The game remains paused; with
+stacked dialogs, only the top one closes. Escape also remains available.
+
+Medals accumulate across successful attempts. Apart from **Settled**, every
+challenge requires **all four operatives to extract alive** in the same run.
+
+| Medal | Additional condition | Available on |
+| --- | --- | --- |
+| Settled | Complete the mission with at least one survivor | Every operation |
+| Full crew | Extract all four | Every operation |
+| Low profile | Never trigger the site alarm; local suspicion is allowed | Every operation |
+| Nonlethal | Kill no guards or courier; unmanned turrets do not count | Every operation |
+| No disguise | Leave the maintenance KIT unused | Every operation |
+| Open channel | Trigger the alarm and finish without disabling RADIO | Every operation |
+| Due diligence | Extract the optional evidence | Operations 01, 04, 05, 06, 09, 10 |
+| Light touch | Use SHUNT to recover the evidence without forcing CUT | Operations 02, 07 |
+| By the book | Divert the courier with CALL and recover CASE while keeping them alive | Operation 03 |
+| Off the record | Complete UPLINK without its trace completing | Operations 05, 10 |
+| Power down | Isolate both feeds without destroying a turret; INSPECT is allowed | Operation 08 |
+| Travel light | Rescue both prisoners without either recovering GEAR | Operation 09 |
+
+Version 4 records preserve previous times and completions. Existing records
+backfill Settled and, where a full-crew time exists, Full crew. The other
+conditions were not saved historically and require a new completion. Later
+attempts cannot remove medals, and replay playback cannot earn them. Records
+and medals are saved in the current browser.
+
+Sound on/off and master volume are both remembered. Restored sound starts on
+the first click, tap or key press after loading the page.
 
 ## Structure
 
@@ -583,7 +623,7 @@ UI, renderer, or broader input changes; extended mission journeys and detailed
 graphics checks are not part of the routine gate. Keep `@smoke` for shared player
 flows so each new mission does not add another real-time browser journey to CI.
 
-The full simulation suite still runs on every change, including all 23 retained
+The full simulation suite still runs on every change, including all 24 retained
 human completions, complete mission runs for all ten operations (including quiet rescue and armed withdrawal in 09, and both routes in 10 with the flashes already spent),
 navigation clearance, local identification, disguise permissions, radio disruption,
 evidence custody, demolition safety, and extraction requirements.
