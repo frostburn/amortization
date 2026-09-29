@@ -261,7 +261,6 @@ async function boot() {
         paused = false;
         break;
       case 'briefing':
-        if (world.status !== 'playing' && !playtest?.isPlayback && !scene.resultsReady) break;
         paused = true;
         if (world.status === 'playing') hud.showBriefing(records);
         else hud.showEnd(world, missionRecord(records, world.mission.id), true, newMedals);
@@ -351,7 +350,6 @@ async function boot() {
       sound: sound.enabled,
       volume: sound.volume,
       following: scene.following,
-      resultsReady: !!playtest?.isPlayback || scene.resultsReady,
       best: missionRecord(records, world.mission.id).best,
       fullCrewBest: missionRecord(records, world.mission.id).fullCrewBest,
     });

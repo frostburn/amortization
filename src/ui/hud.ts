@@ -86,7 +86,6 @@ export interface HudState {
   best: number | null;
   fullCrewBest?: number | null;
   following?: boolean;
-  resultsReady?: boolean;
 }
 const icons: Record<string, string> = {
   pause: '<path d="M8 5v14M16 5v14"/>',
@@ -375,15 +374,12 @@ export class Hud {
   }
   update(world: World, state: HudState) {
     const ended = world.status !== 'playing';
-    const resultsPending = ended && state.resultsReady === false;
     this.app.classList.toggle('mission-ended', ended);
     this.field('mission-outcome').hidden = !ended;
     this.field('mission-outcome').dataset.result = world.status;
     this.set('outcome-title', world.status === 'won' ? 'MISSION COMPLETE' : 'MISSION FAILED');
     this.set('outcome-detail', `${world.mission.number} / ${world.mission.title}`);
     this.field('outcome-next').hidden = world.status !== 'won' || !nextMission(world.mission.id);
-    this.field('outcome-results').hidden = resultsPending;
-    (this.field('briefing-button') as HTMLButtonElement).disabled = resultsPending;
     this.field('pause-button').hidden = ended;
     this.set('briefing-button', ended ? 'Results' : 'Briefing');
     this.field('briefing-button').title = ended
