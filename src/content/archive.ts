@@ -17,6 +17,7 @@ export const archive: Mission = {
   title: 'Material breach',
   location: 'Records annex 02',
   objective: 'ledger',
+  perimeterExtraction: true,
   description: 'Recover the original debt ledger.',
   evidenceName: 'Debt ledger',
   intro:

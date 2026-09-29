@@ -81,6 +81,7 @@ async function boot() {
       })
     : undefined;
   function select(ids: string[]) {
+    if (world.status !== 'playing') return;
     const alive = ids.filter((id) => world.agents.some((a) => a.id === id && controllable(a)));
     if (alive.length) selected = [...new Set(alive)];
     hud.clearGuide();
@@ -135,6 +136,23 @@ async function boot() {
       updateHud();
       return;
     }
+    // A finished attempt is immutable. Keep navigation and sound available,
+    // but ignore tactical shortcuts while the separate aftermath scene runs.
+    if (
+      world.status !== 'playing' &&
+      ![
+        'briefing',
+        'operations',
+        'next',
+        'restart',
+        'sound',
+        'home',
+        'zoom-in',
+        'zoom-out',
+      ].includes(type) &&
+      !type.startsWith('mission:')
+    )
+      return;
     if (
       playtest?.isPlayback &&
       (type === 'restart' ||
@@ -182,11 +200,11 @@ async function boot() {
       updateHud();
       return;
     }
-    if (type === 'work:mask' || type === 'work:upload') {
+    if (type === 'work:mask' || type === 'work:upload' || type === 'work:breach') {
       issue({
         kind: 'interact',
         agents: selected,
-        target: type === 'work:mask' ? 'mask' : 'upload',
+        target: type === 'work:mask' ? 'mask' : type === 'work:upload' ? 'upload' : 'breach',
       });
       updateHud();
       return;
@@ -384,17 +402,6 @@ async function boot() {
         }
       }
     } else accumulator = 0;
-    scene.render(selected, paused ? 1 : accumulator / STEP);
-    sound.update(
-      world,
-      {
-        centre: scene.toWorld(scene.app.screen.width / 2, scene.app.screen.height / 2),
-        width: scene.app.screen.width,
-        scale: scene.camera.scale.x,
-      },
-      !paused && !hud.modal.open && world.status === 'playing',
-      !document.hidden && (!playtest?.isPlayback || playtest.speed === 1),
-    );
     if (world.status !== 'playing' && !playtest?.isPlayback) {
       paused = true;
       if (world.status === 'won' && !saved) {
@@ -405,8 +412,25 @@ async function boot() {
         );
         saved = true;
       }
-      hud.showEnd(world, missionRecord(records, world.mission.id), false, newMedals);
     }
+    scene.render(
+      selected,
+      paused ? 1 : accumulator / STEP,
+      elapsed,
+      world.status !== 'playing' && !playtest?.isPlayback && !hud.modal.open && !document.hidden,
+    );
+    if (scene.resultsReady && !playtest?.isPlayback && !hud.modal.open)
+      hud.showEnd(world, missionRecord(records, world.mission.id), false, newMedals);
+    sound.update(
+      world,
+      {
+        centre: scene.toWorld(scene.app.screen.width / 2, scene.app.screen.height / 2),
+        width: scene.app.screen.width,
+        scale: scene.camera.scale.x,
+      },
+      !paused && !hud.modal.open && world.status === 'playing',
+      !document.hidden && (!playtest?.isPlayback || playtest.speed === 1),
+    );
     playtest?.update(now, wallElapsed, paused || hud.modal.open, slow);
     if (now - lastHud > 90) {
       updateHud();

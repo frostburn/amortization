@@ -2,7 +2,7 @@
 
 A real-time squad tactics game for the browser. Control four operatives together or individually. One maintenance disguise admits a single person; the rest of the crew can prepare access or provide armed backup.
 
-**Ten operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing any of the first nine. Restart and Shift+R restart the selected mission.
+**Ten operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing any of the first nine. Restart and Shift+R restart the selected mission, including unfinished attempts. Briefings and results also offer **Restart mission**.
 
 ## Development
 
@@ -562,7 +562,14 @@ the current run and highlight new awards in mint. Briefings repeat the mission's
 medals as small icons beside the title, with the same tooltips and earned states.
 
 Click or tap outside any dialog to dismiss it. The game remains paused; with
-stacked dialogs, only the top one closes. Escape also remains available.
+stacked dialogs, only the top one closes. Escape also remains available. After
+a result, the **MISSION COMPLETE** or **MISSION FAILED** splash appears first.
+Results open automatically after the van leaves on victory, or after three seconds
+on defeat. **View results** is available immediately for a quick debrief.
+Dismiss the dialog to return to the splash with results/restart/next controls. Winners and the witness board
+the extraction van and drive off; guards keep patrolling. This presentation
+does not change the recorded outcome, time, medals or replay. Shift+R works in
+mission dialogs, including an unfinished mission’s briefing.
 
 Medals accumulate across successful attempts. Apart from **Settled**, every
 challenge requires **all four operatives to extract alive** in the same run.
@@ -623,7 +630,7 @@ UI, renderer, or broader input changes; extended mission journeys and detailed
 graphics checks are not part of the routine gate. Keep `@smoke` for shared player
 flows so each new mission does not add another real-time browser journey to CI.
 
-The full simulation suite still runs on every change, including all 24 retained
+The full simulation suite still runs on every change, including all 29 retained
 human completions, complete mission runs for all ten operations (including quiet rescue and armed withdrawal in 09, and both routes in 10 with the flashes already spent),
 navigation clearance, local identification, disguise permissions, radio disruption,
 evidence custody, demolition safety, and extraction requirements.

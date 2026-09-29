@@ -33,6 +33,7 @@ import { drawFlashes } from './flash';
 import type { FlashAimView } from './flash';
 import { FLASH_FLIGHT, FLASH_FUSE, FLASH_RECOVERY } from '../sim/flash';
 import { CREDENTIAL_TIME } from '../sim/inspection';
+import { Aftermath } from './aftermath';
 
 const COLORS = {
   ground: 0x263331,
@@ -154,7 +155,8 @@ export class Scene {
   private marks = new Container();
   private effects = new Graphics();
   private views = new Map<string, PersonView>();
-  private scenery: { root: Container; footprint: Rect }[] = [];
+  private scenery: { root: Container; footprint: Rect; vehicle?: string }[] = [];
+  private aftermath: Aftermath | null = null;
   private cores: { intact: Graphics; wreck: Graphics }[] = [];
   private icons = new Map<ObjectKind, Container>();
   private markerLocks = new Map<ObjectKind, boolean>();
@@ -228,7 +230,13 @@ export class Scene {
     this.build();
     this.resizeObserver.observe(this.host);
   }
+  get resultsReady() {
+    return this.aftermath?.resultsReady ?? false;
+  }
   reset(world: World) {
+    this.aftermath = null;
+    delete this.host.dataset.aftermath;
+    this.marks.visible = true;
     this.flashAim = null;
     this.flashGround.clear();
     this.grenades.clear();
@@ -539,8 +547,8 @@ export class Scene {
     this.labels.add(label);
     return label;
   }
-  private addScenery(root: Container, footprint: Rect) {
-    this.scenery.push({ root, footprint });
+  private addScenery(root: Container, footprint: Rect, vehicle?: string) {
+    this.scenery.push({ root, footprint, vehicle });
     this.objects.addChild(root);
   }
   private addSolid(s: Solid) {
@@ -739,7 +747,7 @@ export class Scene {
       label.skew.y = Math.atan(TILE_Y / TILE_X);
       root.addChild(label);
     }
-    this.addScenery(root, s);
+    this.addScenery(root, s, s.kind === 'van' ? s.id : undefined);
   }
   private resize() {
     const width = this.host.clientWidth,
@@ -1121,7 +1129,27 @@ export class Scene {
     }
     return v;
   }
-  render(selected: string[], alpha: number, seconds = this.app.ticker.deltaMS / 1000) {
+  render(
+    selected: string[],
+    alpha: number,
+    seconds = this.app.ticker.deltaMS / 1000,
+    animateAftermath = false,
+  ) {
+    if (animateAftermath && this.world.status !== 'playing') {
+      if (!this.aftermath) {
+        this.aftermath = new Aftermath(this.world);
+        this.world = this.aftermath.world;
+        this.following = false;
+        this.flashAim = null;
+        this.showGuidance([], { x: 0, y: 0, w: 0, h: 0 });
+      }
+      this.aftermath.update(seconds);
+      this.host.dataset.aftermath = this.aftermath.phase;
+    }
+    if (this.aftermath) {
+      selected = [];
+      alpha = 1;
+    }
     this.followDelay = Math.max(0, this.followDelay - Math.max(0, Math.min(seconds, 0.1)));
     // Resize only immediately before drawing, so a ResizeObserver cannot clear
     // the WebGL canvas between frames (e.g. when picking up the mission item).
@@ -1141,14 +1169,14 @@ export class Scene {
       }
     }
     const selectionKey = selected.join(',');
-    if (this.selectionKey && selectionKey !== this.selectionKey) {
+    if (!this.aftermath && this.selectionKey && selectionKey !== this.selectionKey) {
       this.following = true;
       this.followLead = null;
       // Automatic survivor selection retains smooth tracking. Explicit switches
       // enter through follow(), which consumes the selection before this frame.
       this.selectionSnap = false;
     }
-    this.trackSelection(selected, alpha, this.selectionSnap, seconds);
+    if (!this.aftermath) this.trackSelection(selected, alpha, this.selectionSnap, seconds);
     if (!this.pointerActive && this.followDelay <= 0) this.selectionSnap = false;
     this.selectionKey = selectionKey;
     const w = this.world;
@@ -1167,8 +1195,28 @@ export class Scene {
       this.drawVision();
       this.coneTime = w.time;
     }
-    this.cones.visible = this.showVision;
-    const depthItems = this.scenery.filter((item) => item.root.visible);
+    this.cones.visible = this.showVision && !this.aftermath;
+    this.marks.visible = !this.aftermath;
+    const depthItems = this.scenery.flatMap((item) => {
+      const ending = this.aftermath;
+      if (ending?.van && item.vehicle === ending.van.id) {
+        item.root.position.copyFrom(project(ending.offset));
+        item.root.visible = ending.phase !== 'departed';
+        return item.root.visible
+          ? [
+              {
+                root: item.root,
+                footprint: {
+                  ...item.footprint,
+                  x: item.footprint.x + ending.offset.x,
+                  y: item.footprint.y + ending.offset.y,
+                },
+              },
+            ]
+          : [];
+      }
+      return item.root.visible ? [item] : [];
+    });
     for (const p of people(w)) {
       if (p === w.escort && w.escortLocked && !w.escort.recruited) continue;
       const a = w.agents.find((a) => a.id === p.id),
@@ -1181,6 +1229,8 @@ export class Scene {
             ? 'voss'
             : 'mara';
       const v = this.person(p, a ? String(a.index + 1) : '');
+      v.root.visible = !this.aftermath?.boarded.has(p.id);
+      if (!v.root.visible) continue;
       const pos = {
         x: p.previous.x + (p.x - p.previous.x) * alpha,
         y: p.previous.y + (p.y - p.previous.y) * alpha,
@@ -1392,7 +1442,7 @@ export class Scene {
             .fill({ color: 0xffd7a0, alpha: 0.7 * (1 - age / 0.7) });
       }
     }
-    for (const exit of w.mission.landmarks.filter((o) => isExtraction(o.id))) {
+    for (const exit of w.mission.landmarks.filter((o) => !this.aftermath && isExtraction(o.id))) {
       const vp = project(exit);
       this.effects
         .ellipse(

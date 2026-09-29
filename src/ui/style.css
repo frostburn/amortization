@@ -46,6 +46,9 @@ button svg {
 button[hidden] {
   display: none;
 }
+#pause-button[hidden] {
+  display: none;
+}
 h1,
 h2,
 h3,
@@ -967,6 +970,81 @@ dialog::backdrop {
   color: var(--mint);
   letter-spacing: 2px;
   margin-bottom: 16px;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+.dialog-actions .dialog-secondary {
+  margin: 0;
+  font-size: 12px;
+}
+.mission-outcome {
+  position: absolute;
+  z-index: 6;
+  top: 20%;
+  left: 0;
+  right: 0;
+  padding: 25px 12px;
+  text-align: center;
+  pointer-events: none;
+  background: linear-gradient(90deg, #10201b00, #10201bed 20%, #10201bed 80%, #10201b00);
+  color: var(--mint);
+}
+.mission-outcome[hidden] {
+  display: none;
+}
+.mission-ended .selection-section,
+.mission-ended .orders-section,
+.mission-ended .crew-heading button,
+.mission-ended #vision-button,
+.mission-ended #follow-button,
+.mission-ended #objective-help {
+  display: none;
+}
+.mission-ended .agent-card:not(.down) {
+  opacity: 0.85;
+  cursor: default;
+}
+.mission-ended .objectives button:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.mission-ended .controls-hint > span {
+  visibility: hidden;
+}
+.mission-outcome[data-result='lost'] {
+  color: var(--red);
+}
+.mission-outcome > p {
+  font:
+    10px 'Courier New',
+    monospace;
+  color: #c4d0c9;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+.mission-outcome > h2 {
+  font-size: clamp(22px, 3vw, 42px);
+  font-weight: 400;
+  letter-spacing: 3px;
+}
+.outcome-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+.outcome-actions button {
+  pointer-events: auto;
+  background: #13201a;
+  padding: 9px 12px;
+  color: #dce3dc;
+  font-size: 12px;
 }
 dialog h2 {
   font-size: 14px;
