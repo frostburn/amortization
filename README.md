@@ -129,7 +129,7 @@ quiet and armed completion tests; new human runs for 05–06 are welcome. See
 | F                              | Draw / stow selected weapons                                        |
 | E                              | Interact with a nearby landmark                                     |
 | H                              | Use a field dressing: one per operative, up to 55 health            |
-| B                              | Aim a flash in operations 10–11; choose a point, then confirm one throw |
+| B                              | Aim a flash in operations 10–11; hover/click or touch drag/release |
 | X                              | Put down carried evidence                                           |
 | Space                          | Pause / resume; orders work while paused                            |
 | Hold Tab                       | Slow time to 20%                                                    |
@@ -525,11 +525,13 @@ Their orange line and progress bar give **2.5 seconds** to leave range or break
 sight. Walking behind their patrol avoids a check. Their ivory uniforms, orange
 shoulders and glasses distinguish them from pistol guards.
 
-Rook and Sable each carry **one flash grenade**. Select either or both, press
-**Flash / B**, choose a landing point, then confirm the named thrower. Aiming
-preserves orders; confirmation stops only that operative and spends one grenade.
-Escape or Cancel leaves the supply untouched. Touch uses the same preview and
-confirmation. The preview shows exposed teammates and explains blocked throws.
+Rook and Sable each carry **one flash grenade**. Select either or both and press
+**Flash / B**. Mouse: hover to preview the blast radius, then click to throw.
+Touch: drag to preview, then release to throw. The preview names the thrower,
+shows exposed teammates and explains blocked throws. Aiming preserves orders;
+a valid throw stops only that operative and spends one grenade. Out-of-range
+or blocked attempts cancel without spending a grenade or changing orders.
+Escape, Cancel or an interrupted touch also cancels; aiming drags do not pan.
 
 Throws reach seven units; the three-unit blast respects solid cover. A visible
 0.45-second throw and 0.6-second fuse precede **1.5 seconds of disorientation**.
@@ -676,7 +678,7 @@ UI, renderer, or broader input changes; extended mission journeys and detailed
 graphics checks are not part of the routine gate. Keep `@smoke` for shared player
 flows so each new mission does not add another real-time browser journey to CI.
 
-The full simulation suite still runs on every change, including all 35 retained
+The full simulation suite still runs on every change, including all 36 retained
 human completions, complete mission runs for all eleven operations (including quiet rescue and armed withdrawal in 09, both routes in 10 with the flashes already spent, and nonlethal and prepared armed completions in 11),
 navigation clearance, local identification, disguise permissions, radio disruption,
 evidence custody, demolition safety, and extraction requirements.

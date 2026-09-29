@@ -7,9 +7,43 @@ is also verified. Otherwise this checks a route's continued viability, without
 claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All twenty-four retained files are byte-for-byte copies of submissions provided in chat:
-fifteen on 2026-09-27, six on 2026-09-28 and three on 2026-09-29, including their `unversioned` /
-local-changes metadata.
+All thirty-six retained completions are byte-for-byte copies of submissions
+provided in chat, including their `unversioned` / local-changes metadata.
+
+## Value date: recovery and performance
+
+Both September 29 submissions have empty feedback notes and contain no flash
+commands. They use mission hash `52cac497` and simulation fingerprint
+`d1e7b628e56516b3ff609844920129f029bcfc077eb3e0c145dd00202e6d43be`.
+Their original checkpoints reproduce exactly before and after the ray-query
+optimization. The dedicated tests skip only the changed source-fingerprint
+gate, retaining every original state and final-result comparison.
+
+| Fixture | Original submission | Exact outcome |
+| --- | --- | --- |
+| `settlement-recovery-1b29d03c.replay.json` | `amortization-settlement-won-1b29d03c.replay.json` | Tick 9811 / 327.03s; 3 survivors; 41 shots; no alarm |
+| `../fixtures/settlement-insufficient-crew-1d635f76.replay.json` | `amortization-settlement-lost-1d635f76.replay.json` | Tick 2891 / 96.37s; 1 survivor; 43 shots; no alarm |
+
+The winning run holds SHUNT with Vale, disables RADIO and retrieves REGISTER
+with Morrow. Reconciliation completes at 108.43s. Morrow sets down the register
+immediately before falling at 172.47s; Vale recovers it at 198.8s and retains the
+completed reconciliation. After separate arrivals at SIGN and CLEAR, Sable and
+Vale finish the paired release at 265.23s. All three survivors and REGISTER
+extract. This validates casualty recovery and the two-person work requirement.
+
+The loss also disables RADIO but loses Morrow shortly after retrieval. The
+register drops correctly; Rook and then Sable fall before it is recovered.
+Only Vale remains, so the mission correctly fails with an explicit explanation
+that SIGN and CLEAR need two people. It is kept as a diagnostic fixture outside
+the required completion corpus; its exact outcome guards this behavior-preserving
+optimization, not a permanent difficulty target.
+
+Neither file records frame times or reconstructs selection-only/camera inputs.
+A browser CPU profile found avoidable off-screen pose construction and repeated
+full intersection tests in sight-cone rendering. Viewport pose culling and ray
+bounds checks reduce that work without altering the recorded simulation. The
+separate desktop/touch flash tests verify preview gestures, valid throws and
+out-of-range cancellation; these human recordings do not test grenade usability.
 
 ## Stay of execution: quiet teamwork and medals
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { settlement } from '../src/content/settlement';
 import { nextMission } from '../src/content/missions';
 import { createWorld } from '../src/sim/world';
@@ -18,6 +19,20 @@ import { guideLocation, missionGoals } from '../src/ui/objectives';
 import { earnedMedals } from '../src/ui/medals';
 import { Recorder, parseReplay, verifyReplay } from '../src/replay/core';
 import { buildInfo } from '../scripts/build-info';
+
+it.each([
+  'tests/replays/settlement-recovery-1b29d03c.replay.json',
+  'tests/fixtures/settlement-insufficient-crew-1d635f76.replay.json',
+])('preserves the original human checkpoints after ray-query optimization: %s', (file) => {
+  const bundle = parseReplay(readFileSync(file, 'utf8'));
+  // The source fingerprint changes with the ray-query optimization. Skip only
+  // that label gate: current mission rules must still match EVERY original
+  // checkpoint and the final result. Neither submission is rewritten.
+  const result = verifyReplay(bundle, bundle.build);
+  expect(result.error).toBeNull();
+  expect(result.tick).toBe(bundle.ticks);
+  expect(result.result).toEqual(bundle.result);
+});
 
 const advance = (w: World, seconds: number) => {
   for (let i = 0; i < seconds / STEP; i++) step(w);

@@ -180,53 +180,113 @@ for (const mobile of [false, true]) {
     await press('[data-agent="0"]');
     await expect(page.locator('#flash-button')).toBeDisabled();
     await press('[data-action="all"]');
-    const aimPoint = async (point: Vec) => {
+    // The selection change resumes follow; hold this presentation fixture still
+    // so a drag can only move the camera through the input handler under test.
+    await page.evaluate(() => {
+      window.injunctionTest.scene.following = false;
+    });
+    const touchSession = mobile ? await context.newCDPSession(page) : null;
+    let touching = false;
+    const clientPoint = async (point: Vec) => {
       await page.locator('canvas').scrollIntoViewIfNeeded();
-      const p = await page.evaluate((point) => {
+      return page.evaluate((point) => {
         const { scene } = window.injunctionTest;
         const p = scene.screen(point),
           box = scene.app.canvas.getBoundingClientRect();
         return { x: box.x + p.x, y: box.y + p.y };
       }, point);
-      if (mobile) await page.touchscreen.tap(p.x, p.y);
-      else await page.mouse.click(p.x, p.y);
     };
+    const previewAt = async (point: Vec) => {
+      const p = await clientPoint(point);
+      if (touchSession) {
+        await touchSession.send('Input.dispatchTouchEvent', {
+          type: touching ? 'touchMove' : 'touchStart',
+          touchPoints: [{ ...p, id: 1 }],
+        });
+        touching = true;
+      } else await page.mouse.move(p.x, p.y);
+    };
+    const releaseAt = async (point: Vec) => {
+      if (touchSession) {
+        await previewAt(point);
+        await touchSession.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        touching = false;
+      } else {
+        const p = await clientPoint(point);
+        await page.mouse.click(p.x, p.y);
+      }
+    };
+    const valid = { x: 38.3, y: 23.5 };
+    const orders = await page.evaluate(() =>
+      JSON.stringify(window.injunctionTest.world.agents.map((a) => a.order)),
+    );
     await press('#flash-button');
     await expect(page.locator('.flash-aim')).toBeVisible();
-    await aimPoint({ x: 40, y: 28 });
+    await expect(page.locator('.flash-confirm')).toHaveCount(0);
+    await previewAt({ x: 40, y: 28 });
     await expect(page.locator('.flash-hint')).toContainText('open ground');
-    await expect(page.locator('.flash-confirm')).toBeDisabled();
-    await aimPoint({ x: 38.3, y: 23.5 });
-    await expect(page.locator('.flash-hint')).toContainText('Exposed crew: Morrow');
-    await expect(page.locator('.flash-confirm')).toBeEnabled();
+    expect(await page.evaluate(() => window.injunctionTest.scene.flashAim?.valid)).toBe(false);
+    await releaseAt({ x: 40, y: 28 });
+    await expect(page.locator('.flash-aim')).toBeHidden();
+    await expect(page.locator('#flash-button')).toHaveText('Flash · 2 left · B');
+    expect(await page.evaluate(() => window.injunctionTest.commands)).toEqual([]);
+
+    // The current release location wins over the valid initial press, without panning.
+    await press('#flash-button');
+    const camera = await page.evaluate(() => ({
+      x: window.injunctionTest.scene.camera.x,
+      y: window.injunctionTest.scene.camera.y,
+    }));
+    await previewAt(valid);
+    await previewAt({ x: 42.5, y: 23.5 });
+    await expect(page.locator('.flash-hint')).toContainText('Out of range');
+    expect(
+      await page.evaluate(() => ({
+        x: window.injunctionTest.scene.camera.x,
+        y: window.injunctionTest.scene.camera.y,
+      })),
+    ).toEqual(camera);
+    await releaseAt({ x: 42.5, y: 23.5 });
+    await expect(page.locator('.flash-aim')).toBeHidden();
     expect(await page.evaluate(() => window.injunctionTest.commands)).toEqual([]);
     expect(
-      await page.evaluate(() => window.injunctionTest.world.agents.map((a) => a.order.kind)),
-    ).toEqual(['hold', 'hold', 'hold', 'hold']);
+      await page.evaluate(() =>
+        JSON.stringify(window.injunctionTest.world.agents.map((a) => a.order)),
+      ),
+    ).toBe(orders);
+    await expect(page.locator('#flash-button')).toHaveText('Flash · 2 left · B');
+
+    await press('#flash-button');
+    await previewAt(valid);
+    await expect(page.locator('.flash-hint')).toContainText('Exposed crew: Morrow');
+    expect(await page.evaluate(() => window.injunctionTest.scene.flashAim?.valid)).toBe(true);
+    expect(await page.evaluate(() => window.injunctionTest.commands)).toEqual([]);
     await page.evaluate(() => window.injunctionTest.advance(0));
     await page.screenshot({
       path: `/tmp/mission-10/${mobile ? 'touch' : 'desktop'}-flash-preview.png`,
     });
-    await press('.flash-cancel');
-    await expect(page.locator('#flash-button')).toHaveText('Flash · 2 left · B');
+    if (touchSession) {
+      await touchSession.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
+      touching = false;
+    } else await page.keyboard.press('Escape');
+    await expect(page.locator('.flash-aim')).toBeHidden();
+    expect(await page.evaluate(() => window.injunctionTest.commands)).toEqual([]);
+
     if (mobile) await press('#flash-button');
     else await page.keyboard.press('b');
-    await aimPoint({ x: 38.3, y: 23.5 });
-    await page.evaluate(() => {
-      const a = window.injunctionTest.world.agents[2];
-      Object.assign(a, { x: 38, y: 23.5, previous: { x: 38, y: 23.5 } });
-    });
-    await press('.flash-confirm');
+    await previewAt({ x: 35, y: 24 });
+    await previewAt(valid);
+    await expect(page.locator('.flash-hint')).toContainText('Sable');
+    await releaseAt(valid);
     await expect(page.locator('.flash-aim')).toBeHidden();
     await expect(page.locator('#flash-button')).toHaveText('Flash · 1 left · B');
-    expect(
-      await page.evaluate(() => window.injunctionTest.commands.filter((c) => c.kind === 'flash')),
-    ).toHaveLength(1);
-    expect(
-      await page.evaluate(
-        () => window.injunctionTest.commands.find((c) => c.kind === 'flash')?.agents,
-      ),
-    ).toEqual(['agent-3']);
+    expect(await page.evaluate(() => window.injunctionTest.commands.map((c) => c.kind))).toEqual([
+      'flash',
+    ]);
+    expect(await page.evaluate(() => window.injunctionTest.commands[0])).toMatchObject({
+      kind: 'flash',
+      agents: ['agent-3'],
+    });
     await page.evaluate(() => window.injunctionTest.advance(33));
     await expect(page.locator('#condition-0')).toContainText('Disoriented');
     expect(

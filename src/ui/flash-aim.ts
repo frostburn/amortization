@@ -2,19 +2,17 @@ import type { Scene } from '../render/scene';
 import type { Command } from '../sim/commands';
 import { flashPreview, flashReady } from '../sim/flash';
 import type { Vec, World } from '../sim/types';
+import { notify } from '../sim/world';
 import type { Hud } from './hud';
 
-/** Aiming is presentation state. Only confirmation enters the replay command stream. */
+/** Hovering/dragging is presentation state. Only a valid throw is recorded. */
 export class FlashAim {
   active = false;
   private point: Vec | null = null;
-  private pinned = false;
-  private thrower: string | null = null;
   private world: World | null = null;
   private selected = '';
   private panel: HTMLElement;
   private hint: HTMLElement;
-  private confirmButton: HTMLButtonElement;
   constructor(
     private scene: Scene,
     private hud: Hud,
@@ -29,10 +27,8 @@ export class FlashAim {
     this.panel.hidden = true;
     this.panel.setAttribute('aria-label', 'Flash grenade targeting');
     this.panel.innerHTML =
-      '<strong>FLASH GRENADE</strong><p class="flash-hint" role="status"></p><div><button class="flash-confirm" disabled>Throw one flash</button><button class="flash-cancel">Cancel · Esc</button></div>';
+      '<div><strong>FLASH GRENADE</strong><button class="flash-cancel">Cancel · Esc</button></div><p class="flash-gesture"></p><p class="flash-hint" role="status"></p>';
     this.hint = this.panel.querySelector('.flash-hint')!;
-    this.confirmButton = this.panel.querySelector('.flash-confirm')!;
-    this.confirmButton.addEventListener('click', () => this.confirm());
     this.panel.querySelector('.flash-cancel')!.addEventListener('click', () => this.cancel());
     hud.stage.appendChild(this.panel);
   }
@@ -51,24 +47,19 @@ export class FlashAim {
     this.world = w;
     this.selected = ids.join(',');
     this.point = null;
-    this.pinned = false;
     this.hud.clearGuide();
     this.hud.stage.dataset.aiming = 'flash';
     this.panel.hidden = false;
+    this.panel.querySelector('.flash-gesture')!.textContent = matchMedia('(pointer: coarse)')
+      .matches
+      ? 'Drag to aim · release to throw'
+      : 'Hover to aim · click to throw';
     if (matchMedia('(max-width: 900px)').matches) this.hud.stage.scrollIntoView({ block: 'start' });
     this.scene.app.canvas.focus({ preventScroll: true });
     this.update();
   }
-  hover(point: Vec) {
-    if (this.active && !this.pinned) this.point = point;
-  }
-  pick(point: Vec) {
-    if (!this.active) return;
-    this.point = point;
-    this.pinned = true;
-    this.thrower =
-      flashPreview(this.target.world(), this.target.selection(), point).thrower?.id ?? null;
-    this.update();
+  hover(point: Vec | null) {
+    if (this.active) this.point = point;
   }
   update() {
     if (!this.active) return;
@@ -81,45 +72,46 @@ export class FlashAim {
       this.hud.modal.open
     )
       return this.cancel();
+    this.scene.flashAim = null;
     if (!this.point) {
       this.hint.textContent =
-        'Choose a landing point on the map, then confirm. Existing orders continue while aiming.';
-      this.confirmButton.disabled = true;
+        'Range 7 · radius 3. An invalid throw cancels. Existing orders continue while aiming.';
       return;
     }
-    const preview = flashPreview(
-      w,
-      this.pinned ? (this.thrower ? [this.thrower] : []) : ids,
-      this.point,
-    );
+    const preview = flashPreview(w, ids, this.point);
     this.scene.flashAim = {
       point: this.point,
       from: preview.thrower,
       valid: !preview.reason,
       exposed: preview.exposed,
     };
-    this.hint.textContent = `${preview.thrower?.name ?? 'No thrower'} · ${preview.reason || 'Range 7 · radius 3 · disorients for 1.5s.'} ${preview.exposed.length ? `Exposed crew: ${preview.exposed.map((a) => a.name).join(', ')}.` : 'Crew clear at current positions.'} ${this.pinned ? `Confirm to stop ${preview.thrower?.name ?? 'the thrower'} and throw once.` : 'Click a landing point to prepare the throw.'}`;
-    this.confirmButton.disabled = !this.pinned || !!preview.reason;
+    this.hint.textContent = `${preview.thrower?.name ?? 'No thrower'} · ${preview.reason || 'Range 7 · radius 3.'} ${preview.exposed.length ? `Exposed crew: ${preview.exposed.map((a) => a.name).join(', ')}.` : 'Crew clear.'}`;
   }
+  throwAt(point: Vec) {
+    if (!this.active) return;
+    this.point = point;
+    this.confirm();
+  }
+  // Enter also throws at the current preview, without a separate confirmation mode.
   confirm() {
-    if (!this.active || !this.point || !this.pinned) return;
+    if (!this.active || !this.point) return;
     this.update();
-    if (!this.active || this.confirmButton.disabled) return;
-    // Pin the named thrower too: no automatic substitution between preview and command.
-    const preview = flashPreview(
-      this.target.world(),
-      this.thrower ? [this.thrower] : [],
-      this.point,
-    );
-    if (preview.reason || !preview.thrower) return;
-    this.target.command({ kind: 'flash', agents: [preview.thrower.id], point: { ...this.point } });
+    if (!this.active) return;
+    const preview = flashPreview(this.target.world(), this.target.selection(), this.point);
+    if (preview.reason || !preview.thrower) {
+      notify(this.target.world(), `Flash cancelled. ${preview.reason}`, 'warning');
+    } else {
+      this.target.command({
+        kind: 'flash',
+        agents: [preview.thrower.id],
+        point: { ...this.point },
+      });
+    }
     this.cancel();
   }
   cancel() {
     this.active = false;
     this.point = null;
-    this.pinned = false;
-    this.thrower = null;
     this.scene.flashAim = null;
     this.panel.hidden = true;
     delete this.hud.stage.dataset.aiming;

@@ -56,8 +56,27 @@ export function intersects(a: Vec, b: Vec, rect: Rect, margin = 0): boolean {
   return true;
 }
 
-export const lineClear = (world: World, a: Vec, b: Vec, margin = 0) =>
-  !obstacles(world).some((r) => intersects(a, b, r, margin));
+export function lineClear(world: World, a: Vec, b: Vec, margin = 0): boolean {
+  // Most rectangles are nowhere near a short sight ray. Reject their bounds
+  // before the exact slab test; inclusive boundaries retain grazing collisions.
+  const left = Math.min(a.x, b.x),
+    right = Math.max(a.x, b.x),
+    top = Math.min(a.y, b.y),
+    bottom = Math.max(a.y, b.y);
+  const blocks = (r: Rect) =>
+    r.x - margin <= right &&
+    r.x + r.w + margin >= left &&
+    r.y - margin <= bottom &&
+    r.y + r.h + margin >= top &&
+    intersects(a, b, r, margin);
+  // Read the live geometry, without assembling a fresh obstacle array per ray.
+  if (world.mission.solids.some(blocks)) return false;
+  if (world.detention && detentionDoors(world).some(blocks)) return false;
+  if (!world.gateOpen && blocks(world.mission.gate)) return false;
+  if (world.mission.archive && !world.shutterOpen && blocks(world.mission.archive.door))
+    return false;
+  return true;
+}
 
 // Destinations, grid connections, smoothing, and movement share one body clearance.
 // Sight rays retain their separate, inclusive edge test.

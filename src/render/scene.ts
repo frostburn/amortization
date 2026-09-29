@@ -1199,13 +1199,23 @@ export class Scene {
             ? 'voss'
             : 'mara';
       const v = this.person(p, a ? String(a.index + 1) : '');
-      v.root.visible = !this.aftermath?.boarded.has(p.id);
-      if (!v.root.visible) continue;
       const pos = {
         x: p.previous.x + (p.x - p.previous.x) * alpha,
         y: p.previous.y + (p.y - p.previous.y) * alpha,
       };
       v.root.position.copyFrom(project(pos));
+      // Do not tessellate/evict walking poses for people across the site.
+      // The generous model-space margin includes fallen bodies, rifles and labels.
+      // Recheck every rendered frame so paused panning and zooming reveal current poses.
+      const screen = this.screen(pos),
+        padding = 80 * this.camera.scale.x;
+      v.root.visible =
+        !this.aftermath?.boarded.has(p.id) &&
+        screen.x >= -padding &&
+        screen.y >= -padding &&
+        screen.x <= this.app.screen.width + padding &&
+        screen.y <= this.app.screen.height + padding;
+      if (!v.root.visible) continue;
       depthItems.push({ root: v.root, footprint: { ...pos, w: 0, h: 0 } });
       const cargo = !!a?.carrying || (p.id === w.courier?.guardId && w.evidence === 'courier');
       v.sprite.visible = !guard?.turret;
@@ -1328,7 +1338,7 @@ export class Scene {
       item.root.zIndex = index;
     });
     for (const view of this.views.values())
-      view.sprite.setDepthLayer(view.root.zIndex, depthItems.length);
+      if (view.root.visible) view.sprite.setDepthLayer(view.root.zIndex, depthItems.length);
     const exitLocked = !!extractionRequirement(w);
     for (const [id, icon] of this.icons) {
       icon.visible =

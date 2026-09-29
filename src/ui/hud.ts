@@ -650,7 +650,7 @@ export class Hud {
     flashButton.disabled = !selected.some(flashReady);
     flashButton.textContent = `Flash · ${selected.reduce((n, p) => n + (p.flashes ?? 0), 0)} left · B`;
     flashButton.title =
-      'Select Rook or Sable with a flash. Choose a point, inspect exposed crew, then confirm one throw.';
+      'Select Rook or Sable with a flash. Mouse: hover and click. Touch: drag and release. Invalid throws cancel without spending a grenade.';
     weaponsButton.disabled = !selected.some((p) => !p.disarmed && !p.carrying);
     weaponsButton.title = selected.some((p) => p.disarmed)
       ? 'Freed prisoners recover their own weapon at GEAR.'
