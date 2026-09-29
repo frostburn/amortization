@@ -223,7 +223,7 @@ function weaponMount(
   );
 }
 
-/** Faceted models share the map's projection and turn in world space, including their faces. */
+/** Models share the map's projection and turn in world space, including their normals. */
 class Figure {
   faces: ModelFace[] = [];
   transform: ((p: Point) => Point) | null = null;
@@ -238,30 +238,78 @@ class Figure {
     return project({ x, y }, z);
   }
   face(points: Point[], color: number) {
-    const v = points.map((p) => this.world(this.transform ? this.transform(p) : p));
+    this.surface(
+      points.map((p) => this.world(this.transform ? this.transform(p) : p)),
+      color,
+    );
+  }
+  private surface(v: Point[], color: number, normals?: Point[]) {
     // Lofted rings can produce twisted quads. Triangulate for correct lighting and culling.
     const normal = unit(cross(sub(v[1], v[0]), sub(v[2], v[0])));
     if (v.some((p) => Math.abs(dot(normal, sub(p, v[0]))) > 1e-7)) {
-      for (let i = 1; i < v.length - 1; i++) this.planarFace([v[0], v[i], v[i + 1]], color);
-    } else this.planarFace(v, color);
+      for (let i = 1; i < v.length - 1; i++)
+        this.planarFace(
+          [v[0], v[i], v[i + 1]],
+          color,
+          normals && [normals[0], normals[i], normals[i + 1]],
+        );
+    } else this.planarFace(v, color, normals);
   }
-  private planarFace(vertices: Point[], color: number) {
+  private planarFace(vertices: Point[], color: number, normals?: Point[]) {
     const normal = unit(cross(sub(vertices[1], vertices[0]), sub(vertices[2], vertices[0])));
     if (dot(normal, MODEL_VIEW) <= 1e-7) return;
-    const light = 0.72 + Math.max(0, dot(normal, [-0.35, -0.45, 0.82])) * 0.48;
-    this.faces.push({ vertices, color: shade(color, light) });
+    this.faces.push({ vertices, color, normals: normals ?? vertices.map(() => normal) });
   }
-  rings(rings: Point[][], color: number) {
+  rings(points: Point[][], color: number, smoothing: 'flat' | 'sides' | 'round' = 'flat') {
+    const rings = points.map((ring) =>
+      ring.map((p) => this.world(this.transform ? this.transform(p) : p)),
+    );
     const n = rings[0].length;
-    this.face([...rings[0]].reverse(), color);
+    // Use the complete loft before culling so turning never changes a shared
+    // normal at the silhouette. Ring tangents also avoid a triangulation bias
+    // across the coat's deforming quads. Each part owns its smoothing boundary.
+    const normals =
+      smoothing === 'flat'
+        ? undefined
+        : rings.map((ring, r) =>
+            ring.map((p, i) => {
+              const around = sub(ring[(i + 1) % n], ring[(i + n - 1) % n]);
+              const along = add(
+                unit(sub(p, rings[Math.max(0, r - 1)][i])),
+                unit(sub(rings[Math.min(rings.length - 1, r + 1)][i], p)),
+              );
+              let normal = unit(cross(around, along));
+              if (smoothing === 'round' && (r === 0 || r === rings.length - 1)) {
+                const cap = unit(cross(sub(ring[1], ring[0]), sub(ring[2], ring[0])));
+                normal = unit(add(normal, mul(cap, r === 0 ? -1 : 1)));
+              }
+              return normal;
+            }),
+          );
+    this.surface(
+      [...rings[0]].reverse(),
+      color,
+      smoothing === 'round' ? normals![0].slice().reverse() : undefined,
+    );
     for (let r = 1; r < rings.length; r++)
       for (let i = 0; i < n; i++) {
         const j = (i + 1) % n;
-        this.face([rings[r - 1][i], rings[r - 1][j], rings[r][j], rings[r][i]], color);
+        this.surface(
+          [rings[r - 1][i], rings[r - 1][j], rings[r][j], rings[r][i]],
+          color,
+          normals && [normals[r - 1][i], normals[r - 1][j], normals[r][j], normals[r][i]],
+        );
       }
-    this.face(rings.at(-1)!, color);
+    this.surface(rings.at(-1)!, color, smoothing === 'round' ? normals!.at(-1) : undefined);
   }
-  oval(center: Point, forward: number, right: number, height: number, color: number) {
+  oval(
+    center: Point,
+    forward: number,
+    right: number,
+    height: number,
+    color: number,
+    smooth = true,
+  ) {
     this.rings(
       [-1, -0.6, 0.45, 1].map((z) => {
         const r = Math.abs(z) === 1 ? 0.55 : 1;
@@ -271,6 +319,7 @@ class Figure {
         });
       }),
       color,
+      smooth ? 'round' : 'flat',
     );
   }
   tube(a: Point, b: Point, radius: number, color: number, tip = radius) {
@@ -286,6 +335,7 @@ class Figure {
         }),
       ),
       color,
+      'sides',
     );
   }
   block(center: Point, size: Point, color: number) {
@@ -414,7 +464,7 @@ export class PersonSprite extends ModelMesh {
         f.tube([0, side * 0.115, hip], knee, 0.068, 0x35413e, 0.058);
         f.tube(knee, ankle, 0.054, 0x303a38, 0.046);
         f.oval(knee, 0.067, 0.06, 0.06, 0x43534b);
-        f.oval(add(knee, [0.038, 0, 0]), 0.038, 0.055, 0.051, 0x506057);
+        f.oval(add(knee, [0.038, 0, 0]), 0.038, 0.055, 0.051, 0x506057, false);
         f.block(add(foot, [0.025, 0, 0.047]), [0.22, 0.115, 0.094], 0x242d2b);
       }
       this.torso(f, profile, coat, bob, knees);
@@ -462,7 +512,7 @@ export class PersonSprite extends ModelMesh {
         f.oval(hand, 0.049, 0.039, 0.045, profile.skin);
         if (outfit.appearance === 'guard') {
           f.transform = shoulderPadTransform(shoulder, elbow);
-          f.oval([0, side * 0.01, 0.036], 0.078, 0.078, 0.043, profile.pads!);
+          f.oval([0, side * 0.01, 0.036], 0.078, 0.078, 0.043, profile.pads!, false);
           f.transform = null;
         }
       }
@@ -503,7 +553,7 @@ export class PersonSprite extends ModelMesh {
         return [Math.cos(angle) * 0.07, Math.sin(angle) * (p.neck + 0.012), 1.14 + bob];
       }),
     );
-    f.rings(rings, coat);
+    f.rings(rings, coat, 'sides');
     f.face(
       [
         [0.117, -0.06, 0.82 + bob],
@@ -551,6 +601,7 @@ export class PersonSprite extends ModelMesh {
         ring(1.04, 0.2, 0.4, 0.33),
       ],
       p.skin,
+      'round',
     );
     for (const side of [-1, 1])
       f.oval(add(c, [-0.018, side * width, -0.025]), 0.025, 0.019, 0.036, p.skin);
@@ -572,6 +623,7 @@ export class PersonSprite extends ModelMesh {
           ring(1.09, 0.24, 0.4, 0.34),
         ],
         p.hair,
+        'round',
       );
       if (p.hairStyle === 'bob') {
         f.oval(add(c, [-0.075, 0, -0.015]), 0.09, 0.116, 0.155, p.hair);
@@ -604,7 +656,7 @@ export class PersonSprite extends ModelMesh {
     }
     if (helmet || guard) {
       const color = helmet ? 0xcbad68 : p.helmet!;
-      f.oval(add(c, [0, 0, 0.145]), 0.145, 0.137, 0.074, color);
+      f.oval(add(c, [0, 0, 0.145]), 0.145, 0.137, 0.074, color, false);
       f.block(add(c, [0.075, 0, 0.106]), [0.22, 0.27, 0.025], color);
     }
   }

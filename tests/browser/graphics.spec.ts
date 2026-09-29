@@ -221,12 +221,12 @@ test('keeps high-DPI text sharp and witness markers clear and actionable through
     model.setDepthLayer(0, 3);
     app.stage.addChild(model);
     const gl = (app.renderer as WebGLRenderer).gl;
-    const read = (x: number) => {
+    const read = (x: number, y = 120) => {
       const pixel = new Uint8Array(4),
         scale = app.renderer.resolution;
       gl.readPixels(
         Math.round(x * scale),
-        app.canvas.height - 1 - Math.round(120 * scale),
+        app.canvas.height - 1 - Math.round(y * scale),
         1,
         1,
         gl.RGBA,
@@ -257,12 +257,40 @@ test('keeps high-DPI text sharp and witness markers clear and actionable through
     const wallInFront = sample();
     app.stage.removeChild(wall, foreground);
     const nextFrame = sample(); // Stale depth from the foreground model must be cleared.
+    // Exercise the production fragment shader: a flat normal stays constant,
+    // while interpolated normals curve the light between vertices. Testing the
+    // middle distinguishes per-pixel lighting from interpolating baked colors.
+    const litFace = face(0x808080, 0);
+    const shade = (normals: [number, number, number][]) => {
+      const previous = model.geometry;
+      model.geometry = modelGeometry([{ ...litFace, normals }]);
+      previous.destroy(true);
+      app.render();
+      return [90, 120, 150].map((x) => read(x)[0]);
+    };
+    const flatLight = shade(Array.from({ length: 4 }, () => [0, 0, 1]));
+    const smoothLight = shade([
+      [0, 0, 1],
+      [0, 1, 0],
+      [0, 1, 0],
+      [0, 0, 1],
+    ]);
+    const acrossDiagonal = [read(120, 100)[0], read(120, 140)[0]];
     for (const mesh of [model, foreground]) {
       mesh.geometry.destroy(true);
       mesh.shader.destroy();
       mesh.destroy();
     }
-    return { crossing, reversed, front, wallInFront, nextFrame };
+    return {
+      crossing,
+      reversed,
+      front,
+      wallInFront,
+      nextFrame,
+      flatLight,
+      smoothLight,
+      acrossDiagonal,
+    };
   });
   const greenAndRed = [
     [0, 255, 0],
@@ -279,6 +307,11 @@ test('keeps high-DPI text sharp and witness markers clear and actionable through
     [255, 255, 0],
   ]);
   expect(occlusion.nextFrame).toEqual(greenAndRed);
+  for (const level of occlusion.flatLight) expect(Math.abs(level - 143)).toBeLessThanOrEqual(1);
+  for (const [i, expected] of [138, 108, 92].entries())
+    expect(Math.abs(occlusion.smoothLight[i] - expected)).toBeLessThanOrEqual(2);
+  for (const level of occlusion.acrossDiagonal)
+    expect(Math.abs(level - occlusion.smoothLight[1])).toBeLessThanOrEqual(1);
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);
   expect(errors).toEqual([]);
   await context.close();

@@ -5,8 +5,8 @@
 An aging municipal city absorbed by corporate ownership. The early operations
 establish a serious, grounded baseline: ordinary infrastructure, restrained
 signage, and evidence of use. Humorous props and slogans should wait until that
-baseline is established. Painterly portraits and faceted map models remain the
-shared character language.
+baseline is established. Painterly portraits and restrained low-poly map models
+remain the shared character language.
 
 The environment uses chalky concrete, dirty cream coping, faded brick, blue-grey
 glass, slate roofs, timber crates and oxblood transit paint against cool asphalt.
@@ -59,7 +59,7 @@ Production sprite atlas for an isometric tactical videogame, transparent backgro
 
 ## In-world models
 
-`src/render/person.ts` draws small faceted models in the same projection as the
+`src/render/person.ts` draws small low-poly models in the same projection as the
 architecture. Each of the four operatives has its own proportions, skin, clothing,
 hair, and facial details, including Vale's glasses and beard, Rook's shaved head,
 Morrow's dark swept hair, and Sable's silver bob. Voss and Mara match their witness
@@ -72,6 +72,16 @@ wrap the new crown, and eyes, brows, noses and glasses follow each face's width.
 Shoulders slope into the collar, with the neck extending inside the skull to
 avoid a visible cap across the nape. The same head geometry is used under
 headgear and in the fallen pose.
+
+Skin, hair and rounded clothing use smooth vertex normals with per-pixel diffuse
+lighting. Normals follow the complete posed surface before back-face culling,
+so a turn cannot change the shading of a shared edge. Smoothing stays within each
+body part: lapels, belts, boots, helmets, armor pads and weapon housings retain
+their hard edges; sleeves and barrels retain flat end caps. Light direction stays
+fixed in world space, including on rotated equipment and fallen characters.
+This uses the existing mesh and bounded pose cache, with one extra normal
+attribute per vertex and no extra triangles, textures or draw calls. Normal-map
+textures are not needed for this pass; silhouettes still come from the geometry.
 
 Models have 32 facings, articulated knees with fixed thigh and shin lengths,
 two-handed aim and recoil, carried cargo,
