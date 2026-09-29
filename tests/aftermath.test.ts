@@ -4,6 +4,7 @@ import { missions } from '../src/content/missions';
 import { createWorld } from '../src/sim/world';
 import { people, living } from '../src/sim/types';
 import { earnedMedals } from '../src/ui/medals';
+import { vanDeparture } from '../src/render/van';
 
 const exits = missions.flatMap((m) =>
   m.landmarks
@@ -34,6 +35,8 @@ it.each(exits)(
     for (let i = 0; i < 200; i++) ending.update(0.1);
     expect(ending.phase).toBe('departed');
     expect(ending.resultsReady).toBe(true);
+    const heading = vanDeparture(ending.van!, mission);
+    expect(Math.sign(ending.offset[heading.axis])).toBe(heading.direction);
     expect(Math.hypot(ending.offset.x, ending.offset.y)).toBeGreaterThan(5);
     expect(w).toEqual(original);
     expect(earnedMedals(w)).toEqual(medals);

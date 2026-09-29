@@ -17,7 +17,7 @@ function replay(file: string) {
   return p.world;
 }
 
-it.each(['depot', 'archive'])(
+it.each(['depot', 'archive', 'transfer', 'custody'])(
   'the human 100%% campaign can still earn every %s medal',
   (mission) => {
     const files = readdirSync('tests/replays').filter((n) => n.startsWith(`${mission}-medals-`));

@@ -1,6 +1,7 @@
 import { canWalk, findPath } from '../sim/navigation';
 import { distance, living, people } from '../sim/types';
 import type { Person, Solid, Vec, World } from '../sim/types';
+import { vanDeparture } from './van';
 
 function walk(w: World, p: Person, speed: number, seconds: number) {
   let remaining = speed * seconds;
@@ -131,11 +132,7 @@ export class Aftermath {
     if (this.phase === 'departing' && this.van) {
       this.departure += dt;
       const v = this.van,
-        vertical = v.h > v.w,
-        axis = vertical ? 'y' : 'x',
-        length = vertical ? v.h : v.w,
-        edge = vertical ? w.mission.height : w.mission.width,
-        direction = v[axis] + length / 2 > edge / 2 ? 1 : -1;
+        { axis, length, edge, direction } = vanDeparture(v, w.mission);
       this.offset[axis] += direction * Math.min(8, this.departure * 3) * dt;
       if (v[axis] + this.offset[axis] > edge + 4 || v[axis] + length + this.offset[axis] < -4)
         this.phase = 'departed';

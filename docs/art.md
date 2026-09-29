@@ -50,3 +50,9 @@ runtime external fonts are used.
 
 Text textures are refreshed for camera scale and pixel density. Lamp illumination
 is projected onto its wall face and inherits that wall's occlusion.
+
+Extraction vans face the map edge they will drive toward from the moment they
+are parked. The renderer and departure animation share that heading. North- and
+west-facing views expose double rear doors, red lamps and a rear bumper; their
+cab, roof and near body panels use a matching drawing order. The stationary
+custody transport keeps its original orientation.
