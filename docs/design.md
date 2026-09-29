@@ -312,7 +312,9 @@ adds brackets around the actual target and previews the selected operatives'
 range and sight lines. Red means at least one can reach the target with fire;
 amber means range or cover blocks every shot. Unarmed prisoners and cargo
 carriers cannot attack. These checks describe geometry; reloads, settling and
-coil charge are still required. The caption explains that attacks hold position.
+coil charge are still required. The caption explains that attack orders draw
+weapons and pursue as needed. Range and cover warnings describe the current shot,
+not a refusal to move; Hold / S stops pursuit.
 Feedback refreshes under a stationary mouse as weapons, selection, targets and
 camera change. A held press retains its target and a touch attack briefly shows
 the same brackets. This is presentation only, with no path searches or replay

@@ -5,6 +5,7 @@ import { mandate } from '../src/content/mandate';
 import { personnel } from '../src/content/personnel';
 import { createWorld } from '../src/sim/world';
 import { applyCommand } from '../src/sim/commands';
+import { step } from '../src/sim/step';
 import { completeInteraction, landmark } from '../src/sim/orders';
 import { attackPreview, objectRequirement } from '../src/ui/interactions';
 import type { ObjectKind, Operative, World } from '../src/sim/types';
@@ -43,6 +44,37 @@ describe('mission marker prerequisites', () => {
     a.carrying = false;
     a.disarmed = true;
     expect(attackPreview(w, [a.id], guard).kind).toBe('unarmed');
+  });
+  it.each([
+    { cover: false, targetX: 13, reason: 'Out of range', movement: 'advances toward the target' },
+    { cover: true, targetX: 7, reason: 'Line of fire blocked', movement: 'seeks a clear shot' },
+  ])('describes actual attack pursuit when $reason', ({ cover, targetX, reason, movement }) => {
+    const w = createWorld(personnel),
+      a = w.agents[0],
+      guard = w.guards[0];
+    w.mission = {
+      ...w.mission,
+      solids: cover
+        ? [{ id: 'test-cover', kind: 'wall', x: 6, y: 31, w: 0.5, h: 2, height: 2 }]
+        : [],
+    };
+    Object.assign(a, { x: 5, y: 32, previous: { x: 5, y: 32 } });
+    Object.assign(guard, { x: targetX, y: 32, path: [] });
+    w.guards = [guard];
+    const preview = attackPreview(w, [a.id], guard);
+    expect(preview.kind).toBe('blocked');
+    expect(preview.detail).toContain(reason);
+    expect(preview.detail).toContain(movement);
+    applyCommand(w, { kind: 'attack', agents: [a.id], target: guard.id });
+    step(w);
+    expect(a.weapon).toBe(true);
+    expect({ x: a.x, y: a.y }).not.toEqual({ x: 5, y: 32 });
+    // The documented Hold control cancels the pursuit without stowing weapons.
+    applyCommand(w, { kind: 'hold', agents: [a.id] });
+    const stopped = { x: a.x, y: a.y };
+    step(w);
+    expect({ x: a.x, y: a.y }).toEqual(stopped);
+    expect(a.weapon).toBe(true);
   });
   it('keeps EXIT locked after the first rescue and preserves orders on a refused click', () => {
     const w = createWorld(personnel),

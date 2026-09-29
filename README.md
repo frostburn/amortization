@@ -142,8 +142,9 @@ On touch screens, tap portraits to select, tap ground or a landmark to order, an
 Drawn weapons give the map a crosshair cursor. Hovering an enemy brackets the
 target: red means at least one selected operative is in range with clear sight;
 amber means range or cover blocks the shot. The map caption explains which.
-Attack orders draw weapons and hold position, so move closer or around cover
-first. Unarmed prisoners and cargo carriers show a blocked cursor. Reloads and
+Attack orders draw weapons and pursue the target when range or cover prevents a
+shot. Crew may also close in near the limit of their weapon range. Use **Hold / S**
+to stop pursuit. Unarmed prisoners and cargo carriers show a blocked cursor. Reloads and
 weapon preparation still apply. Touch attacks briefly show the same brackets.
 Usable mission items use a hand cursor; locked items use a help cursor.
 
