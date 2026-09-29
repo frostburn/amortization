@@ -776,6 +776,11 @@ export class Scene {
   }
   follow(selected: string[], restoreScale = false) {
     this.following = true;
+    // Consume explicit selection now. A later Fit map/pan before the next
+    // frame must not be mistaken for an unseen selection change during render.
+    const key = selected.join(',');
+    if (key !== this.selectionKey) this.followLead = null;
+    this.selectionKey = key;
     // A portrait/key selection is a new navigation intent, not part of the previous map gesture.
     if (!this.pointerActive) this.followDelay = 0;
     if (restoreScale) {
@@ -1228,8 +1233,10 @@ export class Scene {
         this.markerLocks.set(id, locked);
       }
       const label = icon.children[1] as Text;
-      label.text = `${landmark(w, id).tag}${locked ? ' · LOCKED' : ''}`;
+      const armed = isCharge(id) && w.demolition?.armed.includes(id);
+      label.text = `${landmark(w, id).tag}${armed ? (demolished(w) ? ' · DESTROYED' : ' · ARMED') : locked ? ' · LOCKED' : ''}`;
       label.style.fill = locked ? 0xa5aba8 : markerColor(id);
+      if (armed) icon.alpha = demolished(w) ? 0.55 : 1;
       icon.children[1].visible = !this.guideMarkers.has(id);
       const marker = this.markerScreen(id)!,
         scale = this.camera.scale.x;
@@ -1242,10 +1249,6 @@ export class Scene {
           .moveTo(0, 10)
           .lineTo(0, (head.y - marker.y - 5) / scale)
           .stroke({ color: COLORS.amber, width: 1, alpha: 0.4 });
-      }
-      if (isCharge(id) && w.demolition?.armed.includes(id)) {
-        label.text = `${landmark(w, id).tag}${demolished(w) ? ' · DESTROYED' : w.demolition?.armed.includes(id) ? ' · ARMED' : ''}`;
-        icon.alpha = demolished(w) ? 0.55 : 1;
       }
     }
     this.effects.clear();

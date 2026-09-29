@@ -146,6 +146,22 @@ for (const mobile of [false, true]) {
       draw();
       window.clearingTest = { world, scene, hud, draw, lastOrder: null };
     });
+    // A portrait and Fit map can be tapped before the renderer sees the new
+    // selection. The next frame must respect the later, explicit camera action.
+    const fittedAfterSelection = await page.evaluate(() => {
+      const { scene, world } = window.clearingTest;
+      scene.follow(['agent-3']);
+      scene.home();
+      scene.render(['agent-3'], 1);
+      const fitted = !scene.following;
+      scene.follow(
+        world.agents.map((a) => a.id),
+        true,
+      );
+      window.clearingTest.draw();
+      return fitted;
+    });
+    expect(fittedAfterSelection).toBe(true);
     const initial = await page.evaluate(() => {
       const { world, scene } = window.clearingTest;
       return {
