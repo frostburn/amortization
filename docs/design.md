@@ -119,6 +119,15 @@ without cargo. Secondary field notes and records open within the right panel,
 without pushing controls or changing the map rectangle. Long COMMS text can
 scroll independently; it cannot displace mission actions or orders.
 
+Briefings separate the contract from recommended solutions. A short overview
+shows the objective, extraction and critical rules; equipment/controls and
+explicitly labelled spoiler advice are separate, closed disclosures. Only the
+reading area scrolls, within a 640 px wide, at most 660 px tall dialog that also
+fits shorter viewports. The heading, medals and launch controls stay visible.
+Opening COMMS uses the objective instead of repeating strategy advice. Live
+reports are unchanged. Overview copy lives in `src/ui/briefing.ts`, outside the
+recorded mission definition, so editing it does not invalidate human replays.
+
 The generated concept established composition and palette. Intentional differences: code-drawn architecture keeps displayed geometry exact; initial scenery is simpler; functional field dressing, evidence drop, and camera controls supplement the concept. Decorative stealth and mobility statistics were omitted because they have no gameplay counterpart. At widths up to 900 px, panels stack below the map, with orders first. There is
 no nested panel scrolling in that layout. Objective locators bring the map into
 view at the same breakpoint.

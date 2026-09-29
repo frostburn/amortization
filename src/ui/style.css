@@ -1065,30 +1065,168 @@ dialog h2 {
   line-height: 1.85;
   color: #a8bbaa;
 }
+dialog.briefing-dialog {
+  width: calc(100% - 32px);
+  max-width: 640px;
+  max-height: min(660px, calc(100dvh - 32px));
+  padding: 0;
+  overflow: hidden;
+}
+dialog.briefing-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.briefing-header,
+.briefing-footer {
+  flex: none;
+  padding: 18px 24px;
+}
+.briefing-header {
+  border-bottom: 1px solid var(--line);
+}
+.briefing-header .dialog-number {
+  margin-bottom: 10px;
+  line-height: 1.5;
+  letter-spacing: 1.2px;
+}
+.briefing-header .briefing-heading {
+  margin: 0;
+}
+.briefing-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-color: #526b60 #13201a;
+  padding: 18px 24px 6px;
+}
+.briefing-scroll:focus-visible {
+  outline: 1px solid var(--mint);
+  outline-offset: -3px;
+}
+.briefing-scroll .dialog-lead {
+  font-size: 18px;
+  line-height: 1.35;
+  letter-spacing: -0.2px;
+  margin: 0 0 14px;
+}
+.briefing-orders {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+.briefing-orders > div {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 12px;
+}
+.briefing-orders dt {
+  color: var(--mint);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  padding-top: 4px;
+}
+.briefing-orders dd {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.briefing-orders .briefing-optional {
+  color: #a6b7ac;
+}
+.briefing-optional dt {
+  color: #a6b7ac;
+}
+.briefing-rules {
+  margin: 12px 0;
+  border-left: 2px solid #688878;
+  padding-left: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #b8c9bc;
+}
+.briefing-disclosure {
+  border-top: 1px solid var(--line);
+}
+.briefing-disclosure > summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding: 13px 0;
+  font-size: 13px;
+  color: #c9d8cc;
+}
+.briefing-disclosure > summary::marker {
+  color: var(--mint);
+}
+.briefing-disclosure > summary:focus-visible {
+  outline: 2px solid var(--mint);
+  outline-offset: -2px;
+}
+.briefing-advice > summary span {
+  color: var(--amber);
+}
 .briefing-routes {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 23px;
-  margin: 22px 0;
-  padding-top: 20px;
-  border-top: 1px solid #41513e;
+  gap: 12px;
+  padding: 6px 0 12px;
 }
-.briefing-routes b {
-  font-size: 11px;
+.briefing-routes h3,
+.briefing-reference h3 {
+  font-size: 13px;
   font-weight: 500;
-  color: #c6d2bc;
+  color: var(--mint);
+  margin: 0 0 8px;
 }
-.briefing-routes p {
+.briefing-routes p,
+.briefing-reference p {
+  font-size: 13px;
+  line-height: 1.65;
+  color: #b4c4b9;
+  margin: 6px 0 12px;
+}
+.briefing-loadout,
+.briefing-keys {
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0 0 16px;
+}
+.briefing-loadout > div,
+.briefing-keys > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+  gap: 12px;
+  padding: 4px 0;
+}
+.briefing-loadout dd,
+.briefing-keys dd {
+  margin: 0;
+  color: #b4c4b9;
+}
+.briefing-footer {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+.briefing-footer .dialog-actions {
+  margin-top: 10px;
+  gap: 12px;
+}
+.briefing-footer .dialog-secondary {
+  padding: 6px 10px;
+  border-color: transparent;
+  color: #b4c4b9;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.briefing-tools .playtest-actions {
+  margin: 10px 0 0;
+  gap: 8px;
+}
+.briefing-tools .playtest-actions button {
+  flex: 1;
+  padding: 8px 6px;
   font-size: 11px;
-  line-height: 1.7;
-  color: #91a993;
-  margin-top: 8px;
-}
-.briefing-controls {
-  font-size: 10px;
-  line-height: 1.9;
-  color: #9ebaa7;
-  margin: 15px 0 22px;
 }
 .primary {
   background: #8be8c4;
@@ -1342,18 +1480,8 @@ dialog h2 {
     font-size: 29px;
     margin: 18px 0;
   }
-  .briefing-routes {
-    gap: 18px;
-    margin: 16px 0;
-  }
-  .briefing-routes p {
-    font-size: 10px;
-  }
   .dialog-body {
     font-size: 11px;
-  }
-  .briefing-controls {
-    font-size: 9px;
   }
   .dialog-foot {
     font-size: 8px;
