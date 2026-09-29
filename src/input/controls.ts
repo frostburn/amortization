@@ -240,7 +240,6 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
   };
   document.addEventListener('keydown', (e) => {
     if (
-      hud.modal.open ||
       e.ctrlKey ||
       e.metaKey ||
       e.altKey ||
@@ -248,6 +247,14 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
       (e.target as HTMLElement).closest('[data-playtest]')
     )
       return;
+    // Restart is available from mission briefings/results as well as the map.
+    // Inputs and the separate replay/export dialogs retain their own shortcuts.
+    if (e.key.toLowerCase() === 'r' && e.shiftKey && !e.repeat) {
+      e.preventDefault();
+      target.action('restart');
+      return;
+    }
+    if (hud.modal.open) return;
     if (target.aim?.active && (e.key === 'Escape' || e.key === 'Enter')) {
       e.preventDefault();
       if (e.key === 'Escape') target.aim.cancel();
@@ -280,9 +287,6 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
       if (a.hp > 0)
         target.select(e.shiftKey ? [...new Set([...target.selection(), a.id])] : [a.id]);
       e.preventDefault();
-    } else if (e.key.toLowerCase() === 'r' && e.shiftKey) {
-      e.preventDefault();
-      target.action('restart');
     } else if (mapping[e.key.toLowerCase()] || mapping[e.key]) {
       e.preventDefault();
       target.action(mapping[e.key.toLowerCase()] || mapping[e.key]);
