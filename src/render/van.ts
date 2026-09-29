@@ -1,38 +1,64 @@
 import type { Graphics } from 'pixi.js';
-import type { Solid } from '../sim/types';
+import type { Mission, Rect, Solid } from '../sim/types';
 import { project } from './isometric';
 
 type Point = [number, number, number];
 
+/** Parking and departure share the same nose-first direction along the street. */
+export function vanDeparture(s: Rect, site: Pick<Mission, 'width' | 'height'>) {
+  const axis = s.w > s.h ? 'x' : 'y',
+    length = axis === 'x' ? s.w : s.h,
+    edge = axis === 'x' ? site.width : site.height;
+  return { axis, length, edge, direction: s[axis] + length / 2 > edge / 2 ? 1 : -1 } as const;
+}
+
 /** Cargo van with a cab, raked glass and wheel openings, inside the mission footprint. */
-export function drawVan(g: Graphics, s: Solid) {
+export function drawVan(g: Graphics, s: Solid, direction: 1 | -1 = 1) {
   const custody = s.kind === 'transport';
+  type Layer = 'shadow' | 'wheels' | 'side' | 'rear' | 'roof' | 'cab' | 'front' | 'details';
+  const layers: Record<Layer, (() => void)[]> = {
+    shadow: [],
+    wheels: [],
+    side: [],
+    rear: [],
+    roof: [],
+    cab: [],
+    front: [],
+    details: [],
+  };
+  let layer: Layer = 'shadow';
   // Model x is the axle width and y is the wheelbase, regardless of parking direction.
   const length = Math.max(s.w, s.h);
-  const point = ([x, y, z]: Point) =>
-    project(
+  const point = ([x, y, z]: Point) => {
+    if (direction < 0) y = 1 - y;
+    return project(
       s.w > s.h ? { x: s.x + y * s.w, y: s.y + x * s.h } : { x: s.x + x * s.w, y: s.y + y * s.h },
       z * s.height,
     );
+  };
   const shape = (vertices: Point[], color: number, alpha = 1) =>
-    g
-      .poly(
-        vertices.flatMap((p) => {
-          const q = point(p);
-          return [q.x, q.y];
-        }),
-      )
-      .fill({ color, alpha });
+    layers[layer].push(() =>
+      g
+        .poly(
+          vertices.flatMap((p) => {
+            const q = point(p);
+            return [q.x, q.y];
+          }),
+        )
+        .fill({ color, alpha }),
+    );
   const line = (vertices: Point[], color: number, width = 1) =>
-    g
-      .poly(
-        vertices.flatMap((p) => {
-          const q = point(p);
-          return [q.x, q.y];
-        }),
-        false,
-      )
-      .stroke({ color, width });
+    layers[layer].push(() =>
+      g
+        .poly(
+          vertices.flatMap((p) => {
+            const q = point(p);
+            return [q.x, q.y];
+          }),
+          false,
+        )
+        .stroke({ color, width }),
+    );
   const front = (x: number, w: number, low: number, high: number, color: number, y = 0.973) =>
     shape(
       [
@@ -65,6 +91,7 @@ export function drawVan(g: Graphics, s: Solid) {
     0.4,
   );
   // Tyres touch z=0. The near body's open arches reveal them instead of painting circles on a box.
+  layer = 'wheels';
   const radius = s.height * 0.18;
   const wheel = (x: number, y: number, r: number, color: number) =>
     shape(
@@ -99,9 +126,11 @@ export function drawVan(g: Graphics, s: Solid) {
     edge.push(...arch);
     arches.push(arch);
   }
+  layer = 'side';
   shape(edge, custody ? 0x666d70 : 0x34665e);
   for (const arch of arches) line(arch, 0x1d3934, 1.6);
   // Rear, roof and its folded edge.
+  layer = 'rear';
   shape(
     [
       [0.06, 0.04, 0.22],
@@ -111,6 +140,23 @@ export function drawVan(g: Graphics, s: Solid) {
     ],
     custody ? 0x444e54 : 0x284c45,
   );
+  if (direction < 0) {
+    // The departing rear needs its own doors and lamps, not a mirrored grille.
+    front(0.06, 0.88, 0.2, 0.3, 0x243731, 0.028);
+    front(0.12, 0.09, 0.4, 0.6, 0xbc6657, 0.035);
+    front(0.79, 0.09, 0.4, 0.6, 0xbc6657, 0.035);
+    front(0.41, 0.18, 0.3, 0.36, 0xb0b9a0, 0.034);
+    line(
+      [
+        [0.5, 0.035, 0.38],
+        [0.5, 0.035, 0.86],
+      ],
+      0x172f29,
+    );
+    front(0.39, 0.07, 0.5, 0.53, 0x8ca895, 0.033);
+    front(0.54, 0.07, 0.5, 0.53, 0x8ca895, 0.033);
+  }
+  layer = 'roof';
   shape(
     [
       [0.06, 0.1, 1],
@@ -140,6 +186,7 @@ export function drawVan(g: Graphics, s: Solid) {
     );
 
   // The windscreen slopes down toward a short bonnet and a vertical nose.
+  layer = 'cab';
   shape(
     [
       [0.06, 0.66, 1],
@@ -190,6 +237,7 @@ export function drawVan(g: Graphics, s: Solid) {
     ],
     custody ? 0x929996 : 0x578b77,
   );
+  layer = 'front';
   front(0.06, 0.88, 0.22, 0.58, custody ? 0x6e7a7e : 0x42796a);
   front(0.02, 0.96, 0.2, 0.3, 0x243731, 0.985);
   front(0.37, 0.26, 0.35, 0.5, 0x1b302c);
@@ -199,6 +247,7 @@ export function drawVan(g: Graphics, s: Solid) {
   front(0.42, 0.16, 0.215, 0.275, 0xb0b9a0, 0.987);
 
   // Cab glass, door seams, handles, a cargo rail and a wing mirror give scale to the flank.
+  layer = 'details';
   shape(
     [
       [0.945, 0.55, 0.91],
@@ -267,4 +316,11 @@ export function drawVan(g: Graphics, s: Solid) {
     ],
     0x223d37,
   );
+  // North/west-facing vans expose the rear and the opposite flank. Draw the
+  // distant cab before the roof and near panels; keep the far nose occluded.
+  const order: Layer[] =
+    direction > 0
+      ? ['shadow', 'wheels', 'side', 'rear', 'roof', 'cab', 'front', 'details']
+      : ['shadow', 'wheels', 'cab', 'roof', 'side', 'rear', 'details'];
+  for (const name of order) for (const draw of layers[name]) draw();
 }

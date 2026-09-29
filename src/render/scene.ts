@@ -20,7 +20,7 @@ import { depthOrder } from './depth';
 import { PersonSprite } from './person';
 import type { Appearance } from './person';
 import { project, TILE_X, TILE_Y } from './isometric';
-import { drawVan } from './van';
+import { drawVan, vanDeparture } from './van';
 import { courierGuard } from '../sim/courier';
 import { guideLocation } from '../ui/objectives';
 import type { GuideTarget } from '../ui/objectives';
@@ -556,7 +556,7 @@ export class Scene {
       g = new Graphics();
     root.addChild(g);
     if (s.kind === 'van' || s.kind === 'transport') {
-      drawVan(g, s);
+      drawVan(g, s, s.kind === 'van' ? vanDeparture(s, this.world.mission).direction : 1);
     } else if (s.kind === 'mast') {
       box(g, s.x, s.y, s.w, s.h, 0.3, 0x77867b, 0x52645d, 0x3a4d47);
       const center = { x: s.x + s.w / 2, y: s.y + s.h / 2 };
