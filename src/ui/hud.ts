@@ -24,6 +24,9 @@ import {
 } from '../sim/orders';
 import { missions, nextMission } from '../content/missions';
 import { missionRecord } from './storage';
+import { earnedMedals, medalsFor } from './medals';
+import type { MedalId } from './medals';
+import { bindMedalTips, medalList } from './medal-display';
 import type { Records, MissionRecord } from './storage';
 import { missionGoals, transferFeedback } from './objectives';
 import type { Goal, GoalId, GuideTarget } from './objectives';
@@ -107,6 +110,7 @@ export class Hud {
   private app: HTMLElement;
   private lastMessage = '';
   private endShown = false;
+  private closeMedalTip: () => void;
   private mission: Mission = missions[0];
   private fields = new Map<string, HTMLElement>();
   private goals: Goal[] = [];
@@ -155,6 +159,7 @@ export class Hud {
       <dialog id="mission-dialog" aria-labelledby="dialog-title"></dialog>`;
     this.stage = this.app.querySelector('#stage')!;
     this.modal = this.app.querySelector('#mission-dialog')!;
+    this.closeMedalTip = bindMedalTips(this.modal);
     this.app
       .querySelector<HTMLInputElement>('#sound-volume')!
       .addEventListener('input', (event) => {
@@ -295,14 +300,20 @@ export class Hud {
     return `<div class="dialog-number">${m.number} / ${m.location}</div><h2 id="dialog-title">${m.title}</h2><p class="dialog-lead">${m.briefing.lead}</p><p class="dialog-body">${m.briefing.body}</p>${equipment}<div class="briefing-routes">${m.briefing.routes.map((route) => `<div><b>${route.title}</b><p>${route.body}</p></div>`).join('')}</div><p class="dialog-body">Guards can return an opening volley. Gunfire can be reported through walls. Use cover and field dressings; disable RADIO to stop support.</p><p class="briefing-controls"><kbd>1–4</kbd> select one · <kbd>Q</kbd> select all<br><kbd>RMB</kbd> move / interact / attack · <kbd>Space</kbd> pause<br><kbd>F</kbd> draw / stow · <kbd>S</kbd> hold / pause work<br>Drag to select · Wheel to zoom · Arrows / middle-drag to pan</p><button class="primary" data-action="begin">Begin operation <span>→</span></button><button class="dialog-secondary" data-action="operations">Choose operation</button><p class="dialog-foot">Orders remain active while paused. Selection changes preserve orders.</p>`;
   }
   showBriefing() {
+    this.closeMedalTip();
+    this.modal.classList.remove('operations-dialog');
     this.modal.innerHTML = this.briefing();
     if (!this.modal.open) this.modal.showModal();
   }
   showOperations(records: Records) {
-    this.modal.innerHTML = `<div class="dialog-number">CONTRACT DESK</div><h2 id="dialog-title">Operations</h2><p class="dialog-body">Choose a contract. Starting an operation resets the current attempt. All contracts are available for replay.</p><div class="operation-list">${missions
+    this.closeMedalTip();
+    this.modal.classList.add('operations-dialog');
+    const total = missions.reduce((sum, m) => sum + medalsFor(m).length, 0),
+      earned = missions.reduce((sum, m) => sum + missionRecord(records, m.id).medals.length, 0);
+    this.modal.innerHTML = `<div class="dialog-number">CONTRACT DESK</div><div class="operations-heading"><h2 id="dialog-title">Operations</h2><span class="medal-total">${earned} / ${total} medals</span></div><p class="dialog-body">Choose a contract. Starting an operation resets the current attempt. Earn medals across separate runs; hover, focus or tap one for its conditions.</p><div class="operation-list">${missions
       .map((m) => {
         const record = missionRecord(records, m.id);
-        return `<button data-action="mission:${m.id}" class="operation-card"><span class="section-label">${m.number} / ${m.location}</span><strong>${m.title}</strong><span>${m.description}</span><small>${record.best === null ? 'No completed extraction' : `${recordTimes(record.best, record.fullCrewBest)} · ${record.completions} completed`}</small></button>`;
+        return `<article class="operation-card" data-operation="${m.id}"><button data-action="mission:${m.id}" class="operation-launch"><span class="section-label">${m.number} / ${m.location}</span><strong>${m.title}</strong><span>${m.description}</span><small>${record.best === null ? 'No completed extraction' : `${recordTimes(record.best, record.fullCrewBest)} · ${record.completions} completed`}</small></button><div class="operation-medals"><p class="medal-summary">Medals <span>${record.medals.length} / ${medalsFor(m).length}</span></p>${medalList(m, record.medals)}</div></article>`;
       })
       .join(
         '',
@@ -310,9 +321,12 @@ export class Hud {
     if (!this.modal.open) this.modal.showModal();
   }
   close() {
+    this.closeMedalTip();
     this.modal.close();
   }
   reset(mission: Mission = this.mission) {
+    this.closeMedalTip();
+    this.modal.classList.remove('operations-dialog');
     this.inspectedGuard = null;
     this.inspectedObject = null;
     this.escortHp = null;
@@ -341,12 +355,14 @@ export class Hud {
     this.field('escort-controls').dataset.witness = mission.escort?.id || '';
     this.app.querySelector<HTMLDetailsElement>('.intel-section')!.open = false;
   }
-  showEnd(world: World, record: MissionRecord, force = false) {
+  showEnd(world: World, record: MissionRecord, force = false, fresh: MedalId[] = []) {
     if (this.endShown && !force) return;
     this.endShown = true;
+    this.closeMedalTip();
+    this.modal.classList.remove('operations-dialog');
     const won = world.status === 'won',
       alive = world.agents.filter(living).length;
-    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? (world.detention ? 'All four are home. The mandate stays with Mara.' : world.mission.objective === 'demolition' ? 'The debt backups are gone.' : world.mission.objective === 'escort' ? `${world.escort!.name} is free.` : world.mission.objective === 'broadcast' ? `${world.mission.broadcast?.completed ?? 'The audit is public'}.` : world.mission.objective === 'case' ? 'The account keys are ours.' : 'The original is in our hands.') : world.escort && !living(world.escort) ? `${world.escort.name} was killed.` : world.detention ? world.message : 'The crew is down.'}</p><p class="dialog-body">${won ? 'The van crosses the district line before anyone agrees who should pay for this.' : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results"><div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div>${world.demolition ? `<div><dt>Backups</dt><dd>${demolished(world) ? 'Destroyed' : `${world.demolition.armed.length}/2 armed`}</dd></div>` : ''}${world.broadcast ? `<div><dt>${world.mission.broadcast?.subject ? 'Mandate' : 'Audit'}</dt><dd>${published(world) ? (world.mission.broadcast?.completed ?? 'Published') : 'Incomplete'}</dd></div>` : ''}<div><dt>${world.demolition ? 'Optional register' : world.broadcast ? 'Optional LOG' : 'Evidence'}</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div>${won && world.mission.landmarks.some((o) => o.id === 'alternate') && world.extractedAt ? `<div><dt>Extraction</dt><dd>${landmark(world, world.extractedAt).tag}</dd></div>` : ''}</dl>${record.best !== null ? `<p class="fine">${recordTimes(record.best, record.fullCrewBest)}</p>` : ''}<button class="primary" data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Run it again'} <span>→</span></button><button class="dialog-secondary" data-action="operations">Operations</button>`;
+    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? (world.detention ? 'All four are home. The mandate stays with Mara.' : world.mission.objective === 'demolition' ? 'The debt backups are gone.' : world.mission.objective === 'escort' ? `${world.escort!.name} is free.` : world.mission.objective === 'broadcast' ? `${world.mission.broadcast?.completed ?? 'The audit is public'}.` : world.mission.objective === 'case' ? 'The account keys are ours.' : 'The original is in our hands.') : world.escort && !living(world.escort) ? `${world.escort.name} was killed.` : world.detention ? world.message : 'The crew is down.'}</p><p class="dialog-body">${won ? 'The van crosses the district line before anyone agrees who should pay for this.' : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results"><div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div>${world.demolition ? `<div><dt>Backups</dt><dd>${demolished(world) ? 'Destroyed' : `${world.demolition.armed.length}/2 armed`}</dd></div>` : ''}${world.broadcast ? `<div><dt>${world.mission.broadcast?.subject ? 'Mandate' : 'Audit'}</dt><dd>${published(world) ? (world.mission.broadcast?.completed ?? 'Published') : 'Incomplete'}</dd></div>` : ''}<div><dt>${world.demolition ? 'Optional register' : world.broadcast ? 'Optional LOG' : 'Evidence'}</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div>${won && world.mission.landmarks.some((o) => o.id === 'alternate') && world.extractedAt ? `<div><dt>Extraction</dt><dd>${landmark(world, world.extractedAt).tag}</dd></div>` : ''}</dl>${record.best !== null ? `<p class="fine">${recordTimes(record.best, record.fullCrewBest)}</p>` : ''}${won ? `<section class="debrief-medals" aria-label="Medals this run"><p class="medal-summary">Medals this run <span>${fresh.length ? `${fresh.length} new` : 'Already earned'}</span></p>${medalList(world.mission, earnedMedals(world), fresh, true)}</section>` : ''}<button class="primary" autofocus data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Run it again'} <span>→</span></button><button class="dialog-secondary" data-action="operations">Operations</button>`;
     if (!this.modal.open) this.modal.showModal();
   }
   update(world: World, state: HudState) {

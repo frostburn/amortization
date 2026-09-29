@@ -6,6 +6,7 @@ import type { ListeningView, Voice } from './mixer';
 import { loopSound, SOUND_IDS } from './palette';
 
 const VOLUME_KEY = 'amortization.volume.v1';
+const ENABLED_KEY = 'amortization.sound.v1';
 export class Sound {
   private context: AudioContext | null = null;
   private mixer: Mixer | null = null;
@@ -14,12 +15,14 @@ export class Sound {
   private world: World | null = null;
   private revision = 0;
   private loudness = 0.65;
+  private pending: { revision: number; promise: Promise<void> } | null = null;
   enabled = false;
   constructor() {
     try {
       const saved = localStorage.getItem(VOLUME_KEY),
         value = Number(saved);
       if (saved !== null && Number.isFinite(value)) this.loudness = Math.max(0, Math.min(1, value));
+      this.enabled = localStorage.getItem(ENABLED_KEY) === 'true';
     } catch {
       /* Storage is optional. */
     }
@@ -37,22 +40,44 @@ export class Sound {
       /* Storage is optional. */
     }
   }
+  private saveEnabled() {
+    try {
+      localStorage.setItem(ENABLED_KEY, String(this.enabled));
+    } catch {
+      /* Storage is optional. */
+    }
+  }
   async toggle() {
     this.enabled = !this.enabled;
-    const revision = ++this.revision;
+    ++this.revision;
+    this.saveEnabled();
     if (!this.enabled) {
       this.silence();
       this.mixer?.volume(0);
       return;
     }
+    await this.unlock(true);
+  }
+  /** Restore the preference on a user gesture, without autoplay on page load. */
+  unlock(confirm = false): Promise<void> {
+    if (!this.enabled || (!confirm && this.context?.state === 'running')) return Promise.resolve();
+    const revision = this.revision;
+    if (this.pending?.revision === revision) return this.pending.promise;
+    const promise = this.activate(revision, confirm);
+    this.pending = { revision, promise };
+    void promise.finally(() => {
+      if (this.pending?.promise === promise) this.pending = null;
+    });
+    return promise;
+  }
+  private async activate(revision: number, confirm: boolean) {
     try {
-      // Only called from the Sound button's gesture, never on load or replay.
       this.context ??= new AudioContext();
       this.mixer ??= new Mixer(this.context);
       await this.context.resume();
       if (revision !== this.revision || !this.enabled) return;
       this.mixer.volume(this.loudness);
-      this.mixer.play('confirm');
+      if (confirm) this.mixer.play('confirm');
       void this.warm(revision).catch(() => {
         /* Preparation is optional; keep the live mixer usable. */
       });
@@ -60,6 +85,7 @@ export class Sound {
       if (revision === this.revision) {
         this.enabled = false;
         this.silence();
+        this.saveEnabled();
       }
     }
   }

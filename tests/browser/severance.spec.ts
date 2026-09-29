@@ -230,6 +230,7 @@ test('shows planting, unsafe crew, detonation and extraction on laptop and phone
       window.demolition.hud.showEnd(window.demolition.world, {
         best: 100,
         fullCrewBest: 100,
+        medals: [],
         completions: 1,
       }),
     );

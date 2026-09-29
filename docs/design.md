@@ -90,9 +90,14 @@ no such restriction. Individual map orders remain under player control.
 
 - Cover is physical occlusion. This release has no numerical cover bonus or cover snapping.
 - Moving people are not permanent navigation obstacles. Destination slots spread the crew; future local avoidance can improve crowd flow.
-- Local records have a version and validation. Version 3 separates full-crew and
-  any-crew times, preserves completion counts, and treats v1/v2 survivor counts as
-  unknown. Browser storage failure must not prevent play.
+- Local records have a version and validation. Version 4 adds permanent mission
+  medals to the separate full-crew and any-crew times and completion counts.
+  Migration awards only medals supported by old records: completion, and full
+  crew where v3 stored a valid full-crew time. Earlier survivor counts and all
+  historical challenge conditions remain unknown. Browser storage failure must
+  not prevent play. Medal criteria read existing, persistent simulation facts;
+  playback never writes campaign records. Operations exposes each criterion on
+  hover, keyboard focus or tap, and results identify newly earned medals.
 
 ## Visual system
 

@@ -7,9 +7,23 @@ is also verified. Otherwise this checks a route's continued viability, without
 claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All twenty-three retained files are byte-for-byte copies of submissions provided in chat:
-fifteen on 2026-09-27, six on 2026-09-28 and two on 2026-09-29, including their `unversioned` /
+All twenty-four retained files are byte-for-byte copies of submissions provided in chat:
+fifteen on 2026-09-27, six on 2026-09-28 and three on 2026-09-29, including their `unversioned` /
 local-changes metadata.
+
+## Stay of execution: quiet teamwork and medals
+
+`injunction-quiet-d4da9148.replay.json` is the unchanged submission
+`amortization-injunction-won-d4da9148.replay.json`. Every original checkpoint
+matches: tick **2760 / 92 seconds**, **four survivors at full health**, **zero
+shots**, no alarm, optional LOG left behind. Vale holds LOOP while disguised
+Morrow uploads; both withdraw through the west entrance before the whole crew
+uses the public perimeter to VAN.
+
+The medal check evaluates this real completion as **Settled, Full crew, Low
+profile, Nonlethal and Off the record**. No disguise, Open channel and Due
+diligence remain unearned. A browser check also watches the original winning
+replay and confirms that playback does not award medals or campaign records.
 
 ## Stay of execution: unsupported upload diagnostic
 

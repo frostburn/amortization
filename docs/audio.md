@@ -39,10 +39,11 @@ tails can finish after pausing, and orders issued while paused still give feedba
 
 ## Mixing and controls
 
-Sound begins only when the player presses **Sound off** to enable it. The adjacent
-volume slider adjusts the master mix and remembers its value locally. Reloading
-the page starts muted even when a volume preference exists. Keyboard volume
-adjustments do not pan the map or change squad orders.
+Sound starts off for a new player. The on/off choice and the adjacent master
+volume slider are both remembered locally. When sound was enabled, reloading
+restores that choice and the first click, tap or key press resumes audio; no
+audio context is created on page load. Muting persists independently of volume.
+Keyboard volume adjustments do not pan the map or change squad orders.
 
 Per-effect faders live in `src/audio/levels.ts`, separately from the synthesis
 recipes. They apply before spatial/context gain and the group compressors, both
