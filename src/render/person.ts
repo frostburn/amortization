@@ -26,6 +26,9 @@ interface Profile {
   shoulders: number;
   waist: number;
   hips: number;
+  head: Point3;
+  jaw: number;
+  neck: number;
   hairStyle: 'crop' | 'sweep' | 'bob' | 'bun' | 'bald';
   beard?: boolean;
   glasses?: boolean;
@@ -41,6 +44,9 @@ const PROFILES: Record<Appearance, Profile> = {
     shoulders: 0.165,
     waist: 0.125,
     hips: 0.165,
+    head: [0.105, 0.094, 0.145],
+    jaw: 0.87,
+    neck: 0.057,
     hairStyle: 'sweep',
   },
   vale: {
@@ -51,6 +57,9 @@ const PROFILES: Record<Appearance, Profile> = {
     shoulders: 0.195,
     waist: 0.165,
     hips: 0.17,
+    head: [0.109, 0.101, 0.153],
+    jaw: 0.97,
+    neck: 0.067,
     hairStyle: 'crop',
     beard: true,
     glasses: true,
@@ -63,6 +72,9 @@ const PROFILES: Record<Appearance, Profile> = {
     shoulders: 0.235,
     waist: 0.19,
     hips: 0.18,
+    head: [0.113, 0.111, 0.143],
+    jaw: 1.08,
+    neck: 0.081,
     hairStyle: 'bald',
   },
   sable: {
@@ -73,6 +85,9 @@ const PROFILES: Record<Appearance, Profile> = {
     shoulders: 0.16,
     waist: 0.12,
     hips: 0.16,
+    head: [0.103, 0.092, 0.148],
+    jaw: 0.86,
+    neck: 0.055,
     hairStyle: 'bob',
   },
   guard: {
@@ -83,6 +98,9 @@ const PROFILES: Record<Appearance, Profile> = {
     shoulders: 0.195,
     waist: 0.17,
     hips: 0.175,
+    head: [0.108, 0.103, 0.15],
+    jaw: 1,
+    neck: 0.067,
     hairStyle: 'crop',
     helmet: 0x686b56,
     pads: 0xc38d50,
@@ -95,6 +113,9 @@ const PROFILES: Record<Appearance, Profile> = {
     shoulders: 0.16,
     waist: 0.13,
     hips: 0.17,
+    head: [0.105, 0.096, 0.153],
+    jaw: 0.9,
+    neck: 0.056,
     hairStyle: 'bob',
   },
   mara: {
@@ -105,6 +126,9 @@ const PROFILES: Record<Appearance, Profile> = {
     shoulders: 0.16,
     waist: 0.135,
     hips: 0.17,
+    head: [0.11, 0.1, 0.148],
+    jaw: 0.93,
+    neck: 0.06,
     hairStyle: 'bun',
     glasses: true,
   },
@@ -471,7 +495,15 @@ export class PersonSprite extends ModelMesh {
     }
   }
   private torso(f: Figure, p: Profile, coat: number, bob: number, knees: Point[]) {
-    f.rings(coatRings(0.66 + bob, knees, p), coat);
+    const rings = coatRings(0.66 + bob, knees, p);
+    // Shoulder slopes lead into the collar instead of ending in a flat shelf.
+    rings.push(
+      rings.at(-1)!.map((_, i, ring): Point => {
+        const angle = (i * Math.PI * 2) / ring.length;
+        return [Math.cos(angle) * 0.07, Math.sin(angle) * (p.neck + 0.012), 1.14 + bob];
+      }),
+    );
+    f.rings(rings, coat);
     f.face(
       [
         [0.117, -0.06, 0.82 + bob],
@@ -491,22 +523,54 @@ export class PersonSprite extends ModelMesh {
     }
     f.block([0, 0, 0.72 + bob], [0.245, p.waist * 1.9, 0.045], 0x2a3330);
     f.block([0.135, 0, 0.72 + bob], [0.02, 0.065, 0.043], 0x96a095);
-    f.tube([0, 0, 1.06 + bob], [0, 0, 1.18 + bob], 0.066, p.skin);
+    // The neck ends inside the skull so its top cap cannot show across the nape.
+    f.tube([-0.015, 0, 1.08 + bob], [-0.015, 0, 1.27 + bob], p.neck, p.skin, p.neck * 0.9);
   }
   private head(f: Figure, p: Profile, c: Point, helmet: boolean, guard: boolean) {
-    f.oval(c, 0.108, p.shoulders < 0.18 ? 0.094 : 0.104, 0.165, p.skin);
+    const [depth, width, height] = p.head;
+    const ring = (z: number, front: number, back: number, breadth: number) =>
+      Array.from({ length: 12 }, (_, i): Point => {
+        const angle = (i * Math.PI) / 6,
+          x = Math.cos(angle);
+        return add(c, [
+          x * depth * (x > 0 ? front : back),
+          Math.sin(angle) * width * breadth,
+          z * height,
+        ]);
+      });
+    // Chin, jaw, cheeks, temples and a rounded crown. Separate front/back
+    // radii give the skull an occiput rather than a straight-sided oval prism.
+    f.rings(
+      [
+        ring(-1, 0.54, 0.3, 0.58 * p.jaw),
+        ring(-0.74, 0.78, 0.62, 0.83 * p.jaw),
+        ring(-0.28, 0.97, 1, 0.98),
+        ring(0.22, 1, 1.08, 1),
+        ring(0.64, 0.88, 1, 0.94),
+        ring(0.9, 0.58, 0.8, 0.73),
+        ring(1.04, 0.2, 0.4, 0.33),
+      ],
+      p.skin,
+    );
+    for (const side of [-1, 1])
+      f.oval(add(c, [-0.018, side * width, -0.025]), 0.025, 0.019, 0.036, p.skin);
     if (p.hairStyle !== 'bald') {
-      // A continuous cap covers the crown; overlapping ellipsoids left scalp-colored holes.
+      // The hairline and cap wrap the skull continuously, including the back.
       f.rings(
-        [0, 1, 2].map((ring) =>
-          Array.from({ length: 8 }, (_, i): Point => {
-            const t = (i * Math.PI) / 4,
-              radius = ring === 2 ? 0.058 : 0.12;
-            const z =
-              ring === 0 ? 0.025 + Math.max(0, Math.cos(t)) * 0.065 : ring === 1 ? 0.145 : 0.19;
-            return add(c, [Math.cos(t) * radius - 0.008, Math.sin(t) * radius, z]);
+        [
+          Array.from({ length: 12 }, (_, i): Point => {
+            const angle = (i * Math.PI) / 6,
+              x = Math.cos(angle);
+            return add(c, [
+              x * depth * (x > 0 ? 0.94 : 1.13),
+              Math.sin(angle) * width * 1.08,
+              0.012 + Math.max(0, x) * 0.074,
+            ]);
           }),
-        ),
+          ring(0.64, 0.94, 1.06, 1.02),
+          ring(0.92, 0.64, 0.83, 0.77),
+          ring(1.09, 0.24, 0.4, 0.34),
+        ],
         p.hair,
       );
       if (p.hairStyle === 'bob') {
@@ -525,14 +589,18 @@ export class PersonSprite extends ModelMesh {
       }
     }
     if (p.beard) f.oval(add(c, [0.067, 0, -0.1]), 0.048, 0.078, 0.065, p.hair);
-    f.oval(add(c, [0.109, 0, -0.012]), 0.025, 0.024, 0.038, p.skin);
+    f.oval(add(c, [depth * 0.99, 0, -0.015]), 0.026, 0.021, 0.035, p.skin);
+    if (!p.beard)
+      f.block(add(c, [depth * 0.91, 0, -0.078]), [0.009, 0.041, 0.007], shade(p.skin, 0.72));
     for (const side of [-1, 1]) {
+      const eye: Point = [depth * 0.94, side * width * 0.46, 0.024];
       f.block(
-        add(c, [0.105, side * 0.048, 0.028]),
-        [0.014, p.glasses ? 0.067 : 0.025, p.glasses ? 0.047 : 0.016],
+        add(c, eye),
+        [0.014, p.glasses ? 0.067 : 0.025, p.glasses ? 0.047 : 0.012],
         p.glasses ? 0x514c3e : 0x353931,
       );
-      if (p.glasses) f.block(add(c, [0.114, side * 0.048, 0.031]), [0.004, 0.048, 0.027], 0x9faca0);
+      if (p.glasses) f.block(add(add(c, eye), [0.009, 0, 0.003]), [0.004, 0.048, 0.027], 0x9faca0);
+      else f.block(add(add(c, eye), [0, 0, 0.02]), [0.012, 0.033, 0.01], shade(p.hair, 0.6));
     }
     if (helmet || guard) {
       const color = helmet ? 0xcbad68 : p.helmet!;
