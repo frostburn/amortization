@@ -169,6 +169,11 @@ async function boot() {
       if (mission) startMission(mission, true);
       return;
     }
+    if (type.startsWith('settlement:')) {
+      issue({ kind: 'interact', agents: selected, target: type.slice(11) as ObjectKind });
+      updateHud();
+      return;
+    }
     if (type.startsWith('detention:')) {
       const target = type.slice(10) as ObjectKind;
       const operator = isAccess(target) ? world.detention?.operator : null;

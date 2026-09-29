@@ -3,6 +3,7 @@ import type { ObjectKind, Vec, World } from '../sim/types';
 import { landmark } from '../sim/orders';
 import { clearedCargo, courierGuard } from '../sim/courier';
 import { published } from '../sim/broadcast';
+import { settled, settlementStatus } from '../sim/settlement';
 import { extractionRequirement } from './extraction';
 import { demolished, detonationStatus } from '../sim/demolition';
 import { activeTurrets, inspectionRemaining } from '../sim/security';
@@ -86,7 +87,31 @@ export function missionGoals(w: World): Goal[] {
   const kit: GuideTarget[] = w.disguiseTaken ? [] : ['disguise'];
   const evidenceInArchive = !!m.archive && inside(w.evidencePosition, m.secure);
   let primary: Goal;
-  if (w.detention) {
+  if (w.settlement) {
+    const done = settled(w),
+      hasRegister = w.agents.some((a) => living(a) && a.carrying);
+    primary = {
+      id: 'primary',
+      complete: done,
+      label: done
+        ? '✓ Repayments released'
+        : !hasRegister
+          ? '○ Collect REGISTER'
+          : !w.settlement.reconciled
+            ? '○ Reconcile REGISTER at CHECK'
+            : `○ Release repayments · ${Math.floor((100 * w.settlement.progress) / m.settlement!.duration)}%`,
+      detail:
+        settlementStatus(w) +
+        ' Daylight extends human sight by 50%; solid cover still blocks vision. At least two operatives must survive until the transfer is complete.',
+      targets: done
+        ? ['extract']
+        : !hasRegister
+          ? ['evidence', ...(!w.shutterOpen ? ['override' as const, 'breach' as const] : [])]
+          : !w.settlement.reconciled
+            ? ['reconcile', 'evidence']
+            : ['countersign', 'settle'],
+    };
+  } else if (w.detention) {
     const remaining = m.detention!.cells.filter((c) => w.agents[c.agent].captive);
     const operator = w.agents.find((a) => a.id === w.detention!.operator);
     primary = {
@@ -309,7 +334,7 @@ export function missionGoals(w: World): Goal[] {
 
   const carrier = w.agents.find((a) => living(a) && a.carrying);
   const tag = landmark(w, 'evidence').tag;
-  const optionalEvidence = !['ledger', 'case'].includes(m.objective);
+  const optionalEvidence = !['ledger', 'case', 'settlement'].includes(m.objective);
   const evidence: Goal = {
     id: 'evidence',
     optional: optionalEvidence,

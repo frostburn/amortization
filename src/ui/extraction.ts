@@ -1,4 +1,5 @@
 import { published } from '../sim/broadcast';
+import { settled, settlementStatus } from '../sim/settlement';
 import { demolished, detonationStatus } from '../sim/demolition';
 import { landmark } from '../sim/orders';
 import { living } from '../sim/types';
@@ -11,6 +12,12 @@ export function extractionRequirement(
   world: World,
 ): { label: string; detail: string; goal: 'primary' | 'evidence' } | null {
   if (world.status === 'won') return null;
+  if (world.settlement && !settled(world))
+    return {
+      label: world.settlement.reconciled ? 'Staff SIGN and CLEAR' : 'Reconcile REGISTER',
+      detail: 'Extraction locked: ' + settlementStatus(world),
+      goal: 'primary',
+    };
   if (
     world.detention &&
     (world.agents.some((a) => a.captive || !living(a)) || !world.detention.released)
@@ -38,7 +45,7 @@ export function extractionRequirement(
     };
   }
   if (
-    ['ledger', 'case'].includes(world.mission.objective) &&
+    ['ledger', 'case', 'settlement'].includes(world.mission.objective) &&
     !world.agents.some((a) => living(a) && a.carrying)
   ) {
     const tag = landmark(world, 'evidence').tag;

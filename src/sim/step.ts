@@ -5,6 +5,7 @@ import {
   isExtraction,
   isPower,
   isRescue,
+  isSettlement,
   living,
   people,
 } from './types';
@@ -27,6 +28,7 @@ import { updateDetention } from './detention';
 import { updateBroadcast } from './broadcast';
 import { FLASH_FLIGHT, updateFlashes } from './flash';
 import { extractionPath } from './extraction-routing';
+import { settled, updateSettlement } from './settlement';
 
 export const STEP = 1 / 30;
 function walk(world: World, p: Person, speed: number, dt: number) {
@@ -136,7 +138,8 @@ export function step(world: World, dt = STEP) {
     }
     const working =
       a.order.kind === 'interact' &&
-      (a.order.target.startsWith('access-') ||
+      (isSettlement(a.order.target) ||
+        a.order.target.startsWith('access-') ||
         a.order.target.startsWith('rescue-') ||
         a.order.target === 'escape-release' ||
         a.order.target === 'equipment' ||
@@ -169,6 +172,7 @@ export function step(world: World, dt = STEP) {
   updateAwareness(world, dt);
   updateCourier(world, dt);
   updateBroadcast(world, dt);
+  updateSettlement(world, dt);
   for (const g of world.guards.filter(living)) walk(world, g, g.mode === 'combat' ? 2.25 : 1.2, dt);
   const v = world.escort;
   if (v?.recruited && living(v)) {
@@ -185,7 +189,14 @@ export function step(world: World, dt = STEP) {
     if (v.waiting || (leader && distance(v, leader) <= 1.1)) v.path = [];
     walk(world, v, world.mission.escort!.speed, dt);
   }
-  if (world.detention && world.agents.some((a) => !living(a))) {
+  if (world.settlement && !settled(world) && world.agents.filter(living).length < 2) {
+    world.status = 'lost';
+    notify(
+      world,
+      'Two operatives are needed to staff SIGN and CLEAR together. The repayments cannot be released. Restart the operation.',
+      'warning',
+    );
+  } else if (world.detention && world.agents.some((a) => !living(a))) {
     world.status = 'lost';
     notify(
       world,

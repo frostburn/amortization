@@ -10,13 +10,14 @@ import { inspectionRemaining, turretPowered, updateTurret } from './security';
 import { inspectCredentials } from './inspection';
 
 export const RESPONSE_TIMES = [6, 30] as const;
-export const sightRange = (guard: Guard) =>
-  guard.armament ? Math.max(7.5, weaponRange(guard)) : 7.5;
+export const sightRange = (guard: Guard, world?: World) =>
+  (guard.armament ? Math.max(7.5, weaponRange(guard)) : 7.5) *
+  (world?.mission.daylight && !guard.turret ? 1.5 : 1);
 
 export function sees(world: World, guard: Guard, person: Vec): boolean {
   if (disoriented(guard)) return false;
   const range = distance(guard, person);
-  if (range > sightRange(guard) || !lineClear(world, guard, person)) return false;
+  if (range > sightRange(guard, world) || !lineClear(world, guard, person)) return false;
   if (range < 1.3) return true;
   const angle = Math.atan2(person.y - guard.y, person.x - guard.x) - guard.angle;
   return Math.cos(angle) > Math.cos(Math.PI * 0.36);

@@ -8,6 +8,7 @@ import {
   isCharge,
   isExtraction,
   isPower,
+  isSettlement,
   living,
   EXTRACTION_RADIUS,
 } from './types';
@@ -24,6 +25,7 @@ import { cancelCharge, longGun } from './weapons';
 import { detentionAvailable, detentionRefusal, workDetention, rescueComplete } from './detention';
 import { canAuthorise, inspectionRemaining } from './security';
 import { extractionPath } from './extraction-routing';
+import { SETTLEMENT_SETUP, settled, settlementRefusal, workSettlement } from './settlement';
 
 export function landmark(world: World, id: ObjectKind): Landmark {
   const source = world.mission.landmarks.find((o) => o.id === id)!;
@@ -56,6 +58,10 @@ export function available(world: World, id: ObjectKind) {
       (id === 'divert' && (world.courier?.diverted || world.evidence !== 'courier')) ||
       (id === 'dispatch' && (world.courier?.phase !== 'ready' || world.evidence !== 'courier')) ||
       (id === 'override' && world.shutterBreached) ||
+      (isSettlement(id) &&
+        (!world.settlement ||
+          settled(world) ||
+          (id === 'reconcile' && world.settlement.reconciled))) ||
       (id === 'upload' && published(world)) ||
       (id === 'mask' && (published(world) || world.broadcast?.traced)) ||
       (isCharge(id) && (!world.demolition || world.demolition.armed.includes(id))) ||
@@ -71,6 +77,8 @@ export function interactionPoint(world: World, agent: Operative, id: ObjectKind)
   return landmark(world, id);
 }
 export function interactionDuration(world: World, agent: Operative, id: ObjectKind) {
+  if (id === 'reconcile') return world.mission.settlement!.reconcileTime;
+  if (isSettlement(id)) return SETTLEMENT_SETUP;
   if (isRescue(id)) return 2;
   if (id === 'equipment' || id === 'escape-release') return 1.5;
   if (isPower(id)) return 4;
@@ -97,6 +105,8 @@ export function moveAgents(world: World, ids: string[], target: Vec) {
   });
 }
 function interactionRefusal(world: World, a: Operative, id: ObjectKind): string | null {
+  const settlementReason = settlementRefusal(world, a, id);
+  if (settlementReason) return settlementReason;
   const detentionReason = detentionRefusal(world, a, id);
   if (detentionReason) return detentionReason;
   if (id === 'disguise' && longGun(a))
@@ -331,28 +341,30 @@ export function extractionStatus(world: World, id: 'extract' | 'alternate') {
     carrier = survivors.find((p) => p.carrying),
     v = world.escort;
   const waiting =
-    world.detention && (!rescueComplete(world) || world.agents.some((p) => !living(p)))
-      ? 'Free Vale and Rook and bring all four operatives home alive.'
-      : world.detention && !world.detention.released
-        ? 'Use EXIT inside detention to release both gates before leaving.'
-        : world.demolition && !demolished(world)
-          ? 'Destroy both debt backups before requesting extraction.'
-          : world.mission.broadcast && !published(world)
-            ? world.mission.broadcast.subject
-              ? `Finish uploading ${world.mission.broadcast.subject} at UPLINK before requesting extraction.`
-              : "Publish Mara's audit at UPLINK before requesting extraction."
-            : ['ledger', 'case'].includes(world.mission.objective) &&
-                (!carrier || distance(carrier, van) > EXTRACTION_RADIUS)
-              ? `Bring the ${world.mission.evidenceName.toLowerCase()} to ${van.tag}. It is required for this contract.`
-              : v && (!v.recruited || !living(v))
-                ? `Bring ${v.name} out alive before requesting extraction.`
-                : v && distance(v, van) > EXTRACTION_RADIUS
-                  ? v.waiting
-                    ? `Waiting for ${v.name}. Use the Escort controls to ask them to follow.`
-                    : `Waiting for ${v.name} at ${van.tag}. Bring their escort to the van.`
-                  : missing.length
-                    ? `Waiting for ${missing.map((p) => p.name).join(', ')}. Bring every survivor inside the extraction ring.`
-                    : null;
+    world.settlement && !settled(world)
+      ? 'Reconcile REGISTER at CHECK, then staff SIGN and CLEAR together to release repayments.'
+      : world.detention && (!rescueComplete(world) || world.agents.some((p) => !living(p)))
+        ? 'Free Vale and Rook and bring all four operatives home alive.'
+        : world.detention && !world.detention.released
+          ? 'Use EXIT inside detention to release both gates before leaving.'
+          : world.demolition && !demolished(world)
+            ? 'Destroy both debt backups before requesting extraction.'
+            : world.mission.broadcast && !published(world)
+              ? world.mission.broadcast.subject
+                ? `Finish uploading ${world.mission.broadcast.subject} at UPLINK before requesting extraction.`
+                : "Publish Mara's audit at UPLINK before requesting extraction."
+              : ['ledger', 'case', 'settlement'].includes(world.mission.objective) &&
+                  (!carrier || distance(carrier, van) > EXTRACTION_RADIUS)
+                ? `Bring the ${world.mission.evidenceName.toLowerCase()} to ${van.tag}. It is required for this contract.`
+                : v && (!v.recruited || !living(v))
+                  ? `Bring ${v.name} out alive before requesting extraction.`
+                  : v && distance(v, van) > EXTRACTION_RADIUS
+                    ? v.waiting
+                      ? `Waiting for ${v.name}. Use the Escort controls to ask them to follow.`
+                      : `Waiting for ${v.name} at ${van.tag}. Bring their escort to the van.`
+                    : missing.length
+                      ? `Waiting for ${missing.map((p) => p.name).join(', ')}. Bring every survivor inside the extraction ring.`
+                      : null;
   return {
     ready: survivors.length > 0 && !waiting,
     waiting,
@@ -375,6 +387,10 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
     (isAccess(id) || isRescue(id) || id === 'equipment' || id === 'escape-release')
   ) {
     if (available(world, id)) workDetention(world, a, id);
+    return;
+  }
+  if (isSettlement(id) && available(world, id)) {
+    workSettlement(world, a, id);
     return;
   }
   if ((id === 'mask' || id === 'upload') && available(world, id)) {

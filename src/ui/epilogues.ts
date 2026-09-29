@@ -3,6 +3,10 @@ import type { Mission } from '../sim/types';
 // These scenes depend only on the completed contract, never on optional cargo,
 // alarm status or a full-crew extraction. Keep prose out of replay fingerprints.
 export const epilogues: Record<Mission['id'], { lead: string; body: string }> = {
+  settlement: {
+    lead: 'The first repayments have cleared.',
+    body: 'Mara checks the first receipt against the register. An account that has carried charges for years now shows money coming in. She calls its owner.',
+  },
   depot: {
     lead: 'Iona Voss is free.',
     body: 'Voss writes down the address of the records annex. Somewhere inside is the original ledger behind the contracts that kept her at the depot.',

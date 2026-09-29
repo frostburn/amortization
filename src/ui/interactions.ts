@@ -1,6 +1,7 @@
 import { available, landmark } from '../sim/orders';
 import { courierGuard } from '../sim/courier';
 import { canAuthorise } from '../sim/security';
+import { settlementRefusal } from '../sim/settlement';
 import {
   controllable,
   disoriented,
@@ -10,6 +11,7 @@ import {
   isCharge,
   isExtraction,
   isRescue,
+  isSettlement,
   living,
 } from '../sim/types';
 import type { ObjectKind, Vec, World } from '../sim/types';
@@ -88,6 +90,10 @@ export function objectRequirement(w: World, id: ObjectKind, selected: string[]):
   }
   const agents = w.agents.filter((a) => selected.includes(a.id) && controllable(a));
   if (!agents.length) return 'Select a free operative to use this control.';
+  if (isSettlement(id))
+    return agents.some((a) => !settlementRefusal(w, a, id))
+      ? null
+      : settlementRefusal(w, agents[0], id);
   const free = agents.filter((a) => !a.carrying);
   if (
     id === 'relay' &&

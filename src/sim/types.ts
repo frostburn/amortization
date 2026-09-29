@@ -46,7 +46,11 @@ export type ObjectKind =
   | AccessTarget
   | RescueTarget
   | 'escape-release'
-  | 'equipment';
+  | 'equipment'
+  | SettlementTarget;
+export type SettlementTarget = 'reconcile' | 'countersign' | 'settle';
+export const isSettlement = (id: ObjectKind): id is SettlementTarget =>
+  id === 'reconcile' || id === 'countersign' || id === 'settle';
 export type AccessTarget = 'access-intake' | 'access-cells';
 export type RescueTarget = 'rescue-vale' | 'rescue-rook';
 export const isAccess = (id: ObjectKind): id is AccessTarget =>
@@ -88,11 +92,14 @@ export interface Mission {
     | 'clearing'
     | 'mandate'
     | 'personnel'
-    | 'injunction';
+    | 'injunction'
+    | 'settlement';
   number: string;
   title: string;
   location: string;
-  objective: 'escort' | 'ledger' | 'case' | 'broadcast' | 'demolition' | 'rescue';
+  objective: 'escort' | 'ledger' | 'case' | 'broadcast' | 'demolition' | 'rescue' | 'settlement';
+  daylight?: boolean;
+  settlement?: { reconcileTime: number; duration: number };
   description: string;
   briefing: { lead: string; body: string; routes: { title: string; body: string }[] };
   intro: string;
@@ -264,6 +271,12 @@ export interface World {
     circuit: AccessTarget | null;
     open: AccessTarget[];
     released: boolean;
+  };
+  settlement?: {
+    reconciled: boolean;
+    progress: number;
+    signer: string | null;
+    clerk: string | null;
   };
   alarm: boolean;
   alarmTime: number;
