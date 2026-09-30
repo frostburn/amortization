@@ -1,6 +1,8 @@
+import { dacre, dacreDefeated, finaleResolved } from '../sim/finale';
 import { liftReady, liftRemaining } from '../sim/threshold';
 import { captureReady, kestrelRemoved } from '../sim/floors';
 import {
+  position,
   distance,
   EXTRACTION_RADIUS,
   inside,
@@ -18,7 +20,7 @@ import { demolished, detonationStatus } from '../sim/demolition';
 import { activeTurrets, inspectionRemaining } from '../sim/security';
 
 export type GoalId = 'primary' | 'evidence' | 'extract';
-export type GuideTarget = ObjectKind | 'inspection';
+export type GuideTarget = ObjectKind | 'inspection' | 'dacre';
 export interface Goal {
   id: GoalId;
   label: string;
@@ -69,6 +71,10 @@ export function guideLocation(
   world: World,
   id: GuideTarget,
 ): (Vec & { tag: string; z: number }) | null {
+  if (id === 'dacre') {
+    const boss = dacre(world);
+    return boss ? { ...position(boss), tag: 'DACRE', z: 2.2 } : null;
+  }
   if (id === 'inspection')
     return world.mission.transfer
       ? { ...world.mission.transfer.inspection, tag: 'INSPECTION', z: 0 }
@@ -98,7 +104,41 @@ export function missionGoals(w: World): Goal[] {
   const kit: GuideTarget[] = w.disguiseTaken ? [] : ['disguise'];
   const evidenceInArchive = !!m.archive && inside(w.evidencePosition, m.secure);
   let primary: Goal;
-  if (w.threshold) {
+  if (w.finale) {
+    const defeated = dacreDefeated(w),
+      removed = !!v && (!living(v) || v.recruited);
+    primary = {
+      id: 'primary',
+      complete: finaleResolved(w),
+      label: !defeated
+        ? '○ Defeat Dacre · command marshal'
+        : !w.finale.open
+          ? '○ Open the Bench'
+          : !removed
+            ? '○ Cuff or eliminate Holt'
+            : v?.recruited
+              ? '✓ Holt in custody'
+              : '✓ Holt eliminated',
+      detail: !defeated
+        ? 'Dacre signals for two seconds before his nearby retinue moves to crossfire posts. Hit or flash him during the signal to interrupt it. He cannot fire while signalling. RADIO stops arriving patrols, not his local command.'
+        : !w.finale.open
+          ? 'Hold SEAL A and SEAL B with separate operatives and free hands for four seconds. Saved progress survives interruptions. CUT is an eight-second noisy alternative, including from inside; a lone survivor can still finish.'
+          : !removed
+            ? 'Holt will surrender at CUFF: three seconds with free hands. Attack his body for a deliberate lethal order. Automatic fire will not choose him. MINUTES are optional.'
+            : v?.recruited
+              ? 'Take Holt’s escort through UP. He follows through the stairwell unless told to wait. Bring him and every survivor to HELI; the helicopter stays available.'
+              : 'Take UP and bring every survivor to HELI on the roof. The helicopter waits. MINUTES remain optional.',
+      targets: !defeated
+        ? ['dacre', 'relay']
+        : !w.finale.open
+          ? ['seal-west', 'seal-east', 'breach']
+          : !removed
+            ? ['escort']
+            : v?.recruited
+              ? ['escort', 'stairs-up', 'extract']
+              : ['stairs-up', 'extract'],
+    };
+  } else if (w.threshold) {
     const ready = liftReady(w),
       remaining = liftRemaining(w);
     primary = {
@@ -443,7 +483,10 @@ export function missionGoals(w: World): Goal[] {
           : ['evidence'],
   };
   const exits = m.landmarks.filter((o) => isExtraction(o.id));
-  const eastGate = !w.gateOpen && exits.some((exit) => exit.x > m.gate.x);
+  const eastGate =
+    m.landmarks.some((o) => o.id === 'gate') &&
+    !w.gateOpen &&
+    exits.some((exit) => exit.x > m.gate.x);
   const counts = exits
     .map((exit) => {
       const crew = w.agents.filter(
@@ -465,13 +508,18 @@ export function missionGoals(w: World): Goal[] {
             ? '○ Extract at STREET or SERVICE'
             : m.threshold
               ? '○ Board LIFT with KEY and crew'
-              : '○ Extract at the van',
-    detail: m.threshold
+              : m.finale
+                ? '○ Board HELI on the roof'
+                : '○ Extract at the van',
+    detail: m.finale
       ? (requirement?.detail ??
-        `Order boarding at LIFT with KEY and every survivor in its ring. ${counts}.`)
-      : requirement
-        ? `${requirement.detail} Complete the highlighted objective to unlock the exit. Clicking a locked van leaves current orders in place.`
-        : `Use the controls beside the extraction goal to rally every survivor and leave. Or select the crew and right-click or tap the van or its diamond. The order waits for ${v ? `${v.name} and ` : optionalEvidence ? '' : `the ${tag} carrier and `}every surviving operative inside the same extraction ring.${v?.waiting ? ` ${v.name} is waiting: ask them to follow.` : ''}${exits.length > 1 ? ' STREET is short and exposed; SERVICE is longer, via the screened corridor.' : ''}${eastGate ? ' Open GATE from inside for the east exit.' : ''}${m.broadcast ? ' Bring the LOOP operator too; LOG is optional.' : ''} ${counts}.`,
+        `Use UP, then rally every survivor to HELI on the roof.${v?.recruited ? ` ${v.name} must follow his escort upstairs and reach the ring too.` : ''} The helicopter waits until you order boarding. ${counts}.`)
+      : m.threshold
+        ? (requirement?.detail ??
+          `Order boarding at LIFT with KEY and every survivor in its ring. ${counts}.`)
+        : requirement
+          ? `${requirement.detail} Complete the highlighted objective to unlock the exit. Clicking a locked van leaves current orders in place.`
+          : `Use the controls beside the extraction goal to rally every survivor and leave. Or select the crew and right-click or tap the van or its diamond. The order waits for ${v ? `${v.name} and ` : optionalEvidence ? '' : `the ${tag} carrier and `}every surviving operative inside the same extraction ring.${v?.waiting ? ` ${v.name} is waiting: ask them to follow.` : ''}${exits.length > 1 ? ' STREET is short and exposed; SERVICE is longer, via the screened corridor.' : ''}${eastGate ? ' Open GATE from inside for the east exit.' : ''}${m.broadcast ? ' Bring the LOOP operator too; LOG is optional.' : ''} ${counts}.`,
     targets: requirement
       ? (requirement.goal === 'primary' ? primary : evidence).targets
       : [...exits.map((o) => o.id), ...(eastGate ? ['gate' as const] : [])],

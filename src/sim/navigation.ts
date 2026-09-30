@@ -10,6 +10,7 @@ export function obstacles(world: World, floor = 0): Rect[] {
   return [
     ...world.mission.solids.filter((r) => floorOf(r) === floor),
     ...detentionDoors(world),
+    ...(world.mission.finale && !world.finale?.open ? [world.mission.finale.door] : []),
     ...(world.gateOpen ? [] : [world.mission.gate]),
     ...(world.mission.archive && !world.shutterOpen ? [world.mission.archive.door] : []),
   ].filter((r) => floorOf(r) === floor);
@@ -82,6 +83,8 @@ export function lineClear(world: World, a: Vec, b: Vec, margin = 0): boolean {
   if (world.mission.solids.some(blocks)) return false;
   if (world.detention && detentionDoors(world).some(blocks)) return false;
   if (!world.gateOpen && blocks(world.mission.gate)) return false;
+  if (world.mission.finale && !world.finale?.open && blocks(world.mission.finale.door))
+    return false;
   if (world.mission.archive && !world.shutterOpen && blocks(world.mission.archive.door))
     return false;
   return true;
@@ -154,6 +157,7 @@ function navigationGrid(world: World, floor = 0): NavigationGrid {
         ])
       : []),
     Number(!!mission.archive),
+    ...(mission.finale ? Object.values(mission.finale.door) : []),
     ...mission.solids.flatMap((r) => [r.x, r.y, r.w, r.h, floorOf(r)]),
     ...(mission.building ? Object.values(mission.building.upper) : []),
     mission.gate.x,
@@ -177,6 +181,7 @@ function navigationGrid(world: World, floor = 0): NavigationGrid {
   }
   const state =
     (floor << 8) |
+    (Number(!!world.finale?.open) << 6) |
     Number(world.gateOpen) |
     (Number(world.shutterOpen) << 1) |
     ((world.detention?.open.includes('access-intake') ? 1 : 0) << 2) |

@@ -1,3 +1,4 @@
+import { isSeal, updateFinale } from './finale';
 import { updateLift } from './threshold';
 import { position } from './types';
 import { combatTarget, followStairs } from './floors';
@@ -153,10 +154,13 @@ export function step(world: World, dt = STEP) {
     }
     const working =
       a.order.kind === 'interact' &&
-      ((a.order.target === 'escort' && !!world.mission.continuity && !world.escort?.recruited) ||
+      ((a.order.target === 'escort' &&
+        !!(world.mission.continuity || world.mission.finale) &&
+        !world.escort?.recruited) ||
         a.order.target === 'key-lift' ||
         a.order.target === 'file-recall' ||
         isSettlement(a.order.target) ||
+        isSeal(a.order.target) ||
         a.order.target.startsWith('access-') ||
         a.order.target.startsWith('rescue-') ||
         a.order.target === 'escape-release' ||
@@ -195,6 +199,7 @@ export function step(world: World, dt = STEP) {
   updateCourier(world, dt);
   updateBroadcast(world, dt);
   updateSettlement(world, dt);
+  updateFinale(world, dt);
   for (const g of world.guards.filter(living)) walk(world, g, g.mode === 'combat' ? 2.25 : 1.2, dt);
   const v = world.escort;
   if (v?.recruited && living(v)) {
@@ -226,7 +231,7 @@ export function step(world: World, dt = STEP) {
       `${world.agents.find((a) => !living(a))!.name} was killed. This rescue requires all four operatives alive. Restart the operation.`,
       'warning',
     );
-  } else if (v && !living(v) && !world.mission.continuity) {
+  } else if (v && !living(v) && !world.mission.continuity && !world.mission.finale) {
     world.status = 'lost';
     notify(
       world,

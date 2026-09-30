@@ -41,7 +41,10 @@ describe('extraction orders', () => {
     ({ mission, exit }) => {
       const w = createWorld(mission);
       // Isolate the return order from combat; full mission routes test live opposition.
-      w.guards = [];
+      w.guards = mission.finale ? w.guards.filter((g) => g.marshal) : [];
+      w.guards.forEach((g) => {
+        g.hp = 0;
+      });
       if (w.threshold) w.threshold.calledAt = -mission.threshold!.arrivalTime;
       if (w.recall) w.recall.filed = true;
       if (w.settlement) {
@@ -73,6 +76,8 @@ describe('extraction orders', () => {
         w.agents[3].carrying = true;
         w.evidence = 'carried';
       }
+      if (mission.finale)
+        for (const p of [...w.agents, w.escort!]) Object.assign(p, { x: 30, y: 27, floor: 1 });
       interact(
         w,
         w.agents.map((a) => a.id),

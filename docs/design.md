@@ -782,14 +782,14 @@ difficulty of every approach or medal constraint.
 
 See [Continuity](continuity.md) for the map, capture/lethal routes, alternating
 local power, floor semantics and verification. This completes the control-room
-encounter proposed in the story arc. Dacre and Holt remain future opponents.
+encounter proposed in the story arc. Dacre and Holt are confronted in The Bench (Operation 15).
 
 ## Threshold: sunset and the tower approach (Operation 14)
 
 See [Threshold](threshold.md) for the dispatch office, physical lift key, local
 reserve bell and boarding rules. This is the penultimate mission: Dacre withdraws
 to join Holt in the penthouse rather than being defeated on the interchange.
-The final encounter remains future work. The sunset palette is independent of
+The Bench completes the final encounter. The sunset palette is independent of
 daylight perception; the map has night sight ranges and red/yellow lighting.
 
 A completed lift call belongs to the mission, while its original key remains
@@ -816,3 +816,11 @@ behavior around a breached vault. Do not treat these completions as evidence
 that marksmen require flanking or that every medal route is equally demanding.
 The [future combat ideas](combat-expansion.md) retain loadout choice and further
 equipment and security suggestions for later missions.
+
+## The Bench: command marshal and rooftop extraction (Operation 15)
+
+See [The Bench](bench.md) for the campaign finale: Dacre’s interruptible retinue
+orders, paired authority seals with a CUT fallback, Holt’s arrest/lethal choice,
+and helicopter boarding on the roof. The two storeys reuse the separate collision,
+sight and projectile layers from Continuity. New marshal and seal state is optional
+and absent in earlier missions; existing recorded runs remain unchanged fixtures.

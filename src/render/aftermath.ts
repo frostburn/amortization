@@ -46,6 +46,9 @@ export class Aftermath {
   get resultsReady() {
     return this.age >= 3 && (this.phase === 'departed' || this.phase === 'failed');
   }
+  get helicopterFlight() {
+    return Math.min(1, this.departure / 4.5);
+  }
   get liftClosed() {
     return Math.min(1, this.departure / 1.4);
   }
@@ -80,6 +83,8 @@ export class Aftermath {
     }
     if (source.status === 'won' && source.mission.threshold)
       this.door = position(source.mission.threshold.door);
+    if (source.status === 'won' && source.mission.finale)
+      this.door = position(source.mission.finale.boarding);
     for (const p of people(this.world)) {
       p.previous = position(p);
       p.cooldown = 0;
@@ -136,7 +141,7 @@ export class Aftermath {
       // A completed extraction is final even for unusual/debug map geometry.
       if (this.age >= 5 || this.passengers.every((p) => this.boarded.has(p.id))) {
         for (const p of this.passengers) this.boarded.add(p.id);
-        this.phase = this.van || w.mission.threshold ? 'departing' : 'departed';
+        this.phase = this.van || w.mission.threshold || w.mission.finale ? 'departing' : 'departed';
       }
     }
     if (this.phase === 'departing' && this.van) {
@@ -146,6 +151,10 @@ export class Aftermath {
       this.offset[axis] += direction * Math.min(8, this.departure * 3) * dt;
       if (v[axis] + this.offset[axis] > edge + 4 || v[axis] + length + this.offset[axis] < -4)
         this.phase = 'departed';
+    }
+    if (this.phase === 'departing' && w.mission.finale) {
+      this.departure += dt;
+      if (this.helicopterFlight === 1) this.phase = 'departed';
     }
     if (this.phase === 'departing' && w.mission.threshold) {
       this.departure += dt;

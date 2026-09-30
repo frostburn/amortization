@@ -11,6 +11,39 @@ interface MissionCopy {
 // stays outside recorded mission definitions, so prose edits do not invalidate
 // replays. Endings must hold for any successful route and surviving crew.
 export const missionCopy: Record<Mission['id'], MissionCopy> = {
+  bench: {
+    briefing: {
+      objective: 'Defeat Dacre. Open the Bench, then cuff or eliminate Severin Holt.',
+      extract: 'Take UP to the rooftop HELI with every survivor, plus Holt if arrested.',
+      rules:
+        'Hold both seals together for four seconds, or force CUT. Dacre’s two-second command can be interrupted by a hit or flash. The helicopter waits.',
+    },
+    epilogue: {
+      lead: 'The helicopter clears the tower.',
+      body: 'Dacre’s command ends on the executive floor. Holt no longer signs for the district. Below, the exchange keeps the repayments moving and the cancelled seizure orders remain cancelled. The hearing will establish who else helped make those debts. Tonight, no one is being sent back to collect them.',
+    },
+    scene: {
+      title: 'The remaining work',
+      setting: 'safehouse',
+      beats: [
+        { speaker: 'voss', text: 'The helicopter is clear. The tower has stopped issuing orders.' },
+        {
+          speaker: 'mara',
+          text: 'The exchange has the accounts. Every repayment is still there. The first witnesses are due at nine.',
+        },
+        { speaker: 'voss', text: 'Will they have to prove it all again?' },
+        {
+          speaker: 'mara',
+          text: 'What was taken is already established. Now we find everyone who signed, and everyone who was made to pay.',
+        },
+        {
+          speaker: 'voss',
+          text: 'Put my name first. This time I want to be there when it is read.',
+        },
+        { speaker: 'mara', text: 'I will.' },
+      ],
+    },
+  },
   threshold: {
     briefing: {
       objective: 'Recover the tower service KEY, then have its carrier work LINK to call the lift.',

@@ -1,3 +1,4 @@
+import { bench } from './bench';
 import { threshold } from './threshold';
 import { continuity } from './continuity';
 import { depot } from './depot';
@@ -28,5 +29,6 @@ export const missions = [
   countermand,
   continuity,
   threshold,
+  bench,
 ];
 export const nextMission = (id: string) => missions[missions.findIndex((m) => m.id === id) + 1];

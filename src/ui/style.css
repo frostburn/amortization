@@ -1889,7 +1889,7 @@ dialog.briefing-dialog[open] {
 
 .floor-badge {
   position: absolute;
-  top: 12px;
+  top: 48px;
   left: 12px;
   z-index: 2;
   padding: 7px 10px;
@@ -1905,4 +1905,30 @@ dialog.briefing-dialog[open] {
   background-image: url('/assets/story/kestrel.webp');
   background-size: cover;
   background-position: center;
+}
+
+[data-witness='holt'] .witness-portrait {
+  background-image: url('/assets/story/holt.webp');
+  background-size: cover;
+  background-position: center;
+}
+#finale-controls p,
+#floor-controls p {
+  font-size: 11px;
+  line-height: 1.45;
+  margin: 0 0 6px;
+}
+#finale-controls button {
+  width: 100%;
+  min-height: 44px;
+  padding: 6px;
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+#attack-dacre {
+  color: var(--amber);
+  border-color: #92764f;
+}
+#principal-status {
+  margin-top: 6px !important;
 }

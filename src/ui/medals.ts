@@ -34,7 +34,7 @@ const medals: Medal[] = [
     rule: 'Bring Kestrel out alive in handcuffs and extract all four operatives.',
     symbol:
       '<circle cx="7" cy="13" r="4"/><circle cx="17" cy="13" r="4"/><path d="M11 12h2M5 9V6h4m6 3V6h4"/>',
-    available: (m) => !!m.continuity,
+    available: (m) => !!m.continuity || !!m.finale,
     qualifies: (w) => !!w.escort?.recruited && living(w.escort),
   },
   {
@@ -61,6 +61,7 @@ const medals: Medal[] = [
   },
   {
     id: 'nonlethal',
+    available: (m) => !m.finale,
     name: 'Nonlethal',
     rule: 'Extract all four without killing any guards, the courier or a mission target. Destroying unmanned turrets is allowed.',
     symbol: '<path d="M12 20C2 14 3 6 7 6c3 0 5 3 5 3s2-3 5-3c4 0 5 8-5 14Z"/>',
@@ -138,7 +139,13 @@ const medals: Medal[] = [
 ];
 
 export const medalsFor = (mission: Mission) =>
-  medals.filter((m) => !m.available || m.available(mission));
+  medals
+    .filter((m) => !m.available || m.available(mission))
+    .map((m) =>
+      m.id === 'custody' && mission.finale
+        ? { ...m, rule: 'Bring Holt out alive in handcuffs and extract all four operatives.' }
+        : m,
+    );
 
 export function earnedMedals(w: World): MedalId[] {
   if (w.status !== 'won') return [];

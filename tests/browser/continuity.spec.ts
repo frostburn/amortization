@@ -116,14 +116,14 @@ for (const touch of [false, true])
     await expect(page.locator('#stage')).toHaveAttribute('data-floor', '0');
     await press('[data-agent="0"]');
     await expect(page.locator('#stage')).toHaveAttribute('data-floor', '1');
-    await expect(page.locator('#arrest-kestrel')).toBeDisabled();
+    await expect(page.locator('#arrest-principal')).toBeDisabled();
     await page.evaluate(() => {
       const w = window.continuityWorld;
       w.security!.isolated = ['power-west', 'power-east'];
       Object.assign(w.agents[0], { x: 47, y: 23, previous: { x: 47, y: 23, floor: 1 } });
     });
     await press('[data-action="follow"]');
-    await press('#arrest-kestrel');
+    await press('#arrest-principal');
     await advance(140);
     await expect(page.locator('#objective-primary')).toHaveText('✓ Kestrel in handcuffs');
     await capture('custody');

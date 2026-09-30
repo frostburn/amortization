@@ -1,3 +1,4 @@
+import { interruptMarshal, commandMarshal, followMarshalOrder } from './finale';
 import { position, sameFloor } from './types';
 import { controllable, disoriented, distance, inside, isCharge, isPower, living } from './types';
 import type { Guard, Operative, Person, Vec, World } from './types';
@@ -110,6 +111,7 @@ export function reportGunfire(world: World, shooter: Operative) {
 }
 export function updateAwareness(world: World, dt: number) {
   for (const g of world.guards.filter(living)) {
+    interruptMarshal(world, g);
     if (g.turret) {
       updateTurret(world, g, dt);
       continue;
@@ -183,7 +185,12 @@ export function updateAwareness(world: World, dt: number) {
         escort?.id === g.target
           ? escort
           : world.agents.find((a) => a.id === g.target && controllable(a));
-      if (evadeFire(world, g) || maneuver(world, g, target)) {
+      if (
+        commandMarshal(world, g, visibleTarget, dt) ||
+        followMarshalOrder(world, g) ||
+        evadeFire(world, g) ||
+        maneuver(world, g, target)
+      ) {
         cancelCharge(g);
         g.searchTime -= dt;
       } else if (target && distance(g, target) <= weaponRange(g) && lineClear(world, g, target)) {
@@ -249,7 +256,13 @@ export function updateAwareness(world: World, dt: number) {
     }
     world.waves++;
     world.gateOpen = true;
-    notify(world, 'A response team has arrived from the east road.', 'warning');
+    notify(
+      world,
+      world.mission.finale
+        ? 'A response team has arrived through the north service passage.'
+        : 'A response team has arrived from the east road.',
+      'warning',
+    );
   }
 }
 

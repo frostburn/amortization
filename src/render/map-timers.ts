@@ -1,4 +1,5 @@
-import type { ObjectKind, Rect, Vec } from '../sim/types';
+import type { Rect, Vec } from '../sim/types';
+import type { GuideTarget } from '../ui/objectives';
 import type { MapTimer } from '../ui/map-timers';
 import './map-timers.css';
 
@@ -11,7 +12,7 @@ const overlaps = (a: Rect, b: Rect) =>
 /** Screen-space labels remain crisp and the same readable size at every zoom. */
 export class MapTimers {
   private layer = document.createElement('div');
-  private cards = new Map<ObjectKind, { root: HTMLElement; signature: string }>();
+  private cards = new Map<GuideTarget, { root: HTMLElement; signature: string }>();
   constructor(host: HTMLElement) {
     this.layer.className = 'map-timers';
     this.layer.setAttribute('aria-hidden', 'true');
@@ -21,11 +22,16 @@ export class MapTimers {
     this.layer.replaceChildren();
     this.cards.clear();
   }
-  has(id: ObjectKind) {
+  has(id: GuideTarget) {
     return this.cards.has(id);
   }
-  draw(timers: MapTimer[], project: (id: ObjectKind) => Vec | null, width: number, height: number) {
-    const shown = new Set<ObjectKind>();
+  draw(
+    timers: MapTimer[],
+    project: (id: GuideTarget) => Vec | null,
+    width: number,
+    height: number,
+  ) {
+    const shown = new Set<GuideTarget>();
     const placed: Rect[] = [];
     for (const timer of timers) {
       const anchor = project(timer.target);

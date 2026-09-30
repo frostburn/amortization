@@ -178,6 +178,10 @@ describe('mission guidance', () => {
       );
       expect(goal(w, 'extract').targets).toContain('upload');
       w.broadcast.progress = mission.broadcast!.duration;
+    } else if (w.mission.finale) {
+      expect(extractionRequirement(w)?.detail).toContain('Defeat Dacre');
+      w.guards.find((g) => g.marshal)!.hp = 0;
+      w.escort!.recruited = true;
     } else if (w.escort) {
       expect(extractionRequirement(w)?.detail).toContain(mission.continuity ? 'arrest' : 'recruit');
       w.escort.recruited = true;

@@ -83,6 +83,8 @@ export function attackPreview(
  */
 export function objectRequirement(w: World, id: ObjectKind, selected: string[]): string | null {
   if (isExtraction(id)) return extractionRequirement(w)?.detail ?? null;
+  if (id === 'escort' && w.mission.finale && !w.escort?.recruited && !captureReady(w))
+    return 'Defeat Dacre and open the Bench before cuffing Holt.';
   if (id === 'escort' && w.mission.continuity && !w.escort?.recruited && !captureReady(w))
     return 'Isolate WEST and EAST downstairs before arresting Kestrel.';
   if (id === 'escort' && w.escortLocked)
@@ -125,6 +127,8 @@ export function objectRequirement(w: World, id: ObjectKind, selected: string[]):
       [
         'equipment',
         'escape-release',
+        'seal-west',
+        'seal-east',
         'override',
         'breach',
         'divert',

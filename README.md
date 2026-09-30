@@ -2,7 +2,7 @@
 
 A real-time squad tactics game for the browser. Control four operatives together or individually. One maintenance disguise admits a single person; the rest of the crew can prepare access or provide armed backup.
 
-**Fourteen operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing any of the first thirteen. Restart and Shift+R restart the selected mission, including unfinished attempts. Briefings and results also offer **Restart mission**.
+**Fifteen operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing any of the first fourteen. Restart and Shift+R restart the selected mission, including unfinished attempts. Briefings and results also offer **Restart mission**.
 
 **Optional story scenes** introduce the people behind the company. Choose **Watch
 opening** from the first briefing or Operations; every completed mission unlocks
@@ -13,7 +13,7 @@ voice, consistent across all scenes: muted taps, plastic keys, or mechanical
 strokes. Click/tap the picture or dialogue, or choose **Reveal line**, to
 show the rest immediately; **Next** advances only after the line is visible.
 The existing sound preference and volume apply. Reduced-motion mode shows the
-whole line immediately. [Story arc and future encounter ideas](docs/story.md).
+whole line immediately. [Story arc and encounters](docs/story.md).
 
 A small loading screen appears before the game modules arrive and remains until
 the district is ready. Story artwork loads only when a scene is opened.
@@ -124,7 +124,7 @@ distinct routes. Retained human completions cover all fourteen operations, inclu
 replacement weapon-era runs for 05–06, the full-crew Countermand completion, and
 both Kestrel outcomes in Continuity and Threshold's three-survivor key recovery. The first twelve also have synthetic quiet
 and armed completion tests; Operation 13 has guarded arrest and lethal runs, and Operation 14 has quiet and armed
-full-crew runs with replay verification. See
+full-crew runs with replay verification. Operation 15 has full-crew guarded custody and lethal routes with exact replay verification; its first human run is still pending. See
 `tests/replays/README.md` for provenance, current outcomes, and retired routes.
 
 ## Controls
@@ -144,7 +144,7 @@ full-crew runs with replay verification. See
 | F                              | Draw / stow selected weapons                                        |
 | E                              | Interact with a nearby landmark                                     |
 | H                              | Use a field dressing: one per operative, up to 55 health            |
-| B                              | Aim a flash in operations 10–14; hover/click or touch drag/release  |
+| B                              | Aim a flash in operations 10–15; hover/click or touch drag/release  |
 | X                              | Put down carried evidence                                           |
 | Space                          | Pause / resume; orders work while paused                            |
 | Hold Tab                       | Slow time to 20%                                                    |
@@ -312,7 +312,7 @@ The access keys lead to auditor **Mara Quill**, held in a security transport at 
 
 For a quiet escape, take KIT, disable RADIO, file WARRANT, and collect Mara. Lead her north of the lower cargo containers, west through the service corridor, and out the west entrance to SERVICE. Send the rest of the crew up the public street. For an armed extraction, clear the transport bay before cutting the lock, leave Mara waiting behind cover while the crew secures the gate, then bring her to STREET.
 
-## Equipment in operations 05–14
+## Equipment in operations 05–15
 
 | Weapon            | Range | Damage | Shots / magazine | Shot recovery | Automatic reload |
 | ----------------- | ----: | -----: | ---------------: | ------------: | ---------------: |
@@ -717,7 +717,7 @@ recovered without repeating the call. The crew walks into the car and its doors
 close before the debrief; the arrival van stays parked.
 
 The optional ending, **Above the last street**, sets up Dacre and Holt together
-in the skyscraper penthouse. That final encounter remains to be built. Quiet and
+in the skyscraper penthouse. The Bench completes that encounter. Quiet and
 armed full-crew routes have command/replay coverage. The first human completion
 recovers KEY after its carrier falls and boards with three survivors. All five
 submitted attempts retain their original checkpoints and outcomes.
@@ -731,9 +731,20 @@ labels instead of invented countdowns. Uploads and transfers retain their saved
 progress and display **Paused** when unattended. Bars keep the same readable
 size when zooming and let map clicks/taps pass through.
 
-### Operation medals
+## The Bench · Operation 15
 
-**Operations** shows **101 medals across fourteen missions**, with earned medals in
+The campaign finale takes place on Crown Tower’s penthouse and roof. Dacre is a
+command marshal: interrupt his two-second signal before his retinue takes
+crossfire positions. Hold SEAL A and SEAL B together, or force CUT to reach Holt.
+Defeat Dacre, then cuff Holt or eliminate him. Take every survivor—and Holt if
+arrested—UP to the helicopter waiting at HELI. The helicopter boards, rises and
+flies off before the debrief. MINUTES are optional. The replayable ending closes
+the campaign while preserving its earlier victories.
+[Rules and verification](docs/bench.md).
+
+## Operation medals
+
+**Operations** shows **108 medals across fifteen missions**, with earned medals in
 amber and unearned medals faded. Hover, focus with the keyboard, or tap a medal
 to read its exact conditions. Escape dismisses the tooltip first. Medal controls
 are separate from the button that starts an operation. Results show medals from
@@ -746,7 +757,7 @@ a result, the **MISSION COMPLETE** or **MISSION FAILED** splash appears first.
 Results open automatically after departure on victory, or after three seconds
 on defeat. **View results** is available immediately for a quick debrief.
 Dismiss the dialog to return to the splash with results/restart/next controls. Winners and the witness board
-the extraction van and drive off; Operation 14 boards a lift and closes its doors.
+the extraction van and drive off; Operation 14 boards a lift and closes its doors, and Operation 15 boards a rooftop helicopter that rises and flies away.
 Guards keep patrolling. This presentation
 does not change the recorded outcome, time, medals or replay. Shift+R works in
 mission dialogs, including an unfinished mission’s briefing.
@@ -759,7 +770,7 @@ challenge requires **all four operatives to extract alive** in the same run.
 | Settled        | Complete the mission with at least one survivor                          | Every operation                       |
 | Full crew      | Extract all four                                                         | Every operation                       |
 | Low profile    | Never trigger the site alarm; local suspicion is allowed                 | Every operation                       |
-| Nonlethal      | Kill no guards, courier or mission target; unmanned turrets do not count | Every operation                       |
+| Nonlethal      | Kill no guards, courier or mission target; unmanned turrets do not count | Operations 01–14                      |
 | No disguise    | Leave the maintenance KIT unused                                         | Every operation                       |
 | Open channel   | Trigger the alarm and finish without disabling RADIO                     | Every operation                       |
 | Due diligence  | Extract the optional evidence                                            | Operations 01, 04, 05, 06, 09, 10, 13 |
@@ -768,7 +779,7 @@ challenge requires **all four operatives to extract alive** in the same run.
 | Off the record | Complete UPLINK without its trace completing                             | Operations 05, 10                     |
 | Power down     | Isolate both feeds without destroying a turret; INSPECT is allowed       | Operations 08, 13                     |
 | Travel light   | Rescue both prisoners without either recovering GEAR                     | Operation 09                          |
-| Answerable     | Escort Kestrel out alive in handcuffs                                    | Operation 13                          |
+| Answerable     | Escort Kestrel or Holt out alive in handcuffs                            | Operations 13, 15                     |
 
 Version 4 records preserve previous times and completions. Existing records
 backfill Settled and, where a full-crew time exists, Full crew. The other
@@ -831,7 +842,7 @@ graphics checks are not part of the routine gate. Keep `@smoke` for shared playe
 flows so each new mission does not add another real-time browser journey to CI.
 
 The full simulation suite still runs on every change, including every retained
-human completion, complete mission runs for all fourteen operations (including quiet rescue and armed withdrawal in 09, both routes in 10 with the flashes already spent, nonlethal and prepared armed completions in 11, quiet/armed completions in 12, arrest/lethal routes in 13, and quiet/armed lift boarding in 14),
+human completion, complete mission runs for all fifteen operations (including quiet rescue and armed withdrawal in 09, both routes in 10 with the flashes already spent, nonlethal and prepared armed completions in 11, quiet/armed completions in 12, arrest/lethal routes in 13, quiet/armed lift boarding in 14, and paired-seal custody / CUT lethal routes in 15),
 navigation clearance, local identification, disguise permissions, radio disruption,
 evidence custody, demolition safety, and extraction requirements.
 Playwright launches Vite with `VITE_BROWSER_TEST=true`, capping its renderer at
@@ -841,6 +852,6 @@ rendering are uncapped. Local and CI browser tests use the same SwiftShader back
 
 ## Current scope
 
-Fourteen missions with fixed camera orientation; Operation 13 introduces two floors. Campaign economy, vehicle driving, multiplayer, and mid-mission saves remain future work. Each operative has a distinct on-map model with 32 facings, a distance-driven walk, an armed stance, and a grounded fallen pose. Hair, skin, clothing, and build correspond to their portraits; disguises preserve their identity. Voss, Mara and Kestrel have their own models and portraits beside the wait/follow control.
+Fifteen missions with fixed camera orientation; Operation 13 introduces two floors. Campaign economy, vehicle driving, multiplayer, and mid-mission saves remain future work. Each operative has a distinct on-map model with 32 facings, a distance-driven walk, an armed stance, and a grounded fallen pose. Hair, skin, clothing, and build correspond to their portraits; disguises preserve their identity. Voss, Mara, Kestrel and Holt have their own models and portraits beside the wait/follow control.
 
 See [design notes](docs/design.md) and [art provenance](docs/art.md). Distributed under the repository's [MIT license](LICENSE).

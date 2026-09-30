@@ -1,3 +1,5 @@
+import { Helicopter } from './helicopter';
+import { drawBenchFloors } from './bench';
 import { visualTheme, skyColor } from './theme';
 import { liftReady } from '../sim/threshold';
 import { drawLiftPortal, drawThresholdGround, drawTowerFacade } from './threshold';
@@ -153,6 +155,8 @@ export class Scene {
   readonly camera = new Container();
   private floor = new Graphics();
   private upperDeck = new Graphics();
+  private helicopter: Helicopter | null = null;
+  private benchDoor: Graphics | null = null;
   private liftPortal: Graphics | null = null;
   private roof = new Graphics();
   private upperAlpha = 0;
@@ -273,6 +277,8 @@ export class Scene {
     this.timers.clear();
     this.aftermath = null;
     this.liftPortal = null;
+    this.helicopter = null;
+    this.benchDoor = null;
     this.activeFloor = 0;
     this.upperAlpha = 0;
     this.roofAlpha = 1;
@@ -524,12 +530,17 @@ export class Scene {
       box(this.upperDeck, b.x, b.y, b.w, b.h, FLOOR_HEIGHT, 0xabb5af, 0x627d80, 0x52696e);
       // The deck is sorted between the storeys, not between individual furniture items.
       this.objects.addChild(this.upperDeck, this.upperCones, this.upperFlash);
-      drawBuilding(
-        this.roof,
-        { ...b, id: 'continuity-house', height: 6.3, kind: 'building' },
-        'day',
-      );
-      for (const z of [1.7, 4.6])
+      if (!mission.finale)
+        drawBuilding(
+          this.roof,
+          { ...b, id: 'continuity-house', height: 6.3, kind: 'building' },
+          'day',
+        );
+      if (mission.finale) {
+        drawBenchFloors(g, this.upperDeck, mission);
+        this.roofAlpha = 0;
+      }
+      for (const z of mission.finale ? [] : [1.7, 4.6])
         for (let x = b.x + 1; x < b.x + b.w - 1; x += 3)
           panel(
             this.roof,
@@ -585,6 +596,12 @@ export class Scene {
       this.liftPortal = new Graphics();
       const p = mission.threshold.door;
       this.addScenery(this.liftPortal, { x: p.x - 1.8, y: p.y, w: 3.6, h: 0.25 }, 3);
+    }
+    if (mission.finale) {
+      this.benchDoor = new Graphics();
+      const d = mission.finale.door;
+      box(this.benchDoor, d.x, d.y, d.w, d.h, 1.65, 0xd0ae72, 0x76614b, 0x665241);
+      this.addScenery(this.benchDoor, d, 1.65);
     }
     this.gate = new Graphics();
     const gate = world.mission.gate;
@@ -650,7 +667,7 @@ export class Scene {
           : project({ x: mission.secure.x + mission.secure.w / 2, y: mission.secure.y + 0.5 }, 1.8),
     );
     office.anchor.set(0.5, 1);
-    office.visible = !mission.continuity;
+    office.visible = !mission.continuity && !mission.finale;
     this.marks.addChild(office);
     const road = this.label(
       mission.threshold
@@ -682,6 +699,7 @@ export class Scene {
       0x718277,
     );
     const rp = project({ x: 12, y: mission.height - 1.2 });
+    road.visible = !mission.finale;
     road.position.copyFrom(rp);
     road.skew.y = Math.atan(TILE_Y / TILE_X);
     this.marks.addChild(road);
@@ -720,6 +738,11 @@ export class Scene {
     this.objects.addChild(root);
   }
   private addSolid(s: Solid) {
+    if (s.id === 'helicopter' && this.world.mission.finale) {
+      this.helicopter = new Helicopter(this.world.mission.finale.helicopter);
+      this.addScenery(this.helicopter, s, s.height);
+      return;
+    }
     const root = new Container(),
       g = new Graphics();
     root.addChild(g);
@@ -1131,7 +1154,7 @@ export class Scene {
     for (const [id, marker] of this.guideMarkers) {
       const p = guideLocation(this.world, id);
       if (!p) continue;
-      const locked = id !== 'inspection' && this.markerLocks.get(id);
+      const locked = id !== 'inspection' && id !== 'dacre' && this.markerLocks.get(id);
       marker.classList.toggle('is-locked', !!locked);
       marker.classList.toggle('has-timer', id !== 'inspection' && this.timers.has(id));
       const label = `${p.tag}${this.world.mission.building && !this.isVisibleFloor(p) ? (p.floor ? ' · UPSTAIRS' : ' · DOWNSTAIRS') : ''}${locked ? ' · LOCKED' : ''}`;
@@ -1204,6 +1227,7 @@ export class Scene {
     if (!p) return null;
     if (
       id === 'escort' ||
+      id === 'dacre' ||
       id === 'stairs-up' ||
       id === 'stairs-down' ||
       (id === 'evidence' && ['courier', 'carried'].includes(this.world.evidence))
@@ -1238,24 +1262,24 @@ export class Scene {
         (a, b) => distance(p, this.markerScreen(a.id)!) - distance(p, this.markerScreen(b.id)!),
       )[0];
     // Use the projected vehicle silhouette, not just the tiny floating marker.
-    const van = this.world.mission.solids.find(
+    const vehicle = this.world.mission.solids.find(
       (s) =>
         this.isVisibleFloor(s) &&
-        s.kind === 'van' &&
+        (s.kind === 'van' || (s.id === 'helicopter' && !!this.world.mission.finale)) &&
         new Polygon([
           this.screen(s, s.height),
-          this.screen({ x: s.x + s.w, y: s.y }, s.height),
-          this.screen({ x: s.x + s.w, y: s.y }),
-          this.screen({ x: s.x + s.w, y: s.y + s.h }),
-          this.screen({ x: s.x, y: s.y + s.h }),
-          this.screen({ x: s.x, y: s.y + s.h }, s.height),
+          this.screen({ floor: s.floor, x: s.x + s.w, y: s.y }, s.height),
+          this.screen({ floor: s.floor, x: s.x + s.w, y: s.y }),
+          this.screen({ floor: s.floor, x: s.x + s.w, y: s.y + s.h }),
+          this.screen({ floor: s.floor, x: s.x, y: s.y + s.h }),
+          this.screen({ floor: s.floor, x: s.x, y: s.y + s.h }, s.height),
         ]).contains(x, y),
     );
     const exit =
-      van &&
+      vehicle &&
       this.world.mission.landmarks
         .filter((o) => isExtraction(o.id))
-        .sort((a, b) => distance(a, van) - distance(b, van))[0];
+        .sort((a, b) => distance(a, vehicle) - distance(b, vehicle))[0];
     const courier = this.world.evidence === 'courier' ? courierGuard(this.world) : null;
     if (prioritizeObjects && object?.id === 'evidence' && courier && living(courier)) {
       const bodyDistance = distance(p, this.screen(courier, 0.5));
@@ -1287,7 +1311,8 @@ export class Scene {
       this.canPickPerson(this.world.escort) &&
       distance(p, this.screen(this.world.escort, 0.5)) < 18
     )
-      return this.world.mission.continuity && !this.world.escort.recruited
+      return (this.world.mission.continuity || this.world.mission.finale) &&
+        !this.world.escort.recruited
         ? { kind: 'guard', id: this.world.escort.id }
         : { kind: 'object', id: 'escort' };
     for (const g of this.world.guards.filter((p) => living(p) && this.canPickPerson(p)))
@@ -1381,13 +1406,18 @@ export class Scene {
     this.floorBadge.hidden = !b;
     if (b) {
       this.host.dataset.floor = String(this.activeFloor);
-      this.floorBadge.textContent = this.activeFloor
-        ? '02 / UPPER · CONTROL ROOM'
-        : '01 / GROUND · SERVICE HALL';
+      this.floorBadge.textContent = w.mission.finale
+        ? this.activeFloor
+          ? 'ROOF / HELIPAD'
+          : 'PENTHOUSE / THE BENCH'
+        : this.activeFloor
+          ? '02 / UPPER · CONTROL ROOM'
+          : '01 / GROUND · SERVICE HALL';
       const fade = Math.min(1, seconds * 6);
       this.upperAlpha += ((this.activeFloor ? 1 : 0) - this.upperAlpha) * fade;
       this.roofAlpha +=
-        ((this.activeFloor ||
+        ((w.mission.finale ||
+        this.activeFloor ||
         (active &&
           inside(active, {
             x: b.footprint.x - 2,
@@ -1423,7 +1453,9 @@ export class Scene {
     this.transferRoutes.forEach((route, i) => {
       route.visible = w.evidence === 'courier' && i === Number(w.courier?.diverted);
     });
-    if (this.gate) this.gate.visible = !w.gateOpen;
+    if (this.gate) this.gate.visible = !w.gateOpen && w.mission.gate.w > 0;
+    if (this.benchDoor) this.benchDoor.visible = !w.finale?.open;
+    this.helicopter?.update(w.time, this.aftermath?.helicopterFlight ?? 0);
     if (this.shutter) this.shutter.visible = !w.shutterOpen;
     for (const gate of this.detentionGates)
       gate.root.visible =
@@ -1466,12 +1498,15 @@ export class Scene {
         ? CREW[a.index].id
         : guard
           ? 'guard'
-          : w.mission.continuity
-            ? 'kestrel'
-            : w.mission.escort?.id === 'voss'
-              ? 'voss'
-              : 'mara';
-      const v = this.person(p, a ? String(a.index + 1) : '');
+          : w.mission.finale
+            ? 'holt'
+            : w.mission.continuity
+              ? 'kestrel'
+              : w.mission.escort?.id === 'voss'
+                ? 'voss'
+                : 'mara';
+      const boss = guard?.tactics?.role === 'marshal';
+      const v = this.person(p, a ? String(a.index + 1) : boss ? 'DACRE' : '');
       const pos = {
         ...(p.floor ? { floor: p.floor } : {}),
         x: p.previous.x + (p.x - p.previous.x) * alpha,
@@ -1507,7 +1542,8 @@ export class Scene {
       if (!guard?.turret)
         v.sprite.pose(p, alpha, {
           appearance,
-          cuffed: p === w.escort && !!w.mission.continuity && !!w.escort?.recruited,
+          cuffed:
+            p === w.escort && !!(w.mission.continuity || w.mission.finale) && !!w.escort?.recruited,
           uniform: a?.disguised,
           weapon: a?.disarmed
             ? undefined
@@ -1523,6 +1559,7 @@ export class Scene {
           stowed: (!!a && !a.weapon) || disoriented(p) || throwing,
           shielding: living(p) && disoriented(p),
           throwing,
+          commanding: !!guard?.marshal?.target,
           specialist: guard?.tactics?.role,
           carrying: cargo,
           flash: living(p) && w.traces.some((t) => distance(t.from, p) < 0.2),
@@ -1545,13 +1582,20 @@ export class Scene {
             .ellipse(feet[i], feet[i + 1] + 0.2, 3.4, 1.65)
             .fill({ color: 0x0d1915, alpha: 0.65 });
       }
-      v.label.visible = !!a && living(p);
+      v.label.visible =
+        living(p) &&
+        (!!a || (!!boss && !this.timers.has('dacre') && !this.guideMarkers.has('dacre')));
+      if (boss) v.label.y = -64;
       v.label.style.fill = color;
       if (a && living(a) && selected.includes(a.id))
         v.ink.ellipse(0, 0, 12, 6).stroke({ color, width: 2 });
-      if (living(p) && p.hp < p.maxHp) {
-        v.ink.rect(-12, -38, 24, 3).fill(0x182522);
-        v.ink.rect(-12, -38, (24 * p.hp) / p.maxHp, 3).fill(color);
+      if (living(p) && (boss || p.hp < p.maxHp)) {
+        const width = boss ? 42 : 24,
+          y = boss ? -54 : -38;
+        v.ink.rect(-width / 2, y, width, boss ? 4 : 3).fill(0x182522);
+        v.ink
+          .rect(-width / 2, y, (width * p.hp) / p.maxHp, boss ? 4 : 3)
+          .fill(boss ? 0xe4b55f : color);
       }
       if (guard && !guard.turret && guard.mode !== 'patrol' && living(p)) {
         const suspicion = Math.max(...Object.values(guard.suspicion), 0);
@@ -1632,6 +1676,8 @@ export class Scene {
     layers.forEach((item, index) => {
       item.root.zIndex = index;
     });
+    if (this.helicopter && (this.aftermath?.helicopterFlight ?? 0) > 0)
+      this.helicopter.zIndex = layers.length + 1;
     const upperStart = layers.findIndex((item) => floorOf(item.footprint) === 1);
     this.upperDeck.zIndex = (upperStart < 0 ? layers.length : upperStart) - 0.5;
     this.upperCones.zIndex = this.upperDeck.zIndex + 0.1;

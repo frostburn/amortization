@@ -8,7 +8,7 @@ import { coatRings, shoulderPadTransform } from './clothing';
 import { project } from './isometric';
 import { modelGeometry, ModelMesh, MODEL_VIEW, type ModelFace, type Point3 } from './model-mesh';
 
-export type Appearance = CrewId | 'guard' | 'voss' | 'mara' | 'kestrel';
+export type Appearance = CrewId | 'guard' | 'voss' | 'mara' | 'kestrel' | 'holt';
 export interface Outfit {
   appearance: Appearance;
   uniform?: boolean;
@@ -20,6 +20,7 @@ export interface Outfit {
   flash?: boolean;
   shielding?: boolean;
   throwing?: boolean;
+  commanding?: boolean;
 }
 interface Profile {
   skin: number;
@@ -39,6 +40,19 @@ interface Profile {
   pads?: number;
 }
 const PROFILES: Record<Appearance, Profile> = {
+  holt: {
+    skin: 0xc5a28d,
+    hair: 0xb8b2a9,
+    coat: 0x282d35,
+    shirt: 0xe4d5b7,
+    shoulders: 0.205,
+    waist: 0.175,
+    hips: 0.175,
+    head: [0.108, 0.105, 0.149],
+    jaw: 1.02,
+    neck: 0.064,
+    hairStyle: 'sweep',
+  },
   kestrel: {
     skin: 0xc7a78f,
     hair: 0x737b78,
@@ -153,6 +167,18 @@ const PROFILES: Record<Appearance, Profile> = {
 
 // Read the role from either side of the coat, not just a tiny chest badge.
 const SPECIALISTS: Record<NonNullable<Outfit['specialist']>, Profile> = {
+  marshal: {
+    ...PROFILES.guard,
+    coat: 0x263241,
+    shirt: 0xf0c66d,
+    hair: 0x93948b,
+    helmet: undefined,
+    pads: 0xd7b45d,
+    shoulders: 0.235,
+    waist: 0.19,
+    head: [0.11, 0.104, 0.149],
+    beard: true,
+  },
   shield: {
     ...PROFILES.guard,
     coat: 0x783b56,
@@ -441,6 +467,7 @@ export class PersonSprite extends ModelMesh {
       alive &&
       !outfit.shielding &&
       !outfit.throwing &&
+      !outfit.commanding &&
       !!outfit.weapon &&
       !outfit.stowed &&
       (!!outfit.flash ||
@@ -461,6 +488,7 @@ export class PersonSprite extends ModelMesh {
       outfit.flash,
       outfit.shielding,
       outfit.throwing,
+      outfit.commanding,
     ].join(':');
     if (key === this.lastPose) return;
     this.lastPose = key;
@@ -535,6 +563,9 @@ export class PersonSprite extends ModelMesh {
         } else if (outfit.specialist === 'shield' && i === 0) {
           elbow = [0.06, -0.25, 0.86 + bob];
           hand = [0.25, -0.12, 0.98 + bob];
+        } else if (outfit.commanding && i === 0) {
+          elbow = [0.08, -0.3, 1.22 + bob];
+          hand = [0.08, -0.28, 1.57 + bob];
         } else if (outfit.throwing && i === 1) {
           elbow = [0.14, 0.23, 1.32 + bob];
           hand = [0.38, 0.12, 1.46 + bob];

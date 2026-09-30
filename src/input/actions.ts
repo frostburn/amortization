@@ -31,8 +31,11 @@ export type Action =
   | `settlement:${'reconcile' | 'countersign' | 'settle'}`
   | 'stairs:up'
   | 'stairs:down'
-  | 'arrest-kestrel'
-  | 'attack-kestrel'
+  | 'arrest-principal'
+  | 'attack-principal'
+  | 'attack-dacre'
+  | 'work:seal-west'
+  | 'work:seal-east'
   | 'work:key-lift'
   | 'work:file-recall'
   | 'work:mask'

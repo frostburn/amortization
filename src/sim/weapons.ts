@@ -90,7 +90,7 @@ export const guardWeapon = (tactic?: GuardTactic): WeaponKind =>
     ? 'support'
     : tactic?.role === 'marksman'
       ? 'coil'
-      : tactic?.role === 'sentry'
+      : tactic?.role === 'sentry' || tactic?.role === 'marshal'
         ? 'carbine'
         : tactic?.role === 'breacher'
           ? 'shotgun'

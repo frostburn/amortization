@@ -165,3 +165,12 @@ support gunners use a distinct full uniform palette. Their weapon and Rook’s
 support gun show a wide ammunition box, cooling jacket and folded bipod in every
 pose. These are original procedural meshes using the existing lighting, depth
 and clipped-outline paths.
+
+Operation 15 builds Crown Tower’s cutaway penthouse and roof with the same world
+projection and sunset palette. Distant blocks and window bands below the deck
+establish its height. A procedural helicopter has a faceted cockpit, cabin door,
+tail boom and fin, skids, and a projected turning main rotor. Boarding follows a
+real side-door point; takeoff translates and lifts the aircraft without scaling
+its proportions. Dacre’s charcoal/gold armour and raised command hand distinguish
+him from ordinary officers. Holt has a grey-haired suit model and uses his existing
+story portrait for custody controls. No new external artwork or dependency is used.

@@ -42,7 +42,7 @@ it.each(missions)(
         'complete',
         'full-crew',
         'quiet',
-        'nonlethal',
+        ...(id === 'bench' ? [] : ['nonlethal']),
         'no-kit',
         'live-alarm',
       ]),

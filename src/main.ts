@@ -1,3 +1,4 @@
+import { dacre } from './sim/finale';
 import './ui/style.css';
 import { createWorld, notify } from './sim/world';
 import { step, STEP } from './sim/step';
@@ -182,22 +183,32 @@ export async function boot() {
       if (mission) startMission(mission, true);
       return;
     }
-    if (type === 'stairs:up' || type === 'stairs:down' || type === 'arrest-kestrel') {
+    if (type === 'stairs:up' || type === 'stairs:down' || type === 'arrest-principal') {
       issue({
         kind: 'interact',
         agents: selected,
         target:
-          type === 'arrest-kestrel' ? 'escort' : type === 'stairs:up' ? 'stairs-up' : 'stairs-down',
+          type === 'arrest-principal'
+            ? 'escort'
+            : type === 'stairs:up'
+              ? 'stairs-up'
+              : 'stairs-down',
       });
       updateHud();
       return;
     }
-    if (type === 'attack-kestrel') {
-      issue({ kind: 'attack', agents: selected, target: 'kestrel' });
+    if (type === 'attack-principal') {
+      issue({ kind: 'attack', agents: selected, target: world.escort!.id });
       updateHud();
       return;
     }
-    if (type === 'work:file-recall' || type === 'work:key-lift') {
+    if (type === 'attack-dacre') {
+      const boss = dacre(world);
+      if (boss) issue({ kind: 'attack', agents: selected, target: boss.id });
+      updateHud();
+      return;
+    }
+    if (type.startsWith('work:')) {
       issue({ kind: 'interact', agents: selected, target: type.slice(5) as ObjectKind });
       updateHud();
       return;
@@ -234,15 +245,6 @@ export async function boot() {
             : type === 'security:power-west'
               ? 'power-west'
               : 'power-east',
-      });
-      updateHud();
-      return;
-    }
-    if (type === 'work:mask' || type === 'work:upload' || type === 'work:breach') {
-      issue({
-        kind: 'interact',
-        agents: selected,
-        target: type === 'work:mask' ? 'mask' : type === 'work:upload' ? 'upload' : 'breach',
       });
       updateHud();
       return;
