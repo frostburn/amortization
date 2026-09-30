@@ -3,7 +3,9 @@ import type { Scene } from '../render/scene';
 import type { Hit } from '../render/scene';
 import { living } from '../sim/types';
 import type { Rect, Vec, World } from '../sim/types';
-import type { Hud, Action } from '../ui/hud';
+import type { Hud } from '../ui/hud';
+import { ORDER_BUTTONS } from './actions';
+import type { Action } from './actions';
 import { armedSelection, attackPreview, objectRequirement } from '../ui/interactions';
 import type { FlashAim } from '../ui/flash-aim';
 
@@ -242,10 +244,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
   const mapping: Record<string, Action> = {
     '?': 'objectives',
     q: 'all',
-    g: 'regroup',
-    s: 'hold',
-    f: 'weapons',
-    e: 'interact',
+    ...Object.fromEntries(ORDER_BUTTONS.map(({ key, id }) => [key, id])),
     h: 'heal',
     x: 'drop',
     b: 'flash',

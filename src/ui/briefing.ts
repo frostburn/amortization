@@ -1,107 +1,36 @@
+import { CREW } from '../sim/crew';
+import { missionCopy } from '../content/mission-copy';
 import type { Mission, WeaponKind } from '../sim/types';
 import { COIL_CHARGE, WEAPONS } from '../sim/weapons';
 import { medalList } from './medal-display';
 import type { MedalId } from './medals';
 
-// Presentation copy stays outside the recorded mission definition. Editing a
-// briefing must not make an otherwise compatible human replay look outdated.
-const summaries: Record<Mission['id'], { objective: string; extract: string; rules: string }> = {
-  countermand: {
-    objective:
-      'Recover RECALL and have its carrier file it at FILE for nine uninterrupted seconds.',
-    extract: 'Bring the original RECALL and every survivor to VAN after filing.',
-    rules:
-      'Daylight extends human sight by 50%. Carrying the original occupies both hands and attracts suspicion, even in uniform.',
-  },
-  settlement: {
-    objective:
-      'Recover REGISTER, reconcile it at CHECK, then operate SIGN and CLEAR together to release repayments.',
-    extract: 'Bring REGISTER and every survivor to VAN after the funds clear.',
-    rules:
-      'Daylight extends human sight by 50%. Two operatives must survive until the transfer is complete. Its progress survives interruptions.',
-  },
-  depot: {
-    objective: 'Recruit engineer Iona Voss from the secure office.',
-    extract: 'Bring Voss and every surviving operative to VAN.',
-    rules: 'One maintenance disguise is available for the four-person crew.',
-  },
-  archive: {
-    objective: 'Recover the original LEDGER from the records annex.',
-    extract: 'Bring the ledger and every survivor to the east-road VAN.',
-    rules: 'The ledger occupies both hands and is conspicuous even in uniform.',
-  },
-  transfer: {
-    objective: 'Recover the security courier’s CASE of account keys.',
-    extract: 'Bring CASE and every survivor to the west-street VAN.',
-    rules: 'The courier waits for CALL. There is no transfer countdown before you request it.',
-  },
-  custody: {
-    objective: 'Free auditor Mara Quill from the locked security transport.',
-    extract: 'Bring Mara and every survivor to STREET or SERVICE.',
-    rules: 'Mara is unarmed, slow and vulnerable once she leaves the transport.',
-  },
-  broadcast: {
-    objective: 'Publish Mara’s audit at UPLINK.',
-    extract: 'Once the audit is public, bring every survivor to VAN.',
-    rules:
-      'The operator needs free hands and cannot fire while working. Upload progress survives interruptions.',
-  },
-  severance: {
-    objective: 'Plant charges at WEST and EAST, then detonate both backups.',
-    extract: 'After destroying both cores, bring every survivor to VAN.',
-    rules:
-      'Completed charges stay armed without a timer. Everyone must leave both marked blast areas before detonation.',
-  },
-  clearing: {
-    objective: 'Recover the settlement KEYS from the north vault.',
-    extract: 'Bring KEYS and every survivor to the north-east VAN.',
-    rules: 'The case occupies both hands and is conspicuous even in uniform.',
-  },
-  mandate: {
-    objective: 'Recover the restitution MANDATE from the north records room.',
-    extract: 'Bring MANDATE and every survivor to the north-east VAN.',
-    rules:
-      'Four wired turrets guard the site. RADIO does not disable them. The mandate occupies both hands.',
-  },
-  personnel: {
-    objective: 'Morrow and Sable must free Vale and Rook. The mandate stays with Mara.',
-    extract: 'Free both prisoners, release EXIT, then bring all four to VAN.',
-    rules:
-      'Any operative’s death fails the rescue. Cell releases require a separate operative maintaining remote power.',
-  },
-  injunction: {
-    objective: 'Serve the restitution mandate by uploading it at UPLINK.',
-    extract: 'Once the mandate is served, bring every survivor to VAN.',
-    rules:
-      'Upload progress survives interruptions. Ivory inspectors verify uniforms. RADIO is deep inside a secure office.',
-  },
-};
-
 function equipment(m: Mission) {
   const kinds: readonly WeaponKind[] = m.loadout ?? [];
-  const names = ['Morrow', 'Vale', 'Rook', 'Sable'];
-  const free = names.filter((_, i) => !m.detention?.cells.some((c) => c.agent === i));
+  const free = CREW.filter((_, i) => !m.detention?.cells.some((c) => c.agent === i)).map(
+    ({ name }) => name,
+  );
   return `<section aria-label="Starting equipment" data-loadout>
-    <dl class="briefing-loadout">${names
-      .map((name, i) => {
-        const captive = m.detention?.cells.some((c) => c.agent === i);
-        return `<div><dt>${name}</dt><dd>${captive ? 'Detained · unarmed' : m.loadout ? WEAPONS[m.loadout[i]].name : 'Sidearm'}${!captive && m.flashGrenades && i >= 2 ? ' · 1 flash' : ''}</dd></div>`;
-      })
-      .join('')}</dl>
+    <dl class="briefing-loadout">${CREW.map(({ name, flash }, i) => {
+      const captive = m.detention?.cells.some((c) => c.agent === i);
+      return `<div><dt>${name}</dt><dd>${captive ? 'Detained · unarmed' : m.loadout ? WEAPONS[m.loadout[i]].name : 'Sidearm'}${!captive && m.flashGrenades && flash ? ' · 1 flash' : ''}</dd></div>`;
+    }).join('')}</dl>
     <p>${m.detention ? `${free.join(' and ')} each start with one field dressing. Detained operatives recover their dressings at GEAR.` : 'Each operative starts with one field dressing.'}</p>
     <p>${m.loadout ? 'Long guns stay visible when stowed. Reloads are automatic; reserve ammunition is unlimited.' : 'Sidearms have an eight-unit range and need no reloads.'}</p>
     ${kinds.includes('carbine') ? `<p>Carbines steady for ${WEAPONS.carbine.settle}s after moving.</p>` : ''}
-    ${kinds.includes('support') ? '<p>Support guns steady for 0.65s. Fire pressure slows aiming and recovery in a narrow lane; movement and reloads remain responsive.</p>' : ''}
+    ${kinds.includes('support') ? `<p>Support guns steady for ${WEAPONS.support.settle}s. Fire pressure slows aiming and recovery in a narrow lane; movement and reloads remain responsive.</p>` : ''}
     ${kinds.includes('coil') ? `<p>Coil rifles charge for ${COIL_CHARGE}s while stationary with continuous sight.</p>` : ''}
   </section>`;
 }
 
 export function briefingObjective(m: Mission) {
-  return summaries[m.id].objective + (m.broadcast ? ` ${m.broadcast.duration}s of work.` : '');
+  return (
+    missionCopy[m.id].briefing.objective + (m.broadcast ? ` ${m.broadcast.duration}s of work.` : '')
+  );
 }
 
 export function renderBriefing(m: Mission, medals: MedalId[] = []) {
-  const summary = summaries[m.id];
+  const summary = missionCopy[m.id].briefing;
   const optional = !['ledger', 'case', 'settlement', 'recall'].includes(m.objective);
   const cargo = m.landmarks.find((o) => o.id === 'evidence')!;
   return `<header class="briefing-header">

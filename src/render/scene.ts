@@ -1,3 +1,4 @@
+import { CREW } from '../sim/crew';
 import { Application, Container, Graphics, Polygon, Text } from 'pixi.js';
 import type { Bounds } from 'pixi.js';
 import {
@@ -1266,7 +1267,7 @@ export class Scene {
       const a = w.agents.find((a) => a.id === p.id),
         guard = w.guards.find((g) => g.id === p.id);
       const appearance: Appearance = a
-        ? (['morrow', 'vale', 'rook', 'sable'] as const)[a.index]
+        ? CREW[a.index].id
         : guard
           ? 'guard'
           : w.mission.escort?.id === 'voss'

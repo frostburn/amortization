@@ -1,4 +1,5 @@
 import { expect, test, type Locator } from '@playwright/test';
+import { missions } from '../../src/content/missions';
 
 for (const touch of [false, true]) {
   test(`compact briefing: ${touch ? 'touch' : 'desktop'} keeps launch visible and advice opt-in`, async ({
@@ -41,18 +42,7 @@ for (const touch of [false, true]) {
       'eight-unit range and need no reloads',
     );
     await expect(dialog.locator('[data-loadout]')).not.toContainText('Reloads are automatic');
-    const ids = [
-      'archive',
-      'transfer',
-      'custody',
-      'broadcast',
-      'severance',
-      'clearing',
-      'mandate',
-      'personnel',
-      'injunction',
-    ];
-    for (const id of ids) {
+    for (const { id } of missions.slice(1)) {
       await press(dialog.getByRole('button', { name: 'Choose operation' }));
       await press(dialog.locator(`[data-action="mission:${id}"]`));
       await expect(dialog).toHaveClass(/briefing-dialog/);
@@ -76,6 +66,9 @@ for (const touch of [false, true]) {
         );
       }
     }
+    // Keep the detailed spoiler/scroll journey stable while the catalogue grows.
+    await press(dialog.getByRole('button', { name: 'Choose operation' }));
+    await press(dialog.locator('[data-action="mission:injunction"]'));
     await expect(begin).toBeFocused();
     await expect(dialog.locator('.briefing-orders')).toContainText('20s of work');
     await page.screenshot({ path: testInfo.outputPath('tenth-briefing.png') });

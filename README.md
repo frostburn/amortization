@@ -106,10 +106,9 @@ npm run replay:verify -- --current --expect-win attempt.replay.json
 The first command verifies compatible code and every state checkpoint. The second
 tests completion under current rules. Both exit nonzero on failure. Selected player
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
-distinct routes. Fifteen retained recordings cover operations 01–04. The two
-recordings for operations 05–06 no longer win with their new equipment and were
-retired without altering the submitted inputs. All twelve missions have synthetic
-quiet and armed completion tests; new human runs for 05–06 are welcome. See
+distinct routes. Retained human completions cover all twelve operations, including
+replacement weapon-era runs for 05–06 and the full-crew Countermand completion.
+All twelve also have synthetic quiet and armed completion tests. See
 `tests/replays/README.md` for provenance, current outcomes, and retired routes.
 
 ## Controls
@@ -165,7 +164,7 @@ The reading area scrolls inside a bounded dialog, keeping its title, compact med
 and launch controls visible. Opening COMMS repeats the objective, without route advice.
 
 Viewport resizing preserves the camera’s scale. **Fit map** frames the mission in the available
-space; operations 01–06 start with this overview. Operations 07–10 start at a readable scale near the crew.
+space; operations 01–06 start with this overview. Operations 07–12 start at a readable scale near the crew.
 
 Soft light pools follow every free, living operative and recruited witness,
 including separated teammates. The surrounding map, enemies and sight cones
@@ -705,7 +704,7 @@ the first click, tap or key press after loading the page.
 | Directory      | Responsibility                                                                         |
 | -------------- | -------------------------------------------------------------------------------------- |
 | `src/sim/`     | World state, navigation, awareness, combat, orders, fixed step; no DOM or Pixi imports |
-| `src/content/` | Mission geometry, objectives, patrols, spawns                                          |
+| `src/content/` | Mission geometry, objectives, patrols, spawns and presentation copy                    |
 | `src/render/`  | Pixi scene, camera, sprites, indicators                                                |
 | `src/input/`   | Selection and input-to-command translation                                             |
 | `src/ui/`      | HTML interface, briefings, results, versioned local records                            |
@@ -714,6 +713,25 @@ the first click, tap or key press after loading the page.
 | `src/dev/`     | Development-only playtest panel, recent attempts, import/export                        |
 | `scripts/`     | Build identity and headless replay verification                                        |
 | `tests/`       | Simulation scenarios and browser checks                                                |
+
+Keep related definitions together when extending the game:
+
+- `src/sim/crew.ts` owns each operative's name, role, model identity and flash
+  eligibility. Slot order is persistent: spawns, loadouts and detention cells
+  refer to it. UI and rendering use the same roster.
+- `src/content/mission-copy.ts` pairs each mission's concise briefing with its
+  epilogue. The exhaustive mission-ID type catches missing copy. These presentation
+  fields stay outside replay fingerprints; geometry and rules remain in mission files.
+- `src/input/actions.ts` pairs the four main orders' labels, help and shortcuts.
+  The HUD and keyboard bindings read the same entries.
+- `src/audio/palette.ts` keeps each cue's recipe, duration, seed, fader, priority
+  and bus together. Shared DSP lives in `synthesis.ts`. Give new cues unused seeds;
+  do not renumber existing ones, since seeds determine their noise variations.
+
+Moving simulation code changes its conservative source fingerprint even when
+behavior is preserved. Keep submitted replay bundles untouched and compare runs
+before and after a refactor; **Try current rules** remains available for older
+fingerprints. Presentation-only prose and audio edits do not change that fingerprint.
 
 Simulation runs at 30 Hz with interpolated rendering. All gameplay uses world coordinates; isometric projection only affects presentation. Map geometry drives collision, pathfinding, and sight, including the extraction van. A half-metre A* grid uses a binary heap; its connections, smoothing, destinations, and movement share one body-clearance rule. Grid connections are cached per mission and gate/shutter state, so squad orders reuse collision work. Start/end connections and smoothing still check current geometry. Isometric draw order respects entire scenery footprints and the characters' interpolated foot positions. Wall-mounted details inherit their wall's order.
 
@@ -732,8 +750,8 @@ UI, renderer, or broader input changes; extended mission journeys and detailed
 graphics checks are not part of the routine gate. Keep `@smoke` for shared player
 flows so each new mission does not add another real-time browser journey to CI.
 
-The full simulation suite still runs on every change, including all 46 retained
-human completions, complete mission runs for all twelve operations (including quiet rescue and armed withdrawal in 09, both routes in 10 with the flashes already spent, nonlethal and prepared armed completions in 11, and quiet/armed completions in 12),
+The full simulation suite still runs on every change, including every retained
+human completion, complete mission runs for all twelve operations (including quiet rescue and armed withdrawal in 09, both routes in 10 with the flashes already spent, nonlethal and prepared armed completions in 11, and quiet/armed completions in 12),
 navigation clearance, local identification, disguise permissions, radio disruption,
 evidence custody, demolition safety, and extraction requirements.
 Playwright launches Vite with `VITE_BROWSER_TEST=true`, capping its renderer at

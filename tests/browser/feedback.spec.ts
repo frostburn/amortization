@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import type { World, Rect } from '../../src/sim/types';
 import type { Hud } from '../../src/ui/hud';
 import type { Scene, Hit } from '../../src/render/scene';
-import type { Action } from '../../src/ui/hud';
+import type { Action } from '../../src/input/actions';
 import type { GuideTarget } from '../../src/ui/objectives';
 
 declare global {

@@ -1,3 +1,6 @@
+import { ORDER_BUTTONS } from '../input/actions';
+import type { Action } from '../input/actions';
+import { CREW } from '../sim/crew';
 import {
   controllable,
   disoriented,
@@ -30,7 +33,7 @@ import type { MedalId } from './medals';
 import { bindMedalTips, medalList } from './medal-display';
 import { bindBackdropDismiss } from './dialog';
 import { briefingObjective, renderBriefing } from './briefing';
-import { epilogues } from './epilogues';
+import { missionCopy } from '../content/mission-copy';
 import type { Records, MissionRecord } from './storage';
 import { missionGoals, transferFeedback } from './objectives';
 import type { Goal, GoalId, GuideTarget } from './objectives';
@@ -42,46 +45,6 @@ import { flashReady } from '../sim/flash';
 import { CREDENTIAL_TIME } from '../sim/inspection';
 import { settled, settlementStatus } from '../sim/settlement';
 
-export type Action =
-  | 'flash'
-  | 'objectives'
-  | `detention:${'access-intake' | 'access-cells' | 'escape-release'}`
-  | `security:${'authorise' | 'power-west' | 'power-east'}`
-  | `extract:${'extract' | 'alternate'}`
-  | 'operations'
-  | 'next'
-  | `mission:${Mission['id']}`
-  | 'pause'
-  | 'sound'
-  | `volume:${number}`
-  | 'briefing'
-  | 'begin'
-  | 'restart'
-  | 'all'
-  | 'regroup'
-  | 'hold'
-  | 'weapons'
-  | 'interact'
-  | 'heal'
-  | `heal:${number}`
-  | 'locate-escort'
-  | 'escort-wait'
-  | 'escort-aid'
-  | 'call-transfer'
-  | `settlement:${'reconcile' | 'countersign' | 'settle'}`
-  | 'work:file-recall'
-  | 'work:mask'
-  | 'work:upload'
-  | 'work:breach'
-  | 'plant:charge-west'
-  | 'plant:charge-east'
-  | 'detonate'
-  | 'drop'
-  | 'vision'
-  | 'home'
-  | 'follow'
-  | 'zoom-in'
-  | 'zoom-out';
 export interface HudState {
   selected: string[];
   paused: boolean;
@@ -150,10 +113,10 @@ export class Hud {
       <main class="game-layout">
         <aside class="sidebar crew-sidebar" aria-label="Crew and orders">
           <section class="crew-section"><div class="crew-heading"><p class="section-label">CREW</p><button data-action="all">Select all <kbd>Q</kbd></button></div>
-          <div class="squad" aria-label="Squad selection">${['Morrow', 'Vale', 'Rook', 'Sable'].map((name, i) => `<div class="crew-slot"><button class="agent-card" data-agent="${i}" aria-label="Select ${name}" aria-pressed="true"><span class="portrait portrait-${i}" aria-hidden="true"></span><span class="agent-copy"><span class="agent-heading"><b>${i + 1}</b> ${name}</span><span class="agent-condition" id="condition-${i}">Ready</span><span class="health-track"><span id="health-${i}"></span></span><span class="health-label" id="health-label-${i}"></span></span></button><button class="crew-aid" data-action="heal:${i}" id="aid-${i}" hidden></button></div>`).join('')}</div>
+          <div class="squad" aria-label="Squad selection">${CREW.map(({ name }, i) => `<div class="crew-slot"><button class="agent-card" data-agent="${i}" aria-label="Select ${name}" aria-pressed="true"><span class="portrait portrait-${i}" aria-hidden="true"></span><span class="agent-copy"><span class="agent-heading"><b>${i + 1}</b> ${name}</span><span class="agent-condition" id="condition-${i}">Ready</span><span class="health-track"><span id="health-${i}"></span></span><span class="health-label" id="health-label-${i}"></span></span></button><button class="crew-aid" data-action="heal:${i}" id="aid-${i}" hidden></button></div>`).join('')}</div>
           </section>
           <section class="selection-section"><p class="section-label">SELECTED<span id="selected-count">4 / 4</span></p><div class="selected-info"><div><h3 id="selected-name">Full crew</h3><p id="selected-cover">Weapons concealed</p></div></div><p id="selected-equipment" class="fine" hidden></p><p class="assessment" id="assessment">Move together. Split when it matters.</p><div id="work-status" hidden><p class="fine" id="work-label"></p><progress id="work-progress" value="0" max="1" aria-label="Interaction progress"></progress></div></section>
-          <section class="orders-section"><p class="section-label">ORDERS</p><div class="orders">${(['regroup', 'hold', 'weapons', 'interact'] as const).map((id, i) => `<button data-action="${id}" title="${['Regroup at the lead selected operative (G)', 'Hold position (S)', 'Draw or stow weapons (F)', 'Interact with nearest object (E)'][i]}">${icon(id)}<span id="${id}-label">${['Regroup', 'Hold', 'Draw weapons', 'Interact'][i]}</span><kbd>${['G', 'S', 'F', 'E'][i]}</kbd></button>`).join('')}</div><div class="utility"><button data-action="flash" id="flash-button" hidden>Flash · B</button><button data-action="heal" id="heal-button"><span id="heal-label">Field dressing</span> <kbd>H</kbd></button><button data-action="drop" id="drop-button" disabled>Set unit down <kbd>X</kbd></button></div></section>
+          <section class="orders-section"><p class="section-label">ORDERS</p><div class="orders">${ORDER_BUTTONS.map(({ id, hint, label, key }) => `<button data-action="${id}" title="${hint} (${key.toUpperCase()})">${icon(id)}<span id="${id}-label">${label}</span><kbd>${key.toUpperCase()}</kbd></button>`).join('')}</div><div class="utility"><button data-action="flash" id="flash-button" hidden>Flash · B</button><button data-action="heal" id="heal-button"><span id="heal-label">Field dressing</span> <kbd>H</kbd></button><button data-action="drop" id="drop-button" disabled>Set unit down <kbd>X</kbd></button></div></section>
         </aside>
         <section class="map-column" aria-label="Operation map">
           <div class="stage" id="stage"><div id="mission-outcome" class="mission-outcome" hidden role="region" aria-labelledby="outcome-title"><p id="outcome-detail"></p><h2 id="outcome-title"></h2><div class="outcome-actions"><button data-action="briefing" id="outcome-results">View results</button><button data-action="restart">Restart mission</button><button data-action="next" id="outcome-next" hidden>Next operation →</button></div></div><div class="map-top"><span id="time-mode">PLANNING / ORDERS ACTIVE</span><span id="clock">00:00</span></div><div class="map-controls"><button data-action="vision" id="vision-button" aria-pressed="true">Sight cones: on</button><button data-action="zoom-out" aria-label="Zoom out">−</button><button data-action="home" title="Overview of the whole site">Fit map</button><button data-action="follow" id="follow-button" aria-label="Follow selected operatives" title="Follow selection · Home. Select a portrait to resume after panning." aria-pressed="true">Follow</button><button data-action="zoom-in" aria-label="Zoom in">+</button></div><div class="map-caption"><span id="map-location"></span><small id="map-detail">Municipal assets division</small><small id="enemy-behavior" hidden></small></div><div class="selection-box" id="selection-box"></div><div id="objective-guide" class="objective-guide" role="region" aria-label="Objective guidance" hidden><div class="guide-heading"><span>MISSION GUIDE</span><button data-dismiss-guide aria-label="Close mission guide">×</button></div><h3 id="guide-title"></h3><p id="guide-detail"></p><div id="guide-locations" aria-label="Locate mission items"></div><p class="guide-instruction">Right-click a map diamond to act; on touch, tap it.</p></div></div>
@@ -380,7 +343,7 @@ export class Hud {
     this.modal.classList.remove('operations-dialog', 'briefing-dialog');
     const won = world.status === 'won',
       alive = world.agents.filter(living).length;
-    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? epilogues[world.mission.id].lead : world.escort && !living(world.escort) ? `${world.escort.name} was killed.` : world.detention || world.settlement ? world.message : 'The crew is down.'}</p><p class="dialog-body">${won ? epilogues[world.mission.id].body : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results">${world.settlement ? `<div><dt>Repayments</dt><dd>${settled(world) ? 'Released' : 'Incomplete'}</dd></div>` : ''}<div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div>${world.demolition ? `<div><dt>Backups</dt><dd>${demolished(world) ? 'Destroyed' : `${world.demolition.armed.length}/2 armed`}</dd></div>` : ''}${world.broadcast ? `<div><dt>${world.mission.broadcast?.subject ? 'Mandate' : 'Audit'}</dt><dd>${published(world) ? (world.mission.broadcast?.completed ?? 'Published') : 'Incomplete'}</dd></div>` : ''}<div><dt>${world.demolition ? 'Optional register' : world.broadcast ? 'Optional LOG' : 'Evidence'}</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div>${won && world.mission.landmarks.some((o) => o.id === 'alternate') && world.extractedAt ? `<div><dt>Extraction</dt><dd>${landmark(world, world.extractedAt).tag}</dd></div>` : ''}</dl>${record.best !== null ? `<p class="fine">${recordTimes(record.best, record.fullCrewBest)}</p>` : ''}${won ? `<section class="debrief-medals" aria-label="Medals this run"><p class="medal-summary">Medals this run <span>${fresh.length ? `${fresh.length} new` : 'Already earned'}</span></p>${medalList(world.mission, earnedMedals(world), fresh, true)}</section>` : ''}<button class="primary" autofocus data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Restart mission'} <span>→</span></button><div class="dialog-actions">${won && nextMission(world.mission.id) ? '<button class="dialog-secondary" data-action="restart">Restart mission</button>' : ''}<button class="dialog-secondary" data-action="operations">Operations</button></div>`;
+    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? missionCopy[world.mission.id].epilogue.lead : world.escort && !living(world.escort) ? `${world.escort.name} was killed.` : world.detention || world.settlement ? world.message : 'The crew is down.'}</p><p class="dialog-body">${won ? missionCopy[world.mission.id].epilogue.body : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results">${world.settlement ? `<div><dt>Repayments</dt><dd>${settled(world) ? 'Released' : 'Incomplete'}</dd></div>` : ''}<div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div>${world.demolition ? `<div><dt>Backups</dt><dd>${demolished(world) ? 'Destroyed' : `${world.demolition.armed.length}/2 armed`}</dd></div>` : ''}${world.broadcast ? `<div><dt>${world.mission.broadcast?.subject ? 'Mandate' : 'Audit'}</dt><dd>${published(world) ? (world.mission.broadcast?.completed ?? 'Published') : 'Incomplete'}</dd></div>` : ''}<div><dt>${world.demolition ? 'Optional register' : world.broadcast ? 'Optional LOG' : 'Evidence'}</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div>${won && world.mission.landmarks.some((o) => o.id === 'alternate') && world.extractedAt ? `<div><dt>Extraction</dt><dd>${landmark(world, world.extractedAt).tag}</dd></div>` : ''}</dl>${record.best !== null ? `<p class="fine">${recordTimes(record.best, record.fullCrewBest)}</p>` : ''}${won ? `<section class="debrief-medals" aria-label="Medals this run"><p class="medal-summary">Medals this run <span>${fresh.length ? `${fresh.length} new` : 'Already earned'}</span></p>${medalList(world.mission, earnedMedals(world), fresh, true)}</section>` : ''}<button class="primary" autofocus data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Restart mission'} <span>→</span></button><div class="dialog-actions">${won && nextMission(world.mission.id) ? '<button class="dialog-secondary" data-action="restart">Restart mission</button>' : ''}<button class="dialog-secondary" data-action="operations">Operations</button></div>`;
     if (!this.modal.open) this.modal.showModal();
   }
   update(world: World, state: HudState) {

@@ -10,10 +10,19 @@ checkpoints, note, or build metadata to make a recording pass.
 All forty-seven retained completions are byte-for-byte copies of submissions
 provided in chat, including their `unversioned` / local-changes metadata.
 
+## Data organization maintenance
+
+Extracting the shared crew roster changes the simulation's source fingerprint,
+without changing its behavior. A before/after comparison against the merged
+Countermand code matches 3,916 sampled current-rule state hashes and final
+outcomes across all 55 stored bundles (47 completions and eight diagnostics).
+All twelve mission definitions are identical. No replay data or expectations
+were rewritten; older fingerprints use **Try current rules** as usual.
+
 ## Countermand: human completion after the shield fix
 
 All six follow-up submissions verify every original checkpoint and outcome
-against the current code. They share mission hash `6f0d06c3` and simulation
+against the pre-maintenance code. They share mission hash `6f0d06c3` and simulation
 fingerprint `50127b9bf7925df6b6e3fb68237a459841e00b5628304cc878f412d983924081`.
 The successful submission `amortization-countermand-won-e6184c0a.replay.json`
 joins the completion corpus as `countermand-human-e6184c0a.replay.json`, unchanged.

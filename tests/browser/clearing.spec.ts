@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
 import type { Hit, Scene } from '../../src/render/scene';
 import type { World } from '../../src/sim/types';
-import type { Hud, Action } from '../../src/ui/hud';
+import type { Hud } from '../../src/ui/hud';
+import type { Action } from '../../src/input/actions';
 
 declare global {
   interface Window {

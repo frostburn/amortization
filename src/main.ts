@@ -9,7 +9,7 @@ import type { Mission, ObjectKind, World } from './sim/types';
 import { Scene } from './render/scene';
 import type { Hit } from './render/scene';
 import { Hud } from './ui/hud';
-import type { Action } from './ui/hud';
+import type { Action } from './input/actions';
 import { bindControls } from './input/controls';
 import { Sound } from './audio/sound';
 import { missionRecord, readRecords, recordWin } from './ui/storage';

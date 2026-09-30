@@ -1,6 +1,7 @@
 import { depot } from '../content/depot';
 import type { Guard, GuardTactic, Mission, Notice, Person, Vec, World, WeaponKind } from './types';
 import { equip, guardWeapon } from './weapons';
+import { CREW } from './crew';
 
 export function body(id: string, p: Vec, hp: number): Person {
   return {
@@ -46,20 +47,18 @@ export function makeGuard(
   };
 }
 export function createWorld(mission: Mission = depot): World {
-  const names = ['Morrow', 'Vale', 'Rook', 'Sable'];
-  const roles = ['Field lead', 'Systems', 'Security', 'Recon'];
   const escortPosition = mission.landmarks.find((o) => o.id === 'escort');
   return {
     mission,
     agents: mission.spawns.map((p, i) => ({
       ...body(`agent-${i}`, p, 100),
       ...(mission.loadout ? { armament: equip(mission.loadout[i]) } : {}),
-      ...(mission.flashGrenades && i >= 2 ? { flashes: 1 } : {}),
+      ...(mission.flashGrenades && CREW[i].flash ? { flashes: 1 } : {}),
       ...(mission.detention?.cells.some((c) => c.agent === i)
         ? { captive: true, disarmed: true }
         : {}),
-      name: names[i],
-      role: roles[i],
+      name: CREW[i].name,
+      role: CREW[i].role,
       index: i,
       weapon: false,
       disguised: false,
