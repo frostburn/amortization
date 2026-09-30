@@ -102,6 +102,7 @@ it('awards the human quiet Mission 10 completion with its original checkpoints',
 it.each([
   ['broadcast', ['42048895', '740307a2', 'ec959f54', 'f8b2c49a']],
   ['severance', ['2f9a7242', '37611591', 'bdbb0b9a', 'e366104a', 'e3aa7439', 'e73b41fe']],
+  ['clearing', ['985e3e2b', 'ddbce34b']],
 ] as const)(
   'the human %s runs collectively earn every medal with exact checkpoints',
   (mission, ids) => {
@@ -110,8 +111,8 @@ it.each([
       const bundle = parseReplay(
         readFileSync(`tests/replays/${mission}-human-${id}.replay.json`, 'utf8'),
       );
-      // The coil pursuit fix changes the source fingerprint, but not these earlier
-      // missions. Keep strict state verification independently of that build label.
+      // Source maintenance can change the fingerprint without changing these runs.
+      // Keep strict state verification independently of that build label.
       const player = new ReplayPlayer(bundle, bundle.build);
       while (!player.done) player.advance();
       expect(player.error, id).toBeNull();

@@ -780,4 +780,15 @@ difficulty of every approach or medal constraint.
 
 ## Next useful work
 
-The first four human runs of operation 07 are analyzed in the [replay notes](../tests/replays/README.md#margin-call-human-assaults). They establish that direct assaults can win with casualties and that leaving RADIO active makes the forced shutter risky. They do not yet validate the human experience of the quiet route or establish that marksmen require deliberate flanking. Keep those questions open for further playtesting. The [future combat ideas](combat-expansion.md) retain loadout choice and further equipment and security suggestions for later missions.
+The [September 30 operation 07 runs](../tests/replays/README.md#margin-call-all-medals)
+now validate all seven medals across two full-crew completions: quiet split-team
+SHUNT access and a no-disguise CUT route with RADIO active. Field dressings help
+the latter recover from its opening fights. Both use the outside north road to
+avoid much of the yard; the CUT route also waits out the shutter investigation.
+The long detour costs time, and the unfinished assaults still show casualties
+from facing the response directly. Leave this low-priority bypass intact for
+now. If it dominates later play, investigate perimeter exposure and search
+behavior around a breached vault. Do not treat these completions as evidence
+that marksmen require flanking or that every medal route is equally demanding.
+The [future combat ideas](combat-expansion.md) retain loadout choice and further
+equipment and security suggestions for later missions.

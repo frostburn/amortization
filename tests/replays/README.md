@@ -7,8 +7,61 @@ is also verified. Otherwise this checks a route's continued viability, without
 claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All forty-seven retained completions are byte-for-byte copies of submissions
+All forty-nine retained completions are byte-for-byte copies of submissions
 provided in chat, including their `unversioned` / local-changes metadata.
+
+## Margin call: all medals
+
+All four September 30 submissions verify every original checkpoint and outcome
+against merged maintenance commit `0051af8`, mission hash `b47ff7f7` and simulation
+fingerprint `af5dc6a042af8324f23af872ef869d16e80599dc050e01fdcecfd99b655f1009`.
+Their notes are empty. The two wins join the completion corpus unchanged;
+`tests/medals.test.ts` verifies that they collectively earn all seven medals.
+
+| Submission | Exact outcome | Medals |
+| --- | --- | --- |
+| `amortization-clearing-won-ddbce34b.replay.json` → `clearing-human-ddbce34b.replay.json` | Won, tick 3559 / 118.6s; 4 survivors; 0 shots | Settled, Full crew, Low profile, Nonlethal, Light touch |
+| `amortization-clearing-won-985e3e2b.replay.json` → `clearing-human-985e3e2b.replay.json` | Won, tick 3647 / 121.6s; 4 survivors; 17 shots | Settled, Full crew, No disguise, Open channel |
+| `amortization-clearing-playing-823595ff.replay.json` | Playing, tick 1046 / 34.9s; 3 survivors; 72 shots | None; KEYS still available |
+| `amortization-clearing-playing-3b61f676.replay.json` | Playing, tick 1503 / 50.1s; 2 survivors; 58 shots | None; KEYS still available |
+
+Shot totals include both sides. The unfinished snapshots are diagnostic context,
+not recorded defeats or additions to the required completion corpus.
+
+In the quiet win, Morrow takes KIT while Vale holds SHUNT from 11.7s until 44.9s.
+Morrow collects KEYS at 27.2s, clears the shutter and opens GATE at 35.8s. He waits
+behind the east wall while the other three explore the south perimeter, double
+back and take the outside north road to VAN. The carrier then crosses through
+GATE to join them. RADIO remains active, all seven guards live, no shots are
+fired and nobody takes damage. This validates the human split-team SHUNT route
+and full-crew quiet extraction previously missing from the retained recordings.
+
+The alarm win bypasses the freight lanes through the north maintenance approach,
+killing only the west entrance guard and the patrol near the vault. Vale and
+Rook use their field dressings at 30.7s and 31.0s, restoring all four to full
+health. The alarm starts at 26.0s and Sable finishes CUT at 34.1s. The squad waits
+behind the vault racks while the first response investigates the shutter, finds
+no target and resumes patrol; Sable takes KEYS at 53.5s. Both response waves arrive,
+but the squad withdraws west and goes around the outside north wall to VAN.
+Neither marksman nor any reinforcement fires; the last shot is at 24.1s. RADIO
+stays active and eleven guards survive. Full health at extraction therefore
+does not mean this was a damage-free run.
+
+The two unfinished assaults show the cost of meeting the response directly:
+`823595ff` loses Morrow at 27.1s by the east gate, while `3b61f676` loses Rook at
+42.2s and Morrow at 43.8s inside the vault. Both leave RADIO active. These are
+ordinary combat casualties, with no checkpoint divergence or broken extraction
+requirement evident in this batch.
+
+The low-risk perimeter withdrawal is the main cheese: it avoids the east-road
+crossing and response patrols by spending time on a long walk. Waiting out the
+shutter investigation also avoids combat without requiring a disguise. The
+recorded wins take roughly two minutes, including waiting and exploratory moves;
+they do not establish the fastest possible bypass. Leave the routes and balance
+unchanged for now. If the detour becomes dominant, revisit perimeter exposure or
+the response's search around a breached vault, while preserving legitimate
+retreats and enemies' need for sight. These wins do not establish that marksmen
+require flanking or that all medal routes offer comparable challenge.
 
 ## Data organization maintenance
 
@@ -394,8 +447,9 @@ mission-ending or replay divergence bug.
 
 The assaults show useful costs and a meaningful radio decision, but do not show
 that marksmen demand flanking: focused squad attacks still work while accepting
-a casualty. The quiet route, full-crew human completion, and field-dressing use
-remain untested by these submissions. No combat values or mission geometry were
+a casualty. These original submissions did not exercise the quiet route,
+full-crew extraction or field dressings; the [September 30 runs](#margin-call-all-medals)
+now cover all three. No combat values or mission geometry were
 changed in response to this small sample.
 
 Replay commands identify order recipients, not selection-only clicks, zoom, or
