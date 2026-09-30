@@ -69,5 +69,11 @@ ordinary painter ordering and through-wall outlines for walls on that floor.
   The simulation fingerprint changes because floor support is new; old files are
   not relabelled as recordings of this build.
 
-Human difficulty feedback is still needed. These command runs establish viable
-routes, not the likelihood that a first-time player will find or execute them.
+The first human batch contains two wins, five losses and one unfinished snapshot.
+All eight reproduce every original checkpoint and outcome. Both wins extract
+three operatives: one eliminates Kestrel with the alarm active; the other arrests
+her and recovers REGISTER after losing its original carrier upstairs. The player
+reported feeling challenged and that everything worked as intended. Keep the
+balance unchanged. These runs verify both outcomes, stair use, cargo recovery and
+survivor extraction; full-crew and wholly nonlethal completions still have only
+synthetic coverage. [Detailed run review](../tests/replays/README.md#continuity-kestrel-removal).

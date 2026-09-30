@@ -89,6 +89,7 @@ describe('separate storeys and Kestrel custody', () => {
     );
     advance(w, 1);
     expect(w.status).toBe('won');
+    expect(w.message).toContain('Kestrel is eliminated. REGISTER left behind.');
     expect(earnedMedals(w)).not.toContain('nonlethal');
     expect(earnedMedals(w)).not.toContain('custody');
   });
@@ -159,6 +160,7 @@ it('arrests Kestrel and escorts her downstairs without killing anyone on the liv
   move(scout, 15, 24);
   act(ids, 'extract', () => w.status === 'won');
   expect(w.guards.every(living)).toBe(true);
+  expect(w.message).toContain('Kestrel is in custody. REGISTER left behind.');
   expect(earnedMedals(w)).toContain('custody');
   expect(earnedMedals(w)).toContain('nonlethal');
   verify();
@@ -202,6 +204,7 @@ it('fights through both storeys, eliminates Kestrel with feeds still live, and e
   move(ids, 15, 24);
   act(ids, 'extract', () => w.status === 'won');
   expect(w.evidence).toBe('extracted');
+  expect(w.message).toContain('Kestrel is eliminated. REGISTER secured.');
   expect(earnedMedals(w)).not.toContain('custody');
   expect(w.shots).toBeGreaterThan(0);
   verify();

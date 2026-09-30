@@ -120,10 +120,10 @@ npm run replay:verify -- --current --expect-win attempt.replay.json
 The first command verifies compatible code and every state checkpoint. The second
 tests completion under current rules. Both exit nonzero on failure. Selected player
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
-distinct routes. Retained human completions cover the first twelve operations, including
-replacement weapon-era runs for 05–06 and the full-crew Countermand completion.
-Those twelve also have synthetic quiet and armed completion tests. Operation 13
-adds guarded arrest and lethal completion runs. See
+distinct routes. Retained human completions cover all thirteen operations, including
+replacement weapon-era runs for 05–06, the full-crew Countermand completion, and
+both Kestrel outcomes in Continuity. The first twelve also have synthetic quiet
+and armed completion tests; Operation 13 has guarded arrest and lethal runs. See
 `tests/replays/README.md` for provenance, current outcomes, and retired routes.
 
 ## Controls
@@ -683,6 +683,12 @@ and keeps the chosen zoom. Select a crew portrait to follow a split teammate.
   all four operatives extracted.
 
 [Floor rules, encounter design and verification](docs/continuity.md).
+
+Two retained human completions verify both Kestrel outcomes, each with three
+survivors. The arrest also recovers REGISTER after its original carrier dies
+upstairs. All eight submissions reproduce their original checkpoints; the player
+reported that the mission felt challenging and worked as intended. Balance is
+unchanged. [Run review](tests/replays/README.md#continuity-kestrel-removal).
 
 ## Records
 

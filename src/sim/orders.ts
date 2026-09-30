@@ -648,15 +648,17 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
       if (world.evidence === 'carried') world.evidence = 'extracted';
       notify(
         world,
-        world.detention
-          ? 'Vale and Rook recovered. All four are clear; the mandate stays with Mara.'
-          : world.mission.objective === 'demolition'
-            ? 'Contract fulfilled. The debt backups are destroyed. The crew is clear.'
-            : world.mission.objective === 'broadcast'
-              ? `Contract fulfilled. ${world.mission.broadcast?.completed ?? "Mara's audit is public"}. The crew is clear.`
-              : world.mission.objective === 'escort'
-                ? `Contract fulfilled. ${world.escort!.name} is out. The crew is clear.`
-                : `Contract fulfilled. The ${world.mission.evidenceName.toLowerCase()} is secured. The crew is clear.`,
+        world.mission.objective === 'capture'
+          ? `Contract fulfilled. Kestrel is ${living(world.escort!) ? 'in custody' : 'eliminated'}. REGISTER ${world.evidence === 'extracted' ? 'secured' : 'left behind'}. The crew is clear.`
+          : world.detention
+            ? 'Vale and Rook recovered. All four are clear; the mandate stays with Mara.'
+            : world.mission.objective === 'demolition'
+              ? 'Contract fulfilled. The debt backups are destroyed. The crew is clear.'
+              : world.mission.objective === 'broadcast'
+                ? `Contract fulfilled. ${world.mission.broadcast?.completed ?? "Mara's audit is public"}. The crew is clear.`
+                : world.mission.objective === 'escort'
+                  ? `Contract fulfilled. ${world.escort!.name} is out. The crew is clear.`
+                  : `Contract fulfilled. The ${world.mission.evidenceName.toLowerCase()} is secured. The crew is clear.`,
       );
       break;
     }

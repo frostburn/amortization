@@ -131,6 +131,58 @@ for (const touch of [false, true])
     await advance(420);
     await expect(page.locator('#stage')).toHaveAttribute('data-floor', '0');
     expect(await page.evaluate(() => window.continuityWorld.escort!.floor ?? 0)).toBe(0);
+    // Regroup around an upstairs lead must leave downstairs teammates in place,
+    // and keep the lead's floor visible even though Morrow is first in the roster.
+    await page.evaluate(() => {
+      const w = window.continuityWorld;
+      for (const [i, y] of [
+        [2, 18],
+        [3, 12],
+      ])
+        Object.assign(w.agents[i], {
+          x: 26,
+          y,
+          floor: 1,
+          previous: { x: 26, y, floor: 1 },
+          order: { kind: 'hold' },
+          path: [],
+        });
+    });
+    await press('[data-agent="2"]');
+    await press('[data-action="regroup"]');
+    await expect(page.locator('#stage')).toHaveAttribute('data-floor', '1');
+    expect(await page.evaluate(() => window.continuityWorld.agents.map((a) => a.order))).toEqual([
+      { kind: 'hold' },
+      { kind: 'hold' },
+      expect.objectContaining({ kind: 'move', target: expect.objectContaining({ floor: 1 }) }),
+      expect.objectContaining({ kind: 'move', target: expect.objectContaining({ floor: 1 }) }),
+    ]);
+    await advance(90);
+    expect(await page.evaluate(() => window.continuityWorld.agents[3].y)).toBeGreaterThan(14);
+    // Ordering onto a teammate's body also preserves the target's floor.
+    await page.evaluate(() => {
+      Object.assign(window.continuityWorld.agents[2], {
+        x: 30,
+        y: 21,
+        previous: { x: 30, y: 21, floor: 1 },
+        order: { kind: 'hold' },
+        path: [],
+      });
+    });
+    await press('[data-agent="3"]');
+    await page.locator('#stage').scrollIntoViewIfNeeded();
+    const target = await page.evaluate(() =>
+      window.continuityScene.screen(window.continuityWorld.agents[2], 0.5),
+    );
+    const canvas = (await page.locator('canvas').boundingBox())!;
+    if (touch) await page.touchscreen.tap(canvas.x + target.x, canvas.y + target.y);
+    else await page.mouse.click(canvas.x + target.x, canvas.y + target.y, { button: 'right' });
+    expect(await page.evaluate(() => window.continuityWorld.agents[3].order)).toMatchObject({
+      kind: 'move',
+      target: { x: 30, y: 21, floor: 1 },
+    });
+    await advance(120);
+    expect(await page.evaluate(() => window.continuityWorld.agents[3].x)).toBeCloseTo(30);
     await expect(page.locator('vite-error-overlay')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
