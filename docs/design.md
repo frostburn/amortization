@@ -750,11 +750,21 @@ checkpoints. The quiet run has no shots or injuries; the armed north route leave
 the three loading-lane defenders alive. The frontal rush is deliberately costly.
 Existing human completion bundles and earlier mission definitions are preserved.
 The revised armed route re-forms at the east booth entrance and uses the long
-guns to cover its patrol before bringing the carrier through. All four new human
+guns to cover its patrol before bringing the carrier through. All four original human
 bundles are kept unchanged as diagnostic fixtures. Tests replay their openings
 and require the officer to react, move and break the original firing line;
 obsolete wins and losses are not required outcomes. The prior 46 completion
 recordings still win under current rules.
+
+Six follow-up human submissions reproduce every original checkpoint. The new
+completion joins the corpus unchanged: 157.7 seconds, all four survivors, 80
+shots and no alarm. Morrow disables RADIO, then flanks the first shield while
+Sable draws it into a retreat. A flash defeats the second officer's protection.
+Both flashes and two field dressings are spent; the crew leaves with 16, 78, 22
+and 56 HP. Vale completes the full nine-second filing and extracts the original.
+Another attempt loses the loading-lane fight after disabling RADIO, so preparation
+does not remove the local defense. The player's note is “Challenge level felt
+good.” No balance change follows this batch; see the [replay analysis](../tests/replays/README.md#countermand-human-completion-after-the-shield-fix).
 
 Desktop and touch journeys check launch, compact opt-in briefing, daytime scale,
 split-team follow, FILE eligibility, interruption, completion, dropped-original
@@ -763,9 +773,10 @@ including the lowered and fallen shield. Native offline audio tests include a
 sustained four-support-gun burst against the objective cue. These browser tests
 remain on demand; routine CI still runs its ten shared smoke cases.
 
-Human runs should judge whether the shield/support pairing encourages readable
-flanks and whether pressure is clear without becoming busy. The north route’s
-advantage is intentional; automated completion is not a human balance verdict.
+The human completion demonstrates useful shield flanking and flash counterplay.
+Pressure affects both sides, but its visual readability remains an open question.
+The north route’s advantage is intentional; this sample does not establish the
+difficulty of every approach or medal constraint.
 
 ## Next useful work
 
