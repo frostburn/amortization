@@ -60,7 +60,9 @@ export function shoot(
     kind: 'hit',
     x: to.x,
     y: to.y,
-    metal: blocked || ('turret' in to && !!to.turret),
+    // Fatal metal hits use the machine-wreck cue; a shield officer still falls
+    // as a person, even when the last shot passed through the frontal shield.
+    metal: (blocked && living(to)) || ('turret' in to && !!to.turret),
     fatal: !living(to),
     friendly: world.agents.some((a) => a === to) || world.escort === to,
   });
