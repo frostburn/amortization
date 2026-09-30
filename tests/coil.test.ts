@@ -109,3 +109,30 @@ it('gives the automatic a mobile, short magazine burst followed by a real reload
   updateWeapon(a, STEP + 1e-8, true);
   expect(a.armament.rounds).toBe(WEAPONS.automatic.magazine);
 });
+
+it('holds a legal coil charge when a walking target crosses the pursuit stop threshold', () => {
+  const { w, a, g } = arena();
+  a.armament = equip('coil');
+  g.armament = equip('pistol');
+  delete g.tactics;
+  Object.assign(g, {
+    x: 22.49,
+    y: 10,
+    previous: { x: 22.49, y: 10 },
+    angle: Math.PI / 2,
+    patrol: [{ x: 22.49, y: 20 }],
+    path: [{ x: 22.49, y: 20 }],
+  });
+  applyCommand(w, { kind: 'attack', agents: [a.id], target: g.id });
+  let starts = 0,
+    wasCharging = false;
+  for (let i = 0; i < 120 && g.hp === g.maxHp; i++) {
+    step(w);
+    const charging = !!a.armament.charging;
+    if (charging && !wasCharging) starts++;
+    wasCharging = charging;
+  }
+  expect(g.hp).toBe(g.maxHp - WEAPONS.coil.damage);
+  expect(starts).toBe(1);
+  expect(a.armament.rounds).toBe(2);
+});

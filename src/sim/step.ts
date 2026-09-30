@@ -104,9 +104,14 @@ export function step(world: World, dt = STEP) {
       if (!target) {
         a.order = { kind: 'hold' };
         a.path = [];
-      } else if (distance(a, target) <= weaponRange(a) - 0.5 && lineClear(world, a, target))
-        a.path = [];
-      else if (!a.path.length) a.path = findPath(world, a, target);
+      } else {
+        // Keep a legal coil charge instead of cancelling it for one walking
+        // step every time a patrol crosses the pursuit stop threshold.
+        const charging = a.armament?.charging?.target === target.id;
+        const stopRange = weaponRange(a) - (charging ? 0 : 0.5);
+        if (distance(a, target) <= stopRange && lineClear(world, a, target)) a.path = [];
+        else if (!a.path.length) a.path = findPath(world, a, target);
+      }
     }
     walk(world, a, a.carrying ? 2 : 3.2, dt);
     if (distance(a, a.previous) > 1e-6) updateWeapon(a, 0, true);

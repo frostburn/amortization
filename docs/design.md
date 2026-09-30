@@ -287,6 +287,10 @@ Mission goals expose the current requirements and point to their map locations. 
 
 A read-only goal model supplies both the HUD labels and context-sensitive help. It distinguishes a diverted courier from a called transfer, explains why a shunt operator must stay put, removes the forged-release suggestion after the maintenance identity is lost, and states the extraction requirements. The locator resolves people and cargo from current simulation positions, including handoffs and drops. It uses a screen overlay for legible labels and off-screen arrows, leaving world occlusion and map hit-testing intact.
 
+Locating a goal pans at the player's existing zoom. It never automatically fits
+one item or a widely spread set of objectives; edge arrows retain the location
+of targets beyond the viewport. Hover previews leave the camera alone.
+
 ## Margin call and the tracking camera
 
 Operation 07 moves the crew into a 60 × 42 freight clearinghouse (operation 06 is
@@ -304,6 +308,11 @@ coil rifles: range 13, damage 52, three shots, 0.75-second firing recovery and
 same visible target while stationary. Movement, lost sight, stowing, working or
 death cancels charging; switching targets starts a new charge. A floor line,
 shrinking target ring and readiness bar telegraph it independently of sight cones.
+An attack order preserves an already valid charge out to the rifle's full range,
+instead of taking one corrective step at the pursuit stop threshold and
+repeatedly cancelling its own wind-up. Leaving range or losing sight still breaks
+the charge. This changes combat timing; retained human routes are checked under
+current rules rather than rewriting their original checkpoints.
 Charges, rounds and reloads belong to simulation time and replay state. Marksmen
 use authored firing/cover posts and do not pursue unseen targets through buildings.
 

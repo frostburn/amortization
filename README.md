@@ -172,6 +172,10 @@ including separated teammates. The surrounding map, enemies and sight cones
 remain visible in cooler ambient light. Lighting is atmospheric; it does not
 change detection, disguise rules or targeting.
 
+Living characters hidden by foreground walls, roofs or closed doors show hollow
+outlines: red enemies, mint operatives and amber witnesses. Their current poses
+remain readable and targetable through scenery without changing physical cover.
+
 **Follow** / **Home** returns to the selected crew at the last working zoom. When
 zoomed in, the camera uses a modest, smoothed look ahead along their route and
 a shorter facing lead at rest. A central quiet area absorbs small formation and
@@ -372,9 +376,10 @@ let covering carbines settle while a teammate moves. The quiet verification rout
 times patrol windows with a disguised uploader and a LOOP operator, keeping the
 long guns screened until withdrawal. The armed route disables RADIO, pauses for
 covering fire, treats wounds, and completes a traced upload. Both keep all four
-alive and verify replay checkpoints. These are synthetic completion checks;
-the old human run `52011baa` was retired because it loses under the new rules.
-Its early-extraction feedback remains covered by browser regressions.
+alive and verify replay checkpoints. Four new human completions add quiet,
+armed and radio-live routes; together they earn every medal with exact original
+checkpoints. The old human run `52011baa` was retired because it loses under the
+new rules. Its early-extraction feedback remains covered by browser regressions.
 
 ## Severance · Operation 06
 
@@ -408,9 +413,10 @@ withdrawal for the long guns; all four finish without damage or shots. The armed
 route uses covering fire, closes shotgun attacks around corners, treats wounds,
 and secures the gate. It also extracts all four. The synthetic quiet route checks
 replay determinism including detonation. The older human assault `546bc6e8` now
-loses and was retired. All fifteen retained human bundles remain unchanged and
-win under current rules; older builds require **Try current rules** because the
-simulation fingerprint has changed.
+loses and was retired. Six new human completions cover every medal with exact
+original checkpoints, including a nonlethal demolition and a zero-shot
+run whose blasts kill guards and therefore do not earn Nonlethal. Older builds
+require **Try current rules** when the simulation fingerprint has changed.
 
 ## Margin call · Operation 07
 
@@ -678,7 +684,7 @@ UI, renderer, or broader input changes; extended mission journeys and detailed
 graphics checks are not part of the routine gate. Keep `@smoke` for shared player
 flows so each new mission does not add another real-time browser journey to CI.
 
-The full simulation suite still runs on every change, including all 36 retained
+The full simulation suite still runs on every change, including all 46 retained
 human completions, complete mission runs for all eleven operations (including quiet rescue and armed withdrawal in 09, both routes in 10 with the flashes already spent, and nonlethal and prepared armed completions in 11),
 navigation clearance, local identification, disguise permissions, radio disruption,
 evidence custody, demolition safety, and extraction requirements.
