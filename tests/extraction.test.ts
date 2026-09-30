@@ -42,6 +42,7 @@ describe('extraction orders', () => {
       const w = createWorld(mission);
       // Isolate the return order from combat; full mission routes test live opposition.
       w.guards = [];
+      if (w.recall) w.recall.filed = true;
       if (w.settlement) {
         w.settlement.reconciled = true;
         w.settlement.progress = mission.settlement!.duration;

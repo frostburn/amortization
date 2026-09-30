@@ -1,5 +1,7 @@
 import { disoriented, distance, living } from './types';
 import type { Person, World } from './types';
+import { readiness, suppress } from './pressure';
+import { shieldFaces } from './shield';
 import { lineClear } from './navigation';
 import { cancelCharge, COIL_CHARGE, WEAPONS, weaponRange } from './weapons';
 
@@ -27,6 +29,7 @@ export function shoot(
     return false;
   }
   from.angle = Math.atan2(to.y - from.y, to.x - from.x);
+  if ('shield' in from && from.shield && !shieldFaces(from, to, Math.PI / 6)) return false;
   const gun = from.armament,
     spec = gun && WEAPONS[gun.kind];
   if (gun?.kind === 'coil') {
@@ -36,12 +39,15 @@ export function shoot(
       return false;
     }
     if (gun.charging?.target !== to.id) gun.charging = { target: to.id, remaining: COIL_CHARGE };
-    gun.charging.remaining = Math.max(0, gun.charging.remaining - dt);
+    gun.charging.remaining = Math.max(0, gun.charging.remaining - dt * readiness(from));
     if (gun.charging.remaining > 1e-8) return false;
     cancelCharge(from);
   }
   from.cooldown = spec ? spec.interval : hostile ? 0.8 : 0.52;
-  to.hp = Math.max(0, to.hp - (spec ? spec.damage : hostile ? 16 : 17));
+  const blocked = shieldFaces(to, from);
+  const damage = (spec ? spec.damage : hostile ? 16 : 17) * (blocked ? 0.12 : 1);
+  to.hp = Math.max(0, to.hp - damage);
+  if (gun?.kind === 'support') suppress(world, from, to, hostile);
   if (gun && spec && --gun.rounds === 0) gun.reload = spec.reload;
   world.traces.push({
     from: { x: from.x, y: from.y },
@@ -54,7 +60,7 @@ export function shoot(
     kind: 'hit',
     x: to.x,
     y: to.y,
-    metal: 'turret' in to && !!to.turret,
+    metal: blocked || ('turret' in to && !!to.turret),
     fatal: !living(to),
     friendly: world.agents.some((a) => a === to) || world.escort === to,
   });

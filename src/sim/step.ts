@@ -30,6 +30,9 @@ import { FLASH_FLIGHT, updateFlashes } from './flash';
 import { extractionPath } from './extraction-routing';
 import { settled, updateSettlement } from './settlement';
 
+import { decayPressure, readiness } from './pressure';
+import { turnShield } from './shield';
+
 export const STEP = 1 / 30;
 function walk(world: World, p: Person, speed: number, dt: number) {
   let budget = speed * dt;
@@ -81,10 +84,12 @@ export function step(world: World, dt = STEP) {
   updateShutter(world);
   updateDetention(world);
   for (const p of people(world)) {
+    decayPressure(p, dt);
     updateWeapon(p, dt, distance(p, p.previous) > 1e-6);
     p.previous = { x: p.x, y: p.y };
-    p.cooldown = Math.max(0, p.cooldown - dt);
+    p.cooldown = Math.max(0, p.cooldown - dt * readiness(p));
   }
+  for (const g of world.guards) turnShield(g, dt);
   world.traces = world.traces.filter((t) => (t.life -= dt) > 0);
   for (const a of world.agents) {
     const throwing = world.flashGrenades?.some((g) => g.thrower === a.id && g.age < FLASH_FLIGHT);
@@ -143,7 +148,8 @@ export function step(world: World, dt = STEP) {
     }
     const working =
       a.order.kind === 'interact' &&
-      (isSettlement(a.order.target) ||
+      (a.order.target === 'file-recall' ||
+        isSettlement(a.order.target) ||
         a.order.target.startsWith('access-') ||
         a.order.target.startsWith('rescue-') ||
         a.order.target === 'escape-release' ||

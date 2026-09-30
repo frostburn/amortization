@@ -6,27 +6,35 @@ import { weaponRange } from './weapons';
 export const guardRole = (guard: Guard) =>
   guard.turret
     ? `${guard.turret.circuit === 'power-west' ? 'Amber' : 'Blue'} wired turret`
-    : guard.tactics?.role === 'marksman'
-      ? 'Security marksman'
-      : guard.tactics?.role === 'sentry'
-        ? 'Carbine sentry'
-        : guard.tactics?.role === 'breacher'
-          ? 'Breach officer'
-          : guard.tactics?.role === 'inspector'
-            ? 'Credential inspector'
-            : 'Site guard';
+    : guard.tactics?.role === 'shield'
+      ? 'Shield officer'
+      : guard.tactics?.role === 'support'
+        ? 'Support gunner'
+        : guard.tactics?.role === 'marksman'
+          ? 'Security marksman'
+          : guard.tactics?.role === 'sentry'
+            ? 'Carbine sentry'
+            : guard.tactics?.role === 'breacher'
+              ? 'Breach officer'
+              : guard.tactics?.role === 'inspector'
+                ? 'Credential inspector'
+                : 'Site guard';
 export const guardDescription = (guard: Guard) =>
   guard.turret
     ? `Stationary carbine mount · 180 armour · 9-unit range. Tracks for 0.8s before firing. Solid cover breaks tracking. Isolate ${guard.turret.circuit === 'power-west' ? 'WEST' : 'EAST'} or authorise INSPECT; RADIO has no effect.`
-    : guard.tactics?.role === 'marksman'
-      ? 'Violet uniform, long coil rifle. Charges a visible firing line for 1.25s. Break sight to cancel it; flank its fixed posts.'
-      : guard.tactics?.role === 'sentry'
-        ? 'Holds a lane. Moves into cover under fire or to reload. Needs a steady firing position.'
-        : guard.tactics?.role === 'breacher'
-          ? 'Closes through screened positions. Dangerous nearby; withdraw during its long firing recovery.'
-          : guard.tactics?.role === 'inspector'
-            ? 'Ivory uniform, orange shoulder caps. Checks maintenance identities within 4 units over 2.5s. Break sight or leave range to cancel the check. Carries a pistol.'
-            : 'Patrols, challenges intruders, and reports contact.';
+    : guard.tactics?.role === 'shield'
+      ? 'Burgundy uniform, pale shield. Blocks 88% of frontal damage but turns slowly. Flank, use two angles, or flash to lower the shield. Ordinary 90-health body.'
+      : guard.tactics?.role === 'support'
+        ? 'Olive uniform, box-fed support gun. Steadies for 0.65s. Fire pressure slows aiming and recovery; movement and reloads stay responsive. Break sight or flank during reloads.'
+        : guard.tactics?.role === 'marksman'
+          ? 'Violet uniform, long coil rifle. Charges a visible firing line for 1.25s. Break sight to cancel it; flank its fixed posts.'
+          : guard.tactics?.role === 'sentry'
+            ? 'Holds a lane. Moves into cover under fire or to reload. Needs a steady firing position.'
+            : guard.tactics?.role === 'breacher'
+              ? 'Closes through screened positions. Dangerous nearby; withdraw during its long firing recovery.'
+              : guard.tactics?.role === 'inspector'
+                ? 'Ivory uniform, orange shoulder caps. Checks maintenance identities within 4 units over 2.5s. Break sight or leave range to cancel the check. Carries a pistol.'
+                : 'Patrols, challenges intruders, and reports contact.';
 
 /** Nearby partners can signal a sighting. This never copies an unseen person's live position. */
 export function shareContact(world: World, guard: Guard, target: Person) {
@@ -72,7 +80,7 @@ export function maneuver(world: World, guard: Guard, target: Person | undefined)
     .filter((point) => {
       if (!passable(world, point) || distance(guard, point) < 0.5) return false;
       if (cover) return !lineClear(world, point, threat);
-      if (tactic.role === 'sentry' || tactic.role === 'marksman')
+      if (tactic.role === 'sentry' || tactic.role === 'marksman' || tactic.role === 'support')
         return distance(point, threat) <= weaponRange(guard) && lineClear(world, point, threat);
       return distance(point, threat) < distance(guard, threat) - 0.75;
     })

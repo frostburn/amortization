@@ -663,6 +663,84 @@ CPU scene updates: the accelerated software-GPU harness has submission stalls
 and does not measure normal frame rate or performance on the player's device.
 The replay bundles themselves contain no frame-time telemetry.
 
+## Countermand: a dispatch yard (Operation 12)
+
+The injunction and repayments do not automatically retrieve seizure orders
+already issued to field crews. The signed recall must travel from the records
+office to the dispatch booth and then leave with the operatives. This keeps a
+carrier out of the gunfight and gives the crew a reason to prepare the crossing.
+
+The 64 × 46 daytime yard replaces the settlement court’s many rooms with two
+wide approaches and isolated freight cover. The loading lane pairs a frontal
+shield with support fire; a second pair watches dispatch. A pistol staff patrol,
+credential inspector, records sentry, breach officer and booth patrol complete
+the nine authored defenders. RADIO is at the rear of records, five seconds of
+work. Human responses use the existing bounded waves, with shield/support/breach
+specialists in the second wave. No time limit starts while the player prepares.
+
+RECALL is required physical evidence. The carrier works FILE for nine seconds;
+movement, Hold, a drop or a flash discards unfinished work. Death drops the
+original. Completed filing is mission state and persists across handoffs or a
+carrier’s death, but cargo and every surviving operative must still reach VAN.
+The FILE action filters to the selected carrier; the map, goals, progress bar and
+extraction controls share the same prerequisites. The epilogue follows Mara’s
+call to a beneficiary whose seizure crew has now been recalled.
+
+### Support fire
+
+Rook receives a support gun; olive enemy gunners use the same definition: range
+10, damage 10, 18 rounds, 0.2s recovery, 2.4s reload and 0.65s stationary preparation.
+Each actual shot adds 0.5 pressure, capped at 1, to living opponents within 1.1
+units of its segment. The segment stops at the impact, rejects actors beyond it,
+and requires clear sight from the shooter to each affected opponent. Turrets and
+captives are unaffected. There is no damage spread or friendly suppression.
+
+Pressure decays by 0.45 per second. Readiness advances at `1 - 0.6 * pressure`:
+settling, coil charge and firing recovery slow, but never stop or reset from
+pressure alone. Reloads and movement stay at their normal rates. A small bar,
+crew status and weapon inspection explain the effect. The scan occurs only on
+actual support shots and is bounded by the current actors. Optional pressure
+state disappears when it decays; earlier missions never allocate it.
+
+### Shield officers
+
+Burgundy uniforms, pale shields and pistol sidearms separate officers from red
+shotgun breachers. The body remains at 90 health. The shield absorbs 88% of damage
+inside a ±64.8-degree arc. Its stored actual bearing turns toward the AI’s desired
+heading by at most 0.9 radians/s, once per simulation tick. Perception, model pose,
+rendered sight cones, protection and the ±30-degree pistol firing arc use that
+same bearing. Changing targets cannot snap the shield or fire behind the officer.
+A flash disables protection and turning for the existing disorientation period;
+the left arm visibly lowers the shield while the right covers the face.
+
+The mesh includes the plate, viewport, stripe, grip and a separate fallen shield.
+Support guns retain their broad box magazine, cooling jacket and folded bipod in
+ready, firing and slung poses. Existing per-model depth rendering and clipped
+through-wall contours include the new geometry. Support fire has a short filtered
+mechanical report on the capped combat bus; feedback stays on its separate path.
+No new assets, dependencies or ambience are introduced.
+
+### Verification and remaining questions
+
+Focused checks cover facing/turning, frontal versus side and flash damage,
+clear-lane pressure, its readiness floor, movement/reload freedom, filing
+interruptions, dropped cargo, map connectivity and progressive guidance. Quiet
+and armed command-only runs use the untouched mission and verify their recorded
+checkpoints. The quiet run has no shots or injuries; the armed north route leaves
+the three loading-lane defenders alive. The frontal rush is deliberately costly.
+Existing human completion bundles and earlier mission definitions are preserved.
+
+Desktop and touch journeys check launch, compact opt-in briefing, daytime scale,
+split-team follow, FILE eligibility, interruption, completion, dropped-original
+extraction lock and theme reset. The new models are inspected at close zoom,
+including the lowered and fallen shield. Native offline audio tests include a
+sustained four-support-gun burst against the objective cue. These browser tests
+remain on demand; routine CI still runs its ten shared smoke cases.
+
+Human runs should judge whether the shield/support pairing encourages readable
+flanks and whether pressure is clear without becoming busy. The north route’s
+advantage is intentional; automated completion is not a human balance verdict.
+
 ## Next useful work
 
 The first four human runs of operation 07 are analyzed in the [replay notes](../tests/replays/README.md#margin-call-human-assaults). They establish that direct assaults can win with casualties and that leaving RADIO active makes the forced shutter risky. They do not yet validate the human experience of the quiet route or establish that marksmen require deliberate flanking. Keep those questions open for further playtesting. The [future combat ideas](combat-expansion.md) retain loadout choice and further equipment and security suggestions for later missions.

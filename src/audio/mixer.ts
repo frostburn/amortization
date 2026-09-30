@@ -47,6 +47,7 @@ const combatSounds = new Set<SoundId>([
   'shotgun',
   'automatic',
   'coil',
+  'support',
   'body',
   'metal',
   'fall',

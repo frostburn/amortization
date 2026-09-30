@@ -91,7 +91,11 @@ export function updateFlashes(w: World, dt: number) {
       cancelCharge(p);
       if ('order' in p && (p as Operative).order.kind === 'interact') {
         const a = p as Operative;
-        if (a.order.kind === 'interact' && isCharge(a.order.target)) a.interaction = 0;
+        if (
+          a.order.kind === 'interact' &&
+          (isCharge(a.order.target) || a.order.target === 'file-recall')
+        )
+          a.interaction = 0;
       }
       if ('inspection' in p) delete p.inspection;
     }

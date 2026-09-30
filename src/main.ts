@@ -169,6 +169,11 @@ async function boot() {
       if (mission) startMission(mission, true);
       return;
     }
+    if (type === 'work:file-recall') {
+      issue({ kind: 'interact', agents: selected, target: 'file-recall' });
+      updateHud();
+      return;
+    }
     if (type.startsWith('settlement:')) {
       issue({ kind: 'interact', agents: selected, target: type.slice(11) as ObjectKind });
       updateHud();

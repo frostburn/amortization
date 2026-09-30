@@ -6,10 +6,8 @@ The crew should usually move together, with occasional splits to cover a crossin
 
 **Other equipment and security roles.** Introduce these selectively when a mission gives their behaviour a clear purpose.
 
-| Idea                                | What it would add                                                                                                          |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Support gun and bounded suppression | Hold a firing arc while a partner moves; pressure delays firing preparation while movement stays responsive                |
-| Shield officer                      | Strong frontal protection, limited turning speed, and an ordinary vulnerable body; a reason to establish two firing angles |
-| Sensor drone                        | A mobile scanning device; readable patrols and opportunities for disruption                                                |
-| Noise decoy and local jammer        | Redirect attention or interrupt nearby communication for a limited window                                                  |
-| Further uses of corporate authority | Use a disguise to redirect a patrol, authorise a delivery, or open staff access                                            |
+| Idea                                | What it would add                                                               |
+| ----------------------------------- | ------------------------------------------------------------------------------- |
+| Sensor drone                        | A mobile scanning device; readable patrols and opportunities for disruption     |
+| Noise decoy and local jammer        | Redirect attention or interrupt nearby communication for a limited window       |
+| Further uses of corporate authority | Use a disguise to redirect a patrol, authorise a delivery, or open staff access |

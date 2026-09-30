@@ -6,6 +6,13 @@ import type { MedalId } from './medals';
 // Presentation copy stays outside the recorded mission definition. Editing a
 // briefing must not make an otherwise compatible human replay look outdated.
 const summaries: Record<Mission['id'], { objective: string; extract: string; rules: string }> = {
+  countermand: {
+    objective:
+      'Recover RECALL and have its carrier file it at FILE for nine uninterrupted seconds.',
+    extract: 'Bring the original RECALL and every survivor to VAN after filing.',
+    rules:
+      'Daylight extends human sight by 50%. Carrying the original occupies both hands and attracts suspicion, even in uniform.',
+  },
   settlement: {
     objective:
       'Recover REGISTER, reconcile it at CHECK, then operate SIGN and CLEAR together to release repayments.',
@@ -84,6 +91,7 @@ function equipment(m: Mission) {
     <p>${m.detention ? `${free.join(' and ')} each start with one field dressing. Detained operatives recover their dressings at GEAR.` : 'Each operative starts with one field dressing.'}</p>
     <p>${m.loadout ? 'Long guns stay visible when stowed. Reloads are automatic; reserve ammunition is unlimited.' : 'Sidearms have an eight-unit range and need no reloads.'}</p>
     ${kinds.includes('carbine') ? `<p>Carbines steady for ${WEAPONS.carbine.settle}s after moving.</p>` : ''}
+    ${kinds.includes('support') ? '<p>Support guns steady for 0.65s. Fire pressure slows aiming and recovery in a narrow lane; movement and reloads remain responsive.</p>' : ''}
     ${kinds.includes('coil') ? `<p>Coil rifles charge for ${COIL_CHARGE}s while stationary with continuous sight.</p>` : ''}
   </section>`;
 }
@@ -94,7 +102,7 @@ export function briefingObjective(m: Mission) {
 
 export function renderBriefing(m: Mission, medals: MedalId[] = []) {
   const summary = summaries[m.id];
-  const optional = !['ledger', 'case', 'settlement'].includes(m.objective);
+  const optional = !['ledger', 'case', 'settlement', 'recall'].includes(m.objective);
   const cargo = m.landmarks.find((o) => o.id === 'evidence')!;
   return `<header class="briefing-header">
     <div class="dialog-number">${m.number} / ${m.location}</div>

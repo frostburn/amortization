@@ -2,7 +2,7 @@
 
 A real-time squad tactics game for the browser. Control four operatives together or individually. One maintenance disguise admits a single person; the rest of the crew can prepare access or provide armed backup.
 
-**Eleven operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing any of the first ten. Restart and Shift+R restart the selected mission, including unfinished attempts. Briefings and results also offer **Restart mission**.
+**Twelve operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing any of the first eleven. Restart and Shift+R restart the selected mission, including unfinished attempts. Briefings and results also offer **Restart mission**.
 
 ## Development
 
@@ -108,7 +108,7 @@ tests completion under current rules. Both exit nonzero on failure. Selected pla
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
 distinct routes. Fifteen retained recordings cover operations 01–04. The two
 recordings for operations 05–06 no longer win with their new equipment and were
-retired without altering the submitted inputs. All eleven missions have synthetic
+retired without altering the submitted inputs. All twelve missions have synthetic
 quiet and armed completion tests; new human runs for 05–06 are welcome. See
 `tests/replays/README.md` for provenance, current outcomes, and retired routes.
 
@@ -129,7 +129,7 @@ quiet and armed completion tests; new human runs for 05–06 are welcome. See
 | F                              | Draw / stow selected weapons                                        |
 | E                              | Interact with a nearby landmark                                     |
 | H                              | Use a field dressing: one per operative, up to 55 health            |
-| B                              | Aim a flash in operations 10–11; hover/click or touch drag/release |
+| B                              | Aim a flash in operations 10–12; hover/click or touch drag/release |
 | X                              | Put down carried evidence                                           |
 | Space                          | Pause / resume; orders work while paused                            |
 | Hold Tab                       | Slow time to 20%                                                    |
@@ -297,7 +297,7 @@ The access keys lead to auditor **Mara Quill**, held in a security transport at 
 
 For a quiet escape, take KIT, disable RADIO, file WARRANT, and collect Mara. Lead her north of the lower cargo containers, west through the service corridor, and out the west entrance to SERVICE. Send the rest of the crew up the public street. For an armed extraction, clear the transport bay before cutting the lock, leave Mara waiting behind cover while the crew secures the gate, then bring her to STREET.
 
-## Equipment in operations 05–10
+## Equipment in operations 05–12
 
 | Weapon            | Range | Damage | Shots / magazine | Shot recovery | Automatic reload |
 | ----------------- | ----: | -----: | ---------------: | ------------: | ---------------: |
@@ -306,6 +306,7 @@ For a quiet escape, take KIT, disable RADIO, file WARRANT, and collect Mara. Lea
 | Shotgun           |   3.8 |     44 |                2 |         1.05s |             1.8s |
 | Compact automatic |   6.4 |     12 |                9 |         0.16s |            1.65s |
 | Coil rifle        |    13 |     52 |                3 |         0.75s |             2.2s |
+| Support gun       |    10 |     10 |               18 |          0.2s |             2.4s |
 
 Both sides use these rules. A carbine needs 0.35 seconds stationary after moving
 before it can fire. Pistols, shotguns and automatics can fire while moving. Each coil shot requires
@@ -316,8 +317,8 @@ reload automatically with unlimited reserve ammunition; movement, stowing, and
 new orders preserve the reload. Pause freezes readiness and slow time scales it.
 
 Morrow and Vale carry concealable pistols. Rook and Sable carry carbines in 05;
-Rook switches to a shotgun in 06. In 07–10, Rook carries the compact automatic and
-Sable carries the coil rifle. Long guns remain visible when stowed, including
+Rook switches to a shotgun in 06. In 07–11, Rook carries the compact automatic and
+Sable carries the coil rifle. In 12, Rook carries the support gun. Long guns remain visible when stowed, including
 while carrying cargo. **KIT** assigns an eligible selected pistol carrier and
 names them before they start moving. Briefings show all assignments; portraits
 show ammunition and reloads, and the selected operative panel shows weapon,
@@ -327,14 +328,17 @@ characters show preparation and reload progress without obscuring faces.
 
 Enemy uniforms identify the role from any direction: **khaki site guards**,
 **blue carbine sentries**, **red breach officers**, **violet security marksmen**, and
-**ivory credential inspectors with orange shoulder caps**. Officers also wear a
+**ivory credential inspectors with orange shoulder caps**. Operation 12 adds
+**burgundy shield officers** and **olive support gunners**. Officers also wear a
 dark chest plate and visor. Regular guards use the same pistol model in every
 operation. At close zoom, pistols have a compact slide and grip,
 carbines have a box magazine and short stock, and shotguns have a long barrel,
 wooden stock and ribbed pump. Those shapes remain visible at low ready or slung
 on the back; concealed pistols stay hidden. The automatic has a short brass receiver,
 wire stock and deep magazine. The coil rifle has a long pale barrel housing, three
-cyan coils and a raised scope; marksmen also wear a single optical lens.
+cyan coils and a raised scope; marksmen also wear a single optical lens. Support
+guns have a broad ammunition box, cooling jacket and folded bipod. Shield
+officers carry a full-height pale plate with a burgundy stripe.
 
 Carbine sentries defend lanes and seek nearby physical cover when hit or reloading.
 Breach officers use short-range shotguns and approach last-seen threats through
@@ -597,6 +601,42 @@ assault, with all four extracting and exact replay checks. The nonlethal run
 still takes incoming fire at the eastern crossing. These establish solvability;
 human replays are needed to judge clarity and difficulty.
 
+## Countermand · Operation 12
+
+Mara’s repayments have cleared, but previously issued seizure orders remain at
+the dispatch yard. The **64 × 46 daytime site** has a broad loading apron, a north
+staff approach and freight stacks that break long sight lines. Follow mode keeps
+the established play scale and snaps to the active operative when the crew splits.
+
+Recover **RECALL** in the north records office. Its carrier must work **FILE** in
+the south-east dispatch booth for **nine uninterrupted seconds**. Moving, Hold,
+dropping the original or being flashed resets unfinished filing. Completed filing
+survives handoffs and casualties; extraction still needs the original and every
+survivor at **VAN**. **RADIO** takes five seconds at the rear of the records office.
+There is no dispatch timer. The briefing keeps route advice behind its spoiler
+control; objectives, the FILE button and locators explain the next required step.
+
+**Rook’s support gun** takes 0.65s to steady after movement. Its fire pressures
+opponents within 1.1 units of the shot’s lane, ending at the impact and respecting
+solid cover. Pressure slows aiming, coil charging and shot recovery, but readiness
+always advances at least 40% as fast. Movement, orders and automatic reloads stay
+responsive. Pressure fades after fire stops; a yellow-green bar and the crew/weapon
+status show it. Olive support gunners use the same rules.
+
+**Shield officers** have ordinary 90-health bodies. A 130-degree frontal arc
+absorbs 88% of damage, with the body, sight cone and shield sharing a slow turn of
+0.9 radians per second. Their pistol cannot fire away from the actual facing.
+Side/rear shots do full damage; a flash briefly lowers the shield. Hover feedback
+reports which selected firing angles the shield covers. Use two angles, or a
+flash, rather than spending a squad’s fire against the plate. RADIO does not
+disable this protection or silence the local support guns.
+
+Two command-only, live-patrol runs verify exact replays: a quiet, nonlethal run
+with no injuries, and an armed north approach that flanks the posts and extracts
+all four while leaving the loading-lane defenders alive. A straight loading-lane
+rush loses operatives even with RADIO already disabled and field dressings used. These prove routes exist, not that human difficulty is
+settled. The six standard medals apply; new human runs are still needed.
+
 ## Records
 
 Results track time, crew survival, evidence, and alarm status. Operation five also reports publication; operation six reports backup destruction; operation ten reports the mandate being served; operation eleven reports the repayments being released. Each operation keeps
@@ -608,7 +648,7 @@ when browser storage is disabled.
 
 ### Operation medals
 
-**Operations** shows **79 medals across eleven missions**, with earned medals in
+**Operations** shows **85 medals across twelve missions**, with earned medals in
 amber and unearned medals faded. Hover, focus with the keyboard, or tap a medal
 to read its exact conditions. Escape dismisses the tooltip first. Medal controls
 are separate from the button that starts an operation. Results show medals from
@@ -685,7 +725,7 @@ graphics checks are not part of the routine gate. Keep `@smoke` for shared playe
 flows so each new mission does not add another real-time browser journey to CI.
 
 The full simulation suite still runs on every change, including all 46 retained
-human completions, complete mission runs for all eleven operations (including quiet rescue and armed withdrawal in 09, both routes in 10 with the flashes already spent, and nonlethal and prepared armed completions in 11),
+human completions, complete mission runs for all twelve operations (including quiet rescue and armed withdrawal in 09, both routes in 10 with the flashes already spent, nonlethal and prepared armed completions in 11, and quiet/armed completions in 12),
 navigation clearance, local identification, disguise permissions, radio disruption,
 evidence custody, demolition safety, and extraction requirements.
 Playwright launches Vite with `VITE_BROWSER_TEST=true`, capping its renderer at
@@ -695,6 +735,6 @@ rendering are uncapped. Local and CI browser tests use the same SwiftShader back
 
 ## Current scope
 
-Eleven ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, and mid-mission saves remain future work. Each operative has a distinct on-map model with 32 facings, a distance-driven walk, an armed stance, and a grounded fallen pose. Hair, skin, clothing, and build correspond to their portraits; disguises preserve their identity. Voss and Mara have their own models and portraits beside the wait/follow control.
+Twelve ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, and mid-mission saves remain future work. Each operative has a distinct on-map model with 32 facings, a distance-driven walk, an armed stance, and a grounded fallen pose. Hair, skin, clothing, and build correspond to their portraits; disguises preserve their identity. Voss and Mara have their own models and portraits beside the wait/follow control.
 
 See [design notes](docs/design.md) and [art provenance](docs/art.md). Distributed under the repository's [MIT license](LICENSE).

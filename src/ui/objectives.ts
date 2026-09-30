@@ -87,7 +87,29 @@ export function missionGoals(w: World): Goal[] {
   const kit: GuideTarget[] = w.disguiseTaken ? [] : ['disguise'];
   const evidenceInArchive = !!m.archive && inside(w.evidencePosition, m.secure);
   let primary: Goal;
-  if (w.settlement) {
+  if (w.recall) {
+    const carrier = w.agents.find((a) => living(a) && a.carrying);
+    const filing = carrier?.order.kind === 'interact' && carrier.order.target === 'file-recall';
+    primary = {
+      id: 'primary',
+      complete: w.recall.filed,
+      label: w.recall.filed
+        ? '✓ Seizure dispatches cancelled'
+        : !carrier
+          ? '○ Collect RECALL'
+          : filing
+            ? `○ File RECALL · ${Math.floor((100 * carrier.interaction) / m.recall!.filingTime)}%`
+            : '○ Bring RECALL to FILE',
+      detail: w.recall.filed
+        ? 'Filing complete. Bring the original RECALL and every survivor to VAN. Dropping or handing over the original does not undo the recall.'
+        : 'Collect the signed RECALL in the north records office. Its carrier must work FILE in the south-east booth for nine uninterrupted seconds, then bring the original home. Movement, Hold or a flash cancels unfinished work. The carrier cannot shoot; prepare the route or protect them.',
+      targets: w.recall.filed
+        ? ['extract', ...(!carrier ? ['evidence' as const] : [])]
+        : carrier
+          ? ['file-recall', 'evidence']
+          : ['evidence'],
+    };
+  } else if (w.settlement) {
     const done = settled(w),
       hasRegister = w.agents.some((a) => living(a) && a.carrying);
     primary = {
@@ -334,7 +356,7 @@ export function missionGoals(w: World): Goal[] {
 
   const carrier = w.agents.find((a) => living(a) && a.carrying);
   const tag = landmark(w, 'evidence').tag;
-  const optionalEvidence = !['ledger', 'case', 'settlement'].includes(m.objective);
+  const optionalEvidence = !['ledger', 'case', 'settlement', 'recall'].includes(m.objective);
   const evidence: Goal = {
     id: 'evidence',
     optional: optionalEvidence,

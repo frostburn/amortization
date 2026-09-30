@@ -15,6 +15,7 @@ import type { ObjectKind, Person, Rect, Solid, Vec, World } from '../sim/types';
 import { available, landmark } from '../sim/orders';
 import { COIL_CHARGE, longGun, WEAPONS } from '../sim/weapons';
 import { followOffset, selectionFocus } from './camera';
+import { facingAngle } from '../sim/shield';
 import { sightRange } from '../sim/awareness';
 import { findPath, lineClear } from '../sim/navigation';
 import { depthOrder } from './depth';
@@ -88,6 +89,7 @@ const markerColor = (id: ObjectKind) =>
     : id === 'escort' ||
         id === 'evidence' ||
         id === 'upload' ||
+        id === 'file-recall' ||
         isCharge(id) ||
         id === 'access-intake'
       ? COLORS.amber
@@ -413,6 +415,23 @@ export class Scene {
       for (let y = 20.3; y < 24; y += 0.6) plane(g, 19.5, y, 1.7, 0.2, COLORS.amber, 0, 0.65);
       for (let y = 5; y < 36; y += 3) plane(g, 52, y, 0.12, 1.2, 0x929d85);
     }
+    if (mission.id === 'countermand') {
+      plane(g, 8.4, 29, 44.5, 6, 0xa4ada7);
+      plane(g, 8.4, 8, 32.3, 4, 0xb7b6a4);
+      plane(g, 41.4, 6.4, 13.5, 8.5, 0xd0c8b4);
+      plane(g, 45.4, 30.4, 9.5, 7.5, 0xd0c8b4);
+      for (let x = 10; x < 52; x += 3) plane(g, x, 32, 1.2, 0.12, 0xe1d8b8);
+      for (let y = 6; y < 40; y += 3) plane(g, 59, y, 0.12, 1.2, 0xe0dcca);
+      for (const [label, x, y] of [
+        ['LOADING / 12', 18, 34.7],
+        ['STAFF ACCESS', 20, 11.8],
+      ] as const) {
+        const sign = this.label(label, 10, 0x5a665e);
+        sign.position.copyFrom(project({ x, y }));
+        sign.skew.y = Math.atan(TILE_Y / TILE_X);
+        this.addScenery(sign, { x, y, w: 0, h: 0 });
+      }
+    }
     if (mission.settlement) {
       plane(g, 8.4, 31.4, 16.2, 3.3, 0x9eaaa9);
       plane(g, 25.4, 26.5, 18.2, 3, 0xa6b1ad);
@@ -487,25 +506,27 @@ export class Scene {
       }
     }
     const office = this.label(
-      mission.settlement
-        ? 'BENEFICIARY RECORDS'
-        : mission.id === 'injunction'
-          ? 'ENFORCEMENT REGISTRY'
-          : mission.detention
-            ? 'PERSONNEL RETENTION / 09'
-            : mission.security
-              ? 'RECORDS / 08'
-              : mission.demolition
-                ? 'RECOVERY CORES / RESTRICTED'
-                : mission.broadcast
-                  ? 'RESTRICTED / UPLINK'
-                  : mission.escort?.locked
-                    ? 'TRANSFER RECORDS'
-                    : mission.transfer
-                      ? 'CUSTOMS'
-                      : mission.archive
-                        ? 'SECURE ARCHIVE'
-                        : 'SECURE OFFICE',
+      mission.recall
+        ? 'DISPATCH RECORDS'
+        : mission.settlement
+          ? 'BENEFICIARY RECORDS'
+          : mission.id === 'injunction'
+            ? 'ENFORCEMENT REGISTRY'
+            : mission.detention
+              ? 'PERSONNEL RETENTION / 09'
+              : mission.security
+                ? 'RECORDS / 08'
+                : mission.demolition
+                  ? 'RECOVERY CORES / RESTRICTED'
+                  : mission.broadcast
+                    ? 'RESTRICTED / UPLINK'
+                    : mission.escort?.locked
+                      ? 'TRANSFER RECORDS'
+                      : mission.transfer
+                        ? 'CUSTOMS'
+                        : mission.archive
+                          ? 'SECURE ARCHIVE'
+                          : 'SECURE OFFICE',
       10,
       0xf0c68b,
     );
@@ -519,25 +540,27 @@ export class Scene {
     office.anchor.set(0.5, 1);
     this.marks.addChild(office);
     const road = this.label(
-      mission.settlement
-        ? 'SETTLEMENT COURT / 09:10'
-        : mission.id === 'injunction'
-          ? 'ENFORCEMENT / NO PUBLIC ACCESS'
-          : mission.detention
-            ? 'VISITORS / WEST SERVICE STREET'
-            : mission.demolition
-              ? 'DEBT RECOVERY / 12'
-              : mission.broadcast
-                ? 'MUNICIPAL COMMUNICATIONS / 11'
-                : mission.escort?.locked
-                  ? 'REMAND TRANSFERS / 04'
-                  : mission.transfer
-                    ? 'BONDED TRANSFER / 09'
-                    : mission.id === 'depot'
-                      ? 'MUNICIPAL TRANSIT / 06'
-                      : mission.id === 'clearing'
-                        ? 'BONDED FREIGHT / NO PUBLIC ACCESS'
-                        : 'CIVIC RECORDS / NO PUBLIC ACCESS',
+      mission.recall
+        ? 'MUNICIPAL RECOVERY / 11:40'
+        : mission.settlement
+          ? 'SETTLEMENT COURT / 09:10'
+          : mission.id === 'injunction'
+            ? 'ENFORCEMENT / NO PUBLIC ACCESS'
+            : mission.detention
+              ? 'VISITORS / WEST SERVICE STREET'
+              : mission.demolition
+                ? 'DEBT RECOVERY / 12'
+                : mission.broadcast
+                  ? 'MUNICIPAL COMMUNICATIONS / 11'
+                  : mission.escort?.locked
+                    ? 'REMAND TRANSFERS / 04'
+                    : mission.transfer
+                      ? 'BONDED TRANSFER / 09'
+                      : mission.id === 'depot'
+                        ? 'MUNICIPAL TRANSIT / 06'
+                        : mission.id === 'clearing'
+                          ? 'BONDED FREIGHT / NO PUBLIC ACCESS'
+                          : 'CIVIC RECORDS / NO PUBLIC ACCESS',
       10,
       0x718277,
     );
@@ -1337,6 +1360,12 @@ export class Scene {
           .rect(-10, 11, (20 * p.disoriented!) / FLASH_RECOVERY, 3)
           .fill(0xe6eecb);
       }
+      if (living(p) && (p.pressure ?? 0) > 0.1)
+        v.ink
+          .rect(-10, 15, 20, 3)
+          .fill(0x182522)
+          .rect(-10, 15, 20 * p.pressure!, 3)
+          .fill(0xd7df83);
       if (living(p) && guard?.inspection) {
         v.ink
           .rect(-12, -49, 24, 3)
@@ -1576,7 +1605,7 @@ export class Scene {
       const points = [project(guard)];
       const arc = guard.turret ? TURRET_ARC : Math.PI * 0.36;
       for (let i = 0; i <= 22; i++) {
-        const angle = guard.angle - arc + (i / 22) * arc * 2;
+        const angle = facingAngle(guard) - arc + (i / 22) * arc * 2;
         let low = 0,
           high = sightRange(guard, this.world);
         for (let j = 0; j < 7; j++) {

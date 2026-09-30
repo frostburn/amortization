@@ -214,7 +214,9 @@ test('squad volleys leave room for Voss pickup, independently of master volume',
         mixer = new Mixer(context);
       mixer.volume(volume);
       // The pickup coincides exactly with the middle volley. Include recovery.
-      for (const when of [0.2, 0.73, 1.8])
+      for (const when of weapon === 'support'
+        ? Array.from({ length: 9 }, (_, i) => 0.2 + i * 0.2)
+        : [0.2, 0.73, 1.8])
         for (let i = 0; i < guns; i++)
           mixer.play(
             weapon,
@@ -262,13 +264,15 @@ test('squad volleys leave room for Voss pickup, independently of master volume',
         salvo = await render(4, false, volume),
         notice = await render(0, true, volume),
         together = await render(4, true, volume),
-        shotgun = await render(4, false, volume, 'shotgun');
+        shotgun = await render(4, false, volume, 'shotgun'),
+        support = await render(4, false, volume, 'support');
       // Separate paths let us recover the ducked combat signal by subtraction.
       const ducked = together.map((channel, c) => channel.map((x, i) => x - notice[c][i]));
       mixes.push({
         soloToSquad: shortLevel(salvo) - shortLevel(single),
         squadToNotice: shortLevel(salvo) - shortLevel(notice),
         shotgunToNotice: shortLevel(shotgun) - shortLevel(notice),
+        supportToNotice: shortLevel(support) - shortLevel(notice),
         duckRatio: rms(ducked, 0.76, 0.99) / rms(salvo, 0.76, 0.99),
         recovery: rms(ducked, 1.83, 2.06) / rms(salvo, 1.83, 2.06),
         peak: together.reduce(
@@ -285,6 +289,7 @@ test('squad volleys leave room for Voss pickup, independently of master volume',
     expect(mix.squadToNotice).toBeGreaterThan(-3);
     expect(mix.squadToNotice).toBeLessThan(3);
     expect(mix.shotgunToNotice).toBeLessThan(4);
+    expect(mix.supportToNotice).toBeLessThan(4);
     expect(mix.duckRatio).toBeGreaterThan(0.2);
     expect(mix.duckRatio).toBeLessThan(0.55);
     expect(mix.recovery).toBeGreaterThan(0.97);

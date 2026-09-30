@@ -16,6 +16,7 @@ import {
 } from '../sim/types';
 import type { ObjectKind, Vec, World } from '../sim/types';
 import { longGun, weaponRange } from '../sim/weapons';
+import { shieldFaces } from '../sim/shield';
 import { lineClear } from '../sim/navigation';
 import { extractionRequirement } from './extraction';
 
@@ -57,15 +58,17 @@ export function attackPreview(w: World, selected: string[], target: World['guard
       kind: 'blocked' as const,
       detail: 'Out of range. Attack draws weapons and advances toward the target.',
     };
-  const clear = near.filter((a) => lineClear(w, a, target)).length;
+  const clearShots = near.filter((a) => lineClear(w, a, target));
+  const clear = clearShots.length;
   if (!clear)
     return {
       kind: 'blocked' as const,
       detail: 'Line of fire blocked. Attack draws weapons and seeks a clear shot.',
     };
+  const protectedShots = clearShots.filter((a) => shieldFaces(target, a)).length;
   return {
     kind: 'attack' as const,
-    detail: `${clear} selected ${clear === 1 ? 'operative has' : 'operatives have'} a clear line of fire. Attack draws weapons and pursues as needed.`,
+    detail: `${clear} selected ${clear === 1 ? 'operative has' : 'operatives have'} a clear line of fire. Attack draws weapons and pursues as needed.${protectedShots ? ` Shield covers ${protectedShots}/${clear} firing angles; flank or flash for full damage.` : ''}`,
   };
 }
 
@@ -94,6 +97,8 @@ export function objectRequirement(w: World, id: ObjectKind, selected: string[]):
     return agents.some((a) => !settlementRefusal(w, a, id))
       ? null
       : settlementRefusal(w, agents[0], id);
+  if (id === 'file-recall' && !agents.some((a) => a.carrying))
+    return 'Select the RECALL carrier to file the original at FILE.';
   const free = agents.filter((a) => !a.carrying);
   if (
     id === 'relay' &&

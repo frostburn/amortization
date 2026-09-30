@@ -1,3 +1,4 @@
+import { facingAngle } from './shield';
 import { controllable, disoriented, distance, inside, isCharge, isPower, living } from './types';
 import type { Guard, Operative, Person, Vec, World } from './types';
 import { findPath, lineClear } from './navigation';
@@ -19,7 +20,7 @@ export function sees(world: World, guard: Guard, person: Vec): boolean {
   const range = distance(guard, person);
   if (range > sightRange(guard, world) || !lineClear(world, guard, person)) return false;
   if (range < 1.3) return true;
-  const angle = Math.atan2(person.y - guard.y, person.x - guard.x) - guard.angle;
+  const angle = Math.atan2(person.y - guard.y, person.x - guard.x) - facingAngle(guard);
   return Math.cos(angle) > Math.cos(Math.PI * 0.36);
 }
 export function suspicionRate(world: World, agent: Operative): number {

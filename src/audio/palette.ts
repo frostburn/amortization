@@ -32,6 +32,7 @@ const durations = {
   tracking: 1,
   objective: 0.3,
   flash: 0.45,
+  support: 0.28,
 } as const;
 export type SoundId = keyof typeof durations;
 export const SOUND_IDS = Object.keys(durations) as SoundId[];
@@ -162,6 +163,16 @@ export function synthesize(id: SoundId, sampleRate: number, variant = 0): Float3
       noise(0.012, 0.1, 500, 3900, 0.25);
       click(0.049, 0.22, 1900);
       break;
+    case 'support':
+      noise(0, 0.048, 900, 6500, 0.64, 8, {
+        rate: 12000,
+        interpolation: 'constant',
+        modulation: 0.25,
+      });
+      tone(0, 0.14, 180, 65, 0.46);
+      noise(0.012, 0.16, 180, 2300, 0.28, 7, { rate: 3400, modulation: 0.5, sweep: 0.45 });
+      click(0.07, 0.12, 950);
+      break;
     case 'coil':
       noise(0, 0.045, 2200, 14000, 1.1, 10, { rate: 20000, interpolation: 'constant' });
       tone(0, 0.23, 105, 36, 0.76);
@@ -288,7 +299,7 @@ export function synthesize(id: SoundId, sampleRate: number, variant = 0): Float3
   }
   // A little filtered early reflection gives guns weight, without a long wash
   // masking rapid fire or danger cues. Copy the dry signal so echoes don't feed back.
-  if (['pistol', 'carbine', 'shotgun', 'automatic', 'coil', 'blast'].includes(id)) {
+  if (['pistol', 'carbine', 'shotgun', 'automatic', 'coil', 'support', 'blast'].includes(id)) {
     const dry = data.slice();
     for (const [seconds, level] of [
       [0.031, 0.09],

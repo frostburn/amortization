@@ -75,14 +75,14 @@ describe('sound palette and placement', () => {
   });
 
   it('makes reproducible, distinct weapon timbres and non-identical repeated shots', () => {
-    const ids = ['pistol', 'carbine', 'shotgun', 'automatic', 'coil'] as const;
+    const ids = ['pistol', 'carbine', 'shotgun', 'automatic', 'coil', 'support'] as const;
     const fingerprints = ids.map((id) => {
       const pcm = synthesize(id, 24000, 1);
       expect(pcm).toEqual(synthesize(id, 24000, 1));
       expect(pcm).not.toEqual(synthesize(id, 24000, 2));
       return [...pcm.slice(0, 256)].join(',');
     });
-    expect(new Set(fingerprints).size).toBe(5);
+    expect(new Set(fingerprints).size).toBe(6);
   });
 
   it('pans by the isometric screen and attenuates distance independently of zoom', () => {

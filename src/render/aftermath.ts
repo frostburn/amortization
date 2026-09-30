@@ -1,6 +1,8 @@
 import { canWalk, findPath } from '../sim/navigation';
 import { distance, living, people } from '../sim/types';
 import type { Person, Solid, Vec, World } from '../sim/types';
+import { decayPressure } from '../sim/pressure';
+import { turnShield } from '../sim/shield';
 import { vanDeparture } from './van';
 
 function walk(w: World, p: Person, speed: number, seconds: number) {
@@ -104,6 +106,7 @@ export class Aftermath {
     for (const p of people(w)) {
       p.previous = { x: p.x, y: p.y };
       p.disoriented = Math.max(0, (p.disoriented ?? 0) - dt);
+      decayPressure(p, dt);
     }
     for (const g of w.guards.filter(living)) {
       if (g.turret || !g.patrol.length) continue;
@@ -116,6 +119,7 @@ export class Aftermath {
         if (!g.path.length) g.waypoint = (g.waypoint + 1) % g.patrol.length;
       }
       walk(w, g, 1.2, dt);
+      turnShield(g, dt);
     }
     if (this.phase === 'boarding') {
       for (const p of this.passengers) {

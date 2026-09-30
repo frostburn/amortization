@@ -1,5 +1,6 @@
 import type { Armament, GuardTactic, Operative, Person, WeaponKind } from './types';
 import { disoriented } from './types';
+import { readiness } from './pressure';
 
 export const COIL_CHARGE = 1.25;
 
@@ -40,6 +41,15 @@ export const WEAPONS = {
     reload: 1.65,
     settle: 0,
   },
+  support: {
+    name: 'Support gun',
+    range: 10,
+    damage: 10,
+    interval: 0.2,
+    magazine: 18,
+    reload: 2.4,
+    settle: 0.65,
+  },
   coil: {
     name: 'Coil rifle',
     range: 13,
@@ -76,13 +86,15 @@ export const longGun = (person: Person) =>
   person.armament.kind !== 'pistol';
 export const visibleWeapon = (person: Operative) => person.weapon || longGun(person);
 export const guardWeapon = (tactic?: GuardTactic): WeaponKind =>
-  tactic?.role === 'marksman'
-    ? 'coil'
-    : tactic?.role === 'sentry'
-      ? 'carbine'
-      : tactic?.role === 'breacher'
-        ? 'shotgun'
-        : 'pistol';
+  tactic?.role === 'support'
+    ? 'support'
+    : tactic?.role === 'marksman'
+      ? 'coil'
+      : tactic?.role === 'sentry'
+        ? 'carbine'
+        : tactic?.role === 'breacher'
+          ? 'shotgun'
+          : 'pistol';
 
 export function cancelCharge(person: Person) {
   if (person.armament?.charging) delete person.armament.charging;
@@ -94,7 +106,7 @@ export function updateWeapon(person: Person, dt: number, moved: boolean) {
   if (moved || person.hp <= 0 || (gun?.reload ?? 0) > 0) cancelCharge(person);
   if (!gun || person.hp <= 0) return;
   const spec = WEAPONS[gun.kind];
-  gun.settle = moved ? spec.settle : Math.max(0, gun.settle - dt);
+  gun.settle = moved ? spec.settle : Math.max(0, gun.settle - dt * readiness(person));
   if (gun.reload > 0) {
     gun.reload = Math.max(0, gun.reload - dt);
     if (gun.reload === 0) gun.rounds = spec.magazine;
@@ -106,6 +118,7 @@ export function weaponStatus(person: Person) {
   if ('disarmed' in person && person.disarmed) return 'Unarmed · recover GEAR';
   const gun = person.armament;
   if (!gun) return '';
+  if ((person.pressure ?? 0) > 0.1) return 'Suppressed · move to cover; firing slowed';
   if (gun.reload > 0) return `Reloading ${gun.reload.toFixed(1)}s`;
   if (gun.charging) return `Charging ${gun.charging.remaining.toFixed(1)}s`;
   if (gun.settle > 0) return person.path.length ? 'Stop to aim' : 'Steadying';

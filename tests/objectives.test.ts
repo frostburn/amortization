@@ -150,6 +150,7 @@ describe('mission guidance', () => {
     // Optional evidence in rescue/broadcast missions must never enable the end action.
     w.evidence = 'carried';
     w.agents[0].carrying = true;
+    if (w.recall) w.recall.filed = true;
     if (w.settlement) {
       expect(extractionRequirement(w)).not.toBeNull();
       w.settlement.reconciled = true;

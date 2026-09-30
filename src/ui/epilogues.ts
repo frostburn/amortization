@@ -3,6 +3,10 @@ import type { Mission } from '../sim/types';
 // These scenes depend only on the completed contract, never on optional cargo,
 // alarm status or a full-crew extraction. Keep prose out of replay fingerprints.
 export const epilogues: Record<Mission['id'], { lead: string; body: string }> = {
+  countermand: {
+    lead: 'The seizure crews have been recalled.',
+    body: 'Voss checks each withdrawn dispatch against the original. Mara calls the woman whose repayment arrived that morning. This time, she can tell her that the men at the door have been ordered to leave.',
+  },
   settlement: {
     lead: 'The first repayments have cleared.',
     body: 'Mara checks the first receipt against the register. An account that has carried charges for years now shows money coming in. She calls its owner.',
