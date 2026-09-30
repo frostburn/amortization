@@ -754,9 +754,9 @@ Characters use a small deformable mesh over the existing atlas for alternating s
 
 CI uses one Ubuntu job, Node 24, and Chromium. Every pull request and main-branch
 push runs the full lint, typecheck, build and simulation suite, followed by the
-10 browser checks tagged `@smoke`. These cover desktop startup and restart,
+11 browser checks tagged `@smoke`. These cover desktop startup and restart,
 squad/individual selection, touch orders, objective guides, locked extraction,
-stable layout, camera follow and replay export/playback/restore.
+stable layout, camera follow, replay export/playback/restore, and optional story entry/rewards.
 
 The full browser suite remains available with `npm run test:e2e`, or in
 GitHub Actions via **Check → Run workflow → Run the full browser regression suite**.

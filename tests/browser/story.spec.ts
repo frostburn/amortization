@@ -3,11 +3,53 @@ import { missions } from '../../src/content/missions';
 import { missionCopy } from '../../src/content/mission-copy';
 import type { World } from '../../src/sim/types';
 
+test('story entry stays optional and completed operations expose their reward @smoke', async ({
+  page,
+}) => {
+  const errors: string[] = [],
+    artRequests: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text());
+  });
+  page.on('request', (request) => {
+    if (request.url().includes('/assets/story/')) artRequests.push(request.url());
+  });
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'amortization.records.v2',
+      JSON.stringify({ version: 2, missions: { depot: { best: 100, completions: 1 } } }),
+    ),
+  );
+  await page.goto('/');
+  await expect(page).toHaveTitle('Amortization');
+  await expect(page.locator('#boot-screen')).toHaveCount(0);
+  const mission = page.locator('#mission-dialog'),
+    scene = page.locator('#story-dialog');
+  await expect(mission.getByRole('button', { name: 'Begin operation' })).toBeFocused();
+  await expect(scene).toBeHidden();
+  expect(artRequests).toEqual([]);
+  await mission.locator('[data-story-entry="opening"]').click();
+  await expect(scene.locator('.story-speaker')).toHaveText('Iona Voss');
+  await scene.getByRole('button', { name: 'Next', exact: false }).click();
+  await expect(scene.locator('.story-speaker')).toHaveText('Morrow');
+  await scene.getByRole('button', { name: 'Close scene' }).click();
+  await expect(mission).toBeVisible();
+  await mission.getByRole('button', { name: 'Choose operation' }).click();
+  await expect(mission.locator('[data-operation="archive"] [data-story-entry]')).toHaveCount(0);
+  await mission.locator('[data-story-entry="depot"]').click();
+  await expect(scene.getByRole('heading')).toHaveText(missionCopy.depot.scene.title);
+  await scene.getByRole('button', { name: 'Close scene' }).click();
+  await expect(mission.locator('[data-story-entry="depot"]')).toBeVisible();
+  await expect(page.locator('vite-error-overlay')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
 for (const touch of [false, true]) {
-  test(`optional story: ${touch ? 'touch' : 'desktop @smoke'} loading, rewards and replay`, async ({
+  test(`optional story: ${touch ? 'touch' : 'desktop'} loading, rewards and replay`, async ({
     browser,
   }, testInfo) => {
-    test.setTimeout(45_000);
+    test.setTimeout(90_000); // Extended completion/reload journey; outside routine smoke CI.
     const context = await browser.newContext({
       viewport: touch ? { width: 390, height: 844 } : { width: 1280, height: 800 },
       hasTouch: touch,

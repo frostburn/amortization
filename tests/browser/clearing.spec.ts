@@ -25,6 +25,11 @@ for (const mobile of [false, true]) {
       hasTouch: mobile,
       isMobile: mobile,
     });
+    // Chromium treats the fulfilled camera harness as an unknown address space.
+    // Grant local-network access to our loopback test origin for Vite's socket.
+    await context.grantPermissions(['local-network-access'], {
+      origin: 'http://127.0.0.1:4173',
+    });
     const page = await context.newPage();
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
