@@ -444,6 +444,12 @@ Verification completes a quiet split-team route with all patrols active and an
 armed route through the screened approach, both with all four operatives alive.
 Both routes are recorded and replayed against exact simulation checkpoints.
 
+Two retained [human completions](tests/replays/README.md#margin-call-all-medals)
+also cover all seven medals with exact checkpoints: quiet SHUNT access and CUT
+with RADIO active. Both extract all four. Their long perimeter detours bypass
+much of the combat, so they establish medal attainability rather than balanced
+difficulty across approaches; no balance change follows this batch.
+
 ## Adverse selection · Operation 08
 
 Recover the **MANDATE** from a 52 × 38 authorisation works, then bring the carrier
