@@ -46,6 +46,9 @@ export class Aftermath {
   get resultsReady() {
     return this.age >= 3 && (this.phase === 'departed' || this.phase === 'failed');
   }
+  get liftClosed() {
+    return Math.min(1, this.departure / 1.4);
+  }
   constructor(source: World) {
     this.world = structuredClone(source);
     // Share immutable map geometry and its navigation cache, not actor state.
@@ -58,7 +61,7 @@ export class Aftermath {
         : [];
     const exit = source.mission.landmarks.find((o) => o.id === (source.extractedAt ?? 'extract'))!;
     this.van =
-      source.status === 'won'
+      source.status === 'won' && !source.mission.threshold
         ? source.mission.solids
             .filter((s) => s.kind === 'van')
             .sort(
@@ -75,6 +78,8 @@ export class Aftermath {
           ? { x: exit.x > v.x + v.w / 2 ? v.x + v.w + 0.25 : v.x - 0.25, y: v.y + v.h * 0.48 }
           : { x: v.x + v.w * 0.48, y: exit.y > v.y + v.h / 2 ? v.y + v.h + 0.25 : v.y - 0.25 };
     }
+    if (source.status === 'won' && source.mission.threshold)
+      this.door = position(source.mission.threshold.door);
     for (const p of people(this.world)) {
       p.previous = position(p);
       p.cooldown = 0;
@@ -131,7 +136,7 @@ export class Aftermath {
       // A completed extraction is final even for unusual/debug map geometry.
       if (this.age >= 5 || this.passengers.every((p) => this.boarded.has(p.id))) {
         for (const p of this.passengers) this.boarded.add(p.id);
-        this.phase = this.van ? 'departing' : 'departed';
+        this.phase = this.van || w.mission.threshold ? 'departing' : 'departed';
       }
     }
     if (this.phase === 'departing' && this.van) {
@@ -141,6 +146,10 @@ export class Aftermath {
       this.offset[axis] += direction * Math.min(8, this.departure * 3) * dt;
       if (v[axis] + this.offset[axis] > edge + 4 || v[axis] + length + this.offset[axis] < -4)
         this.phase = 'departed';
+    }
+    if (this.phase === 'departing' && w.mission.threshold) {
+      this.departure += dt;
+      if (this.liftClosed === 1) this.phase = 'departed';
     }
   }
 }

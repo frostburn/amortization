@@ -94,7 +94,9 @@ export function updateFlashes(w: World, dt: number) {
         const a = p as Operative;
         if (
           a.order.kind === 'interact' &&
-          (isCharge(a.order.target) || a.order.target === 'file-recall')
+          (isCharge(a.order.target) ||
+            a.order.target === 'file-recall' ||
+            a.order.target === 'key-lift')
         )
           a.interaction = 0;
       }

@@ -13,7 +13,7 @@ const exits = missions.flatMap((m) =>
 );
 
 it.each(exits)(
-  'boards survivors at the correct van and leaves $name without changing the result',
+  'boards survivors at the correct exit and leaves $name without changing the result',
   ({ mission, exit }) => {
     const w = createWorld(mission);
     w.status = 'won';
@@ -35,9 +35,15 @@ it.each(exits)(
     for (let i = 0; i < 200; i++) ending.update(0.1);
     expect(ending.phase).toBe('departed');
     expect(ending.resultsReady).toBe(true);
-    const heading = vanDeparture(ending.van!, mission);
-    expect(Math.sign(ending.offset[heading.axis])).toBe(heading.direction);
-    expect(Math.hypot(ending.offset.x, ending.offset.y)).toBeGreaterThan(5);
+    if (mission.threshold) {
+      expect(ending.van).toBeUndefined();
+      expect(ending.liftClosed).toBe(1);
+      expect(ending.offset).toEqual({ x: 0, y: 0 });
+    } else {
+      const heading = vanDeparture(ending.van!, mission);
+      expect(Math.sign(ending.offset[heading.axis])).toBe(heading.direction);
+      expect(Math.hypot(ending.offset.x, ending.offset.y)).toBeGreaterThan(5);
+    }
     expect(w).toEqual(original);
     expect(earnedMedals(w)).toEqual(medals);
   },

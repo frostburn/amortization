@@ -197,8 +197,8 @@ export async function boot() {
       updateHud();
       return;
     }
-    if (type === 'work:file-recall') {
-      issue({ kind: 'interact', agents: selected, target: 'file-recall' });
+    if (type === 'work:file-recall' || type === 'work:key-lift') {
+      issue({ kind: 'interact', agents: selected, target: type.slice(5) as ObjectKind });
       updateHud();
       return;
     }

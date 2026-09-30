@@ -95,9 +95,9 @@ const medals: Medal[] = [
   {
     id: 'light-touch',
     name: 'Light touch',
-    rule: 'Extract all four with the evidence, using SHUNT to enter the archive. Never force CUT.',
+    rule: 'Extract all four with the cargo, using SHUNT to enter the secured room. Never force CUT.',
     symbol: '<path d="M7 21V3h10v18M4 21h16m-6-9h1"/>',
-    available: (m) => !!m.archive && m.objective === 'ledger',
+    available: (m) => !!m.archive && (m.objective === 'ledger' || m.objective === 'access'),
     qualifies: (w) => !w.shutterBreached,
   },
   {

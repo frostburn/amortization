@@ -36,6 +36,7 @@ import { briefingObjective, renderBriefing } from './briefing';
 import { StoryPlayer, storyButton } from './story';
 import type { StoryAudio } from './story';
 import type { StoryId } from '../content/story';
+import { liftReady, liftRemaining } from '../sim/threshold';
 import { activeCircuit, captureReady, kestrelRemoved } from '../sim/floors';
 import { missionCopy } from '../content/mission-copy';
 import type { Records, MissionRecord } from './storage';
@@ -112,6 +113,7 @@ export class Hud {
     const detentionControls = `<section id="detention-controls" class="objective-actions" aria-label="Detention gates" hidden><p id="detention-status" role="status"></p><div class="broadcast-actions" id="detention-switches"><button data-action="detention:access-intake" id="intake-button">Hold INTAKE</button><button data-action="detention:access-cells" id="cells-button">Hold CELLS</button></div><button data-action="detention:escape-release" id="release-exit-button" hidden>Release EXIT</button></section>`;
     const securityControls = `<section id="security-controls" class="objective-actions" aria-label="Wired security" hidden><p id="security-status" role="status"></p><div class="broadcast-actions"><button data-action="security:power-west" id="power-west-button" title="Amber circuit · four seconds with free hands">Isolate WEST · 4s</button><button data-action="security:power-east" id="power-east-button" title="Blue circuit · four seconds with free hands">Isolate EAST · 4s</button></div><button data-action="security:authorise" id="authorise-button" aria-describedby="authorise-status">Authorise INSPECT · 22s</button><p id="authorise-status"></p></section>`;
     const demolitionControls = `<section id="demolition-controls" class="objective-actions" aria-label="Demolition" hidden><div id="plant-actions" class="broadcast-actions">${(['charge-west', 'charge-east'] as const).map((id) => `<div><button data-action="plant:${id}" id="${id}-button" aria-describedby="${id}-status"></button><p id="${id}-status"></p></div>`).join('')}</div><button data-action="detonate" id="detonate-button" aria-describedby="detonation-status">Detonate both cores</button><p id="detonation-status" role="status"></p></section>`;
+    const liftControls = `<section id="lift-controls" class="objective-actions" aria-label="Tower lift" hidden><p id="lift-status" role="status"></p><progress id="lift-progress" value="0" max="1" aria-label="Lift arrival"></progress><button data-action="work:key-lift" id="lift-button">KEY carrier to LINK · 5s</button></section>`;
     const recallControls = `<section id="recall-controls" class="objective-actions" aria-label="Seizure recall" hidden><p id="recall-status" role="status"></p><progress id="recall-progress" value="0" max="1" aria-label="Recall filing"></progress><button data-action="work:file-recall" id="recall-button">Carrier to FILE · 9s</button></section>`;
     const settlementControls = `<section id="settlement-controls" class="objective-actions" aria-label="Repayments" hidden><p id="settlement-status" role="status"></p><progress id="settlement-progress" value="0" max="1" aria-label="Repayments released"></progress><button data-action="settlement:reconcile" id="reconcile-button">Carrier to CHECK · 6s</button><div class="broadcast-actions" id="settlement-actions"><button data-action="settlement:countersign" id="countersign-button">Hold SIGN</button><button data-action="settlement:settle" id="settle-button">Carrier to CLEAR</button></div></section>`;
     const broadcastControls = `<section id="broadcast-controls" class="objective-actions" aria-label="Transmission" hidden><p id="broadcast-progress-label"></p><progress id="broadcast-progress" value="0" max="1" aria-label="Upload progress"></progress><p id="broadcast-status" role="status"></p><div id="broadcast-actions" class="broadcast-actions"><button data-action="work:mask" id="mask-button" title="Send a selected operative with free hands to hold LOOP. Moving or Hold releases it.">Hold LOOP</button><button data-action="work:upload" id="upload-button" title="Send a selected operative with free hands to UPLINK. Moving or Hold pauses the upload; progress is saved.">Work UPLINK</button></div></section>`;
@@ -130,7 +132,7 @@ export class Hud {
           <footer class="controls-hint"><span><kbd>1–4</kbd> operative <kbd>Q</kbd> squad <kbd>RMB</kbd> order <kbd>Space</kbd> pause <kbd>Tab</kbd> slow</span><button data-action="restart" title="Restart operation (Shift+R)">Restart</button></footer>
         </section>
         <aside class="sidebar mission-sidebar" aria-label="Mission and status">
-          <section class="mission-section"><h2 id="mission-title"></h2><div class="objectives">${(['primary', 'evidence', 'extract'] as const).map((id) => `<div class="objective-group" id="objective-group-${id}"><button id="objective-${id}" data-goal="${id}" aria-controls="objective-guide" aria-describedby="objective-help" title="Locate relevant mission items"></button>${id === 'primary' ? `<section id="archive-escape" class="objective-actions" hidden><p id="archive-escape-hint"></p><button id="archive-cut-button" data-action="work:breach">Send selected to CUT · 8s</button></section>` + floorControls + escortControls + courierControls + broadcastControls + demolitionControls + securityControls + detentionControls + settlementControls + recallControls : id === 'extract' ? extractionControls : ''}</div>`).join('')}</div><p id="objective-help">Hover or tap goals to locate · <kbd>?</kbd> help</p></section>
+          <section class="mission-section"><h2 id="mission-title"></h2><div class="objectives">${(['primary', 'evidence', 'extract'] as const).map((id) => `<div class="objective-group" id="objective-group-${id}"><button id="objective-${id}" data-goal="${id}" aria-controls="objective-guide" aria-describedby="objective-help" title="Locate relevant mission items"></button>${id === 'primary' ? `<section id="archive-escape" class="objective-actions" hidden><p id="archive-escape-hint"></p><button id="archive-cut-button" data-action="work:breach">Send selected to CUT · 8s</button></section>` + floorControls + escortControls + courierControls + broadcastControls + demolitionControls + securityControls + detentionControls + settlementControls + recallControls + liftControls : id === 'extract' ? extractionControls : ''}</div>`).join('')}</div><p id="objective-help">Hover or tap goals to locate · <kbd>?</kbd> help</p></section>
           <section class="alert-section" aria-label="Alert status"><p class="alert" id="alert">● Site quiet</p><p class="fine" id="radio-status">Radio network online</p><p class="fine" id="archive-status" hidden></p></section>
           <section class="dispatch" aria-label="Comms"><span>COMMS</span><p id="message" role="status">Preparing the operation…</p></section>
           <details class="intel-section"><summary>Field notes &amp; records</summary><div class="intel-content"><p class="description" id="mission-description"></p><p id="intel"></p><p class="best" id="best"></p></div></details>
@@ -686,6 +688,31 @@ export class Hud {
       );
       (this.field('work-progress') as HTMLProgressElement).value = Math.min(1, progress / duration);
     }
+    this.field('lift-controls').hidden = !world.threshold;
+    if (world.threshold) {
+      const remaining = liftRemaining(world),
+        carrier = world.agents.find((a) => living(a) && a.carrying);
+      this.set(
+        'lift-status',
+        remaining === null
+          ? carrier
+            ? `${carrier.name} has KEY. Calling the lift draws the lobby reserve.`
+            : 'Recover KEY from dispatch, then call at LINK.'
+          : liftReady(world)
+            ? 'LIFT ready. Bring KEY and every survivor aboard.'
+            : `Car arriving in ${Math.ceil(remaining)}s · wired lobby bell active`,
+      );
+      const button = this.field('lift-button') as HTMLButtonElement;
+      button.hidden = remaining !== null;
+      button.disabled = !!objectRequirement(world, 'key-lift', state.selected);
+      button.title =
+        objectRequirement(world, 'key-lift', state.selected) ??
+        'Send the carrier to LINK. Stage the crew first; the local reserve investigates the call.';
+      const progress = this.field('lift-progress') as HTMLProgressElement;
+      progress.hidden = remaining === null || remaining === 0;
+      progress.value =
+        remaining === null ? 0 : 1 - remaining / world.mission.threshold!.arrivalTime;
+    }
     if (world.recall) {
       const carrier = world.agents.find((p) => living(p) && p.carrying);
       const working = carrier?.order.kind === 'interact' && carrier.order.target === 'file-recall';
@@ -896,9 +923,13 @@ export class Hud {
       );
       this.set(
         'intel',
-        world.evidence === 'carried'
-          ? `${landmark(world, 'evidence').tag} is conspicuous. Clear a path to the east gate, release the shunt operator once the carrier is outside, and bring everyone to VAN.`
-          : `One operative holds SHUNT; another enters the ${world.mission.archive.name ?? 'archive'}. CUT is the noisy alternative. Prepare the east gate before lifting ${landmark(world, 'evidence').tag}.`,
+        world.threshold
+          ? world.evidence === 'carried'
+            ? 'Release SHUNT once its partner is outside dispatch. Bring KEY to LINK, then take the crew to LIFT.'
+            : 'Hold SHUNT with a partner to open dispatch, or use CUT. The crew leaves through LIFT, not the arrival van or the east gate.'
+          : world.evidence === 'carried'
+            ? `${landmark(world, 'evidence').tag} is conspicuous. Clear a path to the east gate, release the shunt operator once the carrier is outside, and bring everyone to VAN.`
+            : `One operative holds SHUNT; another enters the ${world.mission.archive.name ?? 'archive'}. CUT is the noisy alternative. Prepare the east gate before lifting ${landmark(world, 'evidence').tag}.`,
       );
     }
     if (world.courier) {

@@ -1,3 +1,4 @@
+import { updateLift } from './threshold';
 import { position } from './types';
 import { combatTarget, followStairs } from './floors';
 import {
@@ -66,6 +67,7 @@ function walk(world: World, p: Person, speed: number, dt: number) {
 export function step(world: World, dt = STEP) {
   if (world.status !== 'playing') return;
   world.time += dt;
+  updateLift(world);
   updateFlashes(world, dt);
   if (
     world.security &&
@@ -152,6 +154,7 @@ export function step(world: World, dt = STEP) {
     const working =
       a.order.kind === 'interact' &&
       ((a.order.target === 'escort' && !!world.mission.continuity && !world.escort?.recruited) ||
+        a.order.target === 'key-lift' ||
         a.order.target === 'file-recall' ||
         isSettlement(a.order.target) ||
         a.order.target.startsWith('access-') ||

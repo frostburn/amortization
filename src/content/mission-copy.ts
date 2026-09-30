@@ -11,6 +11,39 @@ interface MissionCopy {
 // stays outside recorded mission definitions, so prose edits do not invalidate
 // replays. Endings must hold for any successful route and surviving crew.
 export const missionCopy: Record<Mission['id'], MissionCopy> = {
+  threshold: {
+    briefing: {
+      objective: 'Recover the tower service KEY, then have its carrier work LINK to call the lift.',
+      extract: 'Board LIFT with KEY and every survivor once the car arrives.',
+      rules:
+        'LINK takes five seconds; the car takes eighteen seconds to arrive. Its wired bell draws the local reserve even with RADIO disabled. Sunset has night sight ranges.',
+    },
+    epilogue: {
+      lead: 'The service lift leaves the street behind.',
+      body: 'The original key opens a route beyond the executive lockdown. Below, the interchange returns to the independent exchange. Above, Dacre has joined Holt in the penthouse. There is no district left for them to send the crew back through.',
+    },
+    scene: {
+      title: 'Above the last street',
+      setting: 'safehouse',
+      beats: [
+        {
+          speaker: 'voss',
+          text: 'The lift answered. I can see the car moving above the public floors. They cannot recall it from the chairman’s desk.',
+        },
+        {
+          speaker: 'mara',
+          text: 'The repayments stand. The seizure crews have no orders left to enforce. Whatever happens upstairs, those people keep what was returned.',
+        },
+        {
+          speaker: 'dacre',
+          setting: 'boardroom',
+          text: 'The interchange is lost. I have brought the remaining officers up here. There will be no more positions between us and that lift.',
+        },
+        { speaker: 'holt', text: 'Then stay. You know which doors will hold.' },
+        { speaker: 'dacre', text: 'I know which doors they have already opened.' },
+      ],
+    },
+  },
   continuity: {
     briefing: {
       objective:

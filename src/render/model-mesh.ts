@@ -71,6 +71,7 @@ export class ModelMesh extends Mesh<Geometry, Shader> {
             in vec4 vTint;
             in vec3 vNormal;
             uniform float uSilhouette;
+            uniform float uSunset;
             out vec4 finalColor;
             void main() {
               // Interpolation softens rounded parts; duplicated face normals
@@ -81,19 +82,30 @@ export class ModelMesh extends Mesh<Geometry, Shader> {
                 vec3 normal = vNormal * inversesqrt(lengthSquared);
                 light = 0.72 + max(0.0, dot(normal, vec3(-0.35, -0.45, 0.82))) * 0.48;
               }
-              finalColor = mix(vec4(min(vColor * light, vec3(1.0)), 1.0) * vTint, vTint, uSilhouette);
+              vec3 shade = vec3(light);
+              if (uSunset > 0.5 && lengthSquared > 0.0) {
+                vec3 normal = vNormal * inversesqrt(lengthSquared);
+                shade = vec3(0.76, 0.62, 0.66) + max(0.0, dot(normal, vec3(-0.68, -0.55, 0.485))) * vec3(0.48, 0.39, 0.20);
+              }
+              finalColor = mix(vec4(min(vColor * shade, vec3(1.0)), 1.0) * vTint, vTint, uSilhouette);
             }`,
         }),
         resources: {
           depthUniforms: {
             uDepthLayer: { value: new Float32Array([0, 1]), type: 'vec2<f32>' },
             uSilhouette: { value: Number(silhouette), type: 'f32' },
+            uSunset: { value: 0, type: 'f32' },
           },
         },
       }),
     });
     this.state.depthTest = true;
     this.state.depthMask = true;
+  }
+  sunset(enabled: boolean) {
+    const u = this.shader!.resources.depthUniforms;
+    u.uniforms.uSunset = Number(enabled);
+    u.update();
   }
   setDepthLayer(index: number, count: number) {
     const step = 2 / (count + 1);

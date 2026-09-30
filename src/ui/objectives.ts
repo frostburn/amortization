@@ -1,5 +1,13 @@
+import { liftReady, liftRemaining } from '../sim/threshold';
 import { captureReady, kestrelRemoved } from '../sim/floors';
-import { distance, EXTRACTION_RADIUS, inside, isExtraction, living } from '../sim/types';
+import {
+  distance,
+  EXTRACTION_RADIUS,
+  inside,
+  isExtraction,
+  living,
+  requiresCargo,
+} from '../sim/types';
 import type { ObjectKind, Vec, World } from '../sim/types';
 import { landmark } from '../sim/orders';
 import { clearedCargo, courierGuard } from '../sim/courier';
@@ -90,7 +98,29 @@ export function missionGoals(w: World): Goal[] {
   const kit: GuideTarget[] = w.disguiseTaken ? [] : ['disguise'];
   const evidenceInArchive = !!m.archive && inside(w.evidencePosition, m.secure);
   let primary: Goal;
-  if (m.continuity) {
+  if (w.threshold) {
+    const ready = liftReady(w),
+      remaining = liftRemaining(w);
+    primary = {
+      id: 'primary',
+      complete: ready,
+      label: ready
+        ? '✓ Service lift ready'
+        : remaining === null
+          ? '○ Call the tower lift'
+          : `○ Lift arriving · ${Math.ceil(remaining)}s`,
+      detail: ready
+        ? 'The lift will wait. Bring KEY and every survivor to LIFT, then order boarding. A dropped key remains recoverable; you do not need to call again.'
+        : remaining === null
+          ? 'Recover KEY from dispatch and have its carrier work LINK for five seconds. The car takes eighteen seconds to arrive. Its wired bell draws the existing lobby reserve to LINK; RADIO does not stop it. The northern staff walk and lobby screens provide cover.'
+          : 'The car is on its way. The reserve investigates LINK, not your unseen location. Get the crew behind cover; the lift stays available once it arrives.',
+      targets: ready
+        ? ['extract', 'evidence']
+        : remaining === null
+          ? ['evidence', 'key-lift']
+          : ['extract', 'key-lift'],
+    };
+  } else if (m.continuity) {
     const removed = kestrelRemoved(w),
       cuffed = !!v?.recruited;
     primary = {
@@ -383,7 +413,7 @@ export function missionGoals(w: World): Goal[] {
 
   const carrier = w.agents.find((a) => living(a) && a.carrying);
   const tag = landmark(w, 'evidence').tag;
-  const optionalEvidence = !['ledger', 'case', 'settlement', 'recall'].includes(m.objective);
+  const optionalEvidence = !requiresCargo(m);
   const evidence: Goal = {
     id: 'evidence',
     optional: optionalEvidence,
@@ -404,7 +434,7 @@ export function missionGoals(w: World): Goal[] {
           ? 'CASE travels with the courier. Use DIVERT and CALL for an inspection handover in disguise, or defeat the courier and collect the dropped case.'
           : evidenceInArchive && !w.shutterOpen
             ? `${tag} is inside the locked ${m.archive?.name ?? 'archive'}. Keep one operative at SHUNT while another collects it, or force the lock with CUT. ${optionalEvidence ? 'This evidence is optional; you can complete the operation without it.' : 'The cargo is required for extraction.'}`
-            : `Interact with ${tag} to collect it. It slows its carrier and needs both hands.${optionalEvidence ? ' This evidence is optional; you can complete the operation without it.' : ' Bring its carrier to VAN; extraction requires the evidence.'}${m.broadcast ? ' The log attracts suspicion, even in uniform. Set it down before working LOOP or UPLINK.' : ''}`,
+            : `Interact with ${tag} to collect it. It slows its carrier and needs both hands.${optionalEvidence ? ' This evidence is optional; you can complete the operation without it.' : m.threshold ? ' Bring its carrier to LINK, then LIFT; the original key is required to board.' : ' Bring its carrier to VAN; extraction requires the evidence.'}${m.broadcast ? ' The log attracts suspicion, even in uniform. Set it down before working LOOP or UPLINK.' : ''}`,
     targets:
       w.evidence === 'extracted'
         ? ['extract']
@@ -433,10 +463,15 @@ export function missionGoals(w: World): Goal[] {
           ? `○ ${requirement.label} before extraction`
           : exits.length > 1
             ? '○ Extract at STREET or SERVICE'
-            : '○ Extract at the van',
-    detail: requirement
-      ? `${requirement.detail} Complete the highlighted objective to unlock the exit. Clicking a locked van leaves current orders in place.`
-      : `Use the controls beside the extraction goal to rally every survivor and leave. Or select the crew and right-click or tap the van or its diamond. The order waits for ${v ? `${v.name} and ` : optionalEvidence ? '' : `the ${tag} carrier and `}every surviving operative inside the same extraction ring.${v?.waiting ? ` ${v.name} is waiting: ask them to follow.` : ''}${exits.length > 1 ? ' STREET is short and exposed; SERVICE is longer, via the screened corridor.' : ''}${eastGate ? ' Open GATE from inside for the east exit.' : ''}${m.broadcast ? ' Bring the LOOP operator too; LOG is optional.' : ''} ${counts}.`,
+            : m.threshold
+              ? '○ Board LIFT with KEY and crew'
+              : '○ Extract at the van',
+    detail: m.threshold
+      ? (requirement?.detail ??
+        `Order boarding at LIFT with KEY and every survivor in its ring. ${counts}.`)
+      : requirement
+        ? `${requirement.detail} Complete the highlighted objective to unlock the exit. Clicking a locked van leaves current orders in place.`
+        : `Use the controls beside the extraction goal to rally every survivor and leave. Or select the crew and right-click or tap the van or its diamond. The order waits for ${v ? `${v.name} and ` : optionalEvidence ? '' : `the ${tag} carrier and `}every surviving operative inside the same extraction ring.${v?.waiting ? ` ${v.name} is waiting: ask them to follow.` : ''}${exits.length > 1 ? ' STREET is short and exposed; SERVICE is longer, via the screened corridor.' : ''}${eastGate ? ' Open GATE from inside for the east exit.' : ''}${m.broadcast ? ' Bring the LOOP operator too; LOG is optional.' : ''} ${counts}.`,
     targets: requirement
       ? (requirement.goal === 'primary' ? primary : evidence).targets
       : [...exits.map((o) => o.id), ...(eastGate ? ['gate' as const] : [])],

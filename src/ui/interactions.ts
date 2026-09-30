@@ -104,6 +104,8 @@ export function objectRequirement(w: World, id: ObjectKind, selected: string[]):
     return agents.some((a) => !settlementRefusal(w, a, id))
       ? null
       : settlementRefusal(w, agents[0], id);
+  if (id === 'key-lift' && !agents.some((a) => a.carrying))
+    return 'Select the KEY carrier to work LINK.';
   if (id === 'file-recall' && !agents.some((a) => a.carrying))
     return 'Select the RECALL carrier to file the original at FILE.';
   const free = agents.filter((a) => !a.carrying);

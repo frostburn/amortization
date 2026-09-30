@@ -26,6 +26,7 @@ export interface Solid extends Rect {
   height: number;
 }
 export type ObjectKind =
+  | 'key-lift'
   | 'stairs-up'
   | 'stairs-down'
   | 'disguise'
@@ -100,7 +101,8 @@ export interface Mission {
     | 'injunction'
     | 'settlement'
     | 'countermand'
-    | 'continuity';
+    | 'continuity'
+    | 'threshold';
   number: string;
   title: string;
   location: string;
@@ -113,8 +115,12 @@ export interface Mission {
     | 'rescue'
     | 'settlement'
     | 'recall'
-    | 'capture';
+    | 'capture'
+    | 'access';
   daylight?: boolean;
+  /** Presentation palette; does not extend sight ranges. */
+  palette?: 'sunset';
+  threshold?: { keyTime: number; arrivalTime: number; reserve: number[]; door: Vec };
   building?: { footprint: Rect; upper: Rect; stairs: [Vec, Vec] };
   /** Kestrel controls alternating wired circuits until removed. */
   continuity?: { cycle: number };
@@ -259,6 +265,7 @@ export type SoundEvent = Vec &
     | { kind: 'flash' }
   );
 export interface World {
+  threshold?: { calledAt: number | null; announced: boolean };
   flashGrenades?: { thrower: string; from: Vec; to: Vec; age: number }[];
   mission: Mission;
   agents: Operative[];
@@ -331,6 +338,9 @@ export const inside = (p: Vec, r: Rect) =>
 export const living = (p: Person) => p.hp > 0;
 export const disoriented = (p: Person) => (p.disoriented ?? 0) > 0;
 export const controllable = (p: Operative) => living(p) && !p.captive;
+/** Keep briefing, guidance and boarding aligned about the physical cargo. */
+export const requiresCargo = (m: Mission) =>
+  ['ledger', 'case', 'settlement', 'recall', 'access'].includes(m.objective);
 export const isExtraction = (id: ObjectKind): id is 'extract' | 'alternate' =>
   id === 'extract' || id === 'alternate';
 export const people = (w: World): Person[] => [

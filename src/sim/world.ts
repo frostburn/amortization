@@ -133,6 +133,7 @@ export function createWorld(mission: Mission = depot): World {
     ...(mission.settlement
       ? { settlement: { reconciled: false, progress: 0, signer: null, clerk: null } }
       : {}),
+    ...(mission.threshold ? { threshold: { calledAt: null, announced: false } } : {}),
     ...(mission.recall ? { recall: { filed: false } } : {}),
     alarm: false,
     alarmTime: 0,

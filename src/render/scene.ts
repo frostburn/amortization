@@ -1,3 +1,6 @@
+import { visualTheme, skyColor } from './theme';
+import { liftReady } from '../sim/threshold';
+import { drawLiftPortal, drawThresholdGround, drawTowerFacade } from './threshold';
 import { CREW } from '../sim/crew';
 import { Application, Container, Graphics, Polygon, Text } from 'pixi.js';
 import type { Bounds } from 'pixi.js';
@@ -93,6 +96,7 @@ const markerColor = (id: ObjectKind) =>
         id === 'evidence' ||
         id === 'upload' ||
         id === 'file-recall' ||
+        id === 'key-lift' ||
         isCharge(id) ||
         id === 'access-intake'
       ? COLORS.amber
@@ -147,6 +151,7 @@ export class Scene {
   readonly camera = new Container();
   private floor = new Graphics();
   private upperDeck = new Graphics();
+  private liftPortal: Graphics | null = null;
   private roof = new Graphics();
   private upperAlpha = 0;
   private roofAlpha = 1;
@@ -262,6 +267,7 @@ export class Scene {
   }
   reset(world: World) {
     this.aftermath = null;
+    this.liftPortal = null;
     this.activeFloor = 0;
     this.upperAlpha = 0;
     this.roofAlpha = 1;
@@ -305,17 +311,19 @@ export class Scene {
       g = this.floor;
     g.clear();
     const mission = world.mission;
-    this.host.dataset.theme = mission.daylight ? 'day' : 'night';
-    this.app.renderer.background.color = mission.daylight ? 0x9baeb5 : 0x111c29;
+    const theme = visualTheme(mission);
+    this.host.dataset.theme = theme;
+    this.app.renderer.background.color = skyColor[theme];
     plane(g, 0, 0, mission.width, mission.height, COLORS.ground);
     for (let x = 0; x < mission.width; x++)
       for (let y = 0; y < mission.height; y++) {
         const depot = inside({ x, y }, mission.restricted);
         const street =
           x < mission.restricted.x - 1 || y > mission.restricted.y + mission.restricted.h;
-        plane(g, x, y, 1, 1, groundColor(x, y, depot, street, mission.daylight));
+        plane(g, x, y, 1, 1, groundColor(x, y, depot, street, theme));
         if (depot && (x * 17 + y * 23) % 47 === 0) drawYardDetail(g, x, y);
       }
+    if (mission.threshold) drawThresholdGround(g, mission);
     // Each site's ground markings use the same coordinates as its collision map.
     if (mission.id === 'depot') {
       plane(g, 7, 0, 1.5, 21.2, 0x525c53);
@@ -514,7 +522,7 @@ export class Scene {
       drawBuilding(
         this.roof,
         { ...b, id: 'continuity-house', height: 6.3, kind: 'building' },
-        true,
+        'day',
       );
       for (const z of [1.7, 4.6])
         for (let x = b.x + 1; x < b.x + b.w - 1; x += 3)
@@ -565,8 +573,13 @@ export class Scene {
       }
     }
     for (const solid of world.mission.solids) {
-      if (!solid.floor) drawContactShadow(g, solid, mission.daylight);
+      if (!solid.floor) drawContactShadow(g, solid, theme, mission);
       this.addSolid(solid);
+    }
+    if (mission.threshold) {
+      this.liftPortal = new Graphics();
+      const p = mission.threshold.door;
+      this.addScenery(this.liftPortal, { x: p.x - 1.8, y: p.y, w: 3.6, h: 0.25 }, 3);
     }
     this.gate = new Graphics();
     const gate = world.mission.gate;
@@ -596,29 +609,31 @@ export class Scene {
       }
     }
     const office = this.label(
-      mission.continuity
-        ? 'CONTINUITY HOUSE / 13'
-        : mission.recall
-          ? 'DISPATCH RECORDS'
-          : mission.settlement
-            ? 'BENEFICIARY RECORDS'
-            : mission.id === 'injunction'
-              ? 'ENFORCEMENT REGISTRY'
-              : mission.detention
-                ? 'PERSONNEL RETENTION / 09'
-                : mission.security
-                  ? 'RECORDS / 08'
-                  : mission.demolition
-                    ? 'RECOVERY CORES / RESTRICTED'
-                    : mission.broadcast
-                      ? 'RESTRICTED / UPLINK'
-                      : mission.escort?.locked
-                        ? 'TRANSFER RECORDS'
-                        : mission.transfer
-                          ? 'CUSTOMS'
-                          : mission.archive
-                            ? 'SECURE ARCHIVE'
-                            : 'SECURE OFFICE',
+      mission.threshold
+        ? 'DISPATCH / KEY CONTROL'
+        : mission.continuity
+          ? 'CONTINUITY HOUSE / 13'
+          : mission.recall
+            ? 'DISPATCH RECORDS'
+            : mission.settlement
+              ? 'BENEFICIARY RECORDS'
+              : mission.id === 'injunction'
+                ? 'ENFORCEMENT REGISTRY'
+                : mission.detention
+                  ? 'PERSONNEL RETENTION / 09'
+                  : mission.security
+                    ? 'RECORDS / 08'
+                    : mission.demolition
+                      ? 'RECOVERY CORES / RESTRICTED'
+                      : mission.broadcast
+                        ? 'RESTRICTED / UPLINK'
+                        : mission.escort?.locked
+                          ? 'TRANSFER RECORDS'
+                          : mission.transfer
+                            ? 'CUSTOMS'
+                            : mission.archive
+                              ? 'SECURE ARCHIVE'
+                              : 'SECURE OFFICE',
       10,
       0xf0c68b,
     );
@@ -633,29 +648,31 @@ export class Scene {
     office.visible = !mission.continuity;
     this.marks.addChild(office);
     const road = this.label(
-      mission.continuity
-        ? 'CONTINUITY HOUSE / 13:20'
-        : mission.recall
-          ? 'MUNICIPAL RECOVERY / 11:40'
-          : mission.settlement
-            ? 'SETTLEMENT COURT / 09:10'
-            : mission.id === 'injunction'
-              ? 'ENFORCEMENT / NO PUBLIC ACCESS'
-              : mission.detention
-                ? 'VISITORS / WEST SERVICE STREET'
-                : mission.demolition
-                  ? 'DEBT RECOVERY / 12'
-                  : mission.broadcast
-                    ? 'MUNICIPAL COMMUNICATIONS / 11'
-                    : mission.escort?.locked
-                      ? 'REMAND TRANSFERS / 04'
-                      : mission.transfer
-                        ? 'BONDED TRANSFER / 09'
-                        : mission.id === 'depot'
-                          ? 'MUNICIPAL TRANSIT / 06'
-                          : mission.id === 'clearing'
-                            ? 'BONDED FREIGHT / NO PUBLIC ACCESS'
-                            : 'CIVIC RECORDS / NO PUBLIC ACCESS',
+      mission.threshold
+        ? 'CROWN INTERCHANGE / EXECUTIVE ACCESS'
+        : mission.continuity
+          ? 'CONTINUITY HOUSE / 13:20'
+          : mission.recall
+            ? 'MUNICIPAL RECOVERY / 11:40'
+            : mission.settlement
+              ? 'SETTLEMENT COURT / 09:10'
+              : mission.id === 'injunction'
+                ? 'ENFORCEMENT / NO PUBLIC ACCESS'
+                : mission.detention
+                  ? 'VISITORS / WEST SERVICE STREET'
+                  : mission.demolition
+                    ? 'DEBT RECOVERY / 12'
+                    : mission.broadcast
+                      ? 'MUNICIPAL COMMUNICATIONS / 11'
+                      : mission.escort?.locked
+                        ? 'REMAND TRANSFERS / 04'
+                        : mission.transfer
+                          ? 'BONDED TRANSFER / 09'
+                          : mission.id === 'depot'
+                            ? 'MUNICIPAL TRANSIT / 06'
+                            : mission.id === 'clearing'
+                              ? 'BONDED FREIGHT / NO PUBLIC ACCESS'
+                              : 'CIVIC RECORDS / NO PUBLIC ACCESS',
       10,
       0x718277,
     );
@@ -679,7 +696,7 @@ export class Scene {
   private label(value: string, size = 12, color = 0xd4ded6) {
     const label = text(value, size, color);
     label.resolution = this.labelResolution;
-    if (this.world.mission.daylight)
+    if (this.world.mission.daylight || this.world.mission.palette)
       label.style.stroke = { color: 0x283c3e, width: 2.5, join: 'round' };
     this.labels.add(label);
     return label;
@@ -701,6 +718,8 @@ export class Scene {
     const root = new Container(),
       g = new Graphics();
     root.addChild(g);
+    if (this.world.mission.palette === 'sunset' && !['wall', 'building'].includes(s.kind))
+      g.tint = 0xffd5b8;
     root.y = -floorOf(s) * FLOOR_HEIGHT * HEIGHT;
     if (s.kind === 'van' || s.kind === 'transport') {
       drawVan(g, s, s.kind === 'van' ? vanDeparture(s, this.world.mission).direction : 1);
@@ -848,9 +867,10 @@ export class Scene {
         0x46505a,
       );
     } else if (s.kind === 'building') {
-      drawBuilding(g, s, this.world.mission.daylight);
+      drawBuilding(g, s, visualTheme(this.world.mission));
+      if (s.id === 'crown-tower') drawTowerFacade(g, s);
     } else {
-      drawWall(g, s);
+      drawWall(g, s, visualTheme(this.world.mission));
     }
     // Wall-mounted details must inherit their wall's occlusion, too.
     if (s.id === 'north' && !this.world.mission.daylight) {
@@ -1274,6 +1294,7 @@ export class Scene {
       const root = new Container(),
         ink = new Graphics(),
         sprite = new PersonSprite();
+      sprite.sunset(this.world.mission.palette === 'sunset');
       const name = this.label(label, 11);
       name.anchor.set(0.5, 1);
       name.y = -40;
@@ -1335,6 +1356,12 @@ export class Scene {
     if (!this.pointerActive && this.followDelay <= 0) this.selectionSnap = false;
     this.selectionKey = selectionKey;
     const w = this.world;
+    if (this.liftPortal && w.mission.threshold)
+      drawLiftPortal(
+        this.liftPortal,
+        w.mission.threshold.door,
+        liftReady(w) ? (this.aftermath?.liftClosed ?? 0) : 1,
+      );
     const active = selected
       .map((id) => w.agents.find((a) => a.id === id && controllable(a)))
       .find(Boolean);
