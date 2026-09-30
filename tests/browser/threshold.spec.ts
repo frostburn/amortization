@@ -15,7 +15,7 @@ for (const touch of [false, true])
   test(`Threshold ${touch ? 'touch' : 'desktop'}: sunset, key guidance and lift departure`, async ({
     browser,
   }, testInfo) => {
-    test.setTimeout(90000);
+    test.setTimeout(120000);
     const context = await browser.newContext({
       viewport: touch ? { width: 390, height: 844 } : { width: 1440, height: 960 },
       hasTouch: touch,
@@ -74,6 +74,72 @@ for (const touch of [false, true])
     await press('[data-action="home"]');
     await capture('overview');
     await page.evaluate(() => {
+      const w = window.thresholdWorld;
+      w.guards = [];
+      w.alarm = true;
+      w.alarmTime = w.time;
+      Object.assign(w.agents[0], { x: 22.5, y: 9, previous: { x: 22.5, y: 9 } });
+    });
+    await press('[data-agent="0"]');
+    await press('[data-action="follow"]');
+    const radio = page.locator('.map-timer[data-target="relay"]');
+    await expect(radio).toContainText('Patrol 1');
+    await expect(radio).toContainText('6.0s');
+    const orderRadio = await page.evaluate(() => {
+      const p = window.thresholdScene.markerScreen('relay')!;
+      const box = document.querySelector('#stage')!.getBoundingClientRect();
+      return { x: p.x + box.x, y: p.y + box.y };
+    });
+    if (touch) await page.touchscreen.tap(orderRadio.x, orderRadio.y);
+    else await page.mouse.click(orderRadio.x, orderRadio.y, { button: 'right' });
+    expect(await page.evaluate(() => window.thresholdWorld.agents[0].order)).toEqual({
+      kind: 'interact',
+      target: 'relay',
+    });
+    await advance(60);
+    await expect(radio).toContainText('Disable');
+    await expect(radio.locator('b')).toHaveText(['4.0s', '3.0s']);
+    expect(
+      await radio.evaluate((e) => {
+        const r = e.getBoundingClientRect();
+        return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.tagName;
+      }),
+    ).toBe('CANVAS');
+    await capture('radio-timers');
+    const width = (await radio.boundingBox())!.width;
+    await press('[data-action="zoom-in"]');
+    await expect(radio).toHaveCSS('width', `${width}px`);
+    // Rendering and camera changes cannot advance a paused simulation timer.
+    await expect(radio.locator('b')).toHaveText(['4.0s', '3.0s']);
+    await page.evaluate(() => {
+      const scene = window.thresholdScene;
+      scene.panBy(0, 10 - scene.markerScreen('relay')!.y);
+    });
+    // A marker at the upper map edge places its card below, never over the diamond.
+    await expect
+      .poll(async () => {
+        const box = await radio.boundingBox();
+        const anchor = await page.evaluate(
+          () =>
+            window.thresholdScene.markerScreen('relay')!.y +
+            document.querySelector('#stage')!.getBoundingClientRect().y,
+        );
+        return !!box && box.y > anchor;
+      })
+      .toBe(true);
+    await press('[data-action="follow"]');
+    await advance(95);
+    await expect(radio).toHaveCount(0);
+    await expect(page.locator('#archive-escape')).toBeVisible();
+    await press('#archive-cut-button');
+    await advance(150);
+    const cut = page.locator('.map-timer[data-target="breach"]');
+    await expect(cut).toContainText('Cut lock');
+    await capture('inside-cut-timer');
+    await advance(220);
+    await expect(cut).toHaveCount(0);
+    expect(await page.evaluate(() => window.thresholdWorld.shutterBreached)).toBe(true);
+    await page.evaluate(() => {
       const w = window.thresholdWorld,
         link = w.mission.landmarks.find((o) => o.id === 'key-lift')!;
       w.guards = [];
@@ -96,13 +162,28 @@ for (const touch of [false, true])
       kind: 'interact',
       target: 'key-lift',
     });
-    await advance(155);
+    await advance(60);
+    await expect(page.locator('.map-timer[data-target="key-lift"]')).toContainText('Link key');
+    await capture('link-timer');
+    await advance(95);
+    await expect(page.locator('.map-timer[data-target="key-lift"]')).toHaveCount(0);
     await expect(page.locator('#lift-button')).toBeHidden();
     await expect(page.locator('#objective-primary')).toContainText('Lift arriving');
     await expect(page.locator('#exit-button-extract')).toBeDisabled();
+    // LIFT lies beyond the narrow phone viewport when following the LINK worker.
+    // Use the player's locator to bring the actual destination onto the map.
+    await press('#objective-primary');
+    await press('[data-locate-target="extract"]');
+    await expect(page.locator('.objective-locator[data-target="extract"]')).toHaveClass(
+      /has-timer/,
+    );
+    await press('[data-dismiss-guide]');
+    await expect(page.locator('.map-timer[data-target="extract"]')).toContainText('Arrives');
+    await capture('lift-timer');
     await advance(550);
     await expect(page.locator('#objective-primary')).toContainText('Service lift ready');
     await expect(page.locator('#exit-button-extract')).toBeEnabled();
+    await expect(page.locator('.map-timer[data-target="extract"]')).toContainText('Open · waiting');
     await press('[data-action="drop"]');
     await expect(page.locator('#exit-button-extract')).toBeDisabled();
     await expect(page.locator('#exit-status-extract')).toContainText('carry KEY');
@@ -127,6 +208,7 @@ for (const touch of [false, true])
     await press('#exit-button-extract');
     await advance(30);
     await expect(page.locator('#stage')).toHaveAttribute('data-aftermath', /boarding|departing/);
+    await expect(page.locator('.map-timer')).toHaveCount(0);
     await expect(page.locator('#mission-dialog')).toBeHidden();
     await press('#outcome-results');
     await expect(page.locator('#mission-dialog')).toContainText('Dacre has joined Holt');
