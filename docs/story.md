@@ -1,0 +1,100 @@
+# Optional story scenes
+
+The campaign follows a concrete chain: free Voss, establish what was taken,
+free the auditor who objected, publish the evidence, stop reconstruction of the
+debts, obtain authority to repay people, rescue the captured operatives, serve
+the mandate, release payments, and withdraw the seizure orders. Those victories
+stand. The antagonists respond to losses; a later revelation must not quietly
+undo the player's work.
+
+The prologue and all twelve mission endings now have short, manually advanced
+scenes. They supplement the existing briefing and epilogue. Their tone is
+restrained and serious, with people discussing specific consequences instead of
+trading jokes or explaining controls. Only the opening and the all-survivors
+rescue ending speak through an operative: the other endings remain valid when a
+mission was won with casualties. Voss and Mara provide continuity away from the
+field team.
+
+## Where the player finds them
+
+- **Watch opening** in the first briefing and Operations. It is always available.
+- **Watch scene** in a successful debrief. Finishing a scene changes its label to
+  **Replay scene**; closing early does not mark it watched.
+- Each completed mission in **Operations** offers its scene again. Existing
+  completion records, including migrated records, unlock their scenes immediately.
+  Uncompleted missions show an unlock condition without revealing the scene title.
+- Nothing autoplays, chains into another scene, starts an operation or advances
+  the simulation. Escape, the close button and outside clicks return to the same
+  underlying briefing/results/Operations dialog. Previous, restart and arrow keys
+  allow rereading. The sound toggle uses the game's existing saved preference;
+  dialogue is text, without generated speech or automatic reading speed.
+- Watching a gameplay replay does not create a completion or unlock a scene.
+  A scene's watched flag is separate from medals and mission progress.
+
+The loading shell is inline HTML/CSS and a small bootstrap module. It remains
+visible through renderer initialization, then yields immediately to the briefing.
+There is no invented percentage or minimum delay. Module/renderer failures leave
+a reload action. The story's images are loaded on demand and never gate playing
+or reading the dialogue. [Artwork and generation prompts](story-art.md).
+
+## The opposing cast
+
+| Character                           | Power and manner                                                                                                                                | Foreshadowed encounter                                                                           |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Severin Holt, chairman              | Signs the exceptions that make exploitation ordinary. Calm, concerned with enforceable authority; he can admit a district is lost.              | The Bench: a secured adjudication chamber with several physical seals and protected positions.   |
+| Ada Kestrel, director of continuity | Owns the infrastructure and understands its limitations. Treats failures as engineering evidence, and eventually stays at the controls herself. | An occupied control room: active rerouting, local power and changing access.                     |
+| Lucan Dacre, security marshal       | Coordinates people rather than adding isolated guards. Accepts responsibility for the failed detention layout.                                  | A mobile command line at a transit interchange, using shields and overlapping support positions. |
+
+## Scene progression
+
+| Available after  | Scene                    | Purpose                                                                                                                     |
+| ---------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| Opening          | The remaining balance    | Voss's debt has become confinement; Holt signs the apparently healthy district report.                                      |
+| 01 · Depot       | A name in the margin     | Voss supplies the annex address. Holt wants to know who challenges her account.                                             |
+| 02 · Archive     | The same signature       | Voss traces the payments and Holt's exception; the original evidence cannot simply be replaced.                             |
+| 03 · Transfer    | The objections           | Voss finds Mara's rejected audits. Dacre reveals the company's pressure for a corrected statement.                          |
+| 04 · Custody     | An uncorrected statement | Mara admits how close she came to signing. Dacre asks for coordinated authority.                                            |
+| 05 · Broadcast   | Acknowledgements         | Real institutions receive the audit; Kestrel's recovery infrastructure is still a threat.                                   |
+| 06 · Severance   | What cannot be restored  | The backups are genuinely destroyed. Kestrel and Dacre disagree over access and safety.                                     |
+| 07 · Clearing    | Custodians               | The escrow money exists. Kestrel commits to local control rather than relying on the radio.                                 |
+| 08 · Mandate     | The list of names        | Repayments become specific people. Dacre prepares surveillance ahead of the safehouse raid.                                 |
+| 09 · Personnel   | Four places at the table | The reunited crew gets a quiet moment. Dacre learns from the split-team rescue.                                             |
+| 10 · Injunction  | Proof of service         | Holt acknowledges the suspension and prepares to hear an appeal personally at the Bench.                                    |
+| 11 · Settlement  | Money coming in          | A recipient struggles to believe her payment; old seizure dispatches remain in circulation.                                 |
+| 12 · Countermand | Beyond the district      | The seizure crews leave and the money stays returned. The three antagonists take up distinct positions beyond the district. |
+
+## Future boss design, not implemented here
+
+These are encounter promises, not specifications for the next three missions.
+Introduce and explain any new mechanics in the mission UI whether or not the
+player has watched a scene.
+
+**Dacre** should physically move with a coordinated guard line. Portable command
+positions, shield escorts and support fire can create changing approaches. A
+split team should be able to interrupt coordination while another group reaches
+him. He must obey sight and lose track of unseen operatives; commanding the
+response is not permission to know the player's location through walls.
+
+**Kestrel** should be an active opponent in a readable building. Show her work at
+control stations before a gate or power circuit changes. Separate feeds make
+simultaneous intervention useful, and isolating them should force her to move
+between manual controls. Keep exits recoverable. Avoid a puzzle whose solution
+is waiting through an invisible timer or remembering a line from a cutscene.
+
+**Holt** should have physical protection the player can dismantle. The Bench's
+distributed seals could sustain security privileges while the chairman moves
+between protected chambers. Holding more than one station breaks that system
+and exposes a route to him. His importance should come from the site and its
+defenders, not an unexplained health multiplier or a cutscene-only victory.
+
+## Implementation boundaries
+
+Each mission's scene, concise briefing and epilogue live together in
+`src/content/mission-copy.ts`. Shared speakers, settings and the opening are in
+`src/content/story.ts`; the dialog is in `src/ui/story.ts`. Completion records
+remain the source of truth for unlocks. `amortization.story.v1` stores only the
+IDs of scenes the player explicitly finished.
+
+None of this changes recorded mission definitions, simulation code, weapon
+balance, or replay fingerprints. Scene art is decorative and captions are
+accessible text. The first paint uses no image, font download, video, or audio.

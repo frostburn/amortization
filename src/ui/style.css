@@ -61,9 +61,6 @@ kbd {
     monospace;
   color: #a5b3a8;
 }
-.loading {
-  padding: 40px;
-}
 #app {
   height: 100dvh;
   min-height: 620px;

@@ -9,10 +9,104 @@
       content="Amortization — a real-time squad tactics game. Infiltrate a tram depot, retrieve a defector, and get your crew home."
     />
     <title>Amortization</title>
+    <style>
+      #boot-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: grid;
+        place-items: center;
+        padding: 28px;
+        background: #101817;
+        color: #dce3dc;
+        font:
+          14px Arial,
+          sans-serif;
+      }
+      .boot-content {
+        width: min(420px, 100%);
+      }
+      .boot-mark {
+        color: #c9b58e;
+        width: 54px;
+        height: 54px;
+        margin-bottom: 32px;
+      }
+      .boot-kicker {
+        color: #c9b58e;
+        font:
+          10px 'Courier New',
+          monospace;
+        letter-spacing: 4px;
+        margin: 0 0 12px;
+      }
+      #boot-screen h1 {
+        font-size: clamp(24px, 5vw, 34px);
+        font-weight: 400;
+        letter-spacing: 3px;
+        margin: 0 0 26px;
+      }
+      #boot-screen p:not(.boot-kicker) {
+        color: #9daea3;
+        line-height: 1.6;
+      }
+      .boot-track {
+        height: 1px;
+        background: #36443d;
+        margin: 26px 0 16px;
+      }
+      .boot-track::before {
+        content: '';
+        display: block;
+        height: 1px;
+        width: 28%;
+        background: #c9b58e;
+        animation: boot-breathe 1.8s ease-in-out infinite alternate;
+      }
+      #boot-screen button {
+        font: inherit;
+        color: #dce3dc;
+        background: #1c3028;
+        border: 1px solid #647a67;
+        padding: 12px 20px;
+        margin-top: 12px;
+        cursor: pointer;
+      }
+      @keyframes boot-breathe {
+        to {
+          opacity: 0.25;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .boot-track::before {
+          animation: none;
+        }
+      }
+    </style>
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
   </head>
   <body>
-    <div id="app"><p class="loading">Preparing the operation…</p></div>
-    <script type="module" src="/src/main.ts"></script>
+    <div id="boot-screen" role="status" aria-live="polite">
+      <div class="boot-content">
+        <svg
+          class="boot-mark"
+          viewBox="0 0 54 54"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          aria-hidden="true"
+        >
+          <path d="M5 42 21 10h12l16 32M13 27h28M19 42l8-16 8 16" />
+          <path d="M5 49h44" />
+        </svg>
+        <p class="boot-kicker">FIELD OPERATIONS</p>
+        <h1>AMORTIZATION</h1>
+        <div class="boot-track" aria-hidden="true"></div>
+        <p id="boot-status">Opening the operations desk…</p>
+        <noscript><p>Enable JavaScript to open the game.</p></noscript>
+      </div>
+    </div>
+    <div id="app"></div>
+    <script type="module" src="/src/bootstrap.ts"></script>
   </body>
 </html>

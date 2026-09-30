@@ -1,3 +1,4 @@
+import { storyButton } from './story';
 import { CREW } from '../sim/crew';
 import { missionCopy } from '../content/mission-copy';
 import type { Mission, WeaponKind } from '../sim/types';
@@ -73,6 +74,7 @@ export function renderBriefing(m: Mission, medals: MedalId[] = []) {
     </details>
   </div>
   <footer class="briefing-footer">
+    ${m.id === 'depot' ? storyButton('opening') : ''}
     <button class="primary" autofocus data-action="begin">Begin operation <span>→</span></button>
     <div class="dialog-actions"><button class="dialog-secondary" data-action="operations">Choose operation</button><button class="dialog-secondary" data-action="restart">Restart mission</button></div>
     <div class="briefing-tools" data-dialog-tools></div>

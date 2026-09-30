@@ -33,6 +33,8 @@ import type { MedalId } from './medals';
 import { bindMedalTips, medalList } from './medal-display';
 import { bindBackdropDismiss } from './dialog';
 import { briefingObjective, renderBriefing } from './briefing';
+import { StoryPlayer, storyButton } from './story';
+import type { StoryId } from '../content/story';
 import { missionCopy } from '../content/mission-copy';
 import type { Records, MissionRecord } from './storage';
 import { missionGoals, transferFeedback } from './objectives';
@@ -78,6 +80,7 @@ const recordTimes = (best: number | null, fullCrewBest: number | null) =>
 export class Hud {
   readonly stage: HTMLElement;
   readonly modal: HTMLDialogElement;
+  private story: StoryPlayer;
   private app: HTMLElement;
   private lastMessage = '';
   private endShown = false;
@@ -133,6 +136,8 @@ export class Hud {
     this.stage = this.app.querySelector('#stage')!;
     this.modal = this.app.querySelector('#mission-dialog')!;
     bindBackdropDismiss(this.modal);
+    this.story = new StoryPlayer(() => onAction('sound'));
+    this.modal.addEventListener('close', () => this.story.dialog.close());
     this.closeMedalTip = bindMedalTips(this.modal);
     this.app
       .querySelector<HTMLInputElement>('#sound-volume')!
@@ -279,16 +284,23 @@ export class Hud {
       .querySelector<HTMLButtonElement>('[data-action="begin"]')!
       .focus({ preventScroll: true });
   }
+  showStory(id: StoryId, records: Records) {
+    this.closeMedalTip();
+    this.story.open(id, records);
+  }
+  get storyOpen() {
+    return this.story.dialog.open;
+  }
   showOperations(records: Records) {
     this.closeMedalTip();
     this.modal.classList.remove('briefing-dialog');
     this.modal.classList.add('operations-dialog');
     const total = missions.reduce((sum, m) => sum + medalsFor(m).length, 0),
       earned = missions.reduce((sum, m) => sum + missionRecord(records, m.id).medals.length, 0);
-    this.modal.innerHTML = `<div class="dialog-number">CONTRACT DESK</div><div class="operations-heading"><h2 id="dialog-title">Operations</h2><span class="medal-total">${earned} / ${total} medals</span></div><p class="dialog-body">Choose a contract. Starting an operation resets the current attempt. Earn medals across separate runs; hover, focus or tap one for its conditions.</p><div class="operation-list">${missions
+    this.modal.innerHTML = `<div class="dialog-number">CONTRACT DESK</div><div class="operations-heading"><h2 id="dialog-title">Operations</h2><span class="medal-total">${earned} / ${total} medals</span></div><p class="dialog-body">Choose a contract. Starting an operation resets the current attempt. Earn medals across separate runs; hover, focus or tap one for its conditions.</p>${storyButton('opening')}<div class="operation-list">${missions
       .map((m) => {
         const record = missionRecord(records, m.id);
-        return `<article class="operation-card" data-operation="${m.id}"><button data-action="mission:${m.id}" class="operation-launch"><span class="section-label">${m.number} / ${m.location}</span><strong>${m.title}</strong><span>${m.description}</span><small>${record.best === null ? 'No completed extraction' : `${recordTimes(record.best, record.fullCrewBest)} · ${record.completions} completed`}</small></button><div class="operation-medals"><p class="medal-summary">Medals <span>${record.medals.length} / ${medalsFor(m).length}</span></p>${medalList(m, record.medals)}</div></article>`;
+        return `<article class="operation-card" data-operation="${m.id}"><button data-action="mission:${m.id}" class="operation-launch"><span class="section-label">${m.number} / ${m.location}</span><strong>${m.title}</strong><span>${m.description}</span><small>${record.best === null ? 'No completed extraction' : `${recordTimes(record.best, record.fullCrewBest)} · ${record.completions} completed`}</small></button><div class="operation-medals"><p class="medal-summary">Medals <span>${record.medals.length} / ${medalsFor(m).length}</span></p>${medalList(m, record.medals)}</div>${record.completions > 0 ? storyButton(m.id) : '<p class="story-locked">Story scene unlocks on completion</p>'}</article>`;
       })
       .join(
         '',
@@ -297,6 +309,7 @@ export class Hud {
   }
   close() {
     this.closeMedalTip();
+    this.story.dialog.close();
     this.modal.close();
   }
   reset(mission: Mission = this.mission) {
@@ -343,7 +356,7 @@ export class Hud {
     this.modal.classList.remove('operations-dialog', 'briefing-dialog');
     const won = world.status === 'won',
       alive = world.agents.filter(living).length;
-    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? missionCopy[world.mission.id].epilogue.lead : world.escort && !living(world.escort) ? `${world.escort.name} was killed.` : world.detention || world.settlement ? world.message : 'The crew is down.'}</p><p class="dialog-body">${won ? missionCopy[world.mission.id].epilogue.body : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results">${world.settlement ? `<div><dt>Repayments</dt><dd>${settled(world) ? 'Released' : 'Incomplete'}</dd></div>` : ''}<div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div>${world.demolition ? `<div><dt>Backups</dt><dd>${demolished(world) ? 'Destroyed' : `${world.demolition.armed.length}/2 armed`}</dd></div>` : ''}${world.broadcast ? `<div><dt>${world.mission.broadcast?.subject ? 'Mandate' : 'Audit'}</dt><dd>${published(world) ? (world.mission.broadcast?.completed ?? 'Published') : 'Incomplete'}</dd></div>` : ''}<div><dt>${world.demolition ? 'Optional register' : world.broadcast ? 'Optional LOG' : 'Evidence'}</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div>${won && world.mission.landmarks.some((o) => o.id === 'alternate') && world.extractedAt ? `<div><dt>Extraction</dt><dd>${landmark(world, world.extractedAt).tag}</dd></div>` : ''}</dl>${record.best !== null ? `<p class="fine">${recordTimes(record.best, record.fullCrewBest)}</p>` : ''}${won ? `<section class="debrief-medals" aria-label="Medals this run"><p class="medal-summary">Medals this run <span>${fresh.length ? `${fresh.length} new` : 'Already earned'}</span></p>${medalList(world.mission, earnedMedals(world), fresh, true)}</section>` : ''}<button class="primary" autofocus data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Restart mission'} <span>→</span></button><div class="dialog-actions">${won && nextMission(world.mission.id) ? '<button class="dialog-secondary" data-action="restart">Restart mission</button>' : ''}<button class="dialog-secondary" data-action="operations">Operations</button></div>`;
+    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? missionCopy[world.mission.id].epilogue.lead : world.escort && !living(world.escort) ? `${world.escort.name} was killed.` : world.detention || world.settlement ? world.message : 'The crew is down.'}</p><p class="dialog-body">${won ? missionCopy[world.mission.id].epilogue.body : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results">${world.settlement ? `<div><dt>Repayments</dt><dd>${settled(world) ? 'Released' : 'Incomplete'}</dd></div>` : ''}<div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div>${world.demolition ? `<div><dt>Backups</dt><dd>${demolished(world) ? 'Destroyed' : `${world.demolition.armed.length}/2 armed`}</dd></div>` : ''}${world.broadcast ? `<div><dt>${world.mission.broadcast?.subject ? 'Mandate' : 'Audit'}</dt><dd>${published(world) ? (world.mission.broadcast?.completed ?? 'Published') : 'Incomplete'}</dd></div>` : ''}<div><dt>${world.demolition ? 'Optional register' : world.broadcast ? 'Optional LOG' : 'Evidence'}</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div>${won && world.mission.landmarks.some((o) => o.id === 'alternate') && world.extractedAt ? `<div><dt>Extraction</dt><dd>${landmark(world, world.extractedAt).tag}</dd></div>` : ''}</dl>${record.best !== null ? `<p class="fine">${recordTimes(record.best, record.fullCrewBest)}</p>` : ''}${won ? `<section class="debrief-medals" aria-label="Medals this run"><p class="medal-summary">Medals this run <span>${fresh.length ? `${fresh.length} new` : 'Already earned'}</span></p>${medalList(world.mission, earnedMedals(world), fresh, true)}</section>` : ''}${won && record.completions > 0 ? `<div class="debrief-story">${storyButton(world.mission.id)}</div>` : ''}<button class="primary" autofocus data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Restart mission'} <span>→</span></button><div class="dialog-actions">${won && nextMission(world.mission.id) ? '<button class="dialog-secondary" data-action="restart">Restart mission</button>' : ''}<button class="dialog-secondary" data-action="operations">Operations</button></div>`;
     if (!this.modal.open) this.modal.showModal();
   }
   update(world: World, state: HudState) {
@@ -447,6 +460,7 @@ export class Hud {
     this.field('time-mode').classList.toggle('live', !state.paused);
     this.set('pause-label', state.paused ? 'Resume' : 'Pause');
     this.set('sound-button', state.sound ? 'Sound on' : 'Sound off');
+    this.story.setSound(state.sound);
     this.field('sound-button').setAttribute('aria-pressed', String(state.sound));
     const volume = this.field('sound-volume') as HTMLInputElement;
     volume.value = String(Math.round((state.volume ?? 0.65) * 100));

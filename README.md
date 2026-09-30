@@ -4,6 +4,15 @@ A real-time squad tactics game for the browser. Control four operatives together
 
 **Twelve operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing any of the first eleven. Restart and Shift+R restart the selected mission, including unfinished attempts. Briefings and results also offer **Restart mission**.
 
+**Optional story scenes** introduce the people behind the company. Choose **Watch
+opening** from the first briefing or Operations; every completed mission unlocks
+a scene in its debrief and Operations. Earlier saved completions count too. Scenes
+never autoplay and contain no required instructions. Advance at your own pace,
+replay them, or close them at any time. [Story arc and future encounter ideas](docs/story.md).
+
+A small loading screen appears before the game modules arrive and remains until
+the district is ready. Story artwork loads only when a scene is opened.
+
 ## Development
 
 Use Node.js 24 and npm:
@@ -18,7 +27,7 @@ Open the URL Vite prints. Everything runs in the browser, with no account, backe
 ```sh
 npm run check       # lint, simulation tests, typecheck, production build
 npx playwright install chromium
-npm run test:e2e:smoke # routine CI browser gate (10 checks)
+npm run test:e2e:smoke # routine CI browser gate (11 checks)
 npm run test:e2e       # full Chromium regressions
 npm run preview    # serve the production build
 ```

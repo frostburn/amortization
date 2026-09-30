@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import type { Hud } from '../../src/ui/hud';
 import type { World } from '../../src/sim/types';
+import { missions } from '../../src/content/missions';
 
 for (const touch of [false, true]) {
   test(`Operations medals: ${touch ? 'touch' : 'desktop'} migration, tooltips and mission launch`, async ({
@@ -66,7 +67,7 @@ for (const touch of [false, true]) {
     else await choose.click();
     const dialog = page.getByRole('dialog', { name: 'Operations', exact: true });
     await expect(dialog).toBeVisible();
-    await expect(dialog.locator('.operation-card')).toHaveCount(10);
+    await expect(dialog.locator('.operation-card')).toHaveCount(missions.length);
     const first = dialog.locator('[data-operation="depot"]');
     await expect(first).toContainText('Full crew: 01:10 · Any crew: 00:55');
     await expect(first.locator('[data-earned="true"]')).toHaveCount(2);
@@ -235,7 +236,7 @@ test('winning debrief awards persist and a later casualty cannot erase medals', 
   await expect(page.locator('[data-operation="depot"] [data-earned="true"]')).toHaveCount(5);
 });
 
-test('watching a winning human replay does not award medals', async ({ page }) => {
+test('watching a winning human replay awards neither medals nor story scenes', async ({ page }) => {
   test.setTimeout(35_000);
   await page.goto('/');
   await page
@@ -245,14 +246,17 @@ test('watching a winning human replay does not award medals', async ({ page }) =
   await page
     .getByLabel('Import a replay bundle')
     .setInputFiles('tests/replays/injunction-quiet-d4da9148.replay.json');
-  await page.getByRole('button', { name: 'Watch replay', exact: true }).click();
+  // This older recording predates source-only maintenance. Award isolation does
+  // not depend on its build label; exact checkpoints are covered in unit tests.
+  await page.getByRole('button', { name: 'Try current rules', exact: true }).click();
   await page.getByLabel('Replay speed').selectOption('16');
   await page.getByRole('button', { name: 'Play replay', exact: true }).click();
-  await expect(page.locator('#replay-status')).toContainText('Replay verified', {
+  await expect(page.locator('#replay-status')).toContainText('Current rules finished · won', {
     timeout: 25_000,
   });
   expect(await page.evaluate(() => localStorage.getItem('amortization.records.v4'))).toBeNull();
   await page.getByRole('button', { name: 'Return to attempt', exact: true }).click();
   await page.getByRole('button', { name: 'Operations', exact: true }).click();
   await expect(page.locator('.medal-total')).toHaveText(/^0 \/ /);
+  await expect(page.locator('.operation-card [data-story-entry]')).toHaveCount(0);
 });
