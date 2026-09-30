@@ -45,8 +45,11 @@ restores that choice and the first click, tap or key press resumes audio; no
 audio context is created on page load. Muting persists independently of volume.
 Keyboard volume adjustments do not pan the map or change squad orders.
 
-Per-effect faders live in `src/audio/levels.ts`, separately from the synthesis
-recipes. They apply before spatial/context gain and the group compressors, both
+Each cue's recipe, duration, stable noise seed, fader, voice priority and bus live
+together in `src/audio/palette.ts`; shared DSP primitives live in `synthesis.ts`.
+Looping, reflections, baked filtering and combat ducking are defined beside the
+cue that uses them. Adding or reordering cues cannot retune existing noise seeds.
+Faders apply before spatial/context gain and the group compressors, both
 when a voice starts and when a warning loop moves or changes intensity. They are
 fixed authored gains, with no per-clip loudness normalization.
 

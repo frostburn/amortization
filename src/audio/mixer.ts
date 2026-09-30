@@ -1,7 +1,6 @@
 import type { Vec } from '../sim/types';
 import { project } from '../render/isometric';
-import { mixGain } from './levels';
-import { loopSound, synthesize } from './palette';
+import { loopSound, mixGain, soundDefinition, synthesize } from './palette';
 import type { SoundId } from './palette';
 
 export interface ListeningView {
@@ -32,29 +31,6 @@ export function placement(point: Vec, view: ListeningView): Placement {
   };
 }
 
-const priority = (id: SoundId) =>
-  ['objective', 'alarm', 'complete', 'failed', 'charge', 'tracking'].includes(id)
-    ? 4
-    : ['blast', 'coil', 'wreck'].includes(id)
-      ? 3
-      : ['step', 'body', 'metal', 'fall'].includes(id)
-        ? 0
-        : 2;
-
-const combatSounds = new Set<SoundId>([
-  'pistol',
-  'carbine',
-  'shotgun',
-  'automatic',
-  'coil',
-  'support',
-  'body',
-  'metal',
-  'fall',
-  'wreck',
-  'blast',
-  'flash',
-]);
 const COMBAT_LEVEL = 0.66;
 
 function hold(param: AudioParam, when: number) {
@@ -159,9 +135,10 @@ export class Mixer {
     );
     if (overlapping.length >= this.maxVoices) {
       const victim = overlapping.sort(
-        (a, b) => priority(a.id) - priority(b.id) || a.start - b.start,
+        (a, b) =>
+          soundDefinition(a.id).priority - soundDefinition(b.id).priority || a.start - b.start,
       )[0];
-      if (priority(victim.id) > priority(id)) return;
+      if (soundDefinition(victim.id).priority > soundDefinition(id).priority) return;
       this.stop(victim, when);
     }
     const source = ctx.createBufferSource(),
@@ -182,7 +159,7 @@ export class Mixer {
     source.connect(filter);
     filter.connect(gain);
     gain.connect(pan);
-    pan.connect(combatSounds.has(id) ? this.combat : this.feedback);
+    pan.connect(soundDefinition(id).bus === 'combat' ? this.combat : this.feedback);
     const voice: Voice = {
       source,
       gain,
@@ -208,7 +185,7 @@ export class Mixer {
       this.voices.delete(voice);
     };
     source.start(when);
-    if (['objective', 'complete', 'failed'].includes(id)) this.duckCombat(when);
+    if (soundDefinition(id).duckCombat) this.duckCombat(when);
     return voice;
   }
   private duckCombat(when: number) {

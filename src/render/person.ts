@@ -1,5 +1,6 @@
 import type { Geometry, DestroyOptions } from 'pixi.js';
 import type { GuardTactic, Person, WeaponKind } from '../sim/types';
+import type { CrewId } from '../sim/crew';
 import { facingAngle } from '../sim/shield';
 import { living } from '../sim/types';
 import { footfall, hipHeight, kneePosition, walkPhase } from './gait';
@@ -7,7 +8,7 @@ import { coatRings, shoulderPadTransform } from './clothing';
 import { project } from './isometric';
 import { modelGeometry, ModelMesh, MODEL_VIEW, type ModelFace, type Point3 } from './model-mesh';
 
-export type Appearance = 'morrow' | 'vale' | 'rook' | 'sable' | 'guard' | 'voss' | 'mara';
+export type Appearance = CrewId | 'guard' | 'voss' | 'mara';
 export interface Outfit {
   appearance: Appearance;
   uniform?: boolean;

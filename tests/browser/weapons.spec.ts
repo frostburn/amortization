@@ -1,7 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { Scene, Hit } from '../../src/render/scene';
 import type { World } from '../../src/sim/types';
-import type { Hud, Action } from '../../src/ui/hud';
+import type { Hud } from '../../src/ui/hud';
+import type { Action } from '../../src/input/actions';
 import type { Command } from '../../src/sim/commands';
 
 declare global {
