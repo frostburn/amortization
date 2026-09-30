@@ -7,7 +7,7 @@ import { project } from './isometric';
 export const circuitColor = (circuit: string) => (circuit === 'power-west' ? 0xefbd73 : 0x7fbdf1);
 
 /** A low pedestal and rotating gun housing, projected in the same space as scenery. */
-export function drawTurret(g: Graphics, guard: Guard, world: World) {
+export function drawTurret(g: Graphics, guard: Guard, world: World, silhouetteColor?: number) {
   const color = circuitColor(guard.turret!.circuit);
   const live = living(guard),
     powered = turretPowered(world, guard);
@@ -22,8 +22,8 @@ export function drawTurret(g: Graphics, guard: Guard, world: World) {
       z,
     );
   const poly = (points: Vec[], fill: number) =>
-    g.poly(points.flatMap((point) => [point.x, point.y])).fill(fill);
-  g.ellipse(0, 1, 19, 9).fill({ color: 0x101914, alpha: 0.65 });
+    g.poly(points.flatMap((point) => [point.x, point.y])).fill(silhouetteColor ?? fill);
+  if (silhouetteColor === undefined) g.ellipse(0, 1, 19, 9).fill({ color: 0x101914, alpha: 0.65 });
   const corners = [
     [-0.45, -0.4],
     [0.45, -0.4],
@@ -46,10 +46,12 @@ export function drawTurret(g: Graphics, guard: Guard, world: World) {
   const barrel = () => {
     const from = p(0.2, 0, 0.92),
       end = p(0.9, 0, 0.92);
-    g.moveTo(from.x, from.y).lineTo(end.x, end.y).stroke({ color: 0x182620, width: 6 });
+    g.moveTo(from.x, from.y)
+      .lineTo(end.x, end.y)
+      .stroke({ color: silhouetteColor ?? 0x182620, width: 6 });
     g.moveTo(from.x - 1, from.y - 1)
       .lineTo(end.x - 1, end.y - 1)
-      .stroke({ color: 0xaab7ad, width: 2 });
+      .stroke({ color: silhouetteColor ?? 0xaab7ad, width: 2 });
   };
   const front = forward.x + forward.y >= 0;
   if (!front) barrel();
@@ -68,6 +70,7 @@ export function drawTurret(g: Graphics, guard: Guard, world: World) {
     poly([low[i], low[(i + 1) % 4], high[(i + 1) % 4], high[i]], i % 2 ? 0x53675e : 0x344c43);
   poly(high, powered ? color : 0x6b7a70);
   if (front) barrel();
+  if (silhouetteColor !== undefined) return;
   const lens = p(0.36, -0.2, 0.85);
   g.circle(lens.x, lens.y, 2).fill(powered ? (guard.target ? 0xff6b60 : 0xc9ffc8) : 0x233b31);
   if (powered && guard.target)

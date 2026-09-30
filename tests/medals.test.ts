@@ -98,3 +98,35 @@ it('awards the human quiet Mission 10 completion with its original checkpoints',
   ]);
   expect(player.world.agents.every((a) => a.hp === 100)).toBe(true);
 });
+
+it.each([
+  ['broadcast', ['42048895', '740307a2', 'ec959f54', 'f8b2c49a']],
+  ['severance', ['2f9a7242', '37611591', 'bdbb0b9a', 'e366104a', 'e3aa7439', 'e73b41fe']],
+] as const)(
+  'the human %s runs collectively earn every medal with exact checkpoints',
+  (mission, ids) => {
+    const collected = new Set<string>();
+    for (const id of ids) {
+      const bundle = parseReplay(
+        readFileSync(`tests/replays/${mission}-human-${id}.replay.json`, 'utf8'),
+      );
+      // The coil pursuit fix changes the source fingerprint, but not these earlier
+      // missions. Keep strict state verification independently of that build label.
+      const player = new ReplayPlayer(bundle, bundle.build);
+      while (!player.done) player.advance();
+      expect(player.error, id).toBeNull();
+      const medals = earnedMedals(player.world);
+      medals.forEach((medal) => collected.add(medal));
+      if (player.world.agents.some((a) => a.hp <= 0)) expect(medals, id).toEqual(['complete']);
+      if (id === '2f9a7242') {
+        expect(player.world.shots).toBe(0);
+        expect(medals).not.toContain('nonlethal'); // The charges killed guards.
+      }
+    }
+    expect([...collected].sort()).toEqual(
+      medalsFor(missions.find((m) => m.id === mission)!)
+        .map((m) => m.id)
+        .sort(),
+    );
+  },
+);

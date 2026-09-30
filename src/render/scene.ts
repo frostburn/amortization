@@ -1,4 +1,5 @@
 import { Application, Container, Graphics, Polygon, Text } from 'pixi.js';
+import type { Bounds } from 'pixi.js';
 import {
   controllable,
   disoriented,
@@ -37,12 +38,49 @@ import { Aftermath } from './aftermath';
 import { box, panel, plane, polygon } from './primitives';
 import { drawBuilding, drawWall, drawContactShadow, drawYardDetail, groundColor } from './scenery';
 import { OperativeLighting } from './lighting';
+import { CharacterOutlines } from './outlines';
 
 const COLORS = {
   ground: 0x343e47,
   mint: 0x8be8c4,
   amber: 0xefbd73,
   red: 0xf57869,
+};
+const boxSilhouette = (r: Rect, height: number) => {
+  const polygon = new Polygon([
+    project(r, height),
+    project({ x: r.x + r.w, y: r.y }, height),
+    project({ x: r.x + r.w, y: r.y }),
+    project({ x: r.x + r.w, y: r.y + r.h }),
+    project({ x: r.x, y: r.y + r.h }),
+    project({ x: r.x, y: r.y + r.h }, height),
+  ]);
+  return { polygon, bounds: polygon.getBounds() };
+};
+const overlapsSilhouette = (o: ReturnType<typeof boxSilhouette>, b: Bounds, foot: Vec) => {
+  const left = foot.x + b.minX,
+    right = foot.x + b.maxX;
+  const top = foot.y + b.minY,
+    bottom = foot.y + b.maxY;
+  if (
+    right < o.bounds.left ||
+    left > o.bounds.right ||
+    bottom < o.bounds.top ||
+    top > o.bounds.bottom
+  )
+    return false;
+  // The six box corners are clockwise in screen space. Reject a bounding
+  // rectangle wholly outside any edge, including the sloping roof edges.
+  const p = o.polygon.points;
+  for (let i = 0; i < p.length; i += 2) {
+    const j = (i + 2) % p.length,
+      dx = p[j] - p[i],
+      dy = p[j + 1] - p[i + 1];
+    const x = dy >= 0 ? left : right,
+      y = dx >= 0 ? bottom : top;
+    if (dx * (y - p[i + 1]) - dy * (x - p[i]) < 0) return false;
+  }
+  return true;
 };
 const markerColor = (id: ObjectKind) =>
   isExtraction(id)
@@ -106,10 +144,17 @@ export class Scene {
   private cones = new Graphics();
   private objects = new Container();
   private lighting = new OperativeLighting();
+  private outlines = new CharacterOutlines();
   private marks = new Container();
   private effects = new Graphics();
   private views = new Map<string, PersonView>();
-  private scenery: { root: Container; footprint: Rect; vehicle?: string }[] = [];
+  private scenery: {
+    root: Container;
+    footprint: Rect;
+    vehicle?: string;
+    occluder?: ReturnType<typeof boxSilhouette>;
+    wreckOccluder?: ReturnType<typeof boxSilhouette>;
+  }[] = [];
   private aftermath: Aftermath | null = null;
   private cores: { intact: Graphics; wreck: Graphics }[] = [];
   private icons = new Map<ObjectKind, Container>();
@@ -177,6 +222,7 @@ export class Scene {
       this.flashGround,
       this.objects,
       this.lighting,
+      this.outlines,
       this.marks,
       this.effects,
     );
@@ -198,6 +244,7 @@ export class Scene {
     this.world = world;
     this.showGuidance([], { x: 0, y: 0, w: 0, h: 0 });
     this.views.clear();
+    this.outlines.reset();
     this.labels.clear();
     this.scenery = [];
     this.cores = [];
@@ -415,12 +462,12 @@ export class Scene {
     this.gate = new Graphics();
     const gate = world.mission.gate;
     box(this.gate, gate.x, gate.y, gate.w, gate.h, 1.1, 0x9eaa96, 0x627669, 0x394d43);
-    this.addScenery(this.gate, gate);
+    this.addScenery(this.gate, gate, 1.1);
     if (mission.archive) {
       this.shutter = new Graphics();
       const d = mission.archive.door;
       box(this.shutter, d.x, d.y, d.w, d.h, 1.6, 0x9b8e70, 0x695d47, 0x4e554b);
-      this.addScenery(this.shutter, d);
+      this.addScenery(this.shutter, d, 1.6);
     }
     if (mission.detention) {
       for (const { id, door: d } of [...mission.detention.gates, ...mission.detention.cells]) {
@@ -428,7 +475,7 @@ export class Scene {
         const color =
           id === 'access-intake' ? 0xe2b369 : id === 'access-cells' ? 0x78becd : 0x9faaa1;
         box(root, d.x, d.y, d.w, d.h, 1.4, color, 0x485e55, 0x344a42);
-        this.addScenery(root, d);
+        this.addScenery(root, d, 1.4);
         this.detentionGates.push({ root, id });
         plane(g, d.x - 0.7, d.y, 1.7, d.h, color, 0, 0.22);
         if (id === 'access-intake' || id === 'access-cells') {
@@ -519,8 +566,17 @@ export class Scene {
     this.labels.add(label);
     return label;
   }
-  private addScenery(root: Container, footprint: Rect, vehicle?: string) {
-    this.scenery.push({ root, footprint, vehicle });
+  private addScenery(
+    root: Container,
+    footprint: Rect,
+    height = 0,
+    vehicle?: string,
+    wreckHeight?: number,
+  ) {
+    const occluder = height > 0 ? boxSilhouette(footprint, height) : undefined;
+    const wreckOccluder =
+      wreckHeight === undefined ? undefined : boxSilhouette(footprint, wreckHeight);
+    this.scenery.push({ root, footprint, vehicle, occluder, wreckOccluder });
     this.objects.addChild(root);
   }
   private addSolid(s: Solid) {
@@ -716,7 +772,13 @@ export class Scene {
       label.skew.y = Math.atan(TILE_Y / TILE_X);
       root.addChild(label);
     }
-    this.addScenery(root, s, s.kind === 'van' ? s.id : undefined);
+    this.addScenery(
+      root,
+      s,
+      s.kind === 'mast' ? 0.3 : s.height,
+      s.kind === 'van' ? s.id : undefined,
+      s.kind === 'server' && this.world.mission.demolition ? 1.1 : undefined,
+    );
   }
   private resize() {
     const width = this.host.clientWidth,
@@ -902,19 +964,8 @@ export class Scene {
     const right = this.host.clientWidth - 45,
       bottom = this.host.clientHeight - 60;
     const top = Math.min(wide ? 80 : this.guidePanel.y + this.guidePanel.h + 50, bottom);
-    const minX = Math.min(...points.map((p) => p.x)),
-      maxX = Math.max(...points.map((p) => p.x));
-    const minY = Math.min(...points.map((p) => p.y)),
-      maxY = Math.max(...points.map((p) => p.y));
-    this.zoom = Math.max(
-      0.4,
-      Math.min(
-        3 / this.fit,
-        Math.max(50, right - left) / Math.max(240, maxX - minX) / this.fit,
-        Math.max(50, bottom - top) / Math.max(140, maxY - minY) / this.fit,
-      ),
-    );
-    this.updateCamera();
+    // Locating an objective pans at the player's chosen scale. Only explicit
+    // zoom/Fit/Follow controls change magnification; edge arrows handle wide groups.
     const screenPoints = [...this.guideMarkers.keys()]
       .map((id) => this.markerScreen(id)!)
       .filter(Boolean);
@@ -1337,6 +1388,34 @@ export class Scene {
     depthOrder(depthItems).forEach((item, index) => {
       item.root.zIndex = index;
     });
+    this.outlines.begin();
+    const occluders = this.scenery.filter((s) => s.root.visible && s.occluder);
+    const wrecked = demolished(w);
+    for (const p of people(w)) {
+      const view = this.views.get(p.id);
+      if (!view?.root.visible || !living(p) || this.aftermath) continue;
+      const guard = w.guards.find((g) => g.id === p.id);
+      const foot = view.root.position;
+      const bounds = (guard?.turret ? view.ink : view.sprite).getLocalBounds();
+      // Bounds only select candidate walls. Their actual polygons clip the
+      // finished contour, independently for each character's painter depth.
+      const covering: Polygon[] = [];
+      for (const s of occluders) {
+        if (s.root.zIndex <= view.root.zIndex) continue;
+        const o = wrecked && s.wreckOccluder ? s.wreckOccluder : s.occluder!;
+        if (overlapsSilhouette(o, bounds, foot)) covering.push(o.polygon);
+      }
+      if (covering.length && guard?.turret)
+        this.outlines.showTurret(guard, w, foot, COLORS.red, covering);
+      else if (covering.length)
+        this.outlines.show(
+          p.id,
+          view.sprite.geometry,
+          foot,
+          w.agents.some((a) => a.id === p.id) ? COLORS.mint : guard ? COLORS.red : COLORS.amber,
+          covering,
+        );
+    }
     for (const view of this.views.values())
       if (view.root.visible) view.sprite.setDepthLayer(view.root.zIndex, depthItems.length);
     const exitLocked = !!extractionRequirement(w);

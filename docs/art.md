@@ -104,6 +104,32 @@ before drawing. This changes rendering work, not character visibility rules.
 GPU depth testing resolves overlapping body surfaces rather than sorting whole
 faces by their average depth. Separate depth intervals preserve the map's painter
 order between characters and architecture.
+
+Living characters obscured by foreground buildings, walls, closed doors or solid
+props receive hollow contours: red for enemies (including sentry guns), mint for
+operatives and amber for friendly witnesses. The contour follows the current
+pose, with a dark outer edge and a constant screen-space width at any zoom or
+display density. Only the portions covered by foreground scenery are drawn;
+a hidden toe does not highlight the exposed body. It sits above the night shade
+and below objective markers.
+Unobscured, dead and off-screen characters do not receive contours; neither does
+the mission aftermath. Opening a shutter or gate removes that obstruction at
+once, including while paused. This reveals positions for the bird's-eye player;
+physical cover, sight, targeting and guard perception still use the simulation.
+
+Cached projected scenery polygons and the existing painter order select each
+character's foreground obstacles. The complete posed mesh is filtered in a
+character-sized target, then its contour is clipped by those polygons. Clipping
+after contour generation avoids drawing a false seam along the wall's top edge.
+Views share one filter instance and reuse posed geometry; cached masks rebuild
+only when the covering polygons change. Turrets reuse their rotating gun drawing. Demolished cores use their
+lower wreck height; open mast frames only occlude at their solid bases.
+`tests/browser/outlines.spec.ts` checks actual contour pixels, unaffected visible
+models, desktop/touch targeting, doors, camera transforms, turrets, night lighting,
+reset and aftermath. Partial-occlusion pixel checks compare closed/open shutter
+renders at three zoom levels: exposed pixels must stay identical, even when only
+the feet are hidden, and clipping must not invent a new contour across the body.
+
 Guard shoulder caps are attached to the shoulder joint with restrained arm
 rotation. Each leg pushes its own side of the coat outward, with a soft fold
 between the leading and trailing sides. The chest and belt retain their shape;

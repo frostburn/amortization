@@ -39,7 +39,7 @@ export function modelGeometry(faces: ModelFace[]) {
 
 /** Opaque character surfaces use GPU depth; each character keeps its scene painter layer. */
 export class ModelMesh extends Mesh<Geometry, Shader> {
-  constructor(geometry = modelGeometry([])) {
+  constructor(geometry = modelGeometry([]), silhouette = false) {
     super({
       geometry,
       shader: new Shader({
@@ -70,6 +70,7 @@ export class ModelMesh extends Mesh<Geometry, Shader> {
             in vec3 vColor;
             in vec4 vTint;
             in vec3 vNormal;
+            uniform float uSilhouette;
             out vec4 finalColor;
             void main() {
               // Interpolation softens rounded parts; duplicated face normals
@@ -80,11 +81,14 @@ export class ModelMesh extends Mesh<Geometry, Shader> {
                 vec3 normal = vNormal * inversesqrt(lengthSquared);
                 light = 0.72 + max(0.0, dot(normal, vec3(-0.35, -0.45, 0.82))) * 0.48;
               }
-              finalColor = vec4(min(vColor * light, vec3(1.0)), 1.0) * vTint;
+              finalColor = mix(vec4(min(vColor * light, vec3(1.0)), 1.0) * vTint, vTint, uSilhouette);
             }`,
         }),
         resources: {
-          depthUniforms: { uDepthLayer: { value: new Float32Array([0, 1]), type: 'vec2<f32>' } },
+          depthUniforms: {
+            uDepthLayer: { value: new Float32Array([0, 1]), type: 'vec2<f32>' },
+            uSilhouette: { value: Number(silhouette), type: 'f32' },
+          },
         },
       }),
     });

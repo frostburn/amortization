@@ -7,8 +7,73 @@ is also verified. Otherwise this checks a route's continued viability, without
 claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All thirty-six retained completions are byte-for-byte copies of submissions
+All forty-six retained completions are byte-for-byte copies of submissions
 provided in chat, including their `unversioned` / local-changes metadata.
+
+## September 29: hidden enemies, objective zoom and human medals
+
+All twelve new submissions reproduced every original checkpoint against the
+merged implementation before this pass. Eleven wins join the completion corpus
+unchanged. The ten Mission 05–06 wins still reproduce every checkpoint after the
+coil pursuit fix; `tests/medals.test.ts` verifies their combined medal coverage.
+
+| Fixture suffix | Mission | Original outcome | Medal route |
+| --- | --- | --- | --- |
+| `broadcast-human-42048895` | 05 | Won, tick 1928, 4 survivors, 0 shots | Quiet, nonlethal, untraced |
+| `broadcast-human-740307a2` | 05 | Won, tick 2242, 4 survivors, 17 shots | Live alarm, untraced |
+| `broadcast-human-f8b2c49a` | 05 | Won, tick 1729, 4 survivors, 44 shots | Quiet, no disguise, optional LOG |
+| `broadcast-human-ec959f54` | 05 | Won, tick 2807, 3 survivors, 15 shots | Completion only |
+| `severance-human-e3aa7439` | 06 | Won, tick 2982, 4 survivors, 0 shots | Quiet, nonlethal |
+| `severance-human-e73b41fe` | 06 | Won, tick 1937, 4 survivors, 39 shots | Quiet, no disguise, optional REGISTER |
+| `severance-human-2f9a7242` | 06 | Won, tick 2341, 4 survivors, 0 shots | Quiet; blast casualties prevent Nonlethal |
+| `severance-human-37611591` | 06 | Won, tick 2156, 4 survivors, 6 shots | Live alarm |
+| `severance-human-e366104a` | 06 | Won, tick 2672, 4 survivors, 5 shots | Live alarm |
+| `severance-human-bdbb0b9a` | 06 | Won, tick 1913, 3 survivors, 9 shots | Completion only |
+| `settlement-human-16e9dc9e` | 11 | Won, tick 5019, 2 survivors, 73 shots | Completion only |
+
+Every fixture has the `.replay.json` extension and comes from the submission
+`amortization-<mission>-won-<suffix>.replay.json`. Mission hashes are `dde31aa3`
+(broadcast), `d9f55e6a` (severance) and `52cac497` (settlement). The first two
+missions use simulation fingerprint `a7a78c49ae47f6d96b53c4cc6d90c9f0caae6b53339e209a119b5520e95a18e3`;
+settlement uses `e4cf63e96bc0cafdd0720993ddf52eac52be3973d85f3238da2e3531f07c50ed`.
+All retain their original unversioned/dirty metadata. Together the full-crew
+runs earn all eight broadcast medals and all seven severance medals. Losing an
+operative correctly leaves only the completion medal, even with evidence aboard.
+
+The unretained loss `amortization-broadcast-lost-ff9ebd8f.replay.json` has no
+feedback note. It still reproduces exactly: all four fall at tick 3231, with 33
+shots, alarm active and LOG carried. It is diagnostic evidence, not a required
+loss or an invalid completion.
+
+Two feedback notes prompted fixes:
+
+- `e3aa7439`: “Zooming to a clicked objective is super annoying.” Locate now pans
+  at the existing scale. Browser checks cover single and spread-out goals at
+  several zoom levels on desktop and touch; the recording has no camera inputs.
+- `16e9dc9e`: “Sable's stutter aim was hilarious but likely not what we want here.”
+  A moving target repeatedly crossed the attack order's stop threshold. Sable
+  took one corrective step and cancelled her coil charge, then restarted it.
+  The order now holds a valid charge until the target actually leaves range or
+  sight. A regression requires one uninterrupted charge against a retreating
+  patrol that remains within rifle range.
+
+The Mission 11 commands still win at tick 5019 under the corrected combat timing:
+Rook and Sable extract REGISTER, with 49 and 87 HP and 78 shots in total. The
+original run had 66 and 100 HP and 73 shots, so it is current-rule completion
+coverage, not an exact checkpoint match. REGISTER survives Vale's death; Rook
+recovers it and works CLEAR while Sable holds SIGN. Reconciliation remains intact
+through the handoff, and both stations are required for the release. The older
+Mission 07 route `8de9cdd6` now loses and is retired below.
+
+Foreground walls and roofs reveal hollow faction-coloured character outlines.
+Following the clipping feedback, only the covered portions remain outlined.
+Each current pose is contoured first, then masked by its foreground scenery;
+exposed body parts and the wall's top edge gain no artificial contour. This does
+not change sight or combat rules. Desktop/touch pixel checks cover partial and
+toe-only obstruction, doors, targeting, night lighting, camera scale, turrets and
+reset. The earlier 2,400-frame CPU comparison measured the initial whole-character
+effect, before clipping; it is not a performance claim for the revised pass.
+The human bundles contain no frame telemetry.
 
 ## Value date: recovery and performance
 
@@ -224,8 +289,9 @@ No combat values or mission geometry changed in response to these runs.
 All four submissions on 2026-09-28 verify every original checkpoint against the
 current mission hash `b47ff7f7` and simulation fingerprint
 `98ab5c929c5b796f9598a154f3ee3906fc645e2602791bf5b10b3feda357e4bd`.
-The camera look-ahead change does not alter either fingerprint. The three wins
-join the completion corpus unchanged:
+The camera look-ahead change did not alter either fingerprint. The three wins
+originally joined the completion corpus unchanged; `8de9cdd6` was later retired
+after the coil pursuit correction described above:
 
 | Fixture                                 | Original submission                              | Exact outcome                            |
 | --------------------------------------- | ------------------------------------------------ | ---------------------------------------- |
@@ -439,7 +505,7 @@ The crew advances together, disables RADIO early, collects REGISTER, and plants
 WEST followed by EAST. A repeated EAST order preserves the placement progress.
 They leave through GATE, detonate outside the compound, and board VAN. No
 disguise or field dressing was used. The weapon rollout invalidates this route;
-a replacement human completion is still needed.
+the September 29 runs above now supply replacement human completions.
 
 ## Retired recordings
 
@@ -447,6 +513,10 @@ These recordings no longer win within their recorded duration under revised
 rules and were removed from the completion corpus. Original submissions remain
 in git history; they were not converted to passing fixtures.
 
+- `clearing-assault-8de9cdd6.replay.json`: preserving valid operative coil charges
+  changes the subsequent fight. The unchanged orders now lose at tick 1620,
+  before the original tick-1871 win. It is removed from required completions;
+  the other two human Mission 07 assault routes still win.
 - `broadcast-premature-extraction.replay.json` (`52011baa`, PR #14): the new weapon
   ranges, stationary carbine preparation and sentry encounter defeat the old
   assault at tick 615, before its next recorded order. Its original win was tick
@@ -454,7 +524,8 @@ in git history; they were not converted to passing fixtures.
 - `severance-squad-assault.replay.json` (`546bc6e8`, PR #14): the new loadout and
   specialist pair defeat the old moving assault at tick 930, before its next
   recorded order. Its original win was tick 1684. The synthetic quiet and armed
-  routes now use the new weapon commitments; new human runs are needed.
+  routes use the new weapon commitments; the September 29 human runs now cover
+  quiet, armed and live-alarm completions with all medals available.
 - `archive-breach-assault.replay.json` (`860040c5`, PR #9): note “Fair.” Formation
   changes alter combat positions and choose a different ledger carrier. The crew
   is ready at tick 1522 but needs another 16 ticks to finish boarding. The new
