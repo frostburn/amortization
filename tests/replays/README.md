@@ -65,13 +65,15 @@ recovers it and works CLEAR while Sable holds SIGN. Reconciliation remains intac
 through the handoff, and both stations are required for the release. The older
 Mission 07 route `8de9cdd6` now loses and is retired below.
 
-Foreground walls and roofs now reveal hollow faction-coloured character outlines.
-The shared contour pass uses the current poses and does not change sight or
-combat rules. Desktop/touch pixel checks cover doors, targeting, night lighting,
-camera scale, turrets and reset. A repeated 2,400-frame browser sample of the
-earlier Mission 11 recovery route measured approximately 0.70 ms average scene
-CPU work both before and after outlines. This is a software-rendered CPU sample,
-not a claim about device frame rates; the human bundles contain no frame telemetry.
+Foreground walls and roofs reveal hollow faction-coloured character outlines.
+Following the clipping feedback, only the covered portions remain outlined.
+Each current pose is contoured first, then masked by its foreground scenery;
+exposed body parts and the wall's top edge gain no artificial contour. This does
+not change sight or combat rules. Desktop/touch pixel checks cover partial and
+toe-only obstruction, doors, targeting, night lighting, camera scale, turrets and
+reset. The earlier 2,400-frame CPU comparison measured the initial whole-character
+effect, before clipping; it is not a performance claim for the revised pass.
+The human bundles contain no frame telemetry.
 
 ## Value date: recovery and performance
 

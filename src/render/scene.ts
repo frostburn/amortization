@@ -1,4 +1,5 @@
 import { Application, Container, Graphics, Polygon, Text } from 'pixi.js';
+import type { Bounds } from 'pixi.js';
 import {
   controllable,
   disoriented,
@@ -45,9 +46,8 @@ const COLORS = {
   amber: 0xefbd73,
   red: 0xf57869,
 };
-const OCCLUSION_PROBES = [4, 17, 31].flatMap((up) => [-5, 0, 5].map((dx) => ({ x: dx, y: -up })));
-const boxSilhouette = (r: Rect, height: number) =>
-  new Polygon([
+const boxSilhouette = (r: Rect, height: number) => {
+  const polygon = new Polygon([
     project(r, height),
     project({ x: r.x + r.w, y: r.y }, height),
     project({ x: r.x + r.w, y: r.y }),
@@ -55,6 +55,33 @@ const boxSilhouette = (r: Rect, height: number) =>
     project({ x: r.x, y: r.y + r.h }),
     project({ x: r.x, y: r.y + r.h }, height),
   ]);
+  return { polygon, bounds: polygon.getBounds() };
+};
+const overlapsSilhouette = (o: ReturnType<typeof boxSilhouette>, b: Bounds, foot: Vec) => {
+  const left = foot.x + b.minX,
+    right = foot.x + b.maxX;
+  const top = foot.y + b.minY,
+    bottom = foot.y + b.maxY;
+  if (
+    right < o.bounds.left ||
+    left > o.bounds.right ||
+    bottom < o.bounds.top ||
+    top > o.bounds.bottom
+  )
+    return false;
+  // The six box corners are clockwise in screen space. Reject a bounding
+  // rectangle wholly outside any edge, including the sloping roof edges.
+  const p = o.polygon.points;
+  for (let i = 0; i < p.length; i += 2) {
+    const j = (i + 2) % p.length,
+      dx = p[j] - p[i],
+      dy = p[j + 1] - p[i + 1];
+    const x = dy >= 0 ? left : right,
+      y = dx >= 0 ? bottom : top;
+    if (dx * (y - p[i + 1]) - dy * (x - p[i]) < 0) return false;
+  }
+  return true;
+};
 const markerColor = (id: ObjectKind) =>
   isExtraction(id)
     ? COLORS.mint
@@ -125,8 +152,8 @@ export class Scene {
     root: Container;
     footprint: Rect;
     vehicle?: string;
-    occluder?: Polygon;
-    wreckOccluder?: Polygon;
+    occluder?: ReturnType<typeof boxSilhouette>;
+    wreckOccluder?: ReturnType<typeof boxSilhouette>;
   }[] = [];
   private aftermath: Aftermath | null = null;
   private cores: { intact: Graphics; wreck: Graphics }[] = [];
@@ -1369,25 +1396,24 @@ export class Scene {
       if (!view?.root.visible || !living(p) || this.aftermath) continue;
       const guard = w.guards.find((g) => g.id === p.id);
       const foot = view.root.position;
-      // Sample feet, torso and head in model space, against only foreground
-      // scenery. Cached polygons and shared poses avoid per-frame tessellation.
-      const obscured = occluders.some(
-        (s) =>
-          s.root.zIndex > view.root.zIndex &&
-          OCCLUSION_PROBES.some((q) =>
-            (wrecked && s.wreckOccluder ? s.wreckOccluder : s.occluder!).contains(
-              foot.x + q.x,
-              foot.y + q.y,
-            ),
-          ),
-      );
-      if (obscured && guard?.turret) this.outlines.showTurret(guard, w, foot, COLORS.red);
-      else if (obscured)
+      const bounds = (guard?.turret ? view.ink : view.sprite).getLocalBounds();
+      // Bounds only select candidate walls. Their actual polygons clip the
+      // finished contour, independently for each character's painter depth.
+      const covering: Polygon[] = [];
+      for (const s of occluders) {
+        if (s.root.zIndex <= view.root.zIndex) continue;
+        const o = wrecked && s.wreckOccluder ? s.wreckOccluder : s.occluder!;
+        if (overlapsSilhouette(o, bounds, foot)) covering.push(o.polygon);
+      }
+      if (covering.length && guard?.turret)
+        this.outlines.showTurret(guard, w, foot, COLORS.red, covering);
+      else if (covering.length)
         this.outlines.show(
           p.id,
           view.sprite.geometry,
           foot,
           w.agents.some((a) => a.id === p.id) ? COLORS.mint : guard ? COLORS.red : COLORS.amber,
+          covering,
         );
     }
     for (const view of this.views.values())

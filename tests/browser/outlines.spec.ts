@@ -120,7 +120,10 @@ for (const touch of [false, true])
       const { scene, world, layer } = window.outlineTest;
       const colors = layer.children.filter((c) => c.visible).map((c) => c.tint);
       const guard = scene.screen(world.guards[0], 0.5);
-      return { colors, hit: scene.hit(guard.x, guard.y), filters: layer.filters?.length };
+      const filters = new Set(
+        layer.children.filter((c) => c.visible).flatMap((c) => c.getChildAt(0).filters ?? []),
+      );
+      return { colors, hit: scene.hit(guard.x, guard.y), filters: filters.size };
     });
     expect(initial.colors).toEqual(expect.arrayContaining([0xf57869, 0x8be8c4]));
     expect(initial.colors.filter((c) => c === 0xf57869)).toHaveLength(1);
@@ -221,7 +224,7 @@ for (const touch of [false, true])
         return visible();
       });
       // The silhouette shares a posed mesh instead of tessellating its own copy.
-      const outlined = layer.children.find((c) => c.visible) as Mesh;
+      const outlined = layer.children.find((c) => c.visible)!.getChildAt(0) as Mesh;
       return {
         closed,
         open,
@@ -242,6 +245,79 @@ for (const touch of [false, true])
     });
     expect(states.vertices).toBeGreaterThan(100);
     await page.screenshot({ path: testInfo.outputPath('shutter-close-up.png') });
+    const clipped = await page.evaluate(() => {
+      const { scene, world, layer, frame, focus } = window.outlineTest;
+      const gl = (scene.app.renderer as WebGLRenderer).gl;
+      const resolution = scene.app.renderer.resolution;
+      return [
+        { x: 41.5, y: 16.5 },
+        { x: 41, y: 15.7 },
+      ].flatMap((position) =>
+        [0.95, 1.8, 3].map((scale) => {
+          Object.assign(world.guards[0], position, { previous: position });
+          focus(world.guards[0], scale);
+          const p = scene.screen(world.guards[0]);
+          const x = Math.floor((p.x - 20 * scale - 4) * resolution);
+          const y = Math.floor(scene.app.canvas.height - (p.y + 8 * scale + 4) * resolution);
+          const width = Math.ceil((40 * scale + 8) * resolution);
+          const height = Math.ceil((50 * scale + 8) * resolution);
+          const read = () => {
+            scene.app.render();
+            const pixels = new Uint8Array(width * height * 4);
+            gl.readPixels(x, y, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+            return pixels;
+          };
+          const shown = read();
+          layer.visible = false;
+          const closed = read();
+          // The real shutter's rendered pixels provide an independent reference:
+          // opening it changes covered pixels, but leaves the exposed head alone.
+          world.shutterOpen = true;
+          frame();
+          layer.visible = false;
+          const open = read();
+          world.shutterOpen = false;
+          frame();
+          const view = layer.children.find((c) => c.visible)!;
+          const mask = view.getChildAt(1);
+          view.mask = null;
+          mask.visible = false;
+          const uncut = read();
+          mask.visible = true;
+          view.mask = mask;
+          frame();
+          let covered = 0,
+            exposed = 0,
+            inventedEdge = 0,
+            uncutExposed = 0;
+          const delta = (a: Uint8Array, b: Uint8Array, i: number) =>
+            Math.max(...[0, 1, 2].map((c) => Math.abs(a[i + c] - b[i + c])));
+          for (let i = 0; i < shown.length; i += 4) {
+            const changed = delta(shown, closed, i) > 10;
+            const uncovered = delta(open, closed, i) === 0;
+            if (changed && !uncovered) covered++;
+            if (changed && uncovered) exposed++;
+            if (delta(uncut, closed, i) > 10 && uncovered) uncutExposed++;
+            if (changed && delta(uncut, closed, i) === 0) inventedEdge++;
+          }
+          return {
+            scale,
+            toeOnly: position.y === 15.7,
+            covered,
+            exposed,
+            inventedEdge,
+            uncutExposed,
+          };
+        }),
+      );
+    });
+    for (const state of clipped) {
+      expect(state.covered, JSON.stringify(state)).toBeGreaterThan(10);
+      expect(state.uncutExposed, JSON.stringify(state)).toBeGreaterThan(10);
+      expect(state.exposed, JSON.stringify(state)).toBe(0);
+      expect(state.inventedEdge, JSON.stringify(state)).toBe(0);
+    }
+    await page.screenshot({ path: testInfo.outputPath('only-hidden-toes.png') });
     const extra = await page.evaluate(() => {
       const { scene, world, layer, frame, focus } = window.outlineTest;
       const g = world.guards[0];
@@ -260,7 +336,7 @@ for (const touch of [false, true])
       g.turret = { circuit: 'power-west', homeAngle: 0, lock: 0 };
       g.angle = Math.PI / 4;
       focus(g, 1.8);
-      const turret = layer.children.find((c) => c.visible)!;
+      const turret = layer.children.find((c) => c.visible)!.getChildAt(0);
       const firstWidth = turret.getLocalBounds().width;
       g.angle = -Math.PI / 4;
       frame();
