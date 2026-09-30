@@ -23,11 +23,18 @@ field team.
 - Each completed mission in **Operations** offers its scene again. Existing
   completion records, including migrated records, unlock their scenes immediately.
   Uncompleted missions show an unlock condition without revealing the scene title.
-- Nothing autoplays, chains into another scene, starts an operation or advances
+- No scene autoplays, chains into another scene, starts an operation or advances
   the simulation. Escape, the close button and outside clicks return to the same
   underlying briefing/results/Operations dialog. Previous, restart and arrow keys
-  allow rereading. The sound toggle uses the game's existing saved preference;
-  dialogue is text, without generated speech or automatic reading speed.
+  allow rereading. Text reveals to character-specific keyboard sounds. Click/tap
+  the picture or dialogue, or use **Reveal line**, to show the rest immediately
+  and stop the keys. A further **Next** action advances; lines never advance
+  themselves. Right arrow also reveals before advancing.
+- The sound toggle and master volume govern typing as well as game effects.
+  Closing, navigating away from a line, muting, or losing focus cancels its keys.
+  Hidden/unfocused scenes keep the reader's place and resume without a backlog.
+  Reduced-motion mode shows complete lines without typing sounds. Assistive
+  technology receives each complete line once, independently of the visual reveal.
 - Watching a gameplay replay does not create a completion or unlock a scene.
   A scene's watched flag is separate from medals and mission progress.
 
@@ -36,6 +43,13 @@ visible through renderer initialization, then yields immediately to the briefing
 There is no invented percentage or minimum delay. Module/renderer failures leave
 a reload action. The story's images are loaded on demand and never gate playing
 or reading the dialogue. [Artwork and generation prompts](story-art.md).
+
+The opening exchange and the first van departure use phone keyboards. The
+safehouse exchanges use plastic keyboards, including Morrow after the rescue.
+The bosses retain distinct mechanical typewriter signatures throughout.
+Individual timbre, cadence and punctuation rests are described in
+[Sound design](audio.md#story-keyboards). These are abstract character voices,
+not a claim that every conversation literally takes place at a keyboard.
 
 ## The opposing cast
 

@@ -34,6 +34,7 @@ import { bindMedalTips, medalList } from './medal-display';
 import { bindBackdropDismiss } from './dialog';
 import { briefingObjective, renderBriefing } from './briefing';
 import { StoryPlayer, storyButton } from './story';
+import type { StoryAudio } from './story';
 import type { StoryId } from '../content/story';
 import { missionCopy } from '../content/mission-copy';
 import type { Records, MissionRecord } from './storage';
@@ -100,6 +101,7 @@ export class Hud {
     onAction: (action: Action) => void,
     onSelect: (index: number, add: boolean) => void,
     private onGuide: (targets: GuideTarget[], focus: boolean, panel: Rect) => void,
+    storyAudio?: StoryAudio,
   ) {
     this.app = document.querySelector('#app')!;
     const escortControls = `<section id="escort-controls" class="objective-actions escort-panel" aria-label="Witness" hidden><button data-action="locate-escort" id="escort-focus" title="Locate the witness without changing squad orders"><strong id="escort-alert" role="status"></strong><span id="escort-status"></span></button><div class="escort-actions"><button data-action="escort-wait" id="escort-wait-button"><span class="witness-portrait" aria-hidden="true"></span><span id="escort-wait-label"></span></button><button data-action="escort-aid" id="escort-aid-button" hidden></button></div><p id="escort-aid-hint" hidden></p></section>`;
@@ -136,7 +138,7 @@ export class Hud {
     this.stage = this.app.querySelector('#stage')!;
     this.modal = this.app.querySelector('#mission-dialog')!;
     bindBackdropDismiss(this.modal);
-    this.story = new StoryPlayer(() => onAction('sound'));
+    this.story = new StoryPlayer(() => onAction('sound'), storyAudio);
     this.modal.addEventListener('close', () => this.story.dialog.close());
     this.closeMedalTip = bindMedalTips(this.modal);
     this.app

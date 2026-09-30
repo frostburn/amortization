@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { Director, eventCue } from '../src/audio/director';
 import { placement } from '../src/audio/mixer';
 import { clockedNoise } from '../src/audio/noise';
-import { loopSound, SOUND_IDS, synthesize } from '../src/audio/palette';
+import { loopSound, mixGain, SOUND_IDS, synthesize } from '../src/audio/palette';
+import { typingSound, typingVoices } from '../src/audio/typing';
+import type { TypingSpeaker } from '../src/audio/typing';
 import { countermand } from '../src/content/countermand';
 import { depot } from '../src/content/depot';
 import { mandate } from '../src/content/mandate';
@@ -15,6 +17,30 @@ import { cancelCharge, COIL_CHARGE, equip } from '../src/sim/weapons';
 import { createWorld } from '../src/sim/world';
 
 describe('sound palette and placement', () => {
+  it('gives the cast distinct damped keys, below the confirmation cue at typing cadence', () => {
+    const rate = 24000,
+      prints = new Set<string>();
+    const energy = (pcm: Float32Array) => pcm.reduce((sum, x) => sum + x * x, 0) / rate;
+    const confirmation = energy(synthesize('confirm', rate));
+    for (const speaker of Object.keys(typingVoices) as TypingSpeaker[]) {
+      const id = typingSound(speaker),
+        voice = typingVoices[speaker];
+      const pcm = synthesize(id, rate, 1);
+      prints.add([...pcm.slice(0, 512)].join(','));
+      expect(pcm).toEqual(synthesize(id, rate, 1));
+      expect(pcm).not.toEqual(synthesize(id, rate, 2));
+      // A 100 ms reading window can contain two strokes. Keep their combined
+      // energy below the short confirmation sound, including effect faders.
+      expect(energy(pcm) * mixGain(id) ** 2 * Math.ceil(100 / voice.keyGap)).toBeLessThan(
+        confirmation,
+      );
+    }
+    expect(prints.size).toBe(6);
+    expect(synthesize(typingSound('voss', 'phone'), rate)).not.toEqual(
+      synthesize(typingSound('voss', 'keyboard'), rate),
+    );
+    expect(typingSound('holt', 'phone')).toBe(typingSound('holt'));
+  });
   it('clocks held and interpolated noise in Hz independently of output sample rate', () => {
     const render = (rate: number, interpolation: 'constant' | 'linear', frequency = 375) => {
       let n = 0;

@@ -46,7 +46,8 @@ audio context is created on page load. Muting persists independently of volume.
 Keyboard volume adjustments do not pan the map or change squad orders.
 
 Each cue's recipe, duration, stable noise seed, fader, voice priority and bus live
-together in `src/audio/palette.ts`; shared DSP primitives live in `synthesis.ts`.
+together in `src/audio/palette.ts`; character keyboard recipes and cadence live
+in `src/audio/typing.ts`, included by the palette. Shared DSP primitives live in `synthesis.ts`.
 Looping, reflections, baked filtering and combat ducking are defined beside the
 cue that uses them. Adding or reordering cues cannot retune existing noise seeds.
 Faders apply before spatial/context gain and the group compressors, both
@@ -127,7 +128,8 @@ volleys, recruitment during a four-gun volley, combat recovery, balance at low a
 full master volume, and cancelled-loop silence. They also exercise live mute,
 pause, accelerated playback and world changes. Desktop and touch checks cover the real Sound button,
 volume gestures, keyboard adjustment, saved volume, no autoplay and clean consoles.
-Routine CI retains its existing ten browser smoke cases.
+Routine CI retains eleven browser smoke cases; the existing story case checks
+instant reveal without adding another real-time reading journey to the gate.
 
 Further listening should tune the relative weight of impacts and movement during
 busy combat, especially on phone speakers and headphones. Browser checks verify
@@ -142,3 +144,52 @@ The new sound ID is appended so deterministic seeds for existing effects remain
 stable. The native offline mix check includes a sustained four-gun support burst
 against the objective cue at low and full master volume. Filing RECALL uses that
 non-spatial objective cue; no ambience is added.
+
+## Story keyboards
+
+Dialogue uses short original PCM recipes as abstract character voices. Mobile
+exchanges use dry smartphone taps; stationary allies use plastic QWERTY keys;
+the antagonists have heavier mechanical strokes. The opening and first departure
+are mobile. Later safehouse scenes are stationary, including Morrow's rescue
+ending. Scene/beat delivery overrides live beside the dialogue in mission copy;
+the bosses keep their typewriter identity in either location.
+
+| Character | Timbre and cadence |
+| --- | --- |
+| Morrow | Lower, muted contact, brief returns, compact bursts with short pauses |
+| Iona Voss | Light, higher keys, quick uneven groups and a hollow plastic body at the desk |
+| Mara Quill | Softer, dry keys at an even pace, with more deliberate punctuation |
+| Severin Holt | Low, weighty platen impact and longer return, measured cadence and the longest pauses |
+| Ada Kestrel | Tighter, higher metal linkage, quick precise groups and a short return |
+| Lucan Dacre | Low mechanical body, firmer snap and paired rhythmic accents |
+
+The phone recipe combines filtered, clocked contact noise with a very short
+haptic body. Plastic keys have separate bottom-out and quieter return contacts.
+Typewriters add a damped mechanism/platen body and a brief metal resonance.
+Constant and linear noise interpolation, layered envelopes and low-pass filters
+shape the transients; there is no full-band noise wash, carriage bell or ambience.
+Each key has three cached variations. Profiles change body, tuning, attack,
+return timing, reading cadence and punctuation rests rather than merely shifting
+one shared sample up or down.
+
+Balance is checked at repeated typing cadence. Mechanical strokes have a lower
+effect fader to compensate for their longer, heavier body. They remain below
+the confirmation cue over a short reading window. Keys use the existing centred
+feedback path and saved master volume. They require the existing gesture unlock,
+and muted scenes do not allocate silent sources. PCM is created only on first
+use; optional story keys are excluded from the game's background audio warmup.
+
+Reveal respects grapheme boundaries. Spaces and punctuation are silent, with
+pauses after clauses and sentences. At most one key plays per visual update,
+with a minimum interval per character; delayed frames cannot discharge a queue
+of sounds. Clicking/tapping the dialogue or image reveals the current line and
+cancels its audio without skipping ahead. Previous, restart, close, mute, focus
+loss and hidden tabs also cancel pending keys. Focus return resumes from the
+same place. Reduced-motion mode gives an instant, silent reveal, and screen
+readers receive the complete line once.
+
+Unit checks cover graphemes, cadence, bounded PCM, variation and relative key
+energy. Desktop/touch browser checks exercise the real audio context and sources,
+instant reveal without page advance, mute, restart, focus interruption, keyboard
+navigation, close and reduced motion. No simulation state or replay identity is
+changed by these presentation sounds.

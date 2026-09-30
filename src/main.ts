@@ -58,6 +58,7 @@ export async function boot() {
       scene.showGuidance(targets, panel);
       if (focus) scene.focusGuidance();
     },
+    { key: (id) => sound.type(id), stop: () => sound.stopTyping() },
   );
   const scene = new Scene(hud.stage, world);
   await scene.init();

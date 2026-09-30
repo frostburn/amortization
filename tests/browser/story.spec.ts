@@ -31,6 +31,9 @@ test('story entry stays optional and completed operations expose their reward @s
   expect(artRequests).toEqual([]);
   await mission.locator('[data-story-entry="opening"]').click();
   await expect(scene.locator('.story-speaker')).toHaveText('Iona Voss');
+  await scene.locator('.story-stage').click();
+  await expect(scene.locator('.story-page')).toHaveText('1 / 6');
+  await expect(scene).toHaveAttribute('data-revealing', 'false');
   await scene.getByRole('button', { name: 'Next', exact: false }).click();
   await expect(scene.locator('.story-speaker')).toHaveText('Morrow');
   await scene.getByRole('button', { name: 'Close scene' }).click();
@@ -109,6 +112,7 @@ for (const touch of [false, true]) {
         JSON.stringify((window as unknown as { storyWorld: World }).storyWorld),
       ),
     ).toBe(initialWorld);
+    await scene.locator('.story-stage').click();
     await scene.getByRole('button', { name: 'Next', exact: false }).click();
     await expect(scene.locator('.story-speaker')).toHaveText('Morrow');
     await scene.getByRole('button', { name: 'Previous', exact: true }).click();
@@ -119,6 +123,7 @@ for (const touch of [false, true]) {
       'true',
     );
     await scene.getByRole('button', { name: 'Sound on', exact: true }).click();
+    await scene.locator('.story-stage').click();
     await page.screenshot({ path: testInfo.outputPath('opening.png') });
     if (touch) await page.touchscreen.tap(8, 8);
     else await page.keyboard.press('Escape');
@@ -153,8 +158,11 @@ for (const touch of [false, true]) {
     await expect(reward).toContainText('Watch scene');
     const records = await page.evaluate(() => localStorage.getItem('amortization.records.v4'));
     await reward.click();
-    for (let i = 1; i < missionCopy.depot.scene.beats.length; i++)
+    for (let i = 1; i < missionCopy.depot.scene.beats.length; i++) {
+      await scene.locator('.story-stage').click();
       await scene.locator('[data-story-control="next"]').click();
+    }
+    await scene.locator('.story-stage').click();
     await expect(scene.locator('.story-speaker')).toHaveText('Severin Holt');
     await expect(scene.locator('.story-line')).toBeInViewport({ ratio: 1 });
     await expect(scene.getByRole('button', { name: 'Finish scene' })).toBeInViewport({ ratio: 1 });
@@ -186,6 +194,8 @@ test('existing completions unlock all scenes; every portrait and setting loads',
   page,
 }, testInfo) => {
   test.setTimeout(90_000); // Full catalogue sweep; only the short desktop flow is in smoke CI.
+  // The catalogue sweep also exercises the instant, accessible reading mode.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.addInitScript(

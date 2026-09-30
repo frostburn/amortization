@@ -15,6 +15,7 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     scene: {
       title: 'A name in the margin',
       setting: 'safehouse',
+      typing: 'phone',
       beats: [
         {
           speaker: 'voss',
@@ -292,6 +293,7 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     scene: {
       title: 'Four places at the table',
       setting: 'safehouse',
+      typing: 'keyboard',
       beats: [
         {
           speaker: 'morrow',

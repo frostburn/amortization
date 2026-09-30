@@ -117,10 +117,26 @@ dialog.story-dialog {
   margin: 5px 0 17px;
 }
 .story-line {
+  position: relative;
   font-size: 19px;
   line-height: 1.55;
   max-width: 740px;
   color: #e2e7df;
+}
+.story-readable {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+[data-story-pending] {
+  visibility: hidden;
+}
+.story-dialog[data-revealing='true'] .story-stage,
+.story-dialog[data-revealing='true'] .story-dialogue {
+  cursor: pointer;
 }
 .story-footer {
   display: flex;

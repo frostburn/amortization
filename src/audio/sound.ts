@@ -4,6 +4,7 @@ import type { Cue } from './director';
 import { centred, Mixer, placement } from './mixer';
 import type { ListeningView, Voice } from './mixer';
 import { loopSound, SOUND_IDS } from './palette';
+import type { TypingSound } from './typing';
 
 const VOLUME_KEY = 'amortization.volume.v1';
 const ENABLED_KEY = 'amortization.sound.v1';
@@ -12,6 +13,7 @@ export class Sound {
   private mixer: Mixer | null = null;
   private director = new Director();
   private loops = new Map<string, Voice>();
+  private typing = new Set<Voice>();
   private world: World | null = null;
   private revision = 0;
   private loudness = 0.65;
@@ -94,6 +96,9 @@ export class Sound {
     // during busy fights.
     for (let variant = 0; variant < 3; variant++)
       for (const id of SOUND_IDS) {
+        // Optional dialogue keys are tiny and cached on first use, not warmed
+        // for players who only open the tactical game.
+        if (id.startsWith('key-')) continue;
         if (revision !== this.revision || !this.enabled || !this.mixer) return;
         if (variant && loopSound(id)) continue;
         this.mixer.buffer(id, variant);
@@ -103,6 +108,19 @@ export class Sound {
   silence() {
     this.mixer?.silence();
     this.loops.clear();
+    this.typing.clear();
+  }
+  type(id: TypingSound) {
+    if (!this.enabled || !this.mixer || this.context?.state !== 'running' || document.hidden)
+      return;
+    for (const voice of this.typing)
+      if (voice.stopped || voice.end <= this.context.currentTime) this.typing.delete(voice);
+    const voice = this.mixer.play(id);
+    if (voice) this.typing.add(voice);
+  }
+  stopTyping() {
+    for (const voice of this.typing) this.mixer?.stop(voice);
+    this.typing.clear();
   }
   reset(world: World) {
     this.silence();
