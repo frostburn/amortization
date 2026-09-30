@@ -40,7 +40,11 @@ The ordinary six medals apply, plus **Light touch** for leaving the dispatch loc
 intact and extracting all four with KEY. The concise briefing contains the job
 and essential timing; route advice stays inside the opt-in disclosure. Goal
 locators follow the key carrier or dropped key. The lift control shows its call
-state, countdown and boarding prerequisites.
+state, countdown and boarding prerequisites. On the map, RADIO's red bar drains
+toward the next patrol dispatch while disable work fills a separate mint bar.
+LINK and CUT show actual work progress; SHUNT names its holder. LIFT shows the
+eighteen-second arrival, then **Open · waiting** without implying a departure
+deadline. All bars use simulation time and remain readable at different zooms.
 
 ## Sunset and departure
 
@@ -73,8 +77,24 @@ the sound preference, and remains replayable from Operations.
   locators, default zoom, sunset rendering, call/arrival controls, key recovery,
   boarding and closing doors. The existing lighting pixel test protects night
   lighting and camera transforms.
-- All retained human completions remain in the regression suite. Mission 14's
-  difficulty has synthetic coverage only until a human playtest is supplied.
+- Five human attempts verify all 98 original checkpoints without changing the
+  simulation fingerprint: three defeats, one unfinished run and one win with
+  three survivors at 140.73s. The winner cuts dispatch, disables RADIO after one
+  patrol, calls the lift and retrieves KEY after Rook falls; the completed call
+  survives the handover. This establishes a human recovery route, not a full-crew
+  or silent human completion. The unchanged win joins the completion corpus;
+  the other four remain diagnostic fixtures.
+- The unfinished run's note reports a soft lock: Morrow is alone inside dispatch
+  after Vale leaves SHUNT and falls. Continuing that exact world with the
+  existing inside CUT command opens the shutter at 61.97s and lets Morrow leave
+  with 100 HP. A regression checks that recovery and its visible work timer.
+  The existing escape guidance/button remains available; no balance change or
+  forced mission failure is needed.
+- Desktop and touch timer checks cover simultaneous patrol/disable bars, paused
+  time, fixed label size during zoom, unobstructed map input, inside CUT, LINK,
+  arrival, open-lift status and cleanup on completion. Unit checks also cover
+  the second patrol interval, saved upload/trace and transfer progress, temporary
+  turret shutdown, inactive floors, cancelled work and defeat.
 
 The locked dispatch room also exposed repeated failed path searches when an
 operative was ordered to attack its inaccessible guard. Navigation now retains

@@ -1,0 +1,71 @@
+.map-timers {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+}
+.map-timer {
+  position: absolute;
+  width: 118px;
+  padding: 5px 7px 6px;
+  background: #101b22ed;
+  border: 1px solid #85938b80;
+  border-radius: 3px;
+  color: #eef4e8;
+  font:
+    10px / 14px Arial,
+    sans-serif;
+  box-shadow: 0 2px 5px #0008;
+}
+.map-timer > strong {
+  display: block;
+  font-size: 10px;
+  line-height: 14px;
+  letter-spacing: 1px;
+}
+.timer-leader {
+  position: absolute;
+  left: 50%;
+  width: 1px;
+  background: #bccbb59c;
+  transform-origin: top;
+}
+.map-timer-row {
+  --timer-color: #8be8c4;
+  height: 27px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-content: end;
+  gap: 2px 4px;
+}
+.map-timer-row[data-tone='danger'] {
+  --timer-color: #ff8979;
+}
+.map-timer-row[data-tone='wait'] {
+  --timer-color: #f4cf7e;
+}
+.map-timer-row b {
+  color: var(--timer-color);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.timer-track {
+  grid-column: 1 / -1;
+  height: 5px;
+  overflow: hidden;
+  background: #020908;
+  outline: 1px solid #a6c8b030;
+}
+.timer-track > i {
+  display: block;
+  height: 100%;
+  background: var(--timer-color);
+  transform-origin: left;
+}
+.map-timer-row.is-paused {
+  --timer-color: #b4bab7;
+}
+.objective-locator.has-timer:not(.is-offscreen) span {
+  visibility: hidden;
+}

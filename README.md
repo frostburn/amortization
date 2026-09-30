@@ -120,9 +120,9 @@ npm run replay:verify -- --current --expect-win attempt.replay.json
 The first command verifies compatible code and every state checkpoint. The second
 tests completion under current rules. Both exit nonzero on failure. Selected player
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
-distinct routes. Retained human completions cover the first thirteen operations, including
+distinct routes. Retained human completions cover all fourteen operations, including
 replacement weapon-era runs for 05–06, the full-crew Countermand completion, and
-both Kestrel outcomes in Continuity. The first twelve also have synthetic quiet
+both Kestrel outcomes in Continuity and Threshold's three-survivor key recovery. The first twelve also have synthetic quiet
 and armed completion tests; Operation 13 has guarded arrest and lethal runs, and Operation 14 has quiet and armed
 full-crew runs with replay verification. See
 `tests/replays/README.md` for provenance, current outcomes, and retired routes.
@@ -718,8 +718,18 @@ close before the debrief; the arrival van stays parked.
 
 The optional ending, **Above the last street**, sets up Dacre and Holt together
 in the skyscraper penthouse. That final encounter remains to be built. Quiet and
-armed full-crew routes have command/replay coverage; human difficulty feedback
-is still needed. [Mission design and verification](docs/threshold.md).
+armed full-crew routes have command/replay coverage. The first human completion
+recovers KEY after its carrier falls and boards with three survivors. All five
+submitted attempts retain their original checkpoints and outcomes.
+[Mission design and verification](docs/threshold.md).
+
+On-map timer bars show RADIO's next patrol deadline alongside any disable work,
+LINK's key work, LIFT's arrival and other timed interactions. Work fills a mint
+bar; patrol and trace deadlines drain a red bar. Lift arrival and temporary
+turret shutdown use amber. Held SHUNT and an open lift have explicit status
+labels instead of invented countdowns. Uploads and transfers retain their saved
+progress and display **Paused** when unattended. Bars keep the same readable
+size when zooming and let map clicks/taps pass through.
 
 ### Operation medals
 

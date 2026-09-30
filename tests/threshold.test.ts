@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { threshold } from '../src/content/threshold';
 import { createWorld } from '../src/sim/world';
 import { applyCommand } from '../src/sim/commands';
@@ -10,12 +11,43 @@ import { available, dropEvidence, extractionStatus, interact, landmark } from '.
 import { callLift, liftReady, liftRemaining } from '../src/sim/threshold';
 import { sees, sightRange } from '../src/sim/vision';
 import { throwFlash } from '../src/sim/flash';
-import { Recorder, parseReplay, verifyReplay } from '../src/replay/core';
+import {
+  Recorder,
+  ReplayPlayer,
+  compatibility,
+  parseReplay,
+  verifyReplay,
+} from '../src/replay/core';
 import { buildInfo } from '../scripts/build-info';
+import { mapTimers } from '../src/ui/map-timers';
 
 function advance(w: World, seconds: number) {
   for (let i = 0; i < Math.ceil(seconds / STEP); i++) step(w);
 }
+
+it('escapes the human abandoned run using inside CUT with the surviving operative', () => {
+  const bundle = parseReplay(
+    readFileSync('tests/fixtures/threshold-playing-51fe9ea6.replay.json', 'utf8'),
+  );
+  const build = buildInfo(process.cwd());
+  const player = new ReplayPlayer(bundle, build, compatibility(bundle, build).length > 0);
+  while (!player.done) player.advance();
+  expect(player.error).toBeNull();
+  const w = player.world,
+    a = w.agents[0];
+  expect(w.agents.filter(living).map((a) => a.name)).toEqual(['Morrow']);
+  expect(w.shutterOpen).toBe(false);
+  applyCommand(w, { kind: 'interact', agents: [a.id], target: 'breach' });
+  advance(w, 5);
+  expect(mapTimers(w).find((t) => t.target === 'breach')?.rows[0].remaining).toBeGreaterThan(0);
+  advance(w, 5);
+  expect(w.shutterBreached).toBe(true);
+  applyCommand(w, { kind: 'move', agents: [a.id], point: { x: 21.5, y: 20.5 } });
+  advance(w, 5);
+  expect(distance(a, { x: 21.5, y: 20.5 })).toBeLessThan(0.01);
+  expect(a.hp).toBe(100);
+  expect(w.status).toBe('playing');
+});
 
 describe('Threshold: a physical key and an independent lift bell', () => {
   it('uses night sight distances for every guard role despite the sunset palette', () => {

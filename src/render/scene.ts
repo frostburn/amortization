@@ -46,6 +46,8 @@ import { box, panel, plane, polygon } from './primitives';
 import { drawBuilding, drawWall, drawContactShadow, drawYardDetail, groundColor } from './scenery';
 import { OperativeLighting } from './lighting';
 import { CharacterOutlines } from './outlines';
+import { mapTimers } from '../ui/map-timers';
+import { MapTimers } from './map-timers';
 
 const COLORS = {
   ground: 0x343e47,
@@ -209,6 +211,7 @@ export class Scene {
   private selectionSnap = false;
   private selectionKey = '';
   private guideLayer = document.createElement('div');
+  private timers: MapTimers;
   private guideMarkers = new Map<GuideTarget, HTMLElement>();
   private guidePanel: Rect = { x: 0, y: 0, w: 0, h: 0 };
   showVision = true;
@@ -217,6 +220,7 @@ export class Scene {
     world: World,
   ) {
     this.world = world;
+    this.timers = new MapTimers(host);
     this.resizeObserver = new ResizeObserver(() => {
       this.resizePending = true;
     });
@@ -266,6 +270,7 @@ export class Scene {
     return this.aftermath?.resultsReady ?? false;
   }
   reset(world: World) {
+    this.timers.clear();
     this.aftermath = null;
     this.liftPortal = null;
     this.activeFloor = 0;
@@ -1128,6 +1133,7 @@ export class Scene {
       if (!p) continue;
       const locked = id !== 'inspection' && this.markerLocks.get(id);
       marker.classList.toggle('is-locked', !!locked);
+      marker.classList.toggle('has-timer', id !== 'inspection' && this.timers.has(id));
       const label = `${p.tag}${this.world.mission.building && !this.isVisibleFloor(p) ? (p.floor ? ' · UPSTAIRS' : ' · DOWNSTAIRS') : ''}${locked ? ' · LOCKED' : ''}`;
       const caption = marker.querySelector('span')!;
       if (caption.textContent !== label) caption.textContent = label;
@@ -1407,6 +1413,12 @@ export class Scene {
       }
     }
     this.lighting.refresh(w, alpha, this.camera, this.app.screen, this.aftermath);
+    this.timers.draw(
+      mapTimers(w, this.activeFloor),
+      (id) => this.markerScreen(id),
+      this.app.screen.width,
+      this.app.screen.height,
+    );
     this.drawGuidance();
     this.transferRoutes.forEach((route, i) => {
       route.visible = w.evidence === 'courier' && i === Number(w.courier?.diverted);
@@ -1675,7 +1687,7 @@ export class Scene {
       label.text = `${landmark(w, id).tag}${armed ? (demolished(w) ? ' · DESTROYED' : ' · ARMED') : locked ? ' · LOCKED' : ''}`;
       label.style.fill = locked ? 0xa5aba8 : markerColor(id);
       if (armed) icon.alpha = demolished(w) ? 0.55 : 1;
-      icon.children[1].visible = !this.guideMarkers.has(id);
+      icon.children[1].visible = !this.guideMarkers.has(id) && !this.timers.has(id);
       const marker = this.markerScreen(id)!,
         scale = this.camera.scale.x;
       icon.position.set((marker.x - this.offset.x) / scale, (marker.y - this.offset.y) / scale);

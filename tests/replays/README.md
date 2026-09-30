@@ -7,8 +7,43 @@ is also verified. Otherwise this checks a route's continued viability, without
 claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All fifty-one retained completions are byte-for-byte copies of submissions
+All fifty-two retained completions are byte-for-byte copies of submissions
 provided in chat, including their `unversioned` / local-changes metadata.
+
+## Threshold: timed work and key recovery
+
+All five September 30 submissions verify their 98 original checkpoints and final
+outcomes against PR #34's `646fdee` and the unchanged simulation fingerprint
+`25559847972c9b43914b2b1a243e9f903bb6329ddc566e39a871e3e0edb36630`.
+The timer-bar follow-up changes presentation only; no commands, checksums, notes
+or build metadata are rewritten. The successful bundle joins the corpus as
+`threshold-key-recovery-db4918dd.replay.json`. The other four are retained in
+`../fixtures/threshold-<status>-<suffix>.replay.json`; preserving their losses is
+not a future balance requirement.
+
+| Submission suffix | Exact outcome                                              | Checkpoints |
+| ----------------- | ---------------------------------------------------------- | ----------- |
+| `55e2fb28`        | Lost, tick 2642 / 88.07s; 62 shots; alarm                  | 19          |
+| `ebbe91e0`        | Lost, tick 2684 / 89.47s; 55 shots; alarm                  | 19          |
+| `51fe9ea6`        | Playing, tick 1559 / 51.97s; Morrow alone; 23 shots; alarm | 12          |
+| `6dac685d`        | Lost, tick 2412 / 80.4s; 64 shots; alarm                   | 18          |
+| `db4918dd`        | Won, tick 4222 / 140.73s; 3 survivors; 41 shots; alarm     | 30          |
+
+Only `51fe9ea6` has an embedded note: “Lol, soft-locked”. Vale leaves SHUNT at
+41.07s and falls at 45.20s, leaving Morrow inside dispatch with RADIO disabled.
+The existing inside CUT escape is available with free hands. A command-only
+continuation of the unchanged end state cuts the lock at 61.97s and reaches
+(21.5, 20.5) outside at 66.97s with 100 HP. A regression retains this escape;
+the new CUT bar shows that its eight-second work is progressing.
+
+In the win, CUT opens at 25.93s, the first patrol arrives at 31.93s and RADIO is
+disabled at 40.4s, preventing the second dispatch. Rook collects KEY at 65.50s
+and completes LINK at 91.33s. Rook falls at 106.0s while the car is still arriving;
+the key drops, the car finishes its eighteen-second arrival, and Vale recovers KEY at 122.23s without
+having to repeat LINK. All three survivors board at 140.73s. Only **Settled** is
+earned: the full-crew medal conditions are not met. Shot totals include both
+sides. The batch supports retaining the current challenge and improving the
+visibility of deadlines and work, rather than changing mission rules.
 
 ## Continuity: Kestrel removal
 
