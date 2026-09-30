@@ -147,17 +147,16 @@ non-spatial objective cue; no ambience is added.
 
 ## Story keyboards
 
-Dialogue uses short original PCM recipes as abstract character voices. Mobile
-exchanges use dry smartphone taps; stationary allies use plastic QWERTY keys;
-the antagonists have heavier mechanical strokes. The opening and first departure
-are mobile. Later safehouse scenes are stationary, including Morrow's rescue
-ending. Scene/beat delivery overrides live beside the dialogue in mission copy;
-the bosses keep their typewriter identity in either location.
+Dialogue uses short original PCM recipes as abstract character voices. Each
+character keeps one voice across all scenes: Morrow uses dry smartphone taps;
+Voss and Mara use plastic QWERTY keys; the antagonists have heavier mechanical
+strokes. Location does not change the voice, and scene/beat device overrides
+are unnecessary.
 
 | Character | Timbre and cadence |
 | --- | --- |
 | Morrow | Lower, muted contact, brief returns, compact bursts with short pauses |
-| Iona Voss | Light, higher keys, quick uneven groups and a hollow plastic body at the desk |
+| Iona Voss | Light, higher keys, quick uneven groups and a hollow plastic body |
 | Mara Quill | Softer, dry keys at an even pace, with more deliberate punctuation |
 | Severin Holt | Low, weighty platen impact and longer return, measured cadence and the longest pauses |
 | Ada Kestrel | Tighter, higher metal linkage, quick precise groups and a short return |
@@ -172,6 +171,7 @@ Each key has three cached variations. Profiles change body, tuning, attack,
 return timing, reading cadence and punctuation rests rather than merely shifting
 one shared sample up or down.
 
+Typing faders are raised by 3 dB from the initial mix for clearer taps.
 Balance is checked at repeated typing cadence. Mechanical strokes have a lower
 effect fader to compensate for their longer, heavier body. They remain below
 the confirmation cue over a short reading window. Keys use the existing centred

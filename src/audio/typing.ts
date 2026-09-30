@@ -1,10 +1,9 @@
 import type { Synthesis } from './synthesis';
 
-export type TypingDevice = 'phone' | 'keyboard' | 'typewriter';
+type TypingDevice = 'phone' | 'keyboard' | 'typewriter';
 
-// Acoustic weight and reading cadence belong to the same character. Device
-// changes retain that voice: e.g. Voss's phone and safehouse keyboard both have
-// a light, quick action. Seeds never consume the simulation's random stream.
+// Each character keeps one voice and reading cadence across every scene.
+// Seeds never consume the simulation's random stream.
 export const typingVoices = {
   morrow: {
     device: 'phone',
@@ -94,22 +93,21 @@ export const typingVoices = {
   }
 >;
 export type TypingSpeaker = keyof typeof typingVoices;
-export type TypingSound = `key-${TypingSpeaker}-${TypingDevice}`;
+export type TypingSound = `key-${TypingSpeaker}`;
 
-export function typingSound(speaker: TypingSpeaker, device?: TypingDevice): TypingSound {
-  const voice = typingVoices[speaker];
-  // The bosses' mechanical signature survives a change of location.
-  return `key-${speaker}-${voice.device === 'typewriter' ? 'typewriter' : (device ?? voice.device)}`;
+export function typingSound(speaker: TypingSpeaker): TypingSound {
+  return `key-${speaker}`;
 }
 
-function keyDefinition(speaker: TypingSpeaker, device: TypingDevice) {
+function keyDefinition(speaker: TypingSpeaker) {
   const v = typingVoices[speaker],
+    device = v.device,
     p = v.pitch;
   return {
     duration: device === 'phone' ? 0.055 : device === 'keyboard' ? 0.085 : 0.115,
     // Balance repeated strokes, not isolated peaks: the mechanical body carries
     // much more energy than a phone tap and needs a lower fader.
-    decibels: device === 'phone' ? 1 : device === 'keyboard' ? -5 : -13,
+    decibels: device === 'phone' ? 4 : device === 'keyboard' ? -2 : -10,
     seed: v.seed + (device === 'phone' ? 0 : device === 'keyboard' ? 100 : 200),
     priority: 1,
     bus: 'feedback' as const,
@@ -155,9 +153,9 @@ function keyDefinition(speaker: TypingSpeaker, device: TypingDevice) {
   };
 }
 
-const devices: TypingDevice[] = ['phone', 'keyboard', 'typewriter'];
 export const typingSounds = Object.fromEntries(
-  (Object.keys(typingVoices) as TypingSpeaker[]).flatMap((speaker) =>
-    devices.map((device) => [`key-${speaker}-${device}`, keyDefinition(speaker, device)]),
-  ),
+  (Object.keys(typingVoices) as TypingSpeaker[]).map((speaker) => [
+    typingSound(speaker),
+    keyDefinition(speaker),
+  ]),
 ) as Record<TypingSound, ReturnType<typeof keyDefinition>>;

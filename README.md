@@ -9,8 +9,8 @@ opening** from the first briefing or Operations; every completed mission unlocks
 a scene in its debrief and Operations. Earlier saved completions count too. Scenes
 never autoplay and contain no required instructions. Advance at your own pace,
 replay them, or close them at any time. Lines reveal with each character's keyboard
-voice: phone taps in transit, plastic keys at the safehouse, and mechanical strokes
-for the bosses. Click/tap the picture or dialogue, or choose **Reveal line**, to
+voice, consistent across all scenes: muted taps, plastic keys, or mechanical
+strokes. Click/tap the picture or dialogue, or choose **Reveal line**, to
 show the rest immediately; **Next** advances only after the line is visible.
 The existing sound preference and volume apply. Reduced-motion mode shows the
 whole line immediately. [Story arc and future encounter ideas](docs/story.md).

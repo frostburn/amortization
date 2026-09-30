@@ -1,5 +1,4 @@
 import type { Mission } from '../sim/types';
-import type { TypingDevice } from '../audio/typing';
 
 export type StoryId = 'opening' | Mission['id'];
 export type StorySetting = keyof typeof storySettings;
@@ -7,8 +6,7 @@ export type StorySpeaker = keyof typeof storySpeakers;
 export interface StoryScene {
   title: string;
   setting: StorySetting;
-  typing?: TypingDevice;
-  beats: { speaker: StorySpeaker; text: string; setting?: StorySetting; typing?: TypingDevice }[];
+  beats: { speaker: StorySpeaker; text: string; setting?: StorySetting }[];
 }
 
 // Paths are assigned only when a scene is opened. No story art is preloaded by
@@ -65,7 +63,6 @@ export const storySpeakers = {
 export const openingScene: StoryScene = {
   title: 'The remaining balance',
   setting: 'safehouse',
-  typing: 'phone',
   beats: [
     {
       speaker: 'voss',

@@ -59,7 +59,7 @@ export class StoryPlayer {
   private lastFrame: number | null = null;
   private lastKey = -Infinity;
   private frame = 0;
-  private key: TypingSound = 'key-voss-phone';
+  private key: TypingSound = 'key-voss';
   private keyGap = 60;
   private reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -268,7 +268,7 @@ export class StoryPlayer {
     this.text = beat.text;
     this.dialog.querySelector('.story-readable')!.textContent = this.text;
     this.schedule = revealSchedule(this.text, beat.speaker);
-    this.key = typingSound(beat.speaker, beat.typing ?? this.scene.typing);
+    this.key = typingSound(beat.speaker);
     this.keyGap = typingVoices[beat.speaker].keyGap;
     this.revealed = 0;
     this.elapsed = 0;

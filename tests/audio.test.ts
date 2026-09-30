@@ -36,10 +36,9 @@ describe('sound palette and placement', () => {
       );
     }
     expect(prints.size).toBe(6);
-    expect(synthesize(typingSound('voss', 'phone'), rate)).not.toEqual(
-      synthesize(typingSound('voss', 'keyboard'), rate),
+    expect(SOUND_IDS.filter((id) => id.startsWith('key-')).sort()).toEqual(
+      (Object.keys(typingVoices) as TypingSpeaker[]).map(typingSound).sort(),
     );
-    expect(typingSound('holt', 'phone')).toBe(typingSound('holt'));
   });
   it('clocks held and interpolated noise in Hz independently of output sample rate', () => {
     const render = (rate: number, interpolation: 'constant' | 'linear', frequency = 375) => {

@@ -44,9 +44,9 @@ There is no invented percentage or minimum delay. Module/renderer failures leave
 a reload action. The story's images are loaded on demand and never gate playing
 or reading the dialogue. [Artwork and generation prompts](story-art.md).
 
-The opening exchange and the first van departure use phone keyboards. The
-safehouse exchanges use plastic keyboards, including Morrow after the rescue.
-The bosses retain distinct mechanical typewriter signatures throughout.
+Each character keeps one keyboard voice throughout the story, regardless of
+location. Morrow uses muted taps, Voss and Mara use distinct plastic keys, and
+the bosses retain their mechanical typewriter signatures.
 Individual timbre, cadence and punctuation rests are described in
 [Sound design](audio.md#story-keyboards). These are abstract character voices,
 not a claim that every conversation literally takes place at a keyboard.
