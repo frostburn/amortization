@@ -46,7 +46,7 @@ export const countermand: Mission = {
       },
       {
         title: 'Turn the shield',
-        body: 'Burgundy officers carry pale shields that absorb 88% of frontal damage. They turn slowly; hold their attention while a partner takes a side or rear shot. A flash makes them lower the shield briefly. Their body has ordinary guard health. Disabling RADIO does not remove shields or the local gunners.',
+        body: 'Burgundy officers carry pale shields that absorb 88% of frontal damage. They turn slowly and face incoming fire while retreating to cover. Hold their attention while a partner takes a side or rear shot, or flash to lower the shield briefly. Their body has ordinary guard health. Disabling RADIO does not remove shields or the local gunners.',
       },
       {
         title: 'File and withdraw',

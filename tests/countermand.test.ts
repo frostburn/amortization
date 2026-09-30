@@ -350,7 +350,10 @@ describe('Countermand guarded completions', () => {
     move(ids, 47, 17);
     fight('guard-6');
     fight('guard-5');
-    fight('guard-8');
+    // Re-form at the east booth entrance before engaging its patrol. Leave the
+    // pistol carriers sheltered while the long guns cover the doorway.
+    move([ids[2], ids[3]], 55.8, 33);
+    fight('guard-8', [ids[2], ids[3]]);
     for (const g of w.guards.filter((g) => living(g) && g.id.startsWith('response-'))) fight(g.id);
     act([ids[0]], 'evidence', () => w.agents[0].carrying);
     act([ids[0]], 'file-recall', () => w.recall!.filed);

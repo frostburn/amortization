@@ -190,6 +190,8 @@ export interface Operative extends Person {
   interaction: number;
 }
 export interface Guard extends Person {
+  /** Unseen incoming fire; source is a snapshot, never a live target position. */
+  incoming?: { source: Vec; until: number; nextMove: number; goal: Vec | null };
   /** Actual body/shield bearing; angle remains the AI's desired bearing. */
   shield?: { angle: number };
   inspection?: { target: string; progress: number };

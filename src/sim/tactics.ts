@@ -23,7 +23,7 @@ export const guardDescription = (guard: Guard) =>
   guard.turret
     ? `Stationary carbine mount · 180 armour · 9-unit range. Tracks for 0.8s before firing. Solid cover breaks tracking. Isolate ${guard.turret.circuit === 'power-west' ? 'WEST' : 'EAST'} or authorise INSPECT; RADIO has no effect.`
     : guard.tactics?.role === 'shield'
-      ? 'Burgundy uniform, pale shield. Blocks 88% of frontal damage but turns slowly. Flank, use two angles, or flash to lower the shield. Ordinary 90-health body.'
+      ? 'Burgundy uniform, pale shield. Blocks 88% of frontal damage but turns slowly. Faces incoming fire while moving to cover. Flank, use two angles, or flash to lower the shield. Ordinary 90-health body.'
       : guard.tactics?.role === 'support'
         ? 'Olive uniform, box-fed support gun. Steadies for 0.65s. Fire pressure slows aiming and recovery; movement and reloads stay responsive. Break sight or flank during reloads.'
         : guard.tactics?.role === 'marksman'

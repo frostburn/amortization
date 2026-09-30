@@ -631,11 +631,19 @@ reports which selected firing angles the shield covers. Use two angles, or a
 flash, rather than spending a squad’s fire against the plate. RADIO does not
 disable this protection or silence the local support guns.
 
+A direct hit from beyond hearing and sight makes guards seek nearby physical
+cover and start a radio report. Shield officers keep the plate toward the last
+incoming shot while moving, with the same slow turn rate. They remember the
+shot’s origin; they do not track an unseen shooter’s later movement. If no local
+shelter is reachable, they advance toward that last position.
+
 Two command-only, live-patrol runs verify exact replays: a quiet, nonlethal run
 with no injuries, and an armed north approach that flanks the posts and extracts
 all four while leaving the loading-lane defenders alive. A straight loading-lane
 rush loses operatives even with RADIO already disabled and field dressings used. These prove routes exist, not that human difficulty is
-settled. The six standard medals apply; new human runs are still needed.
+settled. The six standard medals apply. The first four human runs exposed the
+long-range shield exploit; their unchanged openings now guard the defensive
+response. See the [replay notes](tests/replays/README.md#countermand-long-range-shield-feedback).
 
 ## Records
 

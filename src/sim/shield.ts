@@ -7,7 +7,12 @@ export const facingAngle = (p: Person) =>
   ('shield' in p ? (p as Guard).shield?.angle : undefined) ?? p.angle;
 export function turnShield(g: Guard, dt: number) {
   if (!g.shield || !living(g) || disoriented(g)) return;
-  const delta = Math.atan2(Math.sin(g.angle - g.shield.angle), Math.cos(g.angle - g.shield.angle));
+  // Walking to cover must not turn the protective face toward the escape route.
+  const aim =
+    g.mode === 'combat' && g.lastSeen
+      ? Math.atan2(g.lastSeen.y - g.y, g.lastSeen.x - g.x)
+      : g.angle;
+  const delta = Math.atan2(Math.sin(aim - g.shield.angle), Math.cos(aim - g.shield.angle));
   g.shield.angle += Math.max(-SHIELD_TURN * dt, Math.min(SHIELD_TURN * dt, delta));
 }
 export function shieldFaces(p: Person, source: Vec, arc = SHIELD_ARC) {

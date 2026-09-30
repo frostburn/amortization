@@ -2,6 +2,7 @@ import { disoriented, distance, living } from './types';
 import type { Person, World } from './types';
 import { readiness, suppress } from './pressure';
 import { shieldFaces } from './shield';
+import { receiveFire } from './incoming-fire';
 import { lineClear } from './navigation';
 import { cancelCharge, COIL_CHARGE, WEAPONS, weaponRange } from './weapons';
 
@@ -47,6 +48,10 @@ export function shoot(
   const blocked = shieldFaces(to, from);
   const damage = (spec ? spec.damage : hostile ? 16 : 17) * (blocked ? 0.12 : 1);
   to.hp = Math.max(0, to.hp - damage);
+  if (!hostile) {
+    const guard = world.guards.find((g) => g === to);
+    if (guard) receiveFire(world, guard, from);
+  }
   if (gun?.kind === 'support') suppress(world, from, to, hostile);
   if (gun && spec && --gun.rounds === 0) gun.reload = spec.reload;
   world.traces.push({

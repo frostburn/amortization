@@ -713,6 +713,26 @@ same bearing. Changing targets cannot snap the shield or fire behind the officer
 A flash disables protection and turning for the existing disorientation period;
 the left arm visibly lowers the shield while the right covers the face.
 
+Combat movement does not rotate the shield away from its remembered threat.
+The actual bearing keeps turning toward the last observed or incoming-shot
+position while the officer moves, instead of following the route’s next segment.
+Flanking and flashes retain the same damage and turn-rate counterplay.
+
+Human replays exposed a perception gap: the coil rifle reaches 13 units, but
+gunfire is heard within 12 and a daylight pistol guard sees 11.25. Repeated hits
+at roughly 12.4 units previously left the victim patrolling until death. A
+surviving guard hit by a source outside hearing and sight now enters combat,
+starts the ordinary 2.5-second report, and seeks nearby physical cover. The hit
+provides a fixed shot-origin snapshot, not a known identity or live tracking.
+Ordinary audible/visible contact keeps its existing combat response.
+
+Cover candidates come from authored posts and up to six nearby obstacles. At
+most three unique destinations get path searches, at most once per second; only
+routes up to 10 units are accepted. Subsequent hits preserve a valid retreat.
+The guard holds shelter briefly before resuming its search. If no local shelter
+is reachable, normal pursuit approaches the fixed last-shot position. No health,
+armour, weapon-range or omniscient sight increase is involved.
+
 The mesh includes the plate, viewport, stripe, grip and a separate fallen shield.
 Support guns retain their broad box magazine, cooling jacket and folded bipod in
 ready, firing and slung poses. Existing per-model depth rendering and clipped
@@ -729,6 +749,12 @@ and armed command-only runs use the untouched mission and verify their recorded
 checkpoints. The quiet run has no shots or injuries; the armed north route leaves
 the three loading-lane defenders alive. The frontal rush is deliberately costly.
 Existing human completion bundles and earlier mission definitions are preserved.
+The revised armed route re-forms at the east booth entrance and uses the long
+guns to cover its patrol before bringing the carrier through. All four new human
+bundles are kept unchanged as diagnostic fixtures. Tests replay their openings
+and require the officer to react, move and break the original firing line;
+obsolete wins and losses are not required outcomes. The prior 46 completion
+recordings still win under current rules.
 
 Desktop and touch journeys check launch, compact opt-in briefing, daytime scale,
 split-team follow, FILE eligibility, interruption, completion, dropped-original
