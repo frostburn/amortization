@@ -38,6 +38,7 @@ export class OperativeLighting extends Mesh<MeshGeometry, Shader> {
           fragment: `
             in vec2 vScreen;
             uniform vec4 uLights[${MAX_LIGHTS}];
+            uniform vec4 uShade;
             out vec4 finalColor;
             void main() {
               float light = 0.0;
@@ -47,13 +48,14 @@ export class OperativeLighting extends Mesh<MeshGeometry, Shader> {
               }
               // A readable ambient floor remains even with no surviving crew.
               // Max blending keeps a clustered squad from washing out the map.
-              float shade = 0.40 * (1.0 - light);
-              finalColor = vec4(vec3(0.025, 0.038, 0.06) * shade, shade);
+              float shade = uShade.a * (1.0 - light);
+              finalColor = vec4(uShade.rgb * shade, shade);
             }`,
         }),
         resources: {
           lightUniforms: {
             uViewport: { value: new Float32Array(2), type: 'vec2<f32>' },
+            uShade: { value: new Float32Array([0.025, 0.038, 0.06, 0.4]), type: 'vec4<f32>' },
             uLights: {
               value: new Float32Array(MAX_LIGHTS * 4),
               type: 'vec4<f32>',
@@ -85,6 +87,9 @@ export class OperativeLighting extends Mesh<MeshGeometry, Shader> {
     this.position.set(-camera.x / scale, -camera.y / scale);
     this.scale.set(viewport.width / scale, viewport.height / scale);
     group.uniforms.uViewport.set([viewport.width, viewport.height]);
+    group.uniforms.uShade.set(
+      world.mission.palette === 'sunset' ? [0.14, 0.035, 0.06, 0.28] : [0.025, 0.038, 0.06, 0.4],
+    );
     for (let i = 0; i < MAX_LIGHTS; i++) lights.set([-100000, -100000, 1, 1], i * 4);
     let count = 0;
     const pool = (x: number, y: number) => {

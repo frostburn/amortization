@@ -784,6 +784,24 @@ See [Continuity](continuity.md) for the map, capture/lethal routes, alternating
 local power, floor semantics and verification. This completes the control-room
 encounter proposed in the story arc. Dacre and Holt remain future opponents.
 
+## Threshold: sunset and the tower approach (Operation 14)
+
+See [Threshold](threshold.md) for the dispatch office, physical lift key, local
+reserve bell and boarding rules. This is the penultimate mission: Dacre withdraws
+to join Holt in the penthouse rather than being defeated on the interchange.
+The final encounter remains future work. The sunset palette is independent of
+daylight perception; the map has night sight ranges and red/yellow lighting.
+
+A completed lift call belongs to the mission, while its original key remains
+physical cargo. The wired bell dispatches existing guards to a fixed incident
+location even if the radio is disabled. Arrival never forces extraction. The
+lift has its own boarding/door animation in the unscored aftermath world.
+
+Inaccessible attack targets can otherwise trigger a full failed path search each
+tick. The navigation grid now retains 64 exact failures per cached door/floor
+state. Endpoint movement and geometry changes invalidate the relevant result
+immediately; successful route selection and replay state remain unchanged.
+
 ## Next useful work
 
 The [September 30 operation 07 runs](../tests/replays/README.md#margin-call-all-medals)

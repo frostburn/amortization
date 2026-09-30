@@ -2,6 +2,7 @@ import { storyButton } from './story';
 import { CREW } from '../sim/crew';
 import { missionCopy } from '../content/mission-copy';
 import type { Mission, WeaponKind } from '../sim/types';
+import { requiresCargo } from '../sim/types';
 import { COIL_CHARGE, WEAPONS } from '../sim/weapons';
 import { medalList } from './medal-display';
 import type { MedalId } from './medals';
@@ -32,7 +33,7 @@ export function briefingObjective(m: Mission) {
 
 export function renderBriefing(m: Mission, medals: MedalId[] = []) {
   const summary = missionCopy[m.id].briefing;
-  const optional = !['ledger', 'case', 'settlement', 'recall'].includes(m.objective);
+  const optional = !requiresCargo(m);
   const cargo = m.landmarks.find((o) => o.id === 'evidence')!;
   return `<header class="briefing-header">
     <div class="dialog-number">${m.number} / ${m.location}</div>

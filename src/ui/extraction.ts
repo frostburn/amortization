@@ -1,9 +1,10 @@
+import { liftReady, liftRemaining } from '../sim/threshold';
 import { kestrelRemoved } from '../sim/floors';
 import { published } from '../sim/broadcast';
 import { settled, settlementStatus } from '../sim/settlement';
 import { demolished, detonationStatus } from '../sim/demolition';
 import { landmark } from '../sim/orders';
-import { living } from '../sim/types';
+import { living, requiresCargo } from '../sim/types';
 import type { World } from '../sim/types';
 
 /** Live extraction becomes actionable once the contract is secured, before the crew boards.
@@ -13,6 +14,15 @@ export function extractionRequirement(
   world: World,
 ): { label: string; detail: string; goal: 'primary' | 'evidence' } | null {
   if (world.status === 'won') return null;
+  if (world.threshold && !liftReady(world))
+    return {
+      label: world.threshold.calledAt === null ? 'Call LIFT at LINK' : 'Wait for LIFT',
+      detail:
+        world.threshold.calledAt === null
+          ? 'Recover KEY, then send its carrier to LINK for five seconds. The local lift bell draws the lobby reserve even with RADIO offline.'
+          : `LIFT arrives in ${Math.ceil(liftRemaining(world)!)}s and will wait. Stage every survivor and KEY in the lobby.`,
+      goal: 'primary',
+    };
   if (world.recall && !world.recall.filed)
     return {
       label: 'File RECALL',
@@ -52,10 +62,7 @@ export function extractionRequirement(
       goal: 'primary',
     };
   }
-  if (
-    ['ledger', 'case', 'settlement', 'recall'].includes(world.mission.objective) &&
-    !world.agents.some((a) => living(a) && a.carrying)
-  ) {
+  if (requiresCargo(world.mission) && !world.agents.some((a) => living(a) && a.carrying)) {
     const tag = landmark(world, 'evidence').tag;
     return {
       label: `Collect ${tag}`,

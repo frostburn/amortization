@@ -285,6 +285,16 @@ canvas[data-cursor='box'] {
 .stage[data-theme='day'] .map-caption:not(.inspecting) small {
   color: #40584e;
 }
+.stage[data-theme='sunset'] .map-caption:not(.inspecting) {
+  background: #351f2de8;
+  border-left-color: #e7bd63;
+}
+.stage[data-theme='sunset'] .map-caption:not(.inspecting) span {
+  color: #ffe09a;
+}
+.stage[data-theme='sunset'] .map-caption:not(.inspecting) small {
+  color: #d5b6a7;
+}
 .map-caption.inspecting {
   bottom: 55px;
   max-width: min(280px, calc(100% - 44px));
@@ -1525,6 +1535,7 @@ dialog.briefing-dialog[open] {
 }
 #work-progress,
 #recall-progress,
+#lift-progress,
 #settlement-progress,
 #broadcast-progress {
   width: 100%;
@@ -1584,6 +1595,7 @@ dialog.briefing-dialog[open] {
 }
 #broadcast-progress,
 #recall-progress:not([hidden]),
+#lift-progress:not([hidden]),
 #settlement-progress:not([hidden]) {
   display: block;
   margin-bottom: 6px;

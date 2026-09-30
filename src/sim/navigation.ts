@@ -131,6 +131,7 @@ interface NavigationGrid {
   height: number;
   points: Vec[];
   edges: Uint8Array;
+  unreachable: Set<string>;
 }
 
 // Derived geometry stays outside World and replay state. At most four door
@@ -230,7 +231,7 @@ function navigationGrid(world: World, floor = 0): NavigationGrid {
         }
       }
   }
-  const grid = { width, height, points, edges };
+  const grid = { width, height, points, edges, unreachable: new Set<string>() };
   if (cached.states.size >= 16) cached.states.delete(cached.states.keys().next().value!);
   cached.states.set(state, grid);
   return grid;
@@ -242,7 +243,12 @@ export function findPath(world: World, start: Vec, requested: Vec): Vec[] {
   const end = nearestFree(world, requested);
   if (!passable(world, start) || !passable(world, end)) return [];
   if (canWalk(world, start, end)) return [end];
-  const { width, height, points, edges } = navigationGrid(world, floorOf(start));
+  const { width, height, points, edges, unreachable } = navigationGrid(world, floorOf(start));
+  // A standing attack on a locked room otherwise exhausts the same grid every
+  // tick. Cache only exact failures, scoped to this floor and live door geometry.
+  // Moving either endpoint still searches immediately; no route timing changes.
+  const failureKey = [start.x, start.y, end.x, end.y].join(',');
+  if (unreachable.has(failureKey)) return [];
   const costs = new Float64Array(width * height).fill(Infinity);
   const parent = new Int32Array(width * height).fill(-1);
   const closed = new Uint8Array(width * height);
@@ -328,5 +334,7 @@ export function findPath(world: World, start: Vec, requested: Vec): Vec[] {
       }
     }
   }
+  if (unreachable.size >= 64) unreachable.delete(unreachable.values().next().value!);
+  unreachable.add(failureKey);
   return [];
 }

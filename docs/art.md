@@ -42,14 +42,23 @@ Daylight's longer guard vision is a separate simulation setting; decorative
 shadows supply no concealment. Switching back to a night operation restores its
 palette and light pools.
 
+Operation 14 introduces sunset: red and rust ground planes, plum shadow faces,
+yellow coping and reflected glass. Long directional shadows and warm low-angle
+character lighting establish the falling sun. The existing normal shader and
+light-pool pass supply this variation without extra render passes or textures.
+The distant ambient floor remains readable, and guard uniforms retain their role
+colors. Sunset uses night sight ranges; palette and perception are independent.
+The tower's service-lift doors close around the departing crew while the arrival
+van stays parked.
+
 ## Portrait assets
 
 The production portrait atlases were generated for Amortization using OpenAI's built-in image-generation tool: the squad on 2026-09-25, and witnesses on 2026-09-27. Both depict original fictional characters. PNG outputs were converted to WebP. CSS background positions select the appropriate portrait. The witness atlas is 768×384 pixels and 44 KB.
 
-| Asset                          | Layout                                              | Usage                        |
-| ------------------------------ | --------------------------------------------------- | ---------------------------- |
-| `public/assets/portraits.webp` | 2×2: Morrow, Vale, Rook, Sable                      | Squad and selected operative |
-| `public/assets/witnesses.webp` | 2×1: Iona Voss, Mara Quill                          | Witness wait/follow controls |
+| Asset                          | Layout                         | Usage                        |
+| ------------------------------ | ------------------------------ | ---------------------------- |
+| `public/assets/portraits.webp` | 2×2: Morrow, Vale, Rook, Sable | Squad and selected operative |
+| `public/assets/witnesses.webp` | 2×1: Iona Voss, Mara Quill     | Witness wait/follow controls |
 
 ## Portrait prompt
 

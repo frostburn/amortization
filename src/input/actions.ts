@@ -33,6 +33,7 @@ export type Action =
   | 'stairs:down'
   | 'arrest-kestrel'
   | 'attack-kestrel'
+  | 'work:key-lift'
   | 'work:file-recall'
   | 'work:mask'
   | 'work:upload'

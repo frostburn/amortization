@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createWorld } from '../src/sim/world';
 import {
   canWalk,
@@ -215,6 +215,27 @@ describe('reusable navigation connections', () => {
     path[0].x = 100;
     path[0].y = 100;
     expect(findPath(w, start, end)).toEqual(expected);
+  });
+
+  it('does not repeat an exhausted search every tick and retries immediately when the door opens', () => {
+    const w = doorwayWorld(),
+      measurements = vi.spyOn(Math, 'hypot');
+    try {
+      expect(findPath(w, start, end)).toEqual([]);
+      expect(measurements.mock.calls.length).toBeGreaterThan(100);
+      measurements.mockClear();
+      for (let i = 0; i < 30; i++) expect(findPath(w, start, end)).toEqual([]);
+      // Count heuristic/distance work instead of wall-clock time on the CI host.
+      expect(measurements.mock.calls.length).toBeLessThan(100);
+      w.gateOpen = true;
+      expectWalkable(w, start, end, findPath(w, start, end));
+      w.gateOpen = false;
+      expect(findPath(w, start, end)).toEqual([]);
+      const outside = { x: start.x, y: start.y + 1 };
+      expectWalkable(w, start, outside, findPath(w, start, outside));
+    } finally {
+      measurements.mockRestore();
+    }
   });
 
   it('reuses collision work for the four-person closed-gate Rally from ad0da662', () => {

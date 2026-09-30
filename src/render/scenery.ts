@@ -1,5 +1,6 @@
 import type { Graphics } from 'pixi.js';
-import type { Solid } from '../sim/types';
+import type { VisualTheme } from './theme';
+import type { Mission, Solid, Vec } from '../sim/types';
 import { box, panel, plane, polygon } from './primitives';
 import { project } from './isometric';
 
@@ -11,10 +12,16 @@ export function groundColor(
   y: number,
   restricted: boolean,
   street: boolean,
-  daylight = false,
+  theme: VisualTheme = 'night',
 ) {
   const n = (Math.floor(x / 2) * 17 + Math.floor(y / 2) * 23) % 5;
-  if (daylight) return restricted ? dayYard[n] : street ? 0x858f93 : 0x91a084;
+  if (theme === 'sunset')
+    return restricted
+      ? [0x8a5d55, 0x855950, 0x8e6257, 0x805852, 0x8a6058][n]
+      : street
+        ? 0x4b3644
+        : 0x59414a;
+  if (theme === 'day') return restricted ? dayYard[n] : street ? 0x858f93 : 0x91a084;
   return restricted ? yard[n] : street ? 0x303944 : verge[n];
 }
 
@@ -25,23 +32,57 @@ function seed(id: string) {
   return n;
 }
 
-export function drawContactShadow(g: Graphics, s: Solid, daylight = false) {
+export function drawContactShadow(
+  g: Graphics,
+  s: Solid,
+  theme: VisualTheme = 'night',
+  site?: Pick<Mission, 'width' | 'height'>,
+) {
   if (s.kind === 'van' || s.kind === 'transport') return; // Vehicle art owns its moving shadow.
-  if (daylight) {
-    const dx = s.height * 0.7,
-      dy = s.height * 0.45;
+  if (theme !== 'night') {
+    const dx = s.height * (theme === 'sunset' ? 2.2 : 0.7),
+      dy = s.height * (theme === 'sunset' ? 1.1 : 0.45);
+    let outline: Vec[] = [
+      { x: s.x, y: s.y },
+      { x: s.x + s.w, y: s.y },
+      { x: s.x + s.w + dx, y: s.y + dy },
+      { x: s.x + s.w + dx, y: s.y + s.h + dy },
+      { x: s.x + dx, y: s.y + s.h + dy },
+      { x: s.x, y: s.y + s.h },
+    ];
+    // Long sunset shadows end at the ground plane instead of floating beyond
+    // the map. Clip in world space before applying the isometric projection.
+    if (site) {
+      for (const [axis, bound, sign] of [
+        ['x', 0, 1],
+        ['x', site.width, -1],
+        ['y', 0, 1],
+        ['y', site.height, -1],
+      ] as const) {
+        if (!outline.length) break;
+        const clipped: Vec[] = [];
+        let previous = outline[outline.length - 1];
+        for (const p of outline) {
+          const wasInside = (previous[axis] - bound) * sign >= 0,
+            isInside = (p[axis] - bound) * sign >= 0;
+          if (wasInside !== isInside) {
+            const t = (bound - previous[axis]) / (p[axis] - previous[axis]);
+            clipped.push({
+              x: previous.x + (p.x - previous.x) * t,
+              y: previous.y + (p.y - previous.y) * t,
+            });
+          }
+          if (isInside) clipped.push(p);
+          previous = p;
+        }
+        outline = clipped;
+      }
+    }
     polygon(
       g,
-      [
-        { x: s.x, y: s.y },
-        { x: s.x + s.w, y: s.y },
-        { x: s.x + s.w + dx, y: s.y + dy },
-        { x: s.x + s.w + dx, y: s.y + s.h + dy },
-        { x: s.x + dx, y: s.y + s.h + dy },
-        { x: s.x, y: s.y + s.h },
-      ].map((p) => project(p)),
-      0x34495b,
-      0.22,
+      outline.map((p) => project(p)),
+      theme === 'sunset' ? 0x351d35 : 0x34495b,
+      theme === 'sunset' ? 0.25 : 0.22,
     );
   }
   for (const [pad, alpha] of [
@@ -53,8 +94,19 @@ export function drawContactShadow(g: Graphics, s: Solid, daylight = false) {
 }
 
 /** Concrete seams and a pale coping keep wall tops legible in the ambient dark. */
-export function drawWall(g: Graphics, s: Solid) {
-  box(g, s.x, s.y, s.w, s.h, s.height, 0xb2ac9e, 0x8a8b83, 0x707b7e);
+export function drawWall(g: Graphics, s: Solid, theme: VisualTheme = 'night') {
+  const sunset = theme === 'sunset';
+  box(
+    g,
+    s.x,
+    s.y,
+    s.w,
+    s.h,
+    s.height,
+    sunset ? 0xe5bc70 : 0xb2ac9e,
+    sunset ? 0xa56e5c : 0x8a8b83,
+    sunset ? 0x765260 : 0x707b7e,
+  );
   const wide = s.w > s.h;
   for (let d = 1.6; d < (wide ? s.w : s.h) - 0.2; d += 2) {
     const a = wide ? { x: s.x + d, y: s.y + s.h } : { x: s.x + s.w, y: s.y + d };
@@ -75,13 +127,31 @@ export function drawWall(g: Graphics, s: Solid) {
 }
 
 /** Quiet municipal facades. Details stay within the existing solid footprint. */
-export function drawBuilding(g: Graphics, s: Solid, daylight = false) {
+export function drawBuilding(g: Graphics, s: Solid, theme: VisualTheme = 'night') {
+  const daylight = theme === 'day',
+    sunset = theme === 'sunset';
   const brick = /kiosk|office-block|street-workshop|street-block/.test(s.id),
     utility = /substation|service|power/.test(s.id),
     n = seed(s.id),
-    face = brick ? 0x997967 : utility ? 0x809099 : 0xaca99b,
-    side = brick ? 0x735d54 : utility ? 0x596f7a : 0x7f898b,
-    coping = brick ? 0xb4a58d : 0xb9b7aa;
+    face = sunset
+      ? brick
+        ? 0xac6251
+        : 0xb9765e
+      : brick
+        ? 0x997967
+        : utility
+          ? 0x809099
+          : 0xaca99b,
+    side = sunset
+      ? brick
+        ? 0x673f49
+        : 0x785262
+      : brick
+        ? 0x735d54
+        : utility
+          ? 0x596f7a
+          : 0x7f898b,
+    coping = sunset ? 0xe4b76d : brick ? 0xb4a58d : 0xb9b7aa;
   box(g, s.x, s.y, s.w, s.h, s.height, coping, face, side);
   // A recessed slate roof, coping and simple service ducts break up flat boxes.
   const inset = Math.min(0.25, s.w / 8, s.h / 8);
@@ -91,7 +161,7 @@ export function drawBuilding(g: Graphics, s: Solid, daylight = false) {
     s.y + inset,
     s.w - 2 * inset,
     s.h - 2 * inset,
-    daylight ? 0x778388 : 0x454f5c,
+    sunset ? 0x75545c : daylight ? 0x778388 : 0x454f5c,
     s.height + 0.01,
   );
   for (let y = s.y + 0.7; y < s.y + s.h - 0.25; y += 1.5)
@@ -137,15 +207,19 @@ export function drawBuilding(g: Graphics, s: Solid, daylight = false) {
     for (let d = 0.42, i = 0; d < length - 0.65; d += 1.15, i++) {
       const width = Math.min(0.68, length - d - 0.25),
         lit = !daylight && (n + i + Number(horizontal)) % 4 === 0,
-        glass = daylight
+        glass = sunset
           ? horizontal
-            ? 0x94b0b9
-            : 0x6b8899
-          : lit
-            ? 0xc4b38c
-            : horizontal
-              ? 0x374d5f
-              : 0x2a3e50;
+            ? 0xe0b263
+            : 0xa7745c
+          : daylight
+            ? horizontal
+              ? 0x94b0b9
+              : 0x6b8899
+            : lit
+              ? 0xc4b38c
+              : horizontal
+                ? 0x374d5f
+                : 0x2a3e50;
       panel(g, at(d - 0.05), at(d + width + 0.05), bottom - 0.07, top + 0.07, 0x475560);
       panel(g, at(d), at(d + width), bottom, top, glass);
       panel(g, at(d), at(d + width), top - 0.13, top, lit ? 0xead4a0 : 0x718691);

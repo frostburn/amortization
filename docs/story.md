@@ -7,7 +7,7 @@ the mandate, release payments, and withdraw the seizure orders. Those victories
 stand. The antagonists respond to losses; a later revelation must not quietly
 undo the player's work.
 
-The prologue and all thirteen mission endings now have short, manually advanced
+The prologue and all fourteen mission endings now have short, manually advanced
 scenes. They supplement the existing briefing and epilogue. Their tone is
 restrained and serious, with people discussing specific consequences instead of
 trading jokes or explaining controls. Only the opening and the all-survivors
@@ -53,30 +53,31 @@ not a claim that every conversation literally takes place at a keyboard.
 
 ## The opposing cast
 
-| Character                           | Power and manner                                                                                                                                | Foreshadowed encounter                                                                           |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Severin Holt, chairman              | Signs the exceptions that make exploitation ordinary. Calm, concerned with enforceable authority; he can admit a district is lost.              | The Bench: a secured adjudication chamber with several physical seals and protected positions.   |
-| Ada Kestrel, director of continuity | Owns the infrastructure and understands its limitations. Treats failures as engineering evidence, and eventually stays at the controls herself. | An occupied control room: active rerouting, local power and changing access.                     |
-| Lucan Dacre, security marshal       | Coordinates people rather than adding isolated guards. Accepts responsibility for the failed detention layout.                                  | A mobile command line at a transit interchange, using shields and overlapping support positions. |
+| Character                           | Power and manner                                                                                                                                | Foreshadowed encounter                                                                                          |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Severin Holt, chairman              | Signs the exceptions that make exploitation ordinary. Calm, concerned with enforceable authority; he can admit a district is lost.              | The Bench in the skyscraper penthouse: physical protections and Dacre's remaining officers.                     |
+| Ada Kestrel, director of continuity | Owns the infrastructure and understands its limitations. Treats failures as engineering evidence, and eventually stays at the controls herself. | An occupied control room: active rerouting, local power and changing access.                                    |
+| Lucan Dacre, security marshal       | Coordinates people rather than adding isolated guards. Accepts responsibility for the failed detention layout.                                  | Withdraws from the interchange to fight alongside Holt in the penthouse, using shields and coordinated support. |
 
 ## Scene progression
 
-| Available after  | Scene                    | Purpose                                                                                                                     |
-| ---------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| Opening          | The remaining balance    | Voss's debt has become confinement; Holt signs the apparently healthy district report.                                      |
-| 01 · Depot       | A name in the margin     | Voss supplies the annex address. Holt wants to know who challenges her account.                                             |
-| 02 · Archive     | The same signature       | Voss traces the payments and Holt's exception; the original evidence cannot simply be replaced.                             |
-| 03 · Transfer    | The objections           | Voss finds Mara's rejected audits. Dacre reveals the company's pressure for a corrected statement.                          |
-| 04 · Custody     | An uncorrected statement | Mara admits how close she came to signing. Dacre asks for coordinated authority.                                            |
-| 05 · Broadcast   | Acknowledgements         | Real institutions receive the audit; Kestrel's recovery infrastructure is still a threat.                                   |
-| 06 · Severance   | What cannot be restored  | The backups are genuinely destroyed. Kestrel and Dacre disagree over access and safety.                                     |
-| 07 · Clearing    | Custodians               | The escrow money exists. Kestrel commits to local control rather than relying on the radio.                                 |
-| 08 · Mandate     | The list of names        | Repayments become specific people. Dacre prepares surveillance ahead of the safehouse raid.                                 |
-| 09 · Personnel   | Four places at the table | The reunited crew gets a quiet moment. Dacre learns from the split-team rescue.                                             |
-| 10 · Injunction  | Proof of service         | Holt acknowledges the suspension and prepares to hear an appeal personally at the Bench.                                    |
-| 11 · Settlement  | Money coming in          | A recipient struggles to believe her payment; old seizure dispatches remain in circulation.                                 |
-| 12 · Countermand | Beyond the district      | The seizure crews leave and the money stays returned. The three antagonists take up distinct positions beyond the district. |
-| 13 · Continuity  | An empty control room    | Kestrel is removed, in custody or dead. Local control is handed over; Dacre gathers the remaining crews at the interchange. |
+| Available after  | Scene                    | Purpose                                                                                                                      |
+| ---------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| Opening          | The remaining balance    | Voss's debt has become confinement; Holt signs the apparently healthy district report.                                       |
+| 01 · Depot       | A name in the margin     | Voss supplies the annex address. Holt wants to know who challenges her account.                                              |
+| 02 · Archive     | The same signature       | Voss traces the payments and Holt's exception; the original evidence cannot simply be replaced.                              |
+| 03 · Transfer    | The objections           | Voss finds Mara's rejected audits. Dacre reveals the company's pressure for a corrected statement.                           |
+| 04 · Custody     | An uncorrected statement | Mara admits how close she came to signing. Dacre asks for coordinated authority.                                             |
+| 05 · Broadcast   | Acknowledgements         | Real institutions receive the audit; Kestrel's recovery infrastructure is still a threat.                                    |
+| 06 · Severance   | What cannot be restored  | The backups are genuinely destroyed. Kestrel and Dacre disagree over access and safety.                                      |
+| 07 · Clearing    | Custodians               | The escrow money exists. Kestrel commits to local control rather than relying on the radio.                                  |
+| 08 · Mandate     | The list of names        | Repayments become specific people. Dacre prepares surveillance ahead of the safehouse raid.                                  |
+| 09 · Personnel   | Four places at the table | The reunited crew gets a quiet moment. Dacre learns from the split-team rescue.                                              |
+| 10 · Injunction  | Proof of service         | Holt acknowledges the suspension and prepares to hear an appeal personally at the Bench.                                     |
+| 11 · Settlement  | Money coming in          | A recipient struggles to believe her payment; old seizure dispatches remain in circulation.                                  |
+| 12 · Countermand | Beyond the district      | The seizure crews leave and the money stays returned. The three antagonists take up distinct positions beyond the district.  |
+| 13 · Continuity  | An empty control room    | Kestrel is removed, in custody or dead. Local control is handed over; Dacre gathers the remaining crews at the interchange.  |
+| 14 · Threshold   | Above the last street    | The service lift carries the crew past the executive lockdown. Dacre joins Holt upstairs; earlier victories remain in force. |
 
 Kestrel's encounter is implemented in [Continuity](continuity.md): two storeys,
 alternating local feeds, and a choice of arrest or lethal force. Her removal is
@@ -84,7 +85,10 @@ final in either outcome; she does not reappear as a later boss.
 
 ## Future boss design, not implemented here
 
-These are encounter promises for the remaining antagonists.
+The final operation will confront **Dacre and Holt together in a skyscraper
+penthouse**. Threshold gets the crew into the building and its optional ending
+explains Dacre's withdrawal from the interchange. It does not remove either man.
+The ideas below belong to that shared encounter, not separate future missions.
 Introduce and explain any new mechanics in the mission UI whether or not the
 player has watched a scene.
 
@@ -94,7 +98,7 @@ split team should be able to interrupt coordination while another group reaches
 him. He must obey sight and lose track of unseen operatives; commanding the
 response is not permission to know the player's location through walls.
 
-**Holt** should have physical protection the player can dismantle. The Bench's
+**Holt** should have physical protection the player can dismantle. The penthouse Bench's
 distributed seals could sustain security privileges while the chairman moves
 between protected chambers. Holding more than one station breaks that system
 and exposes a route to him. His importance should come from the site and its
@@ -108,7 +112,7 @@ Each mission's scene, concise briefing and epilogue live together in
 remain the source of truth for unlocks. `amortization.story.v1` stores only the
 IDs of scenes the player explicitly finished.
 
-Story copy itself stays outside replay fingerprints. Continuity adds a new
-mission definition and floor support, while existing human runs remain verification
+Story copy itself stays outside replay fingerprints. New mission definitions and
+mechanics change their relevant fingerprints, while existing human runs remain verification
 fixtures under the current rules. Scene art is decorative and captions are
 accessible text. The first paint uses no image, font download, video, or audio.

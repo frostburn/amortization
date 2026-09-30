@@ -1,3 +1,4 @@
+import { callLift, liftReady, liftRemaining } from './threshold';
 import { position, sameFloor } from './types';
 import {
   isStairs,
@@ -19,6 +20,7 @@ import {
   isPower,
   isSettlement,
   living,
+  requiresCargo,
   EXTRACTION_RADIUS,
 } from './types';
 import type { Landmark, ObjectKind, Operative, Vec, World } from './types';
@@ -56,6 +58,7 @@ export function available(world: World, id: ObjectKind) {
     world.mission.landmarks.some((o) => o.id === id) &&
     detentionAvailable(world, id) &&
     !(
+      (id === 'key-lift' && (!world.threshold || world.threshold.calledAt !== null)) ||
       (id === 'file-recall' && (!world.recall || world.recall.filed)) ||
       (id === 'disguise' && world.disguiseTaken) ||
       (id === 'gate' && world.gateOpen) ||
@@ -89,6 +92,7 @@ export function interactionPoint(world: World, agent: Operative, id: ObjectKind)
   return landmark(world, id);
 }
 export function interactionDuration(world: World, agent: Operative, id: ObjectKind) {
+  if (id === 'key-lift') return world.mission.threshold!.keyTime;
   if (isStairs(id)) return 0.45;
   if (id === 'escort' && world.mission.continuity && !world.escort?.recruited) return 3;
   if (id === 'file-recall') return world.mission.recall!.filingTime;
@@ -129,6 +133,7 @@ function interactionRefusal(world: World, a: Operative, id: ObjectKind): string 
     if (!captureReady(world))
       return 'Isolate WEST and EAST downstairs to remove Kestrel’s control, then cuff her upstairs.';
   }
+  if (id === 'key-lift' && !a.carrying) return 'Select the KEY carrier to work LINK.';
   if (id === 'file-recall' && !a.carrying)
     return 'Select the RECALL carrier to file the original at FILE.';
   const settlementReason = settlementRefusal(world, a, id);
@@ -362,7 +367,10 @@ export function dropEvidence(world: World, ids: string[]) {
   for (const a of world.agents)
     if (ids.includes(a.id) && a.carrying) {
       a.carrying = false;
-      if (a.order.kind === 'interact' && a.order.target === 'file-recall') {
+      if (
+        a.order.kind === 'interact' &&
+        (a.order.target === 'file-recall' || a.order.target === 'key-lift')
+      ) {
         a.order = { kind: 'hold' };
         a.path = [];
         a.interaction = 0;
@@ -395,34 +403,38 @@ export function extractionStatus(world: World, id: 'extract' | 'alternate') {
     carrier = survivors.find((p) => p.carrying),
     v = world.mission.continuity && world.escort && !living(world.escort) ? null : world.escort;
   const waiting =
-    world.mission.continuity && !kestrelRemoved(world)
-      ? 'Arrest Kestrel upstairs or eliminate her before leaving.'
-      : world.recall && !world.recall.filed
-        ? 'Bring RECALL to FILE and cancel the seizure dispatches before leaving.'
-        : world.settlement && !settled(world)
-          ? 'Reconcile REGISTER at CHECK, then staff SIGN and CLEAR together to release repayments.'
-          : world.detention && (!rescueComplete(world) || world.agents.some((p) => !living(p)))
-            ? 'Free Vale and Rook and bring all four operatives home alive.'
-            : world.detention && !world.detention.released
-              ? 'Use EXIT inside detention to release both gates before leaving.'
-              : world.demolition && !demolished(world)
-                ? 'Destroy both debt backups before requesting extraction.'
-                : world.mission.broadcast && !published(world)
-                  ? world.mission.broadcast.subject
-                    ? `Finish uploading ${world.mission.broadcast.subject} at UPLINK before requesting extraction.`
-                    : "Publish Mara's audit at UPLINK before requesting extraction."
-                  : ['ledger', 'case', 'settlement', 'recall'].includes(world.mission.objective) &&
-                      (!carrier || distance(carrier, van) > EXTRACTION_RADIUS)
-                    ? `Bring the ${world.mission.evidenceName.toLowerCase()} to ${van.tag}. It is required for this contract.`
-                    : v && (!v.recruited || !living(v))
-                      ? `Bring ${v.name} out alive before requesting extraction.`
-                      : v && distance(v, van) > EXTRACTION_RADIUS
-                        ? v.waiting
-                          ? `Waiting for ${v.name}. Use the Escort controls to ask them to follow.`
-                          : `Waiting for ${v.name} at ${van.tag}. Bring their escort to the van.`
-                        : missing.length
-                          ? `Waiting for ${missing.map((p) => p.name).join(', ')}. Bring every survivor inside the extraction ring.`
-                          : null;
+    world.threshold && !liftReady(world)
+      ? world.threshold.calledAt === null
+        ? 'Bring KEY to LINK and call the lift before boarding.'
+        : `LIFT arriving in ${Math.ceil(liftRemaining(world)!)}s. It will wait once it arrives.`
+      : world.mission.continuity && !kestrelRemoved(world)
+        ? 'Arrest Kestrel upstairs or eliminate her before leaving.'
+        : world.recall && !world.recall.filed
+          ? 'Bring RECALL to FILE and cancel the seizure dispatches before leaving.'
+          : world.settlement && !settled(world)
+            ? 'Reconcile REGISTER at CHECK, then staff SIGN and CLEAR together to release repayments.'
+            : world.detention && (!rescueComplete(world) || world.agents.some((p) => !living(p)))
+              ? 'Free Vale and Rook and bring all four operatives home alive.'
+              : world.detention && !world.detention.released
+                ? 'Use EXIT inside detention to release both gates before leaving.'
+                : world.demolition && !demolished(world)
+                  ? 'Destroy both debt backups before requesting extraction.'
+                  : world.mission.broadcast && !published(world)
+                    ? world.mission.broadcast.subject
+                      ? `Finish uploading ${world.mission.broadcast.subject} at UPLINK before requesting extraction.`
+                      : "Publish Mara's audit at UPLINK before requesting extraction."
+                    : requiresCargo(world.mission) &&
+                        (!carrier || distance(carrier, van) > EXTRACTION_RADIUS)
+                      ? `Bring the ${world.mission.evidenceName.toLowerCase()} to ${van.tag}. It is required for this contract.`
+                      : v && (!v.recruited || !living(v))
+                        ? `Bring ${v.name} out alive before requesting extraction.`
+                        : v && distance(v, van) > EXTRACTION_RADIUS
+                          ? v.waiting
+                            ? `Waiting for ${v.name}. Use the Escort controls to ask them to follow.`
+                            : `Waiting for ${v.name} at ${van.tag}. Bring their escort to the van.`
+                          : missing.length
+                            ? `Waiting for ${missing.map((p) => p.name).join(', ')}. Bring every survivor inside the extraction ring.`
+                            : null;
   return {
     ready: survivors.length > 0 && !waiting,
     waiting,
@@ -641,6 +653,9 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
         'warning',
       );
       break;
+    case 'key-lift':
+      callLift(world);
+      break;
     case 'extract':
     case 'alternate': {
       world.status = 'won';
@@ -648,17 +663,19 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
       if (world.evidence === 'carried') world.evidence = 'extracted';
       notify(
         world,
-        world.mission.objective === 'capture'
-          ? `Contract fulfilled. Kestrel is ${living(world.escort!) ? 'in custody' : 'eliminated'}. REGISTER ${world.evidence === 'extracted' ? 'secured' : 'left behind'}. The crew is clear.`
-          : world.detention
-            ? 'Vale and Rook recovered. All four are clear; the mandate stays with Mara.'
-            : world.mission.objective === 'demolition'
-              ? 'Contract fulfilled. The debt backups are destroyed. The crew is clear.'
-              : world.mission.objective === 'broadcast'
-                ? `Contract fulfilled. ${world.mission.broadcast?.completed ?? "Mara's audit is public"}. The crew is clear.`
-                : world.mission.objective === 'escort'
-                  ? `Contract fulfilled. ${world.escort!.name} is out. The crew is clear.`
-                  : `Contract fulfilled. The ${world.mission.evidenceName.toLowerCase()} is secured. The crew is clear.`,
+        world.threshold
+          ? 'The crew and the service key are aboard. The lift is ascending to the executive floors.'
+          : world.mission.objective === 'capture'
+            ? `Contract fulfilled. Kestrel is ${living(world.escort!) ? 'in custody' : 'eliminated'}. REGISTER ${world.evidence === 'extracted' ? 'secured' : 'left behind'}. The crew is clear.`
+            : world.detention
+              ? 'Vale and Rook recovered. All four are clear; the mandate stays with Mara.'
+              : world.mission.objective === 'demolition'
+                ? 'Contract fulfilled. The debt backups are destroyed. The crew is clear.'
+                : world.mission.objective === 'broadcast'
+                  ? `Contract fulfilled. ${world.mission.broadcast?.completed ?? "Mara's audit is public"}. The crew is clear.`
+                  : world.mission.objective === 'escort'
+                    ? `Contract fulfilled. ${world.escort!.name} is out. The crew is clear.`
+                    : `Contract fulfilled. The ${world.mission.evidenceName.toLowerCase()} is secured. The crew is clear.`,
       );
       break;
     }
