@@ -140,7 +140,7 @@ describe('shield officers and bounded suppression', () => {
     expect(stateHash(w)).toBe(before);
   });
   it('leaves earlier mission state shapes untouched', () => {
-    for (const m of missions.filter((m) => m.id !== 'countermand')) {
+    for (const m of missions.filter((m) => Number(m.number) < 12)) {
       const w = createWorld(m);
       advance(w, 1);
       expect(w).not.toHaveProperty('recall');

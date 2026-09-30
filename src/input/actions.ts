@@ -29,6 +29,10 @@ export type Action =
   | 'escort-aid'
   | 'call-transfer'
   | `settlement:${'reconcile' | 'countersign' | 'settle'}`
+  | 'stairs:up'
+  | 'stairs:down'
+  | 'arrest-kestrel'
+  | 'attack-kestrel'
   | 'work:file-recall'
   | 'work:mask'
   | 'work:upload'

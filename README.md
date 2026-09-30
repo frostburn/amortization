@@ -120,9 +120,10 @@ npm run replay:verify -- --current --expect-win attempt.replay.json
 The first command verifies compatible code and every state checkpoint. The second
 tests completion under current rules. Both exit nonzero on failure. Selected player
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
-distinct routes. Retained human completions cover all twelve operations, including
+distinct routes. Retained human completions cover the first twelve operations, including
 replacement weapon-era runs for 05–06 and the full-crew Countermand completion.
-All twelve also have synthetic quiet and armed completion tests. See
+Those twelve also have synthetic quiet and armed completion tests. Operation 13
+adds guarded arrest and lethal completion runs. See
 `tests/replays/README.md` for provenance, current outcomes, and retired routes.
 
 ## Controls
@@ -310,7 +311,7 @@ The access keys lead to auditor **Mara Quill**, held in a security transport at 
 
 For a quiet escape, take KIT, disable RADIO, file WARRANT, and collect Mara. Lead her north of the lower cargo containers, west through the service corridor, and out the west entrance to SERVICE. Send the rest of the crew up the public street. For an armed extraction, clear the transport bay before cutting the lock, leave Mara waiting behind cover while the crew secures the gate, then bring her to STREET.
 
-## Equipment in operations 05–12
+## Equipment in operations 05–13
 
 | Weapon            | Range | Damage | Shots / magazine | Shot recovery | Automatic reload |
 | ----------------- | ----: | -----: | ---------------: | ------------: | ---------------: |
@@ -664,6 +665,25 @@ settled. The six standard medals apply. The first four human runs exposed the
 long-range shield exploit; their unchanged openings now guard the defensive
 response. See the [replay notes](tests/replays/README.md#countermand-long-range-shield-feedback).
 
+## Continuity · Operation 13
+
+A daytime assault on Ada Kestrel's two-storey headquarters. **UP / DOWN** move
+selected operatives between floors; the map fades to the active operative's floor
+and keeps the chosen zoom. Select a crew portrait to follow a split teammate.
+
+- Arrest: isolate **WEST** and **EAST** downstairs, then use **CUFF** upstairs.
+  Escort Kestrel down the stairs and to **VAN** in handcuffs.
+- Lethal: attack Kestrel's body or use **Attack Kestrel**. Her ordinary health and
+  the room's defenders determine the fight. Killing her stops her wired controller.
+- The circuits alternate every twelve seconds. **RADIO** is deep upstairs and
+  only stops reinforcement calls. **INSPECT** grants a disguised operative one
+  24-second maintenance window. The southern gallery offers a screened approach.
+- Both outcomes remove her from the story. Every surviving operative must reach
+  **VAN**; **REGISTER** is optional. **Answerable** rewards a living arrest with
+  all four operatives extracted.
+
+[Floor rules, encounter design and verification](docs/continuity.md).
+
 ## Records
 
 Results track time, crew survival, evidence, and alarm status. Operation five also reports publication; operation six reports backup destruction; operation ten reports the mandate being served; operation eleven reports the repayments being released. Each operation keeps
@@ -675,7 +695,7 @@ when browser storage is disabled.
 
 ### Operation medals
 
-**Operations** shows **85 medals across twelve missions**, with earned medals in
+**Operations** shows **94 medals across thirteen missions**, with earned medals in
 amber and unearned medals faded. Hover, focus with the keyboard, or tap a medal
 to read its exact conditions. Escape dismisses the tooltip first. Medal controls
 are separate from the button that starts an operation. Results show medals from
@@ -700,15 +720,16 @@ challenge requires **all four operatives to extract alive** in the same run.
 | Settled | Complete the mission with at least one survivor | Every operation |
 | Full crew | Extract all four | Every operation |
 | Low profile | Never trigger the site alarm; local suspicion is allowed | Every operation |
-| Nonlethal | Kill no guards or courier; unmanned turrets do not count | Every operation |
+| Nonlethal | Kill no guards, courier or mission target; unmanned turrets do not count | Every operation |
 | No disguise | Leave the maintenance KIT unused | Every operation |
 | Open channel | Trigger the alarm and finish without disabling RADIO | Every operation |
-| Due diligence | Extract the optional evidence | Operations 01, 04, 05, 06, 09, 10 |
+| Due diligence | Extract the optional evidence | Operations 01, 04, 05, 06, 09, 10, 13 |
 | Light touch | Use SHUNT to recover the evidence without forcing CUT | Operations 02, 07 |
 | By the book | Divert the courier with CALL and recover CASE while keeping them alive | Operation 03 |
 | Off the record | Complete UPLINK without its trace completing | Operations 05, 10 |
-| Power down | Isolate both feeds without destroying a turret; INSPECT is allowed | Operation 08 |
+| Power down | Isolate both feeds without destroying a turret; INSPECT is allowed | Operations 08, 13 |
 | Travel light | Rescue both prisoners without either recovering GEAR | Operation 09 |
+| Answerable | Escort Kestrel out alive in handcuffs | Operation 13 |
 
 Version 4 records preserve previous times and completions. Existing records
 backfill Settled and, where a full-crew time exists, Full crew. The other
@@ -771,7 +792,7 @@ graphics checks are not part of the routine gate. Keep `@smoke` for shared playe
 flows so each new mission does not add another real-time browser journey to CI.
 
 The full simulation suite still runs on every change, including every retained
-human completion, complete mission runs for all twelve operations (including quiet rescue and armed withdrawal in 09, both routes in 10 with the flashes already spent, nonlethal and prepared armed completions in 11, and quiet/armed completions in 12),
+human completion, complete mission runs for all thirteen operations (including quiet rescue and armed withdrawal in 09, both routes in 10 with the flashes already spent, nonlethal and prepared armed completions in 11, quiet/armed completions in 12, and arrest/lethal routes in 13),
 navigation clearance, local identification, disguise permissions, radio disruption,
 evidence custody, demolition safety, and extraction requirements.
 Playwright launches Vite with `VITE_BROWSER_TEST=true`, capping its renderer at
@@ -781,6 +802,6 @@ rendering are uncapped. Local and CI browser tests use the same SwiftShader back
 
 ## Current scope
 
-Twelve ground-level missions and fixed camera orientation. Campaign economy, vehicle driving, multiplayer, and mid-mission saves remain future work. Each operative has a distinct on-map model with 32 facings, a distance-driven walk, an armed stance, and a grounded fallen pose. Hair, skin, clothing, and build correspond to their portraits; disguises preserve their identity. Voss and Mara have their own models and portraits beside the wait/follow control.
+Thirteen missions with fixed camera orientation; Operation 13 introduces two floors. Campaign economy, vehicle driving, multiplayer, and mid-mission saves remain future work. Each operative has a distinct on-map model with 32 facings, a distance-driven walk, an armed stance, and a grounded fallen pose. Hair, skin, clothing, and build correspond to their portraits; disguises preserve their identity. Voss, Mara and Kestrel have their own models and portraits beside the wait/follow control.
 
 See [design notes](docs/design.md) and [art provenance](docs/art.md). Distributed under the repository's [MIT license](LICENSE).

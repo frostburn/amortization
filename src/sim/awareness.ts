@@ -1,3 +1,4 @@
+import { position, sameFloor } from './types';
 import { controllable, disoriented, distance, inside, isCharge, isPower, living } from './types';
 import type { Guard, Operative, Person, Vec, World } from './types';
 import { findPath, lineClear } from './navigation';
@@ -18,7 +19,8 @@ export function suspicionRate(world: World, agent: Operative): number {
   if (visibleWeapon(agent)) return 95;
   if (
     agent.order.kind === 'interact' &&
-    (agent.order.target === 'divert' ||
+    ((agent.order.target === 'escort' && !!world.mission.continuity && !world.escort?.recruited) ||
+      agent.order.target === 'divert' ||
       isCharge(agent.order.target) ||
       (isPower(agent.order.target) && inspectionRemaining(world) === 0)) &&
     agent.interaction > 0
@@ -28,7 +30,7 @@ export function suspicionRate(world: World, agent: Operative): number {
     return 95;
   if (inside(agent, world.mission.restricted)) {
     if (!agent.disguised) return 52;
-    if (inside(agent, world.mission.secure)) return 29;
+    if (sameFloor(agent, world.mission.secure) && inside(agent, world.mission.secure)) return 29;
   }
   return 0;
 }
@@ -60,7 +62,7 @@ export function dispatchInvestigation(world: World, point: Vec, guards = world.g
     const target = world.agents.find((a) => a.id === g.target && controllable(a));
     if (target && sees(world, g, target)) continue;
     g.mode = 'combat';
-    g.lastSeen = { x: point.x, y: point.y };
+    g.lastSeen = position(point);
     g.searchTime = 30;
     g.path = [];
     g.repath = 0;
@@ -86,7 +88,7 @@ export function reportGunfire(world: World, shooter: Operative) {
       continue;
     }
     if (distance(g, shooter) > GUNFIRE_HEARING) continue;
-    g.lastSeen = { x: shooter.x, y: shooter.y };
+    g.lastSeen = position(shooter);
     g.searchTime = 10;
     g.mode = 'combat';
     if (!g.tactics && !g.incoming) g.path = [];
@@ -170,7 +172,7 @@ export function updateAwareness(world: World, dt: number) {
     if (visibleTarget) {
       g.mode = 'combat';
       g.target = visibleTarget.id;
-      g.lastSeen = { x: visibleTarget.x, y: visibleTarget.y };
+      g.lastSeen = position(visibleTarget);
       g.searchTime = 9;
       shareContact(world, g, visibleTarget);
     }
@@ -186,7 +188,7 @@ export function updateAwareness(world: World, dt: number) {
         g.searchTime -= dt;
       } else if (target && distance(g, target) <= weaponRange(g) && lineClear(world, g, target)) {
         g.angle = Math.atan2(target.y - g.y, target.x - g.x);
-        g.lastSeen = { x: target.x, y: target.y };
+        g.lastSeen = position(target);
         g.searchTime = 9;
         g.path = [];
         shoot(world, g, target, true, dt);

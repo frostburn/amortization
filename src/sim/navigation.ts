@@ -1,26 +1,33 @@
 import { detentionDoors } from './detention';
-import { distance } from './types';
+import { distance, floorOf, sameFloor } from './types';
 import type { Mission, Rect, Vec, World } from './types';
 
 export const BODY_RADIUS = 0.2;
 // Permit contact with the clearance boundary without trapping a body on it.
 const EPSILON = 1e-7;
 
-export function obstacles(world: World): Rect[] {
+export function obstacles(world: World, floor = 0): Rect[] {
   return [
-    ...world.mission.solids,
+    ...world.mission.solids.filter((r) => floorOf(r) === floor),
     ...detentionDoors(world),
     ...(world.gateOpen ? [] : [world.mission.gate]),
     ...(world.mission.archive && !world.shutterOpen ? [world.mission.archive.door] : []),
-  ];
+  ].filter((r) => floorOf(r) === floor);
 }
 
 export function passable(world: World, p: Vec, radius = BODY_RADIUS): boolean {
-  return pointClear(world.mission, obstacles(world), p, radius);
+  return pointClear(world.mission, obstacles(world, floorOf(p)), p, radius);
 }
 
 function pointClear(mission: Mission, solids: Rect[], p: Vec, radius = BODY_RADIUS): boolean {
   return (
+    (!floorOf(p) ||
+      (floorOf(p) === 1 &&
+        !!mission.building &&
+        p.x >= mission.building.upper.x + radius &&
+        p.y >= mission.building.upper.y + radius &&
+        p.x <= mission.building.upper.x + mission.building.upper.w - radius &&
+        p.y <= mission.building.upper.y + mission.building.upper.h - radius)) &&
     p.x >= radius - EPSILON &&
     p.y >= radius - EPSILON &&
     p.x <= mission.width - radius + EPSILON &&
@@ -57,6 +64,7 @@ export function intersects(a: Vec, b: Vec, rect: Rect, margin = 0): boolean {
 }
 
 export function lineClear(world: World, a: Vec, b: Vec, margin = 0): boolean {
+  if (!sameFloor(a, b)) return false;
   // Most rectangles are nowhere near a short sight ray. Reject their bounds
   // before the exact slab test; inclusive boundaries retain grazing collisions.
   const left = Math.min(a.x, b.x),
@@ -64,6 +72,7 @@ export function lineClear(world: World, a: Vec, b: Vec, margin = 0): boolean {
     top = Math.min(a.y, b.y),
     bottom = Math.max(a.y, b.y);
   const blocks = (r: Rect) =>
+    sameFloor(a, r) &&
     r.x - margin <= right &&
     r.x + r.w + margin >= left &&
     r.y - margin <= bottom &&
@@ -89,6 +98,7 @@ export function nearestFree(world: World, target: Vec, toward?: Vec): Vec {
     let best: Vec | undefined;
     for (let i = 0; i < 16; i++) {
       const p = {
+        ...(target.floor ? { floor: target.floor } : {}),
         x: target.x + Math.cos((i * Math.PI) / 8) * radius,
         y: target.y + Math.sin((i * Math.PI) / 8) * radius,
       };
@@ -128,7 +138,7 @@ interface NavigationGrid {
 // Discarded missions can be collected.
 const grids = new WeakMap<Mission, { geometry: string; states: Map<number, NavigationGrid> }>();
 
-function navigationGrid(world: World): NavigationGrid {
+function navigationGrid(world: World, floor = 0): NavigationGrid {
   const mission = world.mission;
   const geometry = [
     mission.width,
@@ -143,7 +153,8 @@ function navigationGrid(world: World): NavigationGrid {
         ])
       : []),
     Number(!!mission.archive),
-    ...mission.solids.flatMap((r) => [r.x, r.y, r.w, r.h]),
+    ...mission.solids.flatMap((r) => [r.x, r.y, r.w, r.h, floorOf(r)]),
+    ...(mission.building ? Object.values(mission.building.upper) : []),
     mission.gate.x,
     mission.gate.y,
     mission.gate.w,
@@ -164,6 +175,7 @@ function navigationGrid(world: World): NavigationGrid {
     grids.set(mission, cached);
   }
   const state =
+    (floor << 8) |
     Number(world.gateOpen) |
     (Number(world.shutterOpen) << 1) |
     ((world.detention?.open.includes('access-intake') ? 1 : 0) << 2) |
@@ -178,10 +190,11 @@ function navigationGrid(world: World): NavigationGrid {
   const width = mission.width * 2,
     height = mission.height * 2;
   const points = Array.from({ length: width * height }, (_, id) => ({
+    ...(floor ? { floor } : {}),
     x: (id % width) / 2 + 0.25,
     y: Math.floor(id / width) / 2 + 0.25,
   }));
-  const solids = obstacles(world);
+  const solids = obstacles(world, floor);
   const free = Uint8Array.from(points, (p) => Number(pointClear(mission, solids, p)));
   const edges = new Uint8Array(points.length);
   for (let y = 0; y < height; y++)
@@ -225,10 +238,11 @@ function navigationGrid(world: World): NavigationGrid {
 
 // A half-metre grid is small enough for doors. A binary heap keeps repeated guard paths cheap.
 export function findPath(world: World, start: Vec, requested: Vec): Vec[] {
+  if (!sameFloor(start, requested)) return [];
   const end = nearestFree(world, requested);
   if (!passable(world, start) || !passable(world, end)) return [];
   if (canWalk(world, start, end)) return [end];
-  const { width, height, points, edges } = navigationGrid(world);
+  const { width, height, points, edges } = navigationGrid(world, floorOf(start));
   const costs = new Float64Array(width * height).fill(Infinity);
   const parent = new Int32Array(width * height).fill(-1);
   const closed = new Uint8Array(width * height);

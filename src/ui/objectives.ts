@@ -1,3 +1,4 @@
+import { captureReady, kestrelRemoved } from '../sim/floors';
 import { distance, EXTRACTION_RADIUS, inside, isExtraction, living } from '../sim/types';
 import type { ObjectKind, Vec, World } from '../sim/types';
 import { landmark } from '../sim/orders';
@@ -72,7 +73,9 @@ export function guideLocation(
       : null;
   return {
     ...location,
-    ...(carrier ? { x: carrier.x, y: carrier.y } : {}),
+    ...(carrier
+      ? { x: carrier.x, y: carrier.y, ...(world.mission.building ? { floor: carrier.floor } : {}) }
+      : {}),
     z: carrier ? 0.5 : id === 'evidence' && world.evidence === 'courier' ? 2.1 : 1.45,
   };
 }
@@ -87,7 +90,31 @@ export function missionGoals(w: World): Goal[] {
   const kit: GuideTarget[] = w.disguiseTaken ? [] : ['disguise'];
   const evidenceInArchive = !!m.archive && inside(w.evidencePosition, m.secure);
   let primary: Goal;
-  if (w.recall) {
+  if (m.continuity) {
+    const removed = kestrelRemoved(w),
+      cuffed = !!v?.recruited;
+    primary = {
+      id: 'primary',
+      complete: removed,
+      label: removed
+        ? cuffed
+          ? '✓ Kestrel in handcuffs'
+          : '✓ Kestrel eliminated'
+        : '○ Remove Kestrel · upper floor',
+      detail: removed
+        ? cuffed
+          ? 'Escort Kestrel down the stairs and to VAN. She follows the operative who cuffed her; use wait/follow or interact with CUFF to hand her to a partner.'
+          : 'Kestrel’s controller is stopped. Use DOWN and bring every survivor to VAN.'
+        : 'Reach the upper floor via UP. For an arrest, isolate WEST and EAST downstairs, then interact with CUFF for three seconds with free hands. To kill her, attack her body. Either outcome ends her command. RADIO does not stop the wired defenses.',
+      targets: removed
+        ? cuffed
+          ? ['escort', 'stairs-down', 'extract']
+          : ['stairs-down', 'extract']
+        : captureReady(w)
+          ? ['stairs-up', 'escort']
+          : ['power-west', 'power-east', 'stairs-up', 'escort'],
+    };
+  } else if (w.recall) {
     const carrier = w.agents.find((a) => living(a) && a.carrying);
     const filing = carrier?.order.kind === 'interact' && carrier.order.target === 'file-recall';
     primary = {

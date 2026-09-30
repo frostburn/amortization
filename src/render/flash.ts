@@ -1,4 +1,5 @@
 import type { Graphics } from 'pixi.js';
+import { floorOf } from '../sim/types';
 import type { Vec, World } from '../sim/types';
 import { FLASH_FLIGHT, FLASH_FUSE, FLASH_PULSE, FLASH_RADIUS } from '../sim/flash';
 import { project, TILE_X, TILE_Y } from './isometric';
@@ -18,6 +19,7 @@ function footprint(w: World, point: Vec) {
   const key = [
     point.x,
     point.y,
+    point.floor,
     w.gateOpen,
     w.shutterOpen,
     w.detention?.open.join(','),
@@ -28,6 +30,7 @@ function footprint(w: World, point: Vec) {
     points = Array.from({ length: 48 }, (_, i) => {
       const angle = (i * Math.PI) / 24;
       const end = (r: number) => ({
+        ...(point.floor ? { floor: point.floor } : {}),
         x: point.x + Math.cos(angle) * r,
         y: point.y + Math.sin(angle) * r,
       });
@@ -55,7 +58,7 @@ export interface FlashAimView {
   valid: boolean;
   exposed: Vec[];
 }
-export function drawFlashes(g: Graphics, w: World, aim: FlashAimView | null) {
+export function drawFlashes(g: Graphics, w: World, aim: FlashAimView | null, floor = 0) {
   const ring = (point: Vec, radius: number) => {
     const p = project(point);
     return g.ellipse(p.x, p.y, radius * Math.SQRT2 * TILE_X, radius * Math.SQRT2 * TILE_Y);
@@ -74,6 +77,7 @@ export function drawFlashes(g: Graphics, w: World, aim: FlashAimView | null) {
     for (const a of aim.exposed) ring(a, 0.55).stroke({ color: 0xf57869, width: 2.5 });
   }
   for (const grenade of w.flashGrenades ?? []) {
+    if (floorOf(grenade.to) !== floor) continue;
     const flight = Math.min(1, grenade.age / FLASH_FLIGHT);
     const burst = grenade.age - FLASH_FLIGHT - FLASH_FUSE;
     if (burst < 0) {

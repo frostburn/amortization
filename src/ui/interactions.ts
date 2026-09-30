@@ -1,3 +1,4 @@
+import { captureReady } from '../sim/floors';
 import { available, landmark } from '../sim/orders';
 import { courierGuard } from '../sim/courier';
 import { canAuthorise } from '../sim/security';
@@ -45,7 +46,11 @@ export function movementHint(w: World, selected: string[]): string | null {
 
 /** Geometry feedback, not a promise of an immediate shot: reloads, settling and
  * coil charging still apply. An attack order draws weapons and pursues as needed. */
-export function attackPreview(w: World, selected: string[], target: World['guards'][number]) {
+export function attackPreview(
+  w: World,
+  selected: string[],
+  target: World['guards'][number] | NonNullable<World['escort']>,
+) {
   const armed = armedSelection(w, selected);
   if (!armed.length)
     return {
@@ -78,6 +83,8 @@ export function attackPreview(w: World, selected: string[], target: World['guard
  */
 export function objectRequirement(w: World, id: ObjectKind, selected: string[]): string | null {
   if (isExtraction(id)) return extractionRequirement(w)?.detail ?? null;
+  if (id === 'escort' && w.mission.continuity && !w.escort?.recruited && !captureReady(w))
+    return 'Isolate WEST and EAST downstairs before arresting Kestrel.';
   if (id === 'escort' && w.escortLocked)
     return 'Release the transport with WARRANT in disguise, or force it with CUT.';
   if (id === 'evidence' && w.evidence === 'courier' && w.courier?.phase !== 'inspection')

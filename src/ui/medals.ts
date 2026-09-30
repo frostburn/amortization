@@ -2,6 +2,7 @@ import { controllable, living } from '../sim/types';
 import type { Mission, World } from '../sim/types';
 
 export type MedalId =
+  | 'custody'
   | 'complete'
   | 'full-crew'
   | 'quiet'
@@ -28,6 +29,15 @@ interface Medal {
 // retained by the simulation; replay state and combat timing stay unchanged.
 const medals: Medal[] = [
   {
+    id: 'custody',
+    name: 'Answerable',
+    rule: 'Bring Kestrel out alive in handcuffs and extract all four operatives.',
+    symbol:
+      '<circle cx="7" cy="13" r="4"/><circle cx="17" cy="13" r="4"/><path d="M11 12h2M5 9V6h4m6 3V6h4"/>',
+    available: (m) => !!m.continuity,
+    qualifies: (w) => !!w.escort?.recruited && living(w.escort),
+  },
+  {
     id: 'complete',
     name: 'Settled',
     rule: 'Complete the operation and extract at least one surviving operative.',
@@ -52,9 +62,11 @@ const medals: Medal[] = [
   {
     id: 'nonlethal',
     name: 'Nonlethal',
-    rule: 'Extract all four without killing any guards or the courier. Destroying unmanned turrets is allowed.',
+    rule: 'Extract all four without killing any guards, the courier or a mission target. Destroying unmanned turrets is allowed.',
     symbol: '<path d="M12 20C2 14 3 6 7 6c3 0 5 3 5 3s2-3 5-3c4 0 5 8-5 14Z"/>',
-    qualifies: (w) => w.guards.every((g) => !!g.turret || living(g)),
+    qualifies: (w) =>
+      w.guards.every((g) => !!g.turret || living(g)) &&
+      (!w.mission.continuity || (!!w.escort && living(w.escort))),
   },
   {
     id: 'no-kit',
@@ -76,7 +88,8 @@ const medals: Medal[] = [
     name: 'Due diligence',
     rule: 'Extract all four and bring the optional evidence to the extraction point.',
     symbol: '<path d="M6 3h9l4 4v14H6V3Zm9 0v5h4M9 12h7m-7 4h7"/>',
-    available: (m) => ['escort', 'broadcast', 'demolition', 'rescue'].includes(m.objective),
+    available: (m) =>
+      ['escort', 'broadcast', 'demolition', 'rescue', 'capture'].includes(m.objective),
     qualifies: (w) => w.evidence === 'extracted',
   },
   {

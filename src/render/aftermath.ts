@@ -1,5 +1,5 @@
 import { canWalk, findPath } from '../sim/navigation';
-import { distance, living, people } from '../sim/types';
+import { position, distance, living, people } from '../sim/types';
 import type { Person, Solid, Vec, World } from '../sim/types';
 import { decayPressure } from '../sim/pressure';
 import { turnShield } from '../sim/shield';
@@ -16,6 +16,7 @@ function walk(w: World, p: Person, speed: number, seconds: number) {
     }
     const amount = Math.min(remaining, length),
       next = {
+        ...(p.floor ? { floor: p.floor } : {}),
         x: p.x + ((target.x - p.x) * amount) / length,
         y: p.y + ((target.y - p.y) * amount) / length,
       };
@@ -75,7 +76,7 @@ export class Aftermath {
           : { x: v.x + v.w * 0.48, y: exit.y > v.y + v.h / 2 ? v.y + v.h + 0.25 : v.y - 0.25 };
     }
     for (const p of people(this.world)) {
-      p.previous = { x: p.x, y: p.y };
+      p.previous = position(p);
       p.cooldown = 0;
       if (p.armament) {
         p.armament.charging = undefined;
@@ -104,7 +105,7 @@ export class Aftermath {
     w.traces = w.traces.filter((t) => (t.life -= dt) > 0);
     for (const flash of w.flashGrenades ?? []) flash.age += dt;
     for (const p of people(w)) {
-      p.previous = { x: p.x, y: p.y };
+      p.previous = position(p);
       p.disoriented = Math.max(0, (p.disoriented ?? 0) - dt);
       decayPressure(p, dt);
     }

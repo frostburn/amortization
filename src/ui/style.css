@@ -1874,3 +1874,23 @@ dialog.briefing-dialog[open] {
     font-size: 10px;
   }
 }
+
+.floor-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 2;
+  padding: 7px 10px;
+  background: #172d36e8;
+  color: #d2e5df;
+  border: 1px solid #92b4b0;
+  border-radius: 4px;
+  pointer-events: none;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+[data-witness='kestrel'] .witness-portrait {
+  background-image: url('/assets/story/kestrel.webp');
+  background-size: cover;
+  background-position: center;
+}

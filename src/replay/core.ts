@@ -282,7 +282,8 @@ export function parseReplay(raw: string): ReplayBundle {
             Number.isFinite(c.point.x) &&
             Number.isFinite(c.point.y) &&
             Math.abs(c.point.x) <= 1000 &&
-            Math.abs(c.point.y) <= 1000,
+            Math.abs(c.point.y) <= 1000 &&
+            (c.point.floor === undefined || integer(c.point.floor, archived.building ? 1 : 0)),
           'Invalid movement coordinates.',
         );
       if (c.kind === 'interact')
@@ -293,7 +294,8 @@ export function parseReplay(raw: string): ReplayBundle {
       if (c.kind === 'attack')
         requireValue(
           typeof c.target === 'string' &&
-            (/^(guard-\d+|response-\d+-\d+|courier)$/.test(c.target) ||
+            ((archived.continuity && c.target === 'kestrel') ||
+              /^(guard-\d+|response-\d+-\d+|courier)$/.test(c.target) ||
               (/^turret-(0|[1-9]\d*)$/.test(c.target) &&
                 Array.isArray(archived.security?.turrets) &&
                 Number(c.target.slice('turret-'.length)) < archived.security.turrets.length)),

@@ -23,7 +23,11 @@ export function suppress(w: World, from: Person, to: Person, hostile: boolean) {
     if (!living(p) || ('turret' in p && p.turret) || ('captive' in p && p.captive)) continue;
     const along = length2 ? ((p.x - from.x) * dx + (p.y - from.y) * dy) / length2 : 0;
     if (along < 0 || along > 1) continue;
-    const nearest = { x: from.x + dx * along, y: from.y + dy * along };
+    const nearest = {
+      ...(from.floor ? { floor: from.floor } : {}),
+      x: from.x + dx * along,
+      y: from.y + dy * along,
+    };
     if (distance(p, nearest) > 1.1 || !lineClear(w, from, p)) continue;
     p.pressure = Math.min(1, (p.pressure ?? 0) + 0.5);
   }

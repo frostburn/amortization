@@ -1,3 +1,4 @@
+import { position, floorOf } from './types';
 import { findPath, lineClear, obstacles, passable } from './navigation';
 import { distance, living } from './types';
 import type { Guard, Vec, World } from './types';
@@ -9,7 +10,7 @@ export function receiveFire(w: World, g: Guard, from: Vec) {
   // Audible shots already enter the normal combat/cover response. Bridge the
   // unhandled gap for a direct hit whose source cannot be heard or seen.
   if (!living(g) || g.turret || distance(g, from) <= GUNFIRE_HEARING || sees(w, g, from)) return;
-  const source = { x: from.x, y: from.y };
+  const source = position(from);
   if (!g.incoming) {
     g.incoming = { source, until: 0, nextMove: 0, goal: null };
     g.path = [];
@@ -42,10 +43,14 @@ export function evadeFire(w: World, g: Guard): boolean {
   fire.nextMove = w.time + 1;
   fire.goal = null;
   const clamp = (n: number, low: number, high: number) => Math.max(low, Math.min(high, n));
-  const nearby = obstacles(w)
+  const nearby = obstacles(w, floorOf(g))
     .map((r) => ({
       r,
-      d: distance(g, { x: clamp(g.x, r.x, r.x + r.w), y: clamp(g.y, r.y, r.y + r.h) }),
+      d: distance(g, {
+        ...position(g),
+        x: clamp(g.x, r.x, r.x + r.w),
+        y: clamp(g.y, r.y, r.y + r.h),
+      }),
     }))
     .filter(({ d }) => d <= 8)
     .sort((a, b) => a.d - b.d)
@@ -63,7 +68,11 @@ export function evadeFire(w: World, g: Guard): boolean {
       y = clamp(g.y, r.y, r.y + r.h);
     candidates.push({ x, y: top }, { x, y: bottom }, { x: left, y }, { x: right, y });
   }
-  const unique = [...new Map(candidates.map((p) => [`${p.x},${p.y}`, p])).values()];
+  const unique = [
+    ...new Map(
+      candidates.map((p) => [`${p.x},${p.y}`, { ...p, ...(g.floor ? { floor: g.floor } : {}) }]),
+    ).values(),
+  ];
   const choices = unique
     .filter(
       (p) =>

@@ -47,7 +47,8 @@ describe('extraction orders', () => {
         w.settlement.reconciled = true;
         w.settlement.progress = mission.settlement!.duration;
       }
-      for (const [i, a] of w.agents.entries()) Object.assign(a, { x: 6.5, y: 15 + i });
+      for (const [i, a] of w.agents.entries())
+        Object.assign(a, { x: mission.continuity ? 14 : 6.5, y: 15 + i });
       if (w.detention) {
         w.agents.forEach((a) => {
           a.captive = false;
@@ -55,7 +56,13 @@ describe('extraction orders', () => {
         w.detention.released = true;
       } else if (w.escort) {
         w.escortLocked = false;
-        Object.assign(w.escort, { x: 6.5, y: 14, recruited: true, leader: w.agents[3].id });
+        Object.assign(w.escort, {
+          x: mission.continuity ? 14 : 6.5,
+          y: 14,
+          floor: undefined,
+          recruited: true,
+          leader: w.agents[3].id,
+        });
       } else if (w.demolition) {
         w.demolition.armed = ['charge-west', 'charge-east'];
         w.demolition.detonatedAt = 0;

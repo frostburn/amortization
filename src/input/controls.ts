@@ -1,7 +1,7 @@
 import { UPDATE_PRIORITY } from 'pixi.js';
 import type { Scene } from '../render/scene';
 import type { Hit } from '../render/scene';
-import { living } from '../sim/types';
+import { combatTarget } from '../sim/floors';
 import type { Rect, Vec, World } from '../sim/types';
 import type { Hud } from '../ui/hud';
 import { ORDER_BUTTONS } from './actions';
@@ -38,6 +38,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
   let aimingPress = false;
   let flash: { id: string; until: number } | null = null;
   let pointerWorld = target.world();
+  let pointerFloor = scene.activeFloor;
   const marker = document.createElement('div');
   marker.className = 'combat-target';
   marker.hidden = true;
@@ -54,9 +55,12 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
   const updatePointer = () => {
     const w = target.world(),
       selected = target.selection();
-    if (w !== pointerWorld) {
+    if (w !== pointerWorld || scene.activeFloor !== pointerFloor) {
       pointerWorld = w;
+      pointerFloor = scene.activeFloor;
       flash = null;
+      inspect(null);
+      target.aim?.cancel();
     }
     const overMap = mouse && document.elementFromPoint(mouse.x, mouse.y) === canvas;
     const bounds = canvas.getBoundingClientRect();
@@ -75,12 +79,13 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     const active = !hud.modal.open && w.status === 'playing';
     const guard =
       active && !drag && !target.aim?.active
-        ? w.guards.find(
-            (g) =>
-              living(g) &&
-              (hit?.kind === 'guard'
-                ? g.id === hit.id
-                : !mouse && flash && performance.now() < flash.until && g.id === flash.id),
+        ? combatTarget(
+            w,
+            hit?.kind === 'guard'
+              ? hit.id
+              : !mouse && flash && performance.now() < flash.until
+                ? flash.id
+                : '',
           )
         : undefined;
     const preview = guard ? attackPreview(w, selected, guard) : null;
@@ -199,6 +204,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
         .agents.filter((a) => {
           const q = scene.agentBounds(a);
           return (
+            scene.canPickPerson(a) &&
             !a.captive &&
             a.hp > 0 &&
             q.x + q.w >= r.x &&

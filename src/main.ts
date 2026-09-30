@@ -182,6 +182,21 @@ export async function boot() {
       if (mission) startMission(mission, true);
       return;
     }
+    if (type === 'stairs:up' || type === 'stairs:down' || type === 'arrest-kestrel') {
+      issue({
+        kind: 'interact',
+        agents: selected,
+        target:
+          type === 'arrest-kestrel' ? 'escort' : type === 'stairs:up' ? 'stairs-up' : 'stairs-down',
+      });
+      updateHud();
+      return;
+    }
+    if (type === 'attack-kestrel') {
+      issue({ kind: 'attack', agents: selected, target: 'kestrel' });
+      updateHud();
+      return;
+    }
     if (type === 'work:file-recall') {
       issue({ kind: 'interact', agents: selected, target: 'file-recall' });
       updateHud();

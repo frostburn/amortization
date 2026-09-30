@@ -21,7 +21,7 @@ it.each(exits)(
     w.time = 100;
     w.evidence = 'extracted';
     for (const p of [...w.agents, ...(w.escort ? [w.escort] : [])])
-      Object.assign(p, { x: exit.x, y: exit.y, captive: false });
+      Object.assign(p, { x: exit.x, y: exit.y, floor: exit.floor, captive: false });
     const original = structuredClone(w),
       medals = earnedMedals(w),
       ending = new Aftermath(w);

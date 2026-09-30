@@ -1,3 +1,4 @@
+import { kestrelRemoved } from '../sim/floors';
 import { published } from '../sim/broadcast';
 import { settled, settlementStatus } from '../sim/settlement';
 import { demolished, detonationStatus } from '../sim/demolition';
@@ -62,6 +63,14 @@ export function extractionRequirement(
       goal: 'evidence',
     };
   }
+  if (world.mission.continuity)
+    return kestrelRemoved(world)
+      ? null
+      : {
+          label: 'Remove Kestrel',
+          detail: 'Extraction locked: arrest Kestrel upstairs, or eliminate her.',
+          goal: 'primary',
+        };
   const witness = world.escort;
   if (witness && (!witness.recruited || !living(witness)))
     return {
