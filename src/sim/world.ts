@@ -30,6 +30,7 @@ export function makeGuard(
     ...(tactic
       ? { tactics: { ...tactic, lastHp: 90, until: 0, nextMove: 0, cover: false, goal: null } }
       : {}),
+    ...(tactic?.role === 'shield' ? { shield: { angle } } : {}),
     patrol,
     waypoint: 0,
     suspicion: {},
@@ -128,6 +129,7 @@ export function createWorld(mission: Mission = depot): World {
     ...(mission.settlement
       ? { settlement: { reconciled: false, progress: 0, signer: null, clerk: null } }
       : {}),
+    ...(mission.recall ? { recall: { filed: false } } : {}),
     alarm: false,
     alarmTime: 0,
     waves: 0,

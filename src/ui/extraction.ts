@@ -12,6 +12,13 @@ export function extractionRequirement(
   world: World,
 ): { label: string; detail: string; goal: 'primary' | 'evidence' } | null {
   if (world.status === 'won') return null;
+  if (world.recall && !world.recall.filed)
+    return {
+      label: 'File RECALL',
+      detail:
+        'Extraction locked: collect RECALL, then have its carrier work FILE for nine uninterrupted seconds. Bring the original to VAN afterward.',
+      goal: 'primary',
+    };
   if (world.settlement && !settled(world))
     return {
       label: world.settlement.reconciled ? 'Staff SIGN and CLEAR' : 'Reconcile REGISTER',
@@ -45,7 +52,7 @@ export function extractionRequirement(
     };
   }
   if (
-    ['ledger', 'case', 'settlement'].includes(world.mission.objective) &&
+    ['ledger', 'case', 'settlement', 'recall'].includes(world.mission.objective) &&
     !world.agents.some((a) => living(a) && a.carrying)
   ) {
     const tag = landmark(world, 'evidence').tag;

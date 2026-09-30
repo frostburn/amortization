@@ -4,6 +4,7 @@ import { Director, eventCue } from '../src/audio/director';
 import { placement } from '../src/audio/mixer';
 import { clockedNoise } from '../src/audio/noise';
 import { loopSound, SOUND_IDS, synthesize } from '../src/audio/palette';
+import { countermand } from '../src/content/countermand';
 import { depot } from '../src/content/depot';
 import { mandate } from '../src/content/mandate';
 import { parseReplay, ReplayPlayer, stateHash } from '../src/replay/core';
@@ -75,14 +76,14 @@ describe('sound palette and placement', () => {
   });
 
   it('makes reproducible, distinct weapon timbres and non-identical repeated shots', () => {
-    const ids = ['pistol', 'carbine', 'shotgun', 'automatic', 'coil'] as const;
+    const ids = ['pistol', 'carbine', 'shotgun', 'automatic', 'coil', 'support'] as const;
     const fingerprints = ids.map((id) => {
       const pcm = synthesize(id, 24000, 1);
       expect(pcm).toEqual(synthesize(id, 24000, 1));
       expect(pcm).not.toEqual(synthesize(id, 24000, 2));
       return [...pcm.slice(0, 256)].join(',');
     });
-    expect(new Set(fingerprints).size).toBe(5);
+    expect(new Set(fingerprints).size).toBe(6);
   });
 
   it('pans by the isometric screen and attenuates distance independently of zoom', () => {
@@ -127,6 +128,24 @@ describe('gameplay audio cues', () => {
     ]);
     expect(w.shots).toBe(1);
     expect(w.casualties).toBe(1);
+  });
+
+  it('uses a metal impact for a surviving shield hit and a body fall for a lethal one', () => {
+    const w = createWorld(structuredClone(countermand));
+    w.mission.solids = [];
+    w.gateOpen = true;
+    const shooter = w.agents[0],
+      officer = w.guards.find((g) => g.shield)!;
+    Object.assign(shooter, { x: 2, y: 2 });
+    Object.assign(officer, { x: 3, y: 2, hp: 3 });
+    officer.shield!.angle = Math.PI;
+    expect(shoot(w, shooter, officer, false)).toBe(true);
+    expect(officer.hp).toBeGreaterThan(0);
+    expect(eventCue(w.sounds.at(-1)!)).toMatchObject({ id: 'metal' });
+    shooter.cooldown = 0;
+    expect(shoot(w, shooter, officer, false)).toBe(true);
+    expect(officer.hp).toBe(0);
+    expect(eventCue(w.sounds.at(-1)!)).toMatchObject({ id: 'fall' });
   });
 
   it('uses walking distance, emits reload transitions once, and avoids a resume backlog', () => {

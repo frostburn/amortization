@@ -7,8 +7,76 @@ is also verified. Otherwise this checks a route's continued viability, without
 claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All forty-six retained completions are byte-for-byte copies of submissions
+All forty-seven retained completions are byte-for-byte copies of submissions
 provided in chat, including their `unversioned` / local-changes metadata.
+
+## Countermand: human completion after the shield fix
+
+All six follow-up submissions verify every original checkpoint and outcome
+against the current code. They share mission hash `6f0d06c3` and simulation
+fingerprint `50127b9bf7925df6b6e3fb68237a459841e00b5628304cc878f412d983924081`.
+The successful submission `amortization-countermand-won-e6184c0a.replay.json`
+joins the completion corpus as `countermand-human-e6184c0a.replay.json`, unchanged.
+Its note reads: “Challenge level felt good.” The other five notes are empty.
+
+| Submission suffix | Exact outcome | Mission flow |
+| --- | --- | --- |
+| `e6184c0a` | Won, tick 4731 / 157.7s; four survivors; 80 shots; no alarm | Disguised RADIO preparation, coordinated assault, RECALL filed and extracted |
+| `c045edc0` | Snapshot, tick 881; three survivors; six shots; alarm | Inspector exposes Morrow before RADIO; he falls in records |
+| `5c80e947` | Snapshot, tick 944; three survivors; 13 shots; alarm | Distant hit makes the first shield respond and report; Rook falls before his flash helps defeat it |
+| `ccfd4772` | Lost, tick 2354; 58 shots; no alarm | RADIO disabled, but the shield/support/breacher defense defeats the loading-lane assault |
+| `ac5fa0f2` | Snapshot, tick 921; three survivors; five shots; alarm | Inspector exposes Morrow before RADIO; he falls in records |
+| `c10080a9` | Lost, tick 2913; 120 shots; alarm | Recovers RECALL with RADIO live, loses Sable in records, then falls to the dispatch defense before filing |
+
+In the win, Morrow disables RADIO at 30.03s and returns to the north side of the
+loading defense. Sable's 12.43-unit coil hit at 45.9s makes the shield officer
+retreat; Morrow's pistol then lands unprotected flank shots. The second officer
+blocks frontal fire until Sable's flash at 82.33s lowers its protection. Both
+flashes and two field dressings are used. Support pressure reaches both sides;
+these traces verify the mechanic, not how clearly its presentation reads.
+
+Vale collects RECALL at 116.9s, files it from 134.07s to 143.07s, and boards at
+157.7s after one all-crew VAN order. Filing and the original-cargo requirement
+both hold. Final health is Morrow 16, Vale 78, Rook 22 and Sable 56. The resulting
+medals are Settled, Full crew and Low profile; the north staff patrol survives.
+
+The five unsuccessful/unfinished submissions are diagnostic evidence, not
+required losses or completions. The snapshots correctly remain playable with
+three survivors. This batch supports leaving the current balance unchanged;
+it adds no simulation, mission, browser-test or CI-workflow changes.
+
+## Countermand long-range shield feedback
+
+The four September 30 submissions use mission hash `e06783a4` and simulation
+fingerprint `37853990a3695a11e0c38bbf065fc800e0c9d40b9b97555590fe336fc073b6db`.
+Every original checkpoint and outcome reproduces against the pre-fix PR code
+when only its changed source-fingerprint gate is bypassed. Original commands,
+checksums, notes and unversioned/dirty metadata remain untouched.
+
+They are stored as `../fixtures/countermand-range-<suffix>.replay.json`, outside
+the required completion corpus. The winning run depends on an exploit, and
+the three losses are evidence to investigate rather than required failures.
+
+| Suffix | Original outcome | Outcome under corrected rules |
+| --- | --- | --- |
+| `7458f5ab` | Win, tick 5249, four survivors, 74 shots, no alarm | Loss at tick 2045; the opening no longer removes an inert shield officer |
+| `669aab97` | Loss, tick 2889, 105 shots, no alarm | Loss at tick 2378 |
+| `a2c4c905` | Loss, tick 2944, 113 shots, alarm | Loss at tick 2211 |
+| `a4df968b` | Loss, tick 2515, 59 shots, no alarm | Still playing at recorded end; Rook survives with 9 HP |
+
+The note in `a2c4c905` reads: “Enemies should take cover when receiving fire they
+cannot see the source of.” The other three notes are empty. In three runs Sable
+stands roughly 12.4 units from the first officer and lands fifteen coil shots.
+The officer never leaves patrol mode, takes no step, and dies. The rifle reaches
+13 units, beyond the 12-unit hearing radius and 11.25-unit daylight pistol sight.
+
+Direct hits now bridge that gap: the victim takes local cover and can report the
+attack without knowing the shooter’s identity. Shields retain their protective
+facing during the retreat, with the existing turn limit. All four unchanged
+command sequences now make the first officer move and break the original firing
+line. Regression assertions focus on that response, not reproducing the obsolete
+final results in the table. Quiet and revised armed command-only routes still
+extract all four; the 46 older human completion fixtures also remain valid.
 
 ## September 29: hidden enemies, objective zoom and human medals
 

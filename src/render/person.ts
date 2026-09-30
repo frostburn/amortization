@@ -1,5 +1,6 @@
 import type { Geometry, DestroyOptions } from 'pixi.js';
 import type { GuardTactic, Person, WeaponKind } from '../sim/types';
+import { facingAngle } from '../sim/shield';
 import { living } from '../sim/types';
 import { footfall, hipHeight, kneePosition, walkPhase } from './gait';
 import { coatRings, shoulderPadTransform } from './clothing';
@@ -136,6 +137,20 @@ const PROFILES: Record<Appearance, Profile> = {
 
 // Read the role from either side of the coat, not just a tiny chest badge.
 const SPECIALISTS: Record<NonNullable<Outfit['specialist']>, Profile> = {
+  shield: {
+    ...PROFILES.guard,
+    coat: 0x783b56,
+    shirt: 0xcda3b7,
+    helmet: 0x68364d,
+    pads: 0xd0cfb7,
+  },
+  support: {
+    ...PROFILES.guard,
+    coat: 0x778544,
+    shirt: 0xc4d28a,
+    helmet: 0x566631,
+    pads: 0xb4c56d,
+  },
   inspector: {
     ...PROFILES.guard,
     coat: 0xc5c6b1,
@@ -207,7 +222,11 @@ function weaponMount(
   }
   if (aiming)
     return mount(
-      [(long ? 0.27 : 0.42) - (outfit.flash ? 0.025 : 0), shoulder * 0.78, 1.015 + bob],
+      [
+        (long ? 0.27 : 0.42) - (outfit.flash ? 0.025 : 0),
+        shoulder * (outfit.specialist === 'shield' ? 1.85 : 0.78),
+        1.015 + bob,
+      ],
       [1, 0, 0],
       [0, 1, 0],
     );
@@ -398,7 +417,7 @@ export class PersonSprite extends ModelMesh {
     trimFrames();
   }
   pose(p: Person, alpha: number, outfit: Outfit = { appearance: 'morrow' }) {
-    const direction = facing(p.angle),
+    const direction = facing(facingAngle(p)),
       alive = living(p);
     const phase = walkPhase(p, alpha);
     const frame = phase === null ? -1 : Math.round((((phase % 1) + 1) % 1) * 24) % 24;
@@ -485,9 +504,15 @@ export class PersonSprite extends ModelMesh {
         const side = i ? 1 : -1;
         const shoulder: Point = [0, side * profile.shoulders, 1.055 + bob];
         let elbow: Point, hand: Point;
-        if (outfit.shielding) {
+        if (outfit.specialist === 'shield' && outfit.shielding && i === 0) {
+          elbow = [0.04, -0.25, 0.83 + bob];
+          hand = [0.02, -0.36, 0.65 + bob];
+        } else if (outfit.shielding) {
           elbow = [0.13, side * 0.22, 1.12 + bob];
           hand = [0.16, side * 0.07, 1.36 + bob];
+        } else if (outfit.specialist === 'shield' && i === 0) {
+          elbow = [0.06, -0.25, 0.86 + bob];
+          hand = [0.25, -0.12, 0.98 + bob];
         } else if (outfit.throwing && i === 1) {
           elbow = [0.14, 0.23, 1.32 + bob];
           hand = [0.38, 0.12, 1.46 + bob];
@@ -516,6 +541,7 @@ export class PersonSprite extends ModelMesh {
           f.transform = null;
         }
       }
+      if (outfit.specialist === 'shield') this.shield(f, !!outfit.shielding, bob);
       if (outfit.carrying) f.block([0.26, 0, 0.79 + bob], [0.17, 0.37, 0.23], 0xbfa476);
       if (gun && outfit.weapon) {
         f.transform = gun;
@@ -660,6 +686,20 @@ export class PersonSprite extends ModelMesh {
       f.block(add(c, [0.075, 0, 0.106]), [0.22, 0.27, 0.025], color);
     }
   }
+  private shield(f: Figure, lowered: boolean, bob = 0) {
+    if (lowered)
+      f.transform = mount([0.03, -0.36, 0.55 + bob], [0.4, 0, -Math.sqrt(0.84)], [0, 1, 0]);
+    else f.transform = mount([0.29, -0.08, 0.75 + bob], [1, 0, 0], [0, 1, 0]);
+    // Bevelled full-height plate, dark viewport and burgundy unit stripe.
+    f.block([0, 0, 0], [0.085, 0.62, 0.91], 0xd0cfb7);
+    f.block([0, 0, 0.47], [0.085, 0.5, 0.08], 0xd0cfb7);
+    f.block([0, 0, -0.47], [0.085, 0.5, 0.08], 0x879182);
+    f.block([0.045, 0, 0.33], [0.012, 0.36, 0.095], 0x283d42);
+    f.block([0.051, 0, 0.33], [0.008, 0.29, 0.046], 0x91b5bb);
+    f.block([0.048, 0, -0.12], [0.012, 0.57, 0.1], 0x783b56);
+    f.block([-0.065, 0, 0.1], [0.05, 0.22, 0.04], 0x313f3b);
+    f.transform = null;
+  }
   private gun(f: Figure, kind: NonNullable<Outfit['weapon']>, flash = false) {
     // Local origin is the firing hand, so the receiver, stock, magazine and barrel
     // keep their silhouette in every pose (including carried cargo and casualties).
@@ -687,6 +727,19 @@ export class PersonSprite extends ModelMesh {
       f.tube([0.25, 0, 0.09], [0.37, 0, 0.09], 0.032, steel);
       f.block([0.12, 0, 0.15], [0.09, 0.04, 0.033], dark);
       muzzle = 0.37;
+    } else if (kind === 'support') {
+      // Broad box magazine, cooling jacket and folded bipod distinguish this from a rifle.
+      f.block([-0.2, 0, 0.02], [0.3, 0.11, 0.16], 0x778544);
+      f.block([0.12, 0, 0.075], [0.4, 0.14, 0.15], dark);
+      f.block([0, 0, -0.04], [0.07, 0.075, 0.16], dark);
+      f.block([0.17, -0.055, -0.14], [0.21, 0.23, 0.27], 0x9eac66);
+      f.tube([0.28, 0, 0.09], [0.73, 0, 0.09], 0.045, steel);
+      for (const x of [0.34, 0.42, 0.5, 0.58]) f.block([x, 0, 0.09], [0.035, 0.11, 0.11], dark);
+      for (const side of [-1, 1])
+        f.tube([0.59, side * 0.065, 0.065], [0.33, side * 0.065, -0.045], 0.017, steel);
+      f.tube([0.73, 0, 0.09], [0.85, 0, 0.09], 0.028, dark);
+      f.block([0.12, 0, 0.19], [0.14, 0.03, 0.04], steel);
+      muzzle = 0.85;
     } else if (kind === 'coil') {
       // Pale rail housing, three cyan coils, long muzzle and raised scope.
       f.block([-0.2, 0, 0.015], [0.3, 0.085, 0.14], 0xc0cbd0);
@@ -747,6 +800,12 @@ export class PersonSprite extends ModelMesh {
       f.tube(shoulder, elbow, 0.055, coat, 0.047);
       f.tube(elbow, hand, 0.047, coat, 0.033);
       f.oval(hand, 0.048, 0.038, 0.038, p.skin);
+    }
+    if (outfit.specialist === 'shield') {
+      // Separate fallen shield, lying beside the body rather than still upright.
+      f.block([0.15, -0.55, 0.07], [0.9, 0.6, 0.1], 0xd0cfb7);
+      f.block([0.15, -0.55, 0.125], [0.12, 0.55, 0.01], 0x783b56);
+      f.block([0.45, -0.55, 0.125], [0.08, 0.34, 0.01], 0x283d42);
     }
     const center: Point = [0.62, 0, 0.14];
     f.transform = (point) => {

@@ -45,6 +45,7 @@ export function available(world: World, id: ObjectKind) {
     world.mission.landmarks.some((o) => o.id === id) &&
     detentionAvailable(world, id) &&
     !(
+      (id === 'file-recall' && (!world.recall || world.recall.filed)) ||
       (id === 'disguise' && world.disguiseTaken) ||
       (id === 'gate' && world.gateOpen) ||
       (id === 'relay' && world.relayOff) ||
@@ -77,6 +78,7 @@ export function interactionPoint(world: World, agent: Operative, id: ObjectKind)
   return landmark(world, id);
 }
 export function interactionDuration(world: World, agent: Operative, id: ObjectKind) {
+  if (id === 'file-recall') return world.mission.recall!.filingTime;
   if (id === 'reconcile') return world.mission.settlement!.reconcileTime;
   if (isSettlement(id)) return SETTLEMENT_SETUP;
   if (isRescue(id)) return 2;
@@ -105,6 +107,8 @@ export function moveAgents(world: World, ids: string[], target: Vec) {
   });
 }
 function interactionRefusal(world: World, a: Operative, id: ObjectKind): string | null {
+  if (id === 'file-recall' && !a.carrying)
+    return 'Select the RECALL carrier to file the original at FILE.';
   const settlementReason = settlementRefusal(world, a, id);
   if (settlementReason) return settlementReason;
   const detentionReason = detentionRefusal(world, a, id);
@@ -315,6 +319,11 @@ export function dropEvidence(world: World, ids: string[]) {
   for (const a of world.agents)
     if (ids.includes(a.id) && a.carrying) {
       a.carrying = false;
+      if (a.order.kind === 'interact' && a.order.target === 'file-recall') {
+        a.order = { kind: 'hold' };
+        a.path = [];
+        a.interaction = 0;
+      }
       world.evidence = 'available';
       world.evidencePosition = { x: a.x, y: a.y };
       world.sounds.push({ kind: 'interact', action: 'drop', x: a.x, y: a.y });
@@ -341,30 +350,32 @@ export function extractionStatus(world: World, id: 'extract' | 'alternate') {
     carrier = survivors.find((p) => p.carrying),
     v = world.escort;
   const waiting =
-    world.settlement && !settled(world)
-      ? 'Reconcile REGISTER at CHECK, then staff SIGN and CLEAR together to release repayments.'
-      : world.detention && (!rescueComplete(world) || world.agents.some((p) => !living(p)))
-        ? 'Free Vale and Rook and bring all four operatives home alive.'
-        : world.detention && !world.detention.released
-          ? 'Use EXIT inside detention to release both gates before leaving.'
-          : world.demolition && !demolished(world)
-            ? 'Destroy both debt backups before requesting extraction.'
-            : world.mission.broadcast && !published(world)
-              ? world.mission.broadcast.subject
-                ? `Finish uploading ${world.mission.broadcast.subject} at UPLINK before requesting extraction.`
-                : "Publish Mara's audit at UPLINK before requesting extraction."
-              : ['ledger', 'case', 'settlement'].includes(world.mission.objective) &&
-                  (!carrier || distance(carrier, van) > EXTRACTION_RADIUS)
-                ? `Bring the ${world.mission.evidenceName.toLowerCase()} to ${van.tag}. It is required for this contract.`
-                : v && (!v.recruited || !living(v))
-                  ? `Bring ${v.name} out alive before requesting extraction.`
-                  : v && distance(v, van) > EXTRACTION_RADIUS
-                    ? v.waiting
-                      ? `Waiting for ${v.name}. Use the Escort controls to ask them to follow.`
-                      : `Waiting for ${v.name} at ${van.tag}. Bring their escort to the van.`
-                    : missing.length
-                      ? `Waiting for ${missing.map((p) => p.name).join(', ')}. Bring every survivor inside the extraction ring.`
-                      : null;
+    world.recall && !world.recall.filed
+      ? 'Bring RECALL to FILE and cancel the seizure dispatches before leaving.'
+      : world.settlement && !settled(world)
+        ? 'Reconcile REGISTER at CHECK, then staff SIGN and CLEAR together to release repayments.'
+        : world.detention && (!rescueComplete(world) || world.agents.some((p) => !living(p)))
+          ? 'Free Vale and Rook and bring all four operatives home alive.'
+          : world.detention && !world.detention.released
+            ? 'Use EXIT inside detention to release both gates before leaving.'
+            : world.demolition && !demolished(world)
+              ? 'Destroy both debt backups before requesting extraction.'
+              : world.mission.broadcast && !published(world)
+                ? world.mission.broadcast.subject
+                  ? `Finish uploading ${world.mission.broadcast.subject} at UPLINK before requesting extraction.`
+                  : "Publish Mara's audit at UPLINK before requesting extraction."
+                : ['ledger', 'case', 'settlement', 'recall'].includes(world.mission.objective) &&
+                    (!carrier || distance(carrier, van) > EXTRACTION_RADIUS)
+                  ? `Bring the ${world.mission.evidenceName.toLowerCase()} to ${van.tag}. It is required for this contract.`
+                  : v && (!v.recruited || !living(v))
+                    ? `Bring ${v.name} out alive before requesting extraction.`
+                    : v && distance(v, van) > EXTRACTION_RADIUS
+                      ? v.waiting
+                        ? `Waiting for ${v.name}. Use the Escort controls to ask them to follow.`
+                        : `Waiting for ${v.name} at ${van.tag}. Bring their escort to the van.`
+                      : missing.length
+                        ? `Waiting for ${missing.map((p) => p.name).join(', ')}. Bring every survivor inside the extraction ring.`
+                        : null;
   return {
     ready: survivors.length > 0 && !waiting,
     waiting,
@@ -432,6 +443,13 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
   if (!available(world, id)) return;
   world.sounds.push({ kind: 'interact', action: id, x: a.x, y: a.y });
   switch (id) {
+    case 'file-recall':
+      world.recall!.filed = true;
+      notify(
+        world,
+        'Seizure dispatches cancelled. Bring the original RECALL and every survivor to VAN.',
+      );
+      break;
     case 'authorise':
       world.security!.inspectionUsed = true;
       world.security!.inspectionUntil = world.time + world.mission.security!.inspectionTime;

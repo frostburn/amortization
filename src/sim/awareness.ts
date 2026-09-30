@@ -8,20 +8,11 @@ import { makeGuard, notify } from './world';
 import { clearedCargo } from './courier';
 import { inspectionRemaining, turretPowered, updateTurret } from './security';
 import { inspectCredentials } from './inspection';
+import { evadeFire } from './incoming-fire';
+import { GUNFIRE_HEARING, sees } from './vision';
+export { sees, sightRange } from './vision';
 
 export const RESPONSE_TIMES = [6, 30] as const;
-export const sightRange = (guard: Guard, world?: World) =>
-  (guard.armament ? Math.max(7.5, weaponRange(guard)) : 7.5) *
-  (world?.mission.daylight && !guard.turret ? 1.5 : 1);
-
-export function sees(world: World, guard: Guard, person: Vec): boolean {
-  if (disoriented(guard)) return false;
-  const range = distance(guard, person);
-  if (range > sightRange(guard, world) || !lineClear(world, guard, person)) return false;
-  if (range < 1.3) return true;
-  const angle = Math.atan2(person.y - guard.y, person.x - guard.x) - guard.angle;
-  return Math.cos(angle) > Math.cos(Math.PI * 0.36);
-}
 export function suspicionRate(world: World, agent: Operative): number {
   if (world.known.includes(agent.id)) return 130;
   if (visibleWeapon(agent)) return 95;
@@ -94,11 +85,11 @@ export function reportGunfire(world: World, shooter: Operative) {
         g.known.push(shooter.id);
       continue;
     }
-    if (distance(g, shooter) > 12) continue;
+    if (distance(g, shooter) > GUNFIRE_HEARING) continue;
     g.lastSeen = { x: shooter.x, y: shooter.y };
     g.searchTime = 10;
     g.mode = 'combat';
-    if (!g.tactics) g.path = [];
+    if (!g.tactics && !g.incoming) g.path = [];
     // A guard can report audible shots through a wall, but cannot identify or
     // target the shooter without sight. Repeated shots never restart the call.
     if (!disoriented(g) && lineClear(world, g, shooter)) {
@@ -190,7 +181,7 @@ export function updateAwareness(world: World, dt: number) {
         escort?.id === g.target
           ? escort
           : world.agents.find((a) => a.id === g.target && controllable(a));
-      if (maneuver(world, g, target)) {
+      if (evadeFire(world, g) || maneuver(world, g, target)) {
         cancelCharge(g);
         g.searchTime -= dt;
       } else if (target && distance(g, target) <= weaponRange(g) && lineClear(world, g, target)) {

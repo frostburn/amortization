@@ -131,3 +131,11 @@ busy combat, especially on phone speakers and headphones. Browser checks verify
 signal and lifecycle behavior; the first pass still needs human listening across
 devices. Distinct ground surfaces and site ambience can follow that
 feedback.
+
+Operation 12 adds a support-gun report: clocked, modulated noise with a damped
+low body and short mechanical contact, authored at −2 dB on the capped combat
+bus. It uses the same spatial filtering and feedback ducking as the other guns.
+The new sound ID is appended so deterministic seeds for existing effects remain
+stable. The native offline mix check includes a sustained four-gun support burst
+against the objective cue at low and full master volume. Filing RECALL uses that
+non-spatial objective cue; no ambience is added.

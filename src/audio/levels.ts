@@ -9,6 +9,7 @@ const decibels: Record<SoundId, number> = {
   shotgun: -1.5,
   automatic: 0,
   coil: 0.5,
+  support: -2,
   step: 0,
   body: 0,
   metal: 0,

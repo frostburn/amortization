@@ -148,3 +148,11 @@ are parked. The renderer and departure animation share that heading. North- and
 west-facing views expose double rear doors, red lamps and a rear bumper; their
 cab, roof and near body panels use a matching drawing order. The stationary
 custody transport keeps its original orientation.
+
+Operation 12 reuses the daytime palette for a broader dispatch yard. Burgundy
+shield officers have a pale plate, dark viewport and matching stripe, with a
+lowered pose attached to the left hand and a separate fallen shield. Olive
+support gunners use a distinct full uniform palette. Their weapon and Rook’s
+support gun show a wide ammunition box, cooling jacket and folded bipod in every
+pose. These are original procedural meshes using the existing lighting, depth
+and clipped-outline paths.

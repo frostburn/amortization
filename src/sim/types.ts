@@ -47,6 +47,7 @@ export type ObjectKind =
   | RescueTarget
   | 'escape-release'
   | 'equipment'
+  | 'file-recall'
   | SettlementTarget;
 export type SettlementTarget = 'reconcile' | 'countersign' | 'settle';
 export const isSettlement = (id: ObjectKind): id is SettlementTarget =>
@@ -69,7 +70,7 @@ export interface Landmark extends Vec {
   label: string;
   detail: string;
 }
-export type WeaponKind = 'pistol' | 'carbine' | 'shotgun' | 'automatic' | 'coil';
+export type WeaponKind = 'pistol' | 'carbine' | 'shotgun' | 'automatic' | 'coil' | 'support';
 export interface Armament {
   kind: WeaponKind;
   rounds: number;
@@ -78,7 +79,7 @@ export interface Armament {
   charging?: { target: string; remaining: number };
 }
 export interface GuardTactic {
-  role: 'sentry' | 'breacher' | 'marksman' | 'inspector';
+  role: 'sentry' | 'breacher' | 'marksman' | 'inspector' | 'shield' | 'support';
   posts: Vec[];
 }
 export interface Mission {
@@ -93,13 +94,16 @@ export interface Mission {
     | 'mandate'
     | 'personnel'
     | 'injunction'
-    | 'settlement';
+    | 'settlement'
+    | 'countermand';
   number: string;
   title: string;
   location: string;
-  objective: 'escort' | 'ledger' | 'case' | 'broadcast' | 'demolition' | 'rescue' | 'settlement';
+  objective:
+    'escort' | 'ledger' | 'case' | 'broadcast' | 'demolition' | 'rescue' | 'settlement' | 'recall';
   daylight?: boolean;
   settlement?: { reconcileTime: number; duration: number };
+  recall?: { filingTime: number };
   description: string;
   briefing: { lead: string; body: string; routes: { title: string; body: string }[] };
   intro: string;
@@ -167,6 +171,8 @@ export interface Person extends Vec {
   step: number;
   armament?: Armament;
   disoriented?: number;
+  /** Bounded fire pressure; absent unless a support gun has applied it. */
+  pressure?: number;
 }
 export interface Operative extends Person {
   flashes?: number;
@@ -184,6 +190,10 @@ export interface Operative extends Person {
   interaction: number;
 }
 export interface Guard extends Person {
+  /** Unseen incoming fire; source is a snapshot, never a live target position. */
+  incoming?: { source: Vec; until: number; nextMove: number; goal: Vec | null };
+  /** Actual body/shield bearing; angle remains the AI's desired bearing. */
+  shield?: { angle: number };
   inspection?: { target: string; progress: number };
   turret?: { circuit: PowerTarget; homeAngle: number; lock: number };
   patrol: Vec[];
@@ -278,6 +288,7 @@ export interface World {
     signer: string | null;
     clerk: string | null;
   };
+  recall?: { filed: boolean };
   alarm: boolean;
   alarmTime: number;
   waves: number;

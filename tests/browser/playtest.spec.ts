@@ -97,7 +97,11 @@ test('exports real inputs, verifies playback, preserves the live attempt, and re
   await page.locator('canvas').focus();
   await page.keyboard.press('f'); // Live gameplay commands must not alter the replay.
   await page.getByRole('button', { name: 'Play replay', exact: true }).click();
-  await expect(page.locator('#replay-status')).toContainText('Replay verified');
+  // Restoring a world rebuilds its graphics; allow the same software-rendering
+  // budget as live simulation above, while still requiring verified completion.
+  await expect(page.locator('#replay-status')).toContainText('Replay verified', {
+    timeout: 15_000,
+  });
   await expect(page.getByRole('button', { name: 'Restart', exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Operations', exact: true })).toBeDisabled();
   await page.locator('canvas').focus();
@@ -150,7 +154,9 @@ test('exports real inputs, verifies playback, preserves the live attempt, and re
   await importButton.click();
   await page.getByRole('button', { name: 'Try current rules', exact: true }).click();
   await page.getByRole('button', { name: 'Play replay', exact: true }).click();
-  await expect(page.locator('#replay-status')).toContainText('Current rules finished');
+  await expect(page.locator('#replay-status')).toContainText('Current rules finished', {
+    timeout: 15_000,
+  });
   expect(errors).toEqual([]);
 });
 
