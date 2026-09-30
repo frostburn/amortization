@@ -10,6 +10,7 @@ import { Scene } from './render/scene';
 import type { Hit } from './render/scene';
 import { Hud } from './ui/hud';
 import type { Action } from './input/actions';
+import type { StoryId } from './content/story';
 import { bindControls } from './input/controls';
 import { Sound } from './audio/sound';
 import { missionRecord, readRecords, recordWin } from './ui/storage';
@@ -18,7 +19,7 @@ import { missions, nextMission } from './content/missions';
 import { extractionRequirement } from './ui/extraction';
 import { FlashAim } from './ui/flash-aim';
 
-async function boot() {
+export async function boot() {
   let world: World = createWorld(),
     selected = world.agents.filter(controllable).map((a) => a.id),
     paused = true,
@@ -33,7 +34,11 @@ async function boot() {
   const unlockSound = (event: Event) => {
     if (!sound.enabled) return;
     // The sound button handles its own gesture, including muting before resume.
-    if (event.target instanceof Element && event.target.closest('#sound-button')) return;
+    if (
+      event.target instanceof Element &&
+      event.target.closest('#sound-button, [data-story-sound]')
+    )
+      return;
     void sound.unlock().then(updateHud);
   };
   const hud = new Hud(
@@ -53,6 +58,7 @@ async function boot() {
       scene.showGuidance(targets, panel);
       if (focus) scene.focusGuidance();
     },
+    { key: (id) => sound.type(id), stop: () => sound.stopTyping() },
   );
   const scene = new Scene(hud.stage, world);
   await scene.init();
@@ -133,6 +139,13 @@ async function boot() {
   function action(type: Action) {
     if (type.startsWith('volume:')) {
       sound.setVolume(Number(type.slice(7)) / 100);
+      updateHud();
+      return;
+    }
+    if (type.startsWith('story:')) {
+      paused = true;
+      if (!hud.modal.open) hud.showOperations(records);
+      hud.showStory(type.slice(6) as StoryId, records);
       updateHud();
       return;
     }
@@ -423,12 +436,15 @@ async function boot() {
         saved = true;
       }
     }
-    scene.render(
-      selected,
-      paused ? 1 : accumulator / STEP,
-      elapsed,
-      world.status !== 'playing' && !playtest?.isPlayback && !hud.modal.open && !document.hidden,
-    );
+    // A static story covers the map; avoid rebuilding its character meshes and
+    // lighting while the reader is here. The native mission modal keeps time paused.
+    if (!hud.storyOpen)
+      scene.render(
+        selected,
+        paused ? 1 : accumulator / STEP,
+        elapsed,
+        world.status !== 'playing' && !playtest?.isPlayback && !hud.modal.open && !document.hidden,
+      );
     if (scene.resultsReady && !playtest?.isPlayback && !hud.modal.open)
       hud.showEnd(world, missionRecord(records, world.mission.id), false, newMedals);
     sound.update(
@@ -451,9 +467,3 @@ async function boot() {
   scene.render(selected, 1);
   hud.showBriefing(records);
 }
-void boot().catch((error: unknown) => {
-  console.error(error);
-  const root = document.querySelector('#app')!;
-  root.innerHTML =
-    '<main class="error"><h1>Could not open the operation.</h1><p>Check that hardware acceleration is enabled and reload the page. If you are hosting this build, serve the complete dist folder over HTTP.</p><button onclick="location.reload()">Reload</button></main>';
-});

@@ -1,8 +1,10 @@
 import type { Mission } from '../sim/types';
+import type { StoryScene } from './story';
 
 interface MissionCopy {
   briefing: { objective: string; extract: string; rules: string };
   epilogue: { lead: string; body: string };
+  scene: StoryScene;
 }
 
 // Keep each contract's concise orders and ending together. Presentation copy
@@ -10,6 +12,31 @@ interface MissionCopy {
 // replays. Endings must hold for any successful route and surviving crew.
 export const missionCopy: Record<Mission['id'], MissionCopy> = {
   depot: {
+    scene: {
+      title: 'A name in the margin',
+      setting: 'safehouse',
+      beats: [
+        {
+          speaker: 'voss',
+          text: 'I kept expecting the door to lock again. Even after we left the yard.',
+        },
+        {
+          speaker: 'voss',
+          text: 'The annex address is here. My contract is one entry in a paper ledger. There are whole streets in that book.',
+        },
+        {
+          speaker: 'kestrel',
+          setting: 'boardroom',
+          text: 'Voss is off-site. Her access has been revoked. The trams will still run tomorrow.',
+        },
+        { speaker: 'holt', text: 'Who authorised her departure?' },
+        { speaker: 'kestrel', text: 'Nobody. That is what I am reporting.' },
+        {
+          speaker: 'holt',
+          text: 'Then keep her account open. I want to know who tries to settle it.',
+        },
+      ],
+    },
     briefing: {
       objective: 'Recruit engineer Iona Voss from the secure office.',
       extract: 'Bring Voss and every surviving operative to VAN.',
@@ -21,6 +48,29 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     },
   },
   archive: {
+    scene: {
+      title: 'The same signature',
+      setting: 'safehouse',
+      beats: [
+        {
+          speaker: 'voss',
+          text: 'Here. The amount changes, but the destination does not. They have been taking money out of every account on this page.',
+        },
+        {
+          speaker: 'voss',
+          text: 'Severin Holt signed the exception. I used to see his name on the safety notices.',
+        },
+        { speaker: 'holt', setting: 'boardroom', text: 'Was the original taken?' },
+        {
+          speaker: 'kestrel',
+          text: 'Yes. A replacement will not survive comparison with the bank copy.',
+        },
+        {
+          speaker: 'holt',
+          text: 'Then do not replace it. Find out who has started asking the bank questions.',
+        },
+      ],
+    },
     briefing: {
       objective: 'Recover the original LEDGER from the records annex.',
       extract: 'Bring the ledger and every survivor to the east-road VAN.',
@@ -32,6 +82,28 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     },
   },
   transfer: {
+    scene: {
+      title: 'The objections',
+      setting: 'safehouse',
+      beats: [
+        {
+          speaker: 'voss',
+          text: 'The keys work. There were objections to these transfers. Someone noticed before I did.',
+        },
+        {
+          speaker: 'voss',
+          text: 'Mara Quill. The same name on every rejected audit. The last entry gives a remand station, not an office.',
+        },
+        {
+          speaker: 'dacre',
+          setting: 'boardroom',
+          text: 'The courier case is gone. Quill is the next person they will look for.',
+        },
+        { speaker: 'holt', text: 'She was supposed to agree to a corrected statement.' },
+        { speaker: 'dacre', text: 'She has not. I have moved her into transport custody.' },
+        { speaker: 'holt', text: 'Keep the statement with her. I still need her signature.' },
+      ],
+    },
     briefing: {
       objective: 'Recover the security courier’s CASE of account keys.',
       extract: 'Bring CASE and every survivor to the west-street VAN.',
@@ -43,6 +115,31 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     },
   },
   custody: {
+    scene: {
+      title: 'An uncorrected statement',
+      setting: 'safehouse',
+      beats: [
+        {
+          speaker: 'mara',
+          text: 'They brought me a clean statement every morning. No missing payments. No unlawful charges. A space for my signature.',
+        },
+        { speaker: 'voss', text: 'You did not sign.' },
+        { speaker: 'mara', text: 'I nearly did. Show me what you found.' },
+        {
+          speaker: 'mara',
+          text: 'These entries are enough. They cannot correct every copy if enough people have one.',
+        },
+        {
+          speaker: 'dacre',
+          setting: 'boardroom',
+          text: 'Quill is out. I want authority to coordinate the sites, not another guard at every door.',
+        },
+        {
+          speaker: 'holt',
+          text: 'You will have it. Keep the main roads open. People still have to get to work.',
+        },
+      ],
+    },
     briefing: {
       objective: 'Free auditor Mara Quill from the locked security transport.',
       extract: 'Bring Mara and every survivor to STREET or SERVICE.',
@@ -54,6 +151,28 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     },
   },
   broadcast: {
+    scene: {
+      title: 'Acknowledgements',
+      setting: 'safehouse',
+      beats: [
+        {
+          speaker: 'mara',
+          text: 'A clinic has acknowledged the audit. So has a tram drivers’ association. I have never spoken to either of them.',
+        },
+        { speaker: 'voss', text: 'They recognise the amounts.' },
+        {
+          speaker: 'kestrel',
+          setting: 'boardroom',
+          text: 'The audit has left our network. We cannot take it back.',
+        },
+        { speaker: 'holt', text: 'Can collections continue?' },
+        {
+          speaker: 'kestrel',
+          text: 'The recovery cores still hold the accounts. I built them to survive a district outage.',
+        },
+        { speaker: 'holt', text: 'Then keep them running. I will answer the audit.' },
+      ],
+    },
     briefing: {
       objective: 'Publish Mara’s audit at UPLINK.',
       extract: 'Once the audit is public, bring every survivor to VAN.',
@@ -66,6 +185,34 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     },
   },
   severance: {
+    scene: {
+      title: 'What cannot be restored',
+      setting: 'boardroom',
+      beats: [
+        {
+          speaker: 'kestrel',
+          text: 'Both recovery cores are gone. The accounts on them cannot be restored.',
+        },
+        { speaker: 'holt', text: 'You said they would survive an outage.' },
+        {
+          speaker: 'kestrel',
+          text: 'They would. Someone went inside and destroyed them. I am reviewing the access design of every remaining site.',
+        },
+        {
+          speaker: 'dacre',
+          text: 'Give me the plans before you alter the doors. My people have to get out of those rooms too.',
+        },
+        {
+          speaker: 'mara',
+          setting: 'safehouse',
+          text: 'The debts on those machines are gone. Now we have to return the money they already took.',
+        },
+        {
+          speaker: 'voss',
+          text: 'The settlement keys are still physical. Kestrel never trusted a network with everything.',
+        },
+      ],
+    },
     briefing: {
       objective: 'Plant charges at WEST and EAST, then detonate both backups.',
       extract: 'After destroying both cores, bring every survivor to VAN.',
@@ -78,6 +225,28 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     },
   },
   clearing: {
+    scene: {
+      title: 'Custodians',
+      setting: 'safehouse',
+      beats: [
+        {
+          speaker: 'mara',
+          text: 'The bank accepts the keys. It wants the original restitution mandate before it will release anything.',
+        },
+        { speaker: 'voss', text: 'So the money is there.' },
+        { speaker: 'mara', text: 'Yes. For once, that is not the part they are lying about.' },
+        {
+          speaker: 'kestrel',
+          setting: 'boardroom',
+          text: 'The authorisation works remains on local power. A lost radio channel will not switch off its security.',
+        },
+        { speaker: 'dacre', text: 'And at your own station?' },
+        {
+          speaker: 'kestrel',
+          text: 'I will keep the controls within reach. If they want that building, they will have to come through me.',
+        },
+      ],
+    },
     briefing: {
       objective: 'Recover the settlement KEYS from the north vault.',
       extract: 'Bring KEYS and every survivor to the north-east VAN.',
@@ -89,6 +258,25 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     },
   },
   mandate: {
+    scene: {
+      title: 'The list of names',
+      setting: 'safehouse',
+      beats: [
+        {
+          speaker: 'mara',
+          text: 'The seals agree. We can finally put names beside the repayments.',
+        },
+        { speaker: 'voss', text: 'How many?' },
+        { speaker: 'mara', text: 'Enough that I have to turn the page.' },
+        {
+          speaker: 'dacre',
+          setting: 'boardroom',
+          text: 'They are moving the mandate. I have teams watching the routes away from the works.',
+        },
+        { speaker: 'holt', text: 'Bring me the document.' },
+        { speaker: 'dacre', text: 'If I can take their people alive, I will bring them too.' },
+      ],
+    },
     briefing: {
       objective: 'Recover the restitution MANDATE from the north records room.',
       extract: 'Bring MANDATE and every survivor to the north-east VAN.',
@@ -101,6 +289,31 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     },
   },
   personnel: {
+    scene: {
+      title: 'Four places at the table',
+      setting: 'safehouse',
+      beats: [
+        {
+          speaker: 'morrow',
+          text: 'Vale and Rook are asleep. Nobody uses the old safehouse again.',
+        },
+        { speaker: 'mara', text: 'The mandate stayed with me. It is still valid.' },
+        {
+          speaker: 'morrow',
+          text: 'Put it on the table. When they wake up, we decide the next move together.',
+        },
+        {
+          speaker: 'dacre',
+          setting: 'boardroom',
+          text: 'They opened the cells from two positions. Our gates separated my guards more effectively than they separated the rescuers.',
+        },
+        { speaker: 'kestrel', text: 'You approved the custody layout.' },
+        {
+          speaker: 'dacre',
+          text: 'I did. Next time the command post moves with the line. Nobody waits alone for a door to open.',
+        },
+      ],
+    },
     briefing: {
       objective: 'Morrow and Sable must free Vale and Rook. The mandate stays with Mara.',
       extract: 'Free both prisoners, release EXIT, then bring all four to VAN.',
@@ -113,6 +326,31 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     },
   },
   injunction: {
+    scene: {
+      title: 'Proof of service',
+      setting: 'boardroom',
+      beats: [
+        {
+          speaker: 'holt',
+          text: 'I have been served. Collections under that mandate are suspended.',
+        },
+        { speaker: 'dacre', text: 'Should I withdraw the site teams?' },
+        {
+          speaker: 'holt',
+          text: 'No. Suspension does not transfer ownership of the buildings. But nobody invents an order in my name.',
+        },
+        { speaker: 'kestrel', text: 'You will hear the appeal yourself?' },
+        {
+          speaker: 'holt',
+          text: 'At the Bench. With the original seals present and the chamber secured.',
+        },
+        {
+          speaker: 'mara',
+          setting: 'safehouse',
+          text: 'Service is acknowledged. Start with the oldest account. That person has waited long enough.',
+        },
+      ],
+    },
     briefing: {
       objective: 'Serve the restitution mandate by uploading it at UPLINK.',
       extract: 'Once the mandate is served, bring every survivor to VAN.',
@@ -125,6 +363,31 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     },
   },
   settlement: {
+    scene: {
+      title: 'Money coming in',
+      setting: 'safehouse',
+      beats: [
+        {
+          speaker: 'mara',
+          text: 'She asked me to read the receipt twice. She thought the incoming payment was another charge.',
+        },
+        { speaker: 'voss', text: 'Did she believe you?' },
+        {
+          speaker: 'mara',
+          text: 'Eventually. Then she asked whether the men outside would leave.',
+        },
+        {
+          speaker: 'dacre',
+          setting: 'boardroom',
+          text: 'Seizure teams are still carrying dispatches issued before the suspension. The payments have overtaken the orders.',
+        },
+        {
+          speaker: 'holt',
+          text: 'The recall is at the dispatch exchange. Until it is filed, the crews will follow the copies they have.',
+        },
+        { speaker: 'dacre', text: 'Then the exchange is where this will be decided.' },
+      ],
+    },
     briefing: {
       objective:
         'Recover REGISTER, reconcile it at CHECK, then operate SIGN and CLEAR together to release repayments.',
@@ -138,6 +401,35 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     },
   },
   countermand: {
+    scene: {
+      title: 'Beyond the district',
+      setting: 'safehouse',
+      beats: [
+        {
+          speaker: 'mara',
+          text: 'They have left her doorway. I stayed on the call until she watched the last vehicle turn the corner.',
+        },
+        { speaker: 'voss', text: 'This district keeps its money.' },
+        { speaker: 'mara', text: 'Yes. Whatever comes next, that happened.' },
+        {
+          speaker: 'holt',
+          setting: 'boardroom',
+          text: 'The district loss is final. Close the account. I will not spend another crew trying to reverse it.',
+        },
+        {
+          speaker: 'dacre',
+          text: 'I will take the remaining companies to the transit interchange. We can hold a line there without relying on site radios.',
+        },
+        {
+          speaker: 'kestrel',
+          text: 'My control room is on the other side of that line. Every door answers locally. If they come, I will be there to operate them.',
+        },
+        {
+          speaker: 'holt',
+          text: 'And I will be at the Bench. They have learned what my signature can take away. Let them come and ask me for the rest.',
+        },
+      ],
+    },
     briefing: {
       objective:
         'Recover RECALL and have its carrier file it at FILE for nine uninterrupted seconds.',

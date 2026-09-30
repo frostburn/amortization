@@ -4,6 +4,20 @@ A real-time squad tactics game for the browser. Control four operatives together
 
 **Twelve operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing any of the first eleven. Restart and Shift+R restart the selected mission, including unfinished attempts. Briefings and results also offer **Restart mission**.
 
+**Optional story scenes** introduce the people behind the company. Choose **Watch
+opening** from the first briefing or Operations; every completed mission unlocks
+a scene in its debrief and Operations. Earlier saved completions count too. Scenes
+never autoplay and contain no required instructions. Advance at your own pace,
+replay them, or close them at any time. Lines reveal with each character's keyboard
+voice, consistent across all scenes: muted taps, plastic keys, or mechanical
+strokes. Click/tap the picture or dialogue, or choose **Reveal line**, to
+show the rest immediately; **Next** advances only after the line is visible.
+The existing sound preference and volume apply. Reduced-motion mode shows the
+whole line immediately. [Story arc and future encounter ideas](docs/story.md).
+
+A small loading screen appears before the game modules arrive and remains until
+the district is ready. Story artwork loads only when a scene is opened.
+
 ## Development
 
 Use Node.js 24 and npm:
@@ -18,7 +32,7 @@ Open the URL Vite prints. Everything runs in the browser, with no account, backe
 ```sh
 npm run check       # lint, simulation tests, typecheck, production build
 npx playwright install chromium
-npm run test:e2e:smoke # routine CI browser gate (10 checks)
+npm run test:e2e:smoke # routine CI browser gate (11 checks)
 npm run test:e2e       # full Chromium regressions
 npm run preview    # serve the production build
 ```
@@ -745,9 +759,9 @@ Characters use a small deformable mesh over the existing atlas for alternating s
 
 CI uses one Ubuntu job, Node 24, and Chromium. Every pull request and main-branch
 push runs the full lint, typecheck, build and simulation suite, followed by the
-10 browser checks tagged `@smoke`. These cover desktop startup and restart,
+11 browser checks tagged `@smoke`. These cover desktop startup and restart,
 squad/individual selection, touch orders, objective guides, locked extraction,
-stable layout, camera follow and replay export/playback/restore.
+stable layout, camera follow, replay export/playback/restore, and optional story entry/rewards.
 
 The full browser suite remains available with `npm run test:e2e`, or in
 GitHub Actions via **Check → Run workflow → Run the full browser regression suite**.

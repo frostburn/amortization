@@ -1,4 +1,5 @@
 import type { Mission } from '../sim/types';
+import type { StoryId } from '../content/story';
 
 export type Action =
   | 'flash'
@@ -7,6 +8,7 @@ export type Action =
   | `security:${'authorise' | 'power-west' | 'power-east'}`
   | `extract:${'extract' | 'alternate'}`
   | 'operations'
+  | `story:${StoryId}`
   | 'next'
   | `mission:${Mission['id']}`
   | 'pause'

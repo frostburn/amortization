@@ -1,6 +1,7 @@
 // Original deterministic PCM recipes, each beside its duration and mix settings.
 import { finish, lowpass, reflect, synthesis } from './synthesis';
 import type { Synthesis } from './synthesis';
+import { typingSounds } from './typing';
 
 interface SoundDefinition {
   duration: number;
@@ -25,6 +26,7 @@ const terminalTone = ({ tone, click }: Synthesis) => {
 // Faders follow synthesis, before spatial/context gain and compression. Compare
 // weapons at firing cadence and warnings over their entire lock, not sample peaks.
 const sounds = {
+  ...typingSounds,
   pistol: {
     duration: 0.38,
     decibels: 0,
