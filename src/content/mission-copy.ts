@@ -11,6 +11,47 @@ interface MissionCopy {
 // stays outside recorded mission definitions, so prose edits do not invalidate
 // replays. Endings must hold for any successful route and surviving crew.
 export const missionCopy: Record<Mission['id'], MissionCopy> = {
+  continuity: {
+    briefing: {
+      objective:
+        'Remove Ada Kestrel from the upper control room: arrest her at CUFF, or attack her directly.',
+      extract:
+        'Use DOWN, then bring every survivor to VAN. An arrested Kestrel must leave with you.',
+      rules:
+        'Arrest requires both ground-floor feeds isolated. Click UP / DOWN to change floors; select a crew portrait to follow a split teammate.',
+    },
+    epilogue: {
+      lead: 'Kestrel no longer controls the network.',
+      body: 'The independent exchange accepts the handover. The repayments and seizure recall remain in force. With the director of continuity removed, Dacre gathers the remaining security crews at the transit interchange.',
+    },
+    scene: {
+      title: 'An empty control room',
+      setting: 'safehouse',
+      beats: [
+        {
+          speaker: 'voss',
+          text: 'The local switches answer again. Every district can disconnect itself. Kestrel cannot close those circuits from her desk anymore.',
+        },
+        {
+          speaker: 'mara',
+          text: 'Put the handover on the public record. The people who received their money need to know it stays theirs.',
+        },
+        {
+          speaker: 'dacre',
+          setting: 'boardroom',
+          text: 'Continuity House is lost. Kestrel is out. I am bringing the remaining crews to the interchange.',
+        },
+        {
+          speaker: 'holt',
+          text: 'Then you hold the interchange. There will be no replacement director.',
+        },
+        {
+          speaker: 'dacre',
+          text: 'There are people at those gates, not circuits. I will be there with them.',
+        },
+      ],
+    },
+  },
   depot: {
     scene: {
       title: 'A name in the margin',

@@ -778,6 +778,12 @@ Pressure affects both sides, but its visual readability remains an open question
 The north route’s advantage is intentional; this sample does not establish the
 difficulty of every approach or medal constraint.
 
+## Continuity: two floors and Kestrel (Operation 13)
+
+See [Continuity](continuity.md) for the map, capture/lethal routes, alternating
+local power, floor semantics and verification. This completes the control-room
+encounter proposed in the story arc. Dacre and Holt remain future opponents.
+
 ## Next useful work
 
 The [September 30 operation 07 runs](../tests/replays/README.md#margin-call-all-medals)

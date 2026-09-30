@@ -1,4 +1,5 @@
-import { distance, inside, living } from './types';
+import { activeCircuit, kestrelRemoved } from './floors';
+import { distance, inside, living, sameFloor } from './types';
 import type { Guard, Operative, World } from './types';
 import { lineClear } from './navigation';
 import { shoot } from './combat';
@@ -12,7 +13,8 @@ export const turretPowered = (w: World, g: Guard) =>
   !!g.turret &&
   living(g) &&
   !w.security?.isolated.includes(g.turret.circuit) &&
-  inspectionRemaining(w) === 0;
+  inspectionRemaining(w) === 0 &&
+  (!w.mission.continuity || (!kestrelRemoved(w) && g.turret.circuit === activeCircuit(w)));
 export const activeTurrets = (w: World) => w.guards.filter((g) => turretPowered(w, g));
 export const canAuthorise = (w: World, a: Operative) =>
   living(a) &&
@@ -41,7 +43,8 @@ export function updateTurret(w: World, g: Guard, dt: number) {
       g.known.includes(a.id) ||
       visibleWeapon(a) ||
       a.carrying ||
-      (inside(a, w.mission.restricted) && (!a.disguised || inside(a, w.mission.secure)))
+      (inside(a, w.mission.restricted) &&
+        (!a.disguised || (sameFloor(a, w.mission.secure) && inside(a, w.mission.secure))))
     );
   });
   const target =

@@ -175,7 +175,7 @@ describe('mission guidance', () => {
       expect(goal(w, 'extract').targets).toContain('upload');
       w.broadcast.progress = mission.broadcast!.duration;
     } else if (w.escort) {
-      expect(extractionRequirement(w)?.detail).toContain('recruit');
+      expect(extractionRequirement(w)?.detail).toContain(mission.continuity ? 'arrest' : 'recruit');
       w.escort.recruited = true;
     }
     expect(extractionRequirement(w)).toBeNull();

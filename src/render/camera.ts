@@ -1,4 +1,4 @@
-import { controllable, distance } from '../sim/types';
+import { controllable, distance, floorOf } from '../sim/types';
 import type { Vec, World } from '../sim/types';
 
 interface Focus extends Vec {
@@ -14,6 +14,7 @@ export function selectionFocus(world: World, selected: string[], alpha: number):
       ? [
           {
             person: p,
+            ...(p.floor ? { floor: p.floor } : {}),
             x: p.previous.x + (p.x - p.previous.x) * alpha,
             y: p.previous.y + (p.y - p.previous.y) * alpha,
           },
@@ -21,7 +22,10 @@ export function selectionFocus(world: World, selected: string[], alpha: number):
       : [];
   });
   if (!points.length) return null;
-  const groups = points.map((p) => points.filter((q) => distance(p, q) <= 8));
+  const candidates = world.mission.building
+    ? points.filter((p) => floorOf(p) === floorOf(points[0]))
+    : points;
+  const groups = candidates.map((p) => candidates.filter((q) => distance(p, q) <= 8));
   // Stable ties keep the first selected operative active rather than following empty space.
   const group = groups.reduce((best, next) => (next.length > best.length ? next : best));
   const directions = group.map(({ person: p }) => {
@@ -39,9 +43,10 @@ export function selectionFocus(world: World, selected: string[], alpha: number):
   const looking = moving.length ? moving : directions;
   const lead = moving.length ? 2.5 : 1.2;
   return {
+    ...(group[0].floor ? { floor: group[0].floor } : {}),
     x: group.reduce((sum, p) => sum + p.x, 0) / group.length,
     y: group.reduce((sum, p) => sum + p.y, 0) / group.length,
-    members: group.map(({ x, y }) => ({ x, y })),
+    members: group.map(({ x, y, floor }) => ({ x, y, ...(floor ? { floor } : {}) })),
     // Opposing headings cancel instead of arbitrarily picking one person's facing.
     lookAhead: {
       x: (looking.reduce((sum, p) => sum + p.x, 0) / group.length) * lead,

@@ -8,10 +8,11 @@ import { coatRings, shoulderPadTransform } from './clothing';
 import { project } from './isometric';
 import { modelGeometry, ModelMesh, MODEL_VIEW, type ModelFace, type Point3 } from './model-mesh';
 
-export type Appearance = CrewId | 'guard' | 'voss' | 'mara';
+export type Appearance = CrewId | 'guard' | 'voss' | 'mara' | 'kestrel';
 export interface Outfit {
   appearance: Appearance;
   uniform?: boolean;
+  cuffed?: boolean;
   weapon?: WeaponKind;
   stowed?: boolean;
   specialist?: GuardTactic['role'];
@@ -38,6 +39,20 @@ interface Profile {
   pads?: number;
 }
 const PROFILES: Record<Appearance, Profile> = {
+  kestrel: {
+    skin: 0xc7a78f,
+    hair: 0x737b78,
+    coat: 0x355568,
+    shirt: 0xc3c8bc,
+    shoulders: 0.16,
+    waist: 0.12,
+    hips: 0.16,
+    head: [0.102, 0.096, 0.142],
+    jaw: 0.88,
+    neck: 0.054,
+    hairStyle: 'bun',
+    glasses: true,
+  },
   morrow: {
     skin: 0xc69d82,
     hair: 0x292b28,
@@ -438,6 +453,7 @@ export class PersonSprite extends ModelMesh {
       aiming,
       outfit.appearance,
       outfit.uniform,
+      outfit.cuffed,
       outfit.weapon,
       outfit.stowed,
       outfit.specialist,
@@ -505,7 +521,12 @@ export class PersonSprite extends ModelMesh {
         const side = i ? 1 : -1;
         const shoulder: Point = [0, side * profile.shoulders, 1.055 + bob];
         let elbow: Point, hand: Point;
-        if (outfit.specialist === 'shield' && outfit.shielding && i === 0) {
+        if (outfit.cuffed) {
+          elbow = [-0.13, side * 0.17, 0.84 + bob];
+          hand = [-0.19, side * 0.055, 0.77 + bob];
+          f.oval(hand, 0.06, 0.052, 0.054, 0xb6c4c8);
+          f.tube([-0.19, -0.055, 0.77 + bob], [-0.19, 0.055, 0.77 + bob], 0.013, 0xb6c4c8);
+        } else if (outfit.specialist === 'shield' && outfit.shielding && i === 0) {
           elbow = [0.04, -0.25, 0.83 + bob];
           hand = [0.02, -0.36, 0.65 + bob];
         } else if (outfit.shielding) {

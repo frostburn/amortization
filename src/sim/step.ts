@@ -1,3 +1,5 @@
+import { position } from './types';
+import { combatTarget, followStairs } from './floors';
 import {
   disoriented,
   distance,
@@ -45,6 +47,7 @@ function walk(world: World, p: Person, speed: number, dt: number) {
     }
     const amount = Math.min(budget, length);
     const next = {
+      ...(p.floor ? { floor: p.floor } : {}),
       x: p.x + ((target.x - p.x) / length) * amount,
       y: p.y + ((target.y - p.y) / length) * amount,
     };
@@ -86,7 +89,7 @@ export function step(world: World, dt = STEP) {
   for (const p of people(world)) {
     decayPressure(p, dt);
     updateWeapon(p, dt, distance(p, p.previous) > 1e-6);
-    p.previous = { x: p.x, y: p.y };
+    p.previous = position(p);
     p.cooldown = Math.max(0, p.cooldown - dt * readiness(p));
   }
   for (const g of world.guards) turnShield(g, dt);
@@ -105,7 +108,7 @@ export function step(world: World, dt = STEP) {
     }
     if (a.order.kind === 'attack' && !disoriented(a)) {
       const id = a.order.target,
-        target = world.guards.find((g) => g.id === id && living(g));
+        target = combatTarget(world, id);
       if (!target) {
         a.order = { kind: 'hold' };
         a.path = [];
@@ -148,7 +151,8 @@ export function step(world: World, dt = STEP) {
     }
     const working =
       a.order.kind === 'interact' &&
-      (a.order.target === 'file-recall' ||
+      ((a.order.target === 'escort' && !!world.mission.continuity && !world.escort?.recruited) ||
+        a.order.target === 'file-recall' ||
         isSettlement(a.order.target) ||
         a.order.target.startsWith('access-') ||
         a.order.target.startsWith('rescue-') ||
@@ -164,10 +168,14 @@ export function step(world: World, dt = STEP) {
         a.order.target === 'release');
     if (a.weapon && !a.disarmed && !a.carrying && !working && !disoriented(a) && !throwing) {
       const order = a.order;
-      const candidates = world.guards.filter(
+      const targets =
+        order.kind === 'attack'
+          ? [combatTarget(world, order.target)].filter((p) => p !== undefined)
+          : world.guards;
+      const candidates = targets.filter(
         (g) =>
           living(g) &&
-          (order.kind === 'attack' ? g.id === order.target : g.mode === 'combat') &&
+          (order.kind === 'attack' ? g.id === order.target : 'mode' in g && g.mode === 'combat') &&
           distance(a, g) <= weaponRange(a) &&
           lineClear(world, a, g),
       );
@@ -193,7 +201,8 @@ export function step(world: World, dt = STEP) {
       v.leader = leader?.id || null;
     }
     v.repath -= dt;
-    if (!v.waiting && leader && distance(v, leader) > 1.25 && v.repath <= 0) {
+    const usingStairs = leader && followStairs(world, leader);
+    if (!usingStairs && !v.waiting && leader && distance(v, leader) > 1.25 && v.repath <= 0) {
       v.path = findPath(world, v, leader);
       v.repath = 0.45;
     }
@@ -214,7 +223,7 @@ export function step(world: World, dt = STEP) {
       `${world.agents.find((a) => !living(a))!.name} was killed. This rescue requires all four operatives alive. Restart the operation.`,
       'warning',
     );
-  } else if (v && !living(v)) {
+  } else if (v && !living(v) && !world.mission.continuity) {
     world.status = 'lost';
     notify(
       world,

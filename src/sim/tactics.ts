@@ -1,3 +1,4 @@
+import { position } from './types';
 import { disoriented, distance, living } from './types';
 import type { Guard, Person, Vec, World } from './types';
 import { findPath, lineClear, passable } from './navigation';
@@ -50,7 +51,7 @@ export function shareContact(world: World, guard: Guard, target: Person) {
     )
       continue;
     other.mode = 'combat';
-    other.lastSeen = { x: target.x, y: target.y };
+    other.lastSeen = position(target);
     other.searchTime = 9;
     if (!other.known.includes(target.id)) other.known.push(target.id);
   }

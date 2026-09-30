@@ -4,7 +4,7 @@ import { step, STEP } from './sim/step';
 import { available, extractionRallyBlocker, landmark } from './sim/orders';
 import { applyCommand } from './sim/commands';
 import type { Command } from './sim/commands';
-import { controllable, distance, isAccess, isExtraction, living } from './sim/types';
+import { controllable, distance, isAccess, isExtraction, living, position } from './sim/types';
 import type { Mission, ObjectKind, World } from './sim/types';
 import { Scene } from './render/scene';
 import type { Hit } from './render/scene';
@@ -133,7 +133,7 @@ export async function boot() {
     if (hit.kind === 'guard') issue({ kind: 'attack', agents: selected, target: hit.id });
     if (hit.kind === 'agent') {
       const a = world.agents.find((a) => a.id === hit.id)!;
-      issue({ kind: 'move', agents: selected, point: { x: a.x, y: a.y } });
+      issue({ kind: 'move', agents: selected, point: position(a) });
     }
   }
   function action(type: Action) {
@@ -180,6 +180,21 @@ export async function boot() {
     if (type.startsWith('mission:')) {
       const mission = missions.find((m) => type === `mission:${m.id}`);
       if (mission) startMission(mission, true);
+      return;
+    }
+    if (type === 'stairs:up' || type === 'stairs:down' || type === 'arrest-kestrel') {
+      issue({
+        kind: 'interact',
+        agents: selected,
+        target:
+          type === 'arrest-kestrel' ? 'escort' : type === 'stairs:up' ? 'stairs-up' : 'stairs-down',
+      });
+      updateHud();
+      return;
+    }
+    if (type === 'attack-kestrel') {
+      issue({ kind: 'attack', agents: selected, target: 'kestrel' });
+      updateHud();
       return;
     }
     if (type === 'work:file-recall') {
@@ -296,10 +311,15 @@ export async function boot() {
         selected = world.agents.filter(controllable).map((a) => a.id);
         break;
       case 'regroup': {
-        const lead = world.agents.find((a) => selected.includes(a.id) && controllable(a));
+        const lead = selected
+          .map((id) => world.agents.find((a) => a.id === id && controllable(a)))
+          .find(Boolean);
         if (lead) {
-          selected = world.agents.filter(controllable).map((a) => a.id);
-          issue({ kind: 'move', agents: selected, point: { x: lead.x, y: lead.y } });
+          selected = [
+            lead.id,
+            ...world.agents.filter((a) => a.id !== lead.id && controllable(a)).map((a) => a.id),
+          ];
+          issue({ kind: 'move', agents: selected, point: position(lead) });
         }
         break;
       }

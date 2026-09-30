@@ -36,6 +36,7 @@ import { briefingObjective, renderBriefing } from './briefing';
 import { StoryPlayer, storyButton } from './story';
 import type { StoryAudio } from './story';
 import type { StoryId } from '../content/story';
+import { activeCircuit, captureReady, kestrelRemoved } from '../sim/floors';
 import { missionCopy } from '../content/mission-copy';
 import type { Records, MissionRecord } from './storage';
 import { missionGoals, transferFeedback } from './objectives';
@@ -104,6 +105,7 @@ export class Hud {
     storyAudio?: StoryAudio,
   ) {
     this.app = document.querySelector('#app')!;
+    const floorControls = `<section id="floor-controls" class="objective-actions" aria-label="Building floors" hidden><p id="floor-status"></p><div class="broadcast-actions"><button data-action="stairs:up" id="stairs-up-button">Use UP ↑</button><button data-action="stairs:down" id="stairs-down-button">Use DOWN ↓</button></div><p id="kestrel-status" role="status"></p><div class="broadcast-actions" id="kestrel-actions"><button data-action="arrest-kestrel" id="arrest-kestrel">Cuff Kestrel · 3s</button><button data-action="attack-kestrel" id="attack-kestrel">Attack Kestrel</button></div></section>`;
     const escortControls = `<section id="escort-controls" class="objective-actions escort-panel" aria-label="Witness" hidden><button data-action="locate-escort" id="escort-focus" title="Locate the witness without changing squad orders"><strong id="escort-alert" role="status"></strong><span id="escort-status"></span></button><div class="escort-actions"><button data-action="escort-wait" id="escort-wait-button"><span class="witness-portrait" aria-hidden="true"></span><span id="escort-wait-label"></span></button><button data-action="escort-aid" id="escort-aid-button" hidden></button></div><p id="escort-aid-hint" hidden></p></section>`;
     const extractionControls = `<section id="extraction-controls" class="objective-actions extraction-controls" aria-label="Extraction" hidden>${(['extract', 'alternate'] as const).map((id) => `<div id="exit-${id}" class="exit-row"><button data-action="extract:${id}" id="exit-button-${id}" aria-describedby="exit-status-${id}"></button><p id="exit-status-${id}"></p></div>`).join('')}</section>`;
     const courierControls = `<section id="courier-controls" class="objective-actions" aria-label="Courier transfer" hidden><p id="courier-status" role="status"></p><button data-action="call-transfer" id="courier-call-button" hidden>Send selected to CALL</button></section>`;
@@ -128,7 +130,7 @@ export class Hud {
           <footer class="controls-hint"><span><kbd>1–4</kbd> operative <kbd>Q</kbd> squad <kbd>RMB</kbd> order <kbd>Space</kbd> pause <kbd>Tab</kbd> slow</span><button data-action="restart" title="Restart operation (Shift+R)">Restart</button></footer>
         </section>
         <aside class="sidebar mission-sidebar" aria-label="Mission and status">
-          <section class="mission-section"><h2 id="mission-title"></h2><div class="objectives">${(['primary', 'evidence', 'extract'] as const).map((id) => `<div class="objective-group" id="objective-group-${id}"><button id="objective-${id}" data-goal="${id}" aria-controls="objective-guide" aria-describedby="objective-help" title="Locate relevant mission items"></button>${id === 'primary' ? `<section id="archive-escape" class="objective-actions" hidden><p id="archive-escape-hint"></p><button id="archive-cut-button" data-action="work:breach">Send selected to CUT · 8s</button></section>` + escortControls + courierControls + broadcastControls + demolitionControls + securityControls + detentionControls + settlementControls + recallControls : id === 'extract' ? extractionControls : ''}</div>`).join('')}</div><p id="objective-help">Hover or tap goals to locate · <kbd>?</kbd> help</p></section>
+          <section class="mission-section"><h2 id="mission-title"></h2><div class="objectives">${(['primary', 'evidence', 'extract'] as const).map((id) => `<div class="objective-group" id="objective-group-${id}"><button id="objective-${id}" data-goal="${id}" aria-controls="objective-guide" aria-describedby="objective-help" title="Locate relevant mission items"></button>${id === 'primary' ? `<section id="archive-escape" class="objective-actions" hidden><p id="archive-escape-hint"></p><button id="archive-cut-button" data-action="work:breach">Send selected to CUT · 8s</button></section>` + floorControls + escortControls + courierControls + broadcastControls + demolitionControls + securityControls + detentionControls + settlementControls + recallControls : id === 'extract' ? extractionControls : ''}</div>`).join('')}</div><p id="objective-help">Hover or tap goals to locate · <kbd>?</kbd> help</p></section>
           <section class="alert-section" aria-label="Alert status"><p class="alert" id="alert">● Site quiet</p><p class="fine" id="radio-status">Radio network online</p><p class="fine" id="archive-status" hidden></p></section>
           <section class="dispatch" aria-label="Comms"><span>COMMS</span><p id="message" role="status">Preparing the operation…</p></section>
           <details class="intel-section"><summary>Field notes &amp; records</summary><div class="intel-content"><p class="description" id="mission-description"></p><p id="intel"></p><p class="best" id="best"></p></div></details>
@@ -358,7 +360,7 @@ export class Hud {
     this.modal.classList.remove('operations-dialog', 'briefing-dialog');
     const won = world.status === 'won',
       alive = world.agents.filter(living).length;
-    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? missionCopy[world.mission.id].epilogue.lead : world.escort && !living(world.escort) ? `${world.escort.name} was killed.` : world.detention || world.settlement ? world.message : 'The crew is down.'}</p><p class="dialog-body">${won ? missionCopy[world.mission.id].epilogue.body : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results">${world.settlement ? `<div><dt>Repayments</dt><dd>${settled(world) ? 'Released' : 'Incomplete'}</dd></div>` : ''}<div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div>${world.demolition ? `<div><dt>Backups</dt><dd>${demolished(world) ? 'Destroyed' : `${world.demolition.armed.length}/2 armed`}</dd></div>` : ''}${world.broadcast ? `<div><dt>${world.mission.broadcast?.subject ? 'Mandate' : 'Audit'}</dt><dd>${published(world) ? (world.mission.broadcast?.completed ?? 'Published') : 'Incomplete'}</dd></div>` : ''}<div><dt>${world.demolition ? 'Optional register' : world.broadcast ? 'Optional LOG' : 'Evidence'}</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div>${won && world.mission.landmarks.some((o) => o.id === 'alternate') && world.extractedAt ? `<div><dt>Extraction</dt><dd>${landmark(world, world.extractedAt).tag}</dd></div>` : ''}</dl>${record.best !== null ? `<p class="fine">${recordTimes(record.best, record.fullCrewBest)}</p>` : ''}${won ? `<section class="debrief-medals" aria-label="Medals this run"><p class="medal-summary">Medals this run <span>${fresh.length ? `${fresh.length} new` : 'Already earned'}</span></p>${medalList(world.mission, earnedMedals(world), fresh, true)}</section>` : ''}${won && record.completions > 0 ? `<div class="debrief-story">${storyButton(world.mission.id)}</div>` : ''}<button class="primary" autofocus data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Restart mission'} <span>→</span></button><div class="dialog-actions">${won && nextMission(world.mission.id) ? '<button class="dialog-secondary" data-action="restart">Restart mission</button>' : ''}<button class="dialog-secondary" data-action="operations">Operations</button></div>`;
+    this.modal.innerHTML = `<div class="dialog-number">OPERATION ${won ? 'COMPLETE' : 'LOST'}</div><h2 id="dialog-title">${won ? 'Account settled.' : 'The balance is due.'}</h2><p class="dialog-lead">${won ? missionCopy[world.mission.id].epilogue.lead : world.escort && !living(world.escort) && !world.mission.continuity ? `${world.escort.name} was killed.` : world.detention || world.settlement ? world.message : 'The crew is down.'}</p><p class="dialog-body">${won ? missionCopy[world.mission.id].epilogue.body : 'The site still belongs to the company. You can try another approach.'}</p><dl class="results">${world.mission.continuity ? `<div><dt>Kestrel</dt><dd>${world.escort && !living(world.escort) ? 'Eliminated' : won ? 'In custody' : 'Not extracted'}</dd></div>` : ''}${world.settlement ? `<div><dt>Repayments</dt><dd>${settled(world) ? 'Released' : 'Incomplete'}</dd></div>` : ''}<div><dt>Elapsed</dt><dd>${time(world.time)}</dd></div><div><dt>Crew extracted</dt><dd>${won ? alive : 0} / 4</dd></div>${world.demolition ? `<div><dt>Backups</dt><dd>${demolished(world) ? 'Destroyed' : `${world.demolition.armed.length}/2 armed`}</dd></div>` : ''}${world.broadcast ? `<div><dt>${world.mission.broadcast?.subject ? 'Mandate' : 'Audit'}</dt><dd>${published(world) ? (world.mission.broadcast?.completed ?? 'Published') : 'Incomplete'}</dd></div>` : ''}<div><dt>${world.demolition ? 'Optional register' : world.broadcast ? 'Optional LOG' : 'Evidence'}</dt><dd>${world.evidence === 'extracted' ? 'Secured' : 'Left behind'}</dd></div><div><dt>Site alarm</dt><dd>${world.alarm ? 'Triggered' : 'Quiet'}</dd></div>${won && world.mission.landmarks.some((o) => o.id === 'alternate') && world.extractedAt ? `<div><dt>Extraction</dt><dd>${landmark(world, world.extractedAt).tag}</dd></div>` : ''}</dl>${record.best !== null ? `<p class="fine">${recordTimes(record.best, record.fullCrewBest)}</p>` : ''}${won ? `<section class="debrief-medals" aria-label="Medals this run"><p class="medal-summary">Medals this run <span>${fresh.length ? `${fresh.length} new` : 'Already earned'}</span></p>${medalList(world.mission, earnedMedals(world), fresh, true)}</section>` : ''}${won && record.completions > 0 ? `<div class="debrief-story">${storyButton(world.mission.id)}</div>` : ''}<button class="primary" autofocus data-action="${won && nextMission(world.mission.id) ? 'next' : 'restart'}">${won && nextMission(world.mission.id) ? 'Next operation' : 'Restart mission'} <span>→</span></button><div class="dialog-actions">${won && nextMission(world.mission.id) ? '<button class="dialog-secondary" data-action="restart">Restart mission</button>' : ''}<button class="dialog-secondary" data-action="operations">Operations</button></div>`;
     if (!this.modal.open) this.modal.showModal();
   }
   update(world: World, state: HudState) {
@@ -380,6 +382,7 @@ export class Hud {
     const inspected = world.guards.find(
       (g) => g.id === this.inspectedGuard && living(g) && g.armament,
     );
+    const targetKestrel = !!world.mission.continuity && this.inspectedGuard === 'kestrel';
     const object = world.mission.landmarks.find(
       (o) =>
         o.id === this.inspectedObject &&
@@ -398,27 +401,31 @@ export class Hud {
         : null;
     this.set(
       'map-location',
-      object
-        ? `${object.tag} · ${chargeStatus ?? (objectBlock ? 'LOCKED' : 'READY')}`
-        : inspected
-          ? guardRole(inspected)
-          : routeHint
-            ? 'Movement · detour'
-            : world.mission.location,
+      targetKestrel
+        ? 'Ada Kestrel · lethal target'
+        : object
+          ? `${object.tag} · ${chargeStatus ?? (objectBlock ? 'LOCKED' : 'READY')}`
+          : inspected
+            ? guardRole(inspected)
+            : routeHint
+              ? 'Movement · detour'
+              : world.mission.location,
     );
     this.set(
       'map-detail',
-      object
-        ? (objectBlock ??
+      targetKestrel
+        ? 'Attack her body to kill. For an arrest, isolate WEST and EAST then use CUFF above her.'
+        : object
+          ? (objectBlock ??
             (chargeStatus
               ? demolished(world)
                 ? 'Both backups are destroyed. Bring the crew to VAN.'
                 : (detonationStatus(world).reason ??
                   'Crew clear. Use Detonate to destroy both backups.')
               : object.detail))
-        : inspected
-          ? `${inspected.turret && !turretPowered(world, inspected) ? 'Offline · ' : ''}${WEAPONS[inspected.armament!.kind].name} · ${weaponStatus(inspected)} · range ${weaponRange(inspected)}`
-          : (routeHint ?? 'Municipal assets division'),
+          : inspected
+            ? `${inspected.turret && !turretPowered(world, inspected) ? 'Offline · ' : ''}${WEAPONS[inspected.armament!.kind].name} · ${weaponStatus(inspected)} · range ${weaponRange(inspected)}`
+            : (routeHint ?? 'Municipal assets division'),
     );
     this.field('map-location').parentElement!.classList.toggle(
       'inspecting',
@@ -769,7 +776,9 @@ export class Hud {
       const authorised = selected.some((p) => canAuthorise(world, p));
       this.set(
         'authorise-button',
-        world.security.inspectionUsed ? 'Inspection used' : 'Authorise INSPECT · 22s',
+        world.security.inspectionUsed
+          ? 'Inspection used'
+          : `Authorise INSPECT · ${world.mission.security!.inspectionTime}s`,
       );
       (this.field('authorise-button') as HTMLButtonElement).disabled =
         world.security.inspectionUsed || !authorised || neutralised;
@@ -992,6 +1001,38 @@ export class Hud {
                                                   : gun
                                                     ? 'Pistol concealed'
                                                     : 'Concealed',
+      );
+      if (world.mission.building)
+        this.field(`condition-${p.index}`).textContent =
+          `${p.floor ? 'UPPER' : 'GROUND'} · ${this.field(`condition-${p.index}`).textContent}`;
+    }
+    this.field('floor-controls').hidden = !world.mission.building || world.status !== 'playing';
+    if (world.mission.building) {
+      this.set(
+        'floor-status',
+        `${selected.filter((p) => !p.floor).length} selected downstairs · ${selected.filter((p) => p.floor).length} upstairs`,
+      );
+      (this.field('stairs-up-button') as HTMLButtonElement).disabled = !selected.some(
+        (p) => !p.floor,
+      );
+      (this.field('stairs-down-button') as HTMLButtonElement).disabled = !selected.some(
+        (p) => p.floor,
+      );
+      this.field('kestrel-actions').hidden = kestrelRemoved(world);
+      (this.field('arrest-kestrel') as HTMLButtonElement).disabled =
+        !captureReady(world) || !selected.some((p) => p.floor && !p.carrying);
+      (this.field('attack-kestrel') as HTMLButtonElement).disabled = !selected.some(
+        (p) => p.floor && !p.carrying,
+      );
+      this.set(
+        'kestrel-status',
+        kestrelRemoved(world)
+          ? world.escort?.recruited
+            ? 'Kestrel in custody. Escort her to VAN.'
+            : 'Kestrel eliminated. Return to VAN.'
+          : captureReady(world)
+            ? 'Controls isolated. Kestrel will surrender at CUFF.'
+            : `Kestrel routing ${activeCircuit(world) === 'power-west' ? 'WEST' : 'EAST'} · switch in ${Math.ceil(world.mission.continuity!.cycle - (world.time % world.mission.continuity!.cycle))}s. Isolate both feeds for arrest.`,
       );
     }
     const escort = world.escort;

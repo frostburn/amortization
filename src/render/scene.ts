@@ -2,6 +2,8 @@ import { CREW } from '../sim/crew';
 import { Application, Container, Graphics, Polygon, Text } from 'pixi.js';
 import type { Bounds } from 'pixi.js';
 import {
+  floorOf,
+  position,
   controllable,
   disoriented,
   distance,
@@ -22,7 +24,7 @@ import { findPath, lineClear } from '../sim/navigation';
 import { depthOrder } from './depth';
 import { PersonSprite } from './person';
 import type { Appearance } from './person';
-import { project, TILE_X, TILE_Y } from './isometric';
+import { project, TILE_X, TILE_Y, HEIGHT, FLOOR_HEIGHT } from './isometric';
 import { drawVan, vanDeparture } from './van';
 import { courierGuard } from '../sim/courier';
 import { guideLocation } from '../ui/objectives';
@@ -51,11 +53,11 @@ const COLORS = {
 const boxSilhouette = (r: Rect, height: number) => {
   const polygon = new Polygon([
     project(r, height),
-    project({ x: r.x + r.w, y: r.y }, height),
-    project({ x: r.x + r.w, y: r.y }),
-    project({ x: r.x + r.w, y: r.y + r.h }),
-    project({ x: r.x, y: r.y + r.h }),
-    project({ x: r.x, y: r.y + r.h }, height),
+    project({ floor: r.floor, x: r.x + r.w, y: r.y }, height),
+    project({ floor: r.floor, x: r.x + r.w, y: r.y }),
+    project({ floor: r.floor, x: r.x + r.w, y: r.y + r.h }),
+    project({ floor: r.floor, x: r.x, y: r.y + r.h }),
+    project({ floor: r.floor, x: r.x, y: r.y + r.h }, height),
   ]);
   return { polygon, bounds: polygon.getBounds() };
 };
@@ -144,7 +146,24 @@ export class Scene {
   readonly app = new Application();
   readonly camera = new Container();
   private floor = new Graphics();
+  private upperDeck = new Graphics();
+  private roof = new Graphics();
+  private upperAlpha = 0;
+  private roofAlpha = 1;
+  activeFloor = 0;
+  private floorBadge = document.createElement('div');
+  isVisibleFloor(p: Vec) {
+    return floorOf(p) === this.activeFloor;
+  }
+  canPickPerson(p: Vec) {
+    const b = this.world.mission.building;
+    return (
+      this.isVisibleFloor(p) && (!b || !!p.floor || !inside(p, b.footprint) || this.roofAlpha < 0.5)
+    );
+  }
   private cones = new Graphics();
+  private upperCones = new Graphics();
+  private upperFlash = new Graphics();
   private objects = new Container();
   private lighting = new OperativeLighting();
   private outlines = new CharacterOutlines();
@@ -214,6 +233,9 @@ export class Scene {
     this.guideLayer.className = 'objective-locators';
     this.guideLayer.setAttribute('aria-hidden', 'true');
     this.host.appendChild(this.guideLayer);
+    this.floorBadge.className = 'floor-badge';
+    this.floorBadge.setAttribute('role', 'status');
+    this.host.appendChild(this.floorBadge);
     this.app.canvas.setAttribute(
       'aria-label',
       'Tactical map. Select operatives with 1 to 4; right-click to order.',
@@ -224,6 +246,7 @@ export class Scene {
       this.cones,
       this.flashGround,
       this.objects,
+      this.roof,
       this.lighting,
       this.outlines,
       this.marks,
@@ -239,6 +262,13 @@ export class Scene {
   }
   reset(world: World) {
     this.aftermath = null;
+    this.activeFloor = 0;
+    this.upperAlpha = 0;
+    this.roofAlpha = 1;
+    this.roof.clear();
+    this.upperDeck = new Graphics();
+    this.upperCones = new Graphics();
+    this.upperFlash = new Graphics();
     delete this.host.dataset.aftermath;
     this.marks.visible = true;
     this.flashAim = null;
@@ -373,7 +403,7 @@ export class Scene {
       plane(g, s.x, s.y, s.w, s.h, 0x746752, 0, 0.65);
       for (let x = 44; x < 47; x += 0.5) plane(g, x, 16.5, 0.25, 0.18, COLORS.amber);
     }
-    if (mission.security) {
+    if (mission.security && !mission.continuity) {
       plane(g, 9.5, 24.5, 36, 3.5, 0x35443e);
       plane(g, 9.5, 4, 1.7, 28, 0x5c6a5e);
       plane(g, 19.5, 15.6, 14, 2, 0x526257);
@@ -475,8 +505,67 @@ export class Scene {
       label.skew.y = Math.atan(TILE_Y / TILE_X);
       this.addScenery(label, { x: 12, y: 14, w: 0, h: 0 });
     }
+    if (mission.building) {
+      const b = mission.building.footprint;
+      plane(g, b.x, b.y, b.w, b.h, 0xa1aaa3);
+      box(this.upperDeck, b.x, b.y, b.w, b.h, FLOOR_HEIGHT, 0xabb5af, 0x627d80, 0x52696e);
+      // The deck is sorted between the storeys, not between individual furniture items.
+      this.objects.addChild(this.upperDeck, this.upperCones, this.upperFlash);
+      drawBuilding(
+        this.roof,
+        { ...b, id: 'continuity-house', height: 6.3, kind: 'building' },
+        true,
+      );
+      for (const z of [1.7, 4.6])
+        for (let x = b.x + 1; x < b.x + b.w - 1; x += 3)
+          panel(
+            this.roof,
+            { x, y: b.y + b.h + 0.01 },
+            { x: x + 1.8, y: b.y + b.h + 0.01 },
+            z - 0.8,
+            z,
+            0x456c7b,
+          );
+      for (const turret of mission.security?.turrets ?? []) {
+        const cable = new Graphics();
+        turret.cable.forEach((p, i) => {
+          const q = project(p);
+          if (i) cable.lineTo(q.x, q.y);
+          else cable.moveTo(q.x, q.y);
+        });
+        cable.stroke({ color: circuitColor(turret.circuit), width: 2.5, alpha: 0.65 });
+        this.addScenery(cable, { ...turret.position, w: 0, h: 0 });
+      }
+      for (const stairs of mission.building.stairs) {
+        const t = new Graphics();
+        for (let i = 0; i < 7; i++) {
+          box(
+            t,
+            stairs.x - 1.2,
+            stairs.y - 1.2 + i * 0.34,
+            2.4,
+            0.33,
+            0.08 + i * 0.065,
+            0xd3c597,
+            0x8f866d,
+            0x696858,
+          );
+          plane(
+            t,
+            stairs.x - 1.2,
+            stairs.y - 1.2 + i * 0.34,
+            2.4,
+            0.05,
+            0x6f6e62,
+            0.085 + i * 0.065,
+          );
+        }
+        t.y = -floorOf(stairs) * FLOOR_HEIGHT * HEIGHT;
+        this.addScenery(t, { ...stairs, x: stairs.x - 1.2, y: stairs.y - 1.2, w: 2.4, h: 2.4 });
+      }
+    }
     for (const solid of world.mission.solids) {
-      drawContactShadow(g, solid, mission.daylight);
+      if (!solid.floor) drawContactShadow(g, solid, mission.daylight);
       this.addSolid(solid);
     }
     this.gate = new Graphics();
@@ -507,27 +596,29 @@ export class Scene {
       }
     }
     const office = this.label(
-      mission.recall
-        ? 'DISPATCH RECORDS'
-        : mission.settlement
-          ? 'BENEFICIARY RECORDS'
-          : mission.id === 'injunction'
-            ? 'ENFORCEMENT REGISTRY'
-            : mission.detention
-              ? 'PERSONNEL RETENTION / 09'
-              : mission.security
-                ? 'RECORDS / 08'
-                : mission.demolition
-                  ? 'RECOVERY CORES / RESTRICTED'
-                  : mission.broadcast
-                    ? 'RESTRICTED / UPLINK'
-                    : mission.escort?.locked
-                      ? 'TRANSFER RECORDS'
-                      : mission.transfer
-                        ? 'CUSTOMS'
-                        : mission.archive
-                          ? 'SECURE ARCHIVE'
-                          : 'SECURE OFFICE',
+      mission.continuity
+        ? 'CONTINUITY HOUSE / 13'
+        : mission.recall
+          ? 'DISPATCH RECORDS'
+          : mission.settlement
+            ? 'BENEFICIARY RECORDS'
+            : mission.id === 'injunction'
+              ? 'ENFORCEMENT REGISTRY'
+              : mission.detention
+                ? 'PERSONNEL RETENTION / 09'
+                : mission.security
+                  ? 'RECORDS / 08'
+                  : mission.demolition
+                    ? 'RECOVERY CORES / RESTRICTED'
+                    : mission.broadcast
+                      ? 'RESTRICTED / UPLINK'
+                      : mission.escort?.locked
+                        ? 'TRANSFER RECORDS'
+                        : mission.transfer
+                          ? 'CUSTOMS'
+                          : mission.archive
+                            ? 'SECURE ARCHIVE'
+                            : 'SECURE OFFICE',
       10,
       0xf0c68b,
     );
@@ -539,29 +630,32 @@ export class Scene {
           : project({ x: mission.secure.x + mission.secure.w / 2, y: mission.secure.y + 0.5 }, 1.8),
     );
     office.anchor.set(0.5, 1);
+    office.visible = !mission.continuity;
     this.marks.addChild(office);
     const road = this.label(
-      mission.recall
-        ? 'MUNICIPAL RECOVERY / 11:40'
-        : mission.settlement
-          ? 'SETTLEMENT COURT / 09:10'
-          : mission.id === 'injunction'
-            ? 'ENFORCEMENT / NO PUBLIC ACCESS'
-            : mission.detention
-              ? 'VISITORS / WEST SERVICE STREET'
-              : mission.demolition
-                ? 'DEBT RECOVERY / 12'
-                : mission.broadcast
-                  ? 'MUNICIPAL COMMUNICATIONS / 11'
-                  : mission.escort?.locked
-                    ? 'REMAND TRANSFERS / 04'
-                    : mission.transfer
-                      ? 'BONDED TRANSFER / 09'
-                      : mission.id === 'depot'
-                        ? 'MUNICIPAL TRANSIT / 06'
-                        : mission.id === 'clearing'
-                          ? 'BONDED FREIGHT / NO PUBLIC ACCESS'
-                          : 'CIVIC RECORDS / NO PUBLIC ACCESS',
+      mission.continuity
+        ? 'CONTINUITY HOUSE / 13:20'
+        : mission.recall
+          ? 'MUNICIPAL RECOVERY / 11:40'
+          : mission.settlement
+            ? 'SETTLEMENT COURT / 09:10'
+            : mission.id === 'injunction'
+              ? 'ENFORCEMENT / NO PUBLIC ACCESS'
+              : mission.detention
+                ? 'VISITORS / WEST SERVICE STREET'
+                : mission.demolition
+                  ? 'DEBT RECOVERY / 12'
+                  : mission.broadcast
+                    ? 'MUNICIPAL COMMUNICATIONS / 11'
+                    : mission.escort?.locked
+                      ? 'REMAND TRANSFERS / 04'
+                      : mission.transfer
+                        ? 'BONDED TRANSFER / 09'
+                        : mission.id === 'depot'
+                          ? 'MUNICIPAL TRANSIT / 06'
+                          : mission.id === 'clearing'
+                            ? 'BONDED FREIGHT / NO PUBLIC ACCESS'
+                            : 'CIVIC RECORDS / NO PUBLIC ACCESS',
       10,
       0x718277,
     );
@@ -607,6 +701,7 @@ export class Scene {
     const root = new Container(),
       g = new Graphics();
     root.addChild(g);
+    root.y = -floorOf(s) * FLOOR_HEIGHT * HEIGHT;
     if (s.kind === 'van' || s.kind === 'transport') {
       drawVan(g, s, s.kind === 'van' ? vanDeparture(s, this.world.mission).direction : 1);
     } else if (s.kind === 'mast') {
@@ -1013,7 +1108,7 @@ export class Scene {
       if (!p) continue;
       const locked = id !== 'inspection' && this.markerLocks.get(id);
       marker.classList.toggle('is-locked', !!locked);
-      const label = `${p.tag}${locked ? ' · LOCKED' : ''}`;
+      const label = `${p.tag}${this.world.mission.building && !this.isVisibleFloor(p) ? (p.floor ? ' · UPSTAIRS' : ' · DOWNSTAIRS') : ''}${locked ? ' · LOCKED' : ''}`;
       const caption = marker.querySelector('span')!;
       if (caption.textContent !== label) caption.textContent = label;
       const actual = this.markerScreen(id)!;
@@ -1066,7 +1161,12 @@ export class Scene {
     const scale = this.fit * this.zoom;
     const sx = (x - this.offset.x) / scale / TILE_X,
       sy = (y - this.offset.y) / scale / TILE_Y;
-    return { x: (sx + sy) / 2, y: (sy - sx) / 2 };
+    const elevation = (this.activeFloor * FLOOR_HEIGHT * HEIGHT) / TILE_Y;
+    return {
+      x: (sx + sy + elevation) / 2,
+      y: (sy - sx + elevation) / 2,
+      ...(this.activeFloor ? { floor: this.activeFloor } : {}),
+    };
   }
   screen(p: Vec, z = 0): Vec {
     const q = project(p, z),
@@ -1078,6 +1178,8 @@ export class Scene {
     if (!p) return null;
     if (
       id === 'escort' ||
+      id === 'stairs-up' ||
+      id === 'stairs-down' ||
       (id === 'evidence' && ['courier', 'carried'].includes(this.world.evidence))
     ) {
       const head = this.screen(p, 1.6);
@@ -1099,6 +1201,7 @@ export class Scene {
     const object = this.world.mission.landmarks
       .filter(
         (o) =>
+          this.isVisibleFloor(landmark(this.world, o.id)) &&
           (available(this.world, o.id) ||
             isCharge(o.id) ||
             (o.id === 'escort' && this.world.escortLocked) ||
@@ -1111,6 +1214,7 @@ export class Scene {
     // Use the projected vehicle silhouette, not just the tiny floating marker.
     const van = this.world.mission.solids.find(
       (s) =>
+        this.isVisibleFloor(s) &&
         s.kind === 'van' &&
         new Polygon([
           this.screen(s, s.height),
@@ -1145,15 +1249,22 @@ export class Scene {
         id: this.world.mission.detention!.cells.find((c) => c.agent === prisoner.index)!.id,
       };
     const agent = this.world.agents
-      .filter(controllable)
+      .filter((a) => controllable(a) && this.canPickPerson(a))
       .map((a) => ({ a, distance: distance(p, this.screen(a, 0.5)) }))
       .sort((a, b) => a.distance - b.distance)[0];
     if (agent && agent.distance < 20) return { kind: 'agent', id: agent.a.id };
     if (exit) return { kind: 'object', id: exit.id };
     if (object) return { kind: 'object', id: object.id };
-    if (this.world.escort && distance(p, this.screen(this.world.escort, 0.5)) < 18)
-      return { kind: 'object', id: 'escort' };
-    for (const g of this.world.guards.filter(living))
+    if (
+      this.world.escort &&
+      living(this.world.escort) &&
+      this.canPickPerson(this.world.escort) &&
+      distance(p, this.screen(this.world.escort, 0.5)) < 18
+    )
+      return this.world.mission.continuity && !this.world.escort.recruited
+        ? { kind: 'guard', id: this.world.escort.id }
+        : { kind: 'object', id: 'escort' };
+    for (const g of this.world.guards.filter((p) => living(p) && this.canPickPerson(p)))
       if (distance(p, this.screen(g, 0.5)) < 18) return { kind: 'guard', id: g.id };
     return { kind: 'ground', point: this.toWorld(x, y) };
   }
@@ -1224,6 +1335,50 @@ export class Scene {
     if (!this.pointerActive && this.followDelay <= 0) this.selectionSnap = false;
     this.selectionKey = selectionKey;
     const w = this.world;
+    const active = selected
+      .map((id) => w.agents.find((a) => a.id === id && controllable(a)))
+      .find(Boolean);
+    const nextFloor = active ? floorOf(active) : this.activeFloor;
+    if (nextFloor !== this.activeFloor) {
+      this.activeFloor = nextFloor;
+      this.coneTime = -1;
+      if (this.following) this.trackSelection(selected, alpha, true, seconds);
+    }
+    const b = w.mission.building;
+    this.floorBadge.hidden = !b;
+    if (b) {
+      this.host.dataset.floor = String(this.activeFloor);
+      this.floorBadge.textContent = this.activeFloor
+        ? '02 / UPPER · CONTROL ROOM'
+        : '01 / GROUND · SERVICE HALL';
+      const fade = Math.min(1, seconds * 6);
+      this.upperAlpha += ((this.activeFloor ? 1 : 0) - this.upperAlpha) * fade;
+      this.roofAlpha +=
+        ((this.activeFloor ||
+        (active &&
+          inside(active, {
+            x: b.footprint.x - 2,
+            y: b.footprint.y - 2,
+            w: b.footprint.w + 4,
+            h: b.footprint.h + 4,
+          }))
+          ? 0
+          : 1) -
+          this.roofAlpha) *
+        fade;
+      this.upperDeck.alpha = this.upperAlpha;
+      this.upperDeck.visible = this.upperAlpha > 0.01;
+      this.upperDeck.zIndex = 90000;
+      this.roof.alpha = this.roofAlpha;
+      this.roof.visible = this.roofAlpha > 0.01;
+      for (const item of this.scenery) {
+        item.root.alpha = floorOf(item.footprint)
+          ? this.upperAlpha
+          : inside(item.footprint, b.footprint)
+            ? (1 - this.upperAlpha) * (1 - this.roofAlpha)
+            : 1;
+      }
+    }
     this.lighting.refresh(w, alpha, this.camera, this.app.screen, this.aftermath);
     this.drawGuidance();
     this.transferRoutes.forEach((route, i) => {
@@ -1240,7 +1395,8 @@ export class Scene {
       this.drawVision();
       this.coneTime = w.time;
     }
-    this.cones.visible = this.showVision && !this.aftermath;
+    this.cones.visible = this.showVision && !this.aftermath && !this.activeFloor;
+    this.upperCones.visible = this.showVision && !this.aftermath && !!this.activeFloor;
     this.marks.visible = !this.aftermath;
     const depthItems = this.scenery.flatMap((item) => {
       const ending = this.aftermath;
@@ -1262,6 +1418,7 @@ export class Scene {
       }
       return item.root.visible ? [item] : [];
     });
+    for (const view of this.views.values()) view.root.visible = false;
     for (const p of people(w)) {
       if (p === w.escort && w.escortLocked && !w.escort.recruited) continue;
       const a = w.agents.find((a) => a.id === p.id),
@@ -1270,11 +1427,14 @@ export class Scene {
         ? CREW[a.index].id
         : guard
           ? 'guard'
-          : w.mission.escort?.id === 'voss'
-            ? 'voss'
-            : 'mara';
+          : w.mission.continuity
+            ? 'kestrel'
+            : w.mission.escort?.id === 'voss'
+              ? 'voss'
+              : 'mara';
       const v = this.person(p, a ? String(a.index + 1) : '');
       const pos = {
+        ...(p.floor ? { floor: p.floor } : {}),
         x: p.previous.x + (p.x - p.previous.x) * alpha,
         y: p.previous.y + (p.y - p.previous.y) * alpha,
       };
@@ -1284,7 +1444,16 @@ export class Scene {
       // Recheck every rendered frame so paused panning and zooming reveal current poses.
       const screen = this.screen(pos),
         padding = 80 * this.camera.scale.x;
+      v.root.alpha = b
+        ? p.floor
+          ? this.upperAlpha
+          : inside(p, b.footprint)
+            ? 1 - this.roofAlpha
+            : 1
+        : 1;
       v.root.visible =
+        v.root.alpha > 0.01 &&
+        this.isVisibleFloor(p) &&
         !this.aftermath?.boarded.has(p.id) &&
         screen.x >= -padding &&
         screen.y >= -padding &&
@@ -1299,6 +1468,7 @@ export class Scene {
       if (!guard?.turret)
         v.sprite.pose(p, alpha, {
           appearance,
+          cuffed: p === w.escort && !!w.mission.continuity && !!w.escort?.recruited,
           uniform: a?.disguised,
           weapon: a?.disarmed
             ? undefined
@@ -1406,20 +1576,31 @@ export class Scene {
         this.objects.addChild(root);
       }
       const flight = Math.min(1, grenade.age / FLASH_FLIGHT);
-      const p = {
+      const p: Vec = {
         x: grenade.from.x + (grenade.to.x - grenade.from.x) * flight,
         y: grenade.from.y + (grenade.to.y - grenade.from.y) * flight,
       };
+      root.visible = this.isVisibleFloor(grenade.to);
+      p.floor = grenade.to.floor;
       root.position.copyFrom(project(p, 1 - flight + Math.sin(flight * Math.PI) * 1.7));
       root.clear().circle(0, 0, 3).fill(0xd6dfc5).stroke({ color: 0x1b2822, width: 1.5 });
       if (flight === 1) root.circle(0, 0, 6).stroke({ color: COLORS.amber, width: 2 });
       depthItems.push({ root, footprint: { ...p, w: 0, h: 0 } });
     }
-    depthOrder(depthItems).forEach((item, index) => {
+    const layers = depthOrder(depthItems).sort(
+      (a, b) => floorOf(a.footprint) - floorOf(b.footprint),
+    );
+    layers.forEach((item, index) => {
       item.root.zIndex = index;
     });
+    const upperStart = layers.findIndex((item) => floorOf(item.footprint) === 1);
+    this.upperDeck.zIndex = (upperStart < 0 ? layers.length : upperStart) - 0.5;
+    this.upperCones.zIndex = this.upperDeck.zIndex + 0.1;
+    this.upperFlash.zIndex = this.upperDeck.zIndex + 0.2;
     this.outlines.begin();
-    const occluders = this.scenery.filter((s) => s.root.visible && s.occluder);
+    const occluders = this.scenery.filter(
+      (s) => s.root.visible && s.root.alpha > 0.5 && this.isVisibleFloor(s.footprint) && s.occluder,
+    );
     const wrecked = demolished(w);
     for (const p of people(w)) {
       const view = this.views.get(p.id);
@@ -1451,10 +1632,11 @@ export class Scene {
     const exitLocked = !!extractionRequirement(w);
     for (const [id, icon] of this.icons) {
       icon.visible =
-        available(w, id) ||
-        isCharge(id) ||
-        (id === 'escort' && w.escortLocked) ||
-        (id === 'evidence' && w.evidence === 'courier');
+        this.isVisibleFloor(landmark(w, id)) &&
+        (available(w, id) ||
+          isCharge(id) ||
+          (id === 'escort' && w.escortLocked) ||
+          (id === 'evidence' && w.evidence === 'courier'));
       icon.alpha = id === 'override' && w.overrideBy ? 0.6 : 1;
       const locked = !!objectRequirement(w, id, selected);
       if (locked !== this.markerLocks.get(id)) {
@@ -1482,8 +1664,14 @@ export class Scene {
     }
     this.effects.clear();
     this.flashGround.clear();
-    drawFlashes(this.flashGround, w, this.flashAim);
-    for (const g of w.guards.filter((g) => living(g) && g.inspection)) {
+    this.upperFlash.clear();
+    drawFlashes(
+      this.activeFloor ? this.upperFlash : this.flashGround,
+      w,
+      this.flashAim,
+      this.activeFloor,
+    );
+    for (const g of w.guards.filter((g) => living(g) && this.isVisibleFloor(g) && g.inspection)) {
       const a = w.agents.find((a) => a.id === g.inspection!.target);
       if (!a) continue;
       const from = project(g, 0.9),
@@ -1494,7 +1682,7 @@ export class Scene {
         .stroke({ color: 0xdf8948, width: 1.5, alpha: 0.8 });
     }
     // Telegraph charged shots independently of optional sight cones, without hiding bodies.
-    for (const shooter of people(w).filter(living)) {
+    for (const shooter of people(w).filter((p) => living(p) && this.isVisibleFloor(p))) {
       const charge = shooter.armament?.charging;
       if (!charge) continue;
       const target = people(w).find((p) => p.id === charge.target && living(p));
@@ -1531,7 +1719,9 @@ export class Scene {
             .fill({ color: 0xffd7a0, alpha: 0.7 * (1 - age / 0.7) });
       }
     }
-    for (const exit of w.mission.landmarks.filter((o) => !this.aftermath && isExtraction(o.id))) {
+    for (const exit of w.mission.landmarks.filter(
+      (o) => !this.aftermath && this.isVisibleFloor(o) && isExtraction(o.id),
+    )) {
       const vp = project(exit);
       this.effects
         .ellipse(
@@ -1542,7 +1732,9 @@ export class Scene {
         )
         .stroke({ color: exitLocked ? 0x9aa69f : COLORS.mint, width: 1, alpha: 0.3 });
     }
-    for (const a of w.agents.filter((a) => selected.includes(a.id) && living(a))) {
+    for (const a of w.agents.filter(
+      (a) => selected.includes(a.id) && living(a) && this.isVisibleFloor(a),
+    )) {
       if (a.path.length) {
         const points = [a, ...a.path].map((p) => project(p));
         this.effects
@@ -1571,7 +1763,9 @@ export class Scene {
         this.effects.ellipse(dest.x, dest.y, 7, 4).stroke({ color: COLORS.mint, width: 1.5 });
       }
     }
-    for (const turret of w.guards.filter((g) => turretPowered(w, g) && g.target)) {
+    for (const turret of w.guards.filter(
+      (g) => turretPowered(w, g) && this.isVisibleFloor(g) && g.target,
+    )) {
       const target = w.agents.find((a) => a.id === turret.target && living(a));
       if (!target || !lineClear(w, turret, target)) continue;
       const from = project(turret, 0.9),
@@ -1582,9 +1776,14 @@ export class Scene {
         .stroke({ color: COLORS.red, width: 1.5, alpha: 0.7 });
     }
     for (const t of w.traces) {
+      if (!this.isVisibleFloor(t.from)) continue;
       const angle = Math.atan2(t.to.y - t.from.y, t.to.x - t.from.x);
       const a = project(
-          { x: t.from.x + Math.cos(angle) * 0.73, y: t.from.y + Math.sin(angle) * 0.73 },
+          {
+            ...position(t.from),
+            x: t.from.x + Math.cos(angle) * 0.73,
+            y: t.from.y + Math.sin(angle) * 0.73,
+          },
           1.05,
         ),
         b = project(t.to, 1.0);
@@ -1599,9 +1798,10 @@ export class Scene {
     }
   }
   private drawVision() {
-    const g = this.cones;
-    g.clear();
-    for (const guard of this.world.guards.filter(living)) {
+    this.cones.clear();
+    this.upperCones.clear();
+    const g = this.activeFloor ? this.upperCones : this.cones;
+    for (const guard of this.world.guards.filter((p) => living(p) && this.isVisibleFloor(p))) {
       if (guard.turret && !turretPowered(this.world, guard)) continue;
       const points = [project(guard)];
       const arc = guard.turret ? TURRET_ARC : Math.PI * 0.36;
@@ -1611,12 +1811,20 @@ export class Scene {
           high = sightRange(guard, this.world);
         for (let j = 0; j < 7; j++) {
           const mid = (low + high) / 2;
-          const p = { x: guard.x + Math.cos(angle) * mid, y: guard.y + Math.sin(angle) * mid };
+          const p = {
+            ...position(guard),
+            x: guard.x + Math.cos(angle) * mid,
+            y: guard.y + Math.sin(angle) * mid,
+          };
           if (lineClear(this.world, guard, p)) low = mid;
           else high = mid;
         }
         points.push(
-          project({ x: guard.x + Math.cos(angle) * low, y: guard.y + Math.sin(angle) * low }),
+          project({
+            ...position(guard),
+            x: guard.x + Math.cos(angle) * low,
+            y: guard.y + Math.sin(angle) * low,
+          }),
         );
       }
       polygon(

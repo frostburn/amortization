@@ -1,3 +1,4 @@
+import { position } from './types';
 import { disoriented, distance, living } from './types';
 import type { Person, World } from './types';
 import { readiness, suppress } from './pressure';
@@ -55,8 +56,8 @@ export function shoot(
   if (gun?.kind === 'support') suppress(world, from, to, hostile);
   if (gun && spec && --gun.rounds === 0) gun.reload = spec.reload;
   world.traces.push({
-    from: { x: from.x, y: from.y },
-    to: { x: to.x, y: to.y },
+    from: position(from),
+    to: position(to),
     life: 0.12,
     hostile,
   });

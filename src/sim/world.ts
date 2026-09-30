@@ -1,3 +1,4 @@
+import { position } from './types';
 import { depot } from '../content/depot';
 import type { Guard, GuardTactic, Mission, Notice, Person, Vec, World, WeaponKind } from './types';
 import { equip, guardWeapon } from './weapons';
@@ -91,7 +92,11 @@ export function createWorld(mission: Mission = depot): World {
     ],
     escort: escortPosition
       ? {
-          ...body(mission.escort!.id, escortPosition, mission.escort!.hp),
+          ...body(
+            mission.escort!.id,
+            mission.continuity ? position(escortPosition) : escortPosition,
+            mission.escort!.hp,
+          ),
           name: mission.escort!.name,
           waiting: false,
           leader: null,

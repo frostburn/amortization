@@ -1,3 +1,4 @@
+import { position } from './types';
 import { lineClear, passable } from './navigation';
 import { controllable, disoriented, distance, isCharge, living, people } from './types';
 import type { Operative, Vec, World } from './types';
@@ -51,14 +52,14 @@ export function throwFlash(w: World, ids: string[], point: Vec) {
   a.interaction = 0;
   a.angle = Math.atan2(point.y - a.y, point.x - a.x);
   cancelCharge(a);
-  w.flashGrenades!.push({ thrower: a.id, from: { x: a.x, y: a.y }, to: { ...point }, age: 0 });
+  w.flashGrenades!.push({ thrower: a.id, from: position(a), to: { ...point }, age: 0 });
   for (const g of w.guards.filter(living)) {
     if (g.turret || !sees(w, g, a)) continue;
     if (!g.known.includes(a.id)) g.known.push(a.id);
     g.reported = false;
     if (g.radio <= 0) g.radio = 2.5;
     g.mode = 'combat';
-    g.lastSeen = { x: a.x, y: a.y };
+    g.lastSeen = position(a);
     g.target = a.id;
     a.exposed = true;
   }

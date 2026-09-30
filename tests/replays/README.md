@@ -7,8 +7,63 @@ is also verified. Otherwise this checks a route's continued viability, without
 claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All forty-nine retained completions are byte-for-byte copies of submissions
+All fifty-one retained completions are byte-for-byte copies of submissions
 provided in chat, including their `unversioned` / local-changes metadata.
+
+## Continuity: Kestrel removal
+
+All eight September 30 submissions verify every original checkpoint and outcome
+against PR #33's `e650522`, mission hash `47f6dc46` and simulation fingerprint
+`c7a2922970d98e60158b9800aa82ac7f8ee2c698bd43ddccabf06ee58505516b`.
+Every embedded note is empty. In chat the player reported feeling challenged and
+that everything seemed to work as intended. No balance changes follow from this
+batch.
+
+The two wins join the completion corpus unchanged as
+`continuity-lethal-69fbeb4a.replay.json` and
+`continuity-arrest-9c278b66.replay.json`. The other six remain byte-for-byte
+diagnostic evidence in `../fixtures/continuity-<status>-<suffix>.replay.json`,
+outside the required completion corpus. Their losses are observed outcomes,
+not constraints that future versions must preserve.
+
+| Submission suffix | Exact outcome | Mission flow |
+| --- | --- | --- |
+| `6b2b9a4b` | Lost, tick 1866 / 62.2s; 122 shots; alarm | Ground-floor assault loses Vale and Sable; EAST is isolated before the remaining pair falls |
+| `5d616d7c` | Lost, tick 649 / 21.6s; 64 shots; alarm | Immediate stair assault reaches the upper floor with both feeds live; the crew falls in the west gallery |
+| `88c716db` | Lost, tick 1572 / 52.4s; 89 shots; alarm | WEST is isolated, Morrow falls downstairs, and the remaining three lose the upper-floor fight |
+| `69fbeb4a` | Won, tick 2808 / 93.6s; 3 survivors; 83 shots; alarm | Armed recovery after Morrow dies upstairs; Kestrel eliminated and survivors return via DOWN |
+| `77baa5be` | Lost, tick 1737 / 57.9s; 48 shots; alarm | WEST is isolated after the alarm; the ground-floor fight defeats the crew |
+| `bcc8b7c9` | Playing, tick 1638 / 54.6s; 3 survivors; 6 shots; alarm | Morrow dies carrying REGISTER upstairs; it drops on that floor and the other three remain alive downstairs |
+| `c8937f8c` | Lost, tick 2724 / 90.8s; 52 shots; alarm | Inspection, an upstairs scouting visit and both feed isolations; the crew falls before reaching Kestrel |
+| `9c278b66` | Won, tick 4890 / 163.0s; 3 survivors; 50 shots; no alarm | RADIO preparation, both feeds isolated, Kestrel arrested and dropped REGISTER recovered; both reach extraction |
+
+Shot totals include both sides. In the lethal win, Morrow falls at 33.03s before
+the other three go upstairs. Kestrel dies at 73.90s with neither feed isolated;
+her remaining turrets stop, and the crew descends and extracts. RADIO stays live.
+The shield officer and several other defenders survive, so clearing the entire
+site is not a prerequisite for removal or escape.
+
+In the arrest win, Morrow disables RADIO at 44.37s, collects REGISTER at 63.47s
+and falls upstairs at 69.37s. The remaining crew isolates WEST at 85.07s and
+EAST at 105.00s. Rook cuffs Kestrel at 131.10s; the crew retrieves the dropped
+REGISTER and uses DOWN. Kestrel follows Rook down at 150.73s, reaching extraction
+with 90 HP. The dead upstairs operative correctly does not block survivor
+extraction, while Kestrel and the evidence still have to reach VAN.
+
+Both wins earn only Settled: losing Morrow prevents the full-crew challenge
+medals, including Answerable despite a successful arrest. This batch establishes
+human completion of both outcomes, not a full-crew or wholly nonlethal human
+route. The existing guarded command runs retain that coverage. No checkpoint
+divergence, premature mission ending or unrecoverable upstairs cargo is evident.
+
+Separate automated review found two input/copy defects: Regroup and orders onto a
+teammate omitted the target's floor, and the extraction notice claimed REGISTER
+was secured even when left behind. The follow-up preserves floor identity and
+the active lead, and reports Kestrel and the optional cargo accurately. Desktop
+and touch checks cover the corrected movement orders. The notice edit changes
+the simulation source fingerprint, but bypassing only that gate still verifies
+all 131 original checkpoints and every final outcome. Bundles retain their
+original fingerprints; use **Try current rules** in the updated build.
 
 ## Margin call: all medals
 

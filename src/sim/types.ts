@@ -1,6 +1,8 @@
 export const EXTRACTION_RADIUS = 4;
 
 export interface Vec {
+  /** Omitted on existing single-storey sites. */
+  floor?: number;
   x: number;
   y: number;
 }
@@ -24,6 +26,8 @@ export interface Solid extends Rect {
   height: number;
 }
 export type ObjectKind =
+  | 'stairs-up'
+  | 'stairs-down'
   | 'disguise'
   | 'gate'
   | 'relay'
@@ -95,13 +99,25 @@ export interface Mission {
     | 'personnel'
     | 'injunction'
     | 'settlement'
-    | 'countermand';
+    | 'countermand'
+    | 'continuity';
   number: string;
   title: string;
   location: string;
   objective:
-    'escort' | 'ledger' | 'case' | 'broadcast' | 'demolition' | 'rescue' | 'settlement' | 'recall';
+    | 'escort'
+    | 'ledger'
+    | 'case'
+    | 'broadcast'
+    | 'demolition'
+    | 'rescue'
+    | 'settlement'
+    | 'recall'
+    | 'capture';
   daylight?: boolean;
+  building?: { footprint: Rect; upper: Rect; stairs: [Vec, Vec] };
+  /** Kestrel controls alternating wired circuits until removed. */
+  continuity?: { cycle: number };
   settlement?: { reconcileTime: number; duration: number };
   recall?: { filingTime: number };
   description: string;
@@ -300,7 +316,16 @@ export interface World {
   casualties: number;
   message: string;
 }
-export const distance = (a: Vec, b: Vec) => Math.hypot(a.x - b.x, a.y - b.y);
+export const floorOf = (p: Vec) => p.floor ?? 0;
+export const sameFloor = (a: Vec, b: Vec) => floorOf(a) === floorOf(b);
+/** Copy only position; old recordings retain exactly their original state shape. */
+export const position = (p: Vec): Vec => ({
+  x: p.x,
+  y: p.y,
+  ...(p.floor ? { floor: p.floor } : {}),
+});
+export const distance = (a: Vec, b: Vec) =>
+  sameFloor(a, b) ? Math.hypot(a.x - b.x, a.y - b.y) : Infinity;
 export const inside = (p: Vec, r: Rect) =>
   p.x >= r.x && p.y >= r.y && p.x <= r.x + r.w && p.y <= r.y + r.h;
 export const living = (p: Person) => p.hp > 0;

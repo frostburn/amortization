@@ -10,6 +10,7 @@ export function formationTargets(world: World, agents: Vec[], target: Vec): Vec[
   const assigned: Vec[] = [];
   for (let i = 0; i < agents.length; i++) {
     const desired = {
+      ...(anchor.floor ? { floor: anchor.floor } : {}),
       x: anchor.x + ((i % 2) - 0.5) * 0.8,
       y: anchor.y + (Math.floor(i / 2) - 0.5) * 0.8,
     };
@@ -22,7 +23,11 @@ export function formationTargets(world: World, agents: Vec[], target: Vec): Vec[
     const candidates: Vec[] = [];
     for (let y = -4; y <= 4; y++)
       for (let x = -4; x <= 4; x++)
-        candidates.push({ x: anchor.x + x * 0.4, y: anchor.y + y * 0.4 });
+        candidates.push({
+          ...(anchor.floor ? { floor: anchor.floor } : {}),
+          x: anchor.x + x * 0.4,
+          y: anchor.y + y * 0.4,
+        });
     candidates.sort((a, b) => distance(a, desired) - distance(b, desired));
     // Bodies may share a destination when a doorway cannot fit four separate slots.
     assigned.push(candidates.find(fits) ?? anchor);

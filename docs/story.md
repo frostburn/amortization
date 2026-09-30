@@ -7,7 +7,7 @@ the mandate, release payments, and withdraw the seizure orders. Those victories
 stand. The antagonists respond to losses; a later revelation must not quietly
 undo the player's work.
 
-The prologue and all twelve mission endings now have short, manually advanced
+The prologue and all thirteen mission endings now have short, manually advanced
 scenes. They supplement the existing briefing and epilogue. Their tone is
 restrained and serious, with people discussing specific consequences instead of
 trading jokes or explaining controls. Only the opening and the all-survivors
@@ -76,10 +76,15 @@ not a claim that every conversation literally takes place at a keyboard.
 | 10 · Injunction  | Proof of service         | Holt acknowledges the suspension and prepares to hear an appeal personally at the Bench.                                    |
 | 11 · Settlement  | Money coming in          | A recipient struggles to believe her payment; old seizure dispatches remain in circulation.                                 |
 | 12 · Countermand | Beyond the district      | The seizure crews leave and the money stays returned. The three antagonists take up distinct positions beyond the district. |
+| 13 · Continuity  | An empty control room    | Kestrel is removed, in custody or dead. Local control is handed over; Dacre gathers the remaining crews at the interchange. |
+
+Kestrel's encounter is implemented in [Continuity](continuity.md): two storeys,
+alternating local feeds, and a choice of arrest or lethal force. Her removal is
+final in either outcome; she does not reappear as a later boss.
 
 ## Future boss design, not implemented here
 
-These are encounter promises, not specifications for the next three missions.
+These are encounter promises for the remaining antagonists.
 Introduce and explain any new mechanics in the mission UI whether or not the
 player has watched a scene.
 
@@ -88,12 +93,6 @@ positions, shield escorts and support fire can create changing approaches. A
 split team should be able to interrupt coordination while another group reaches
 him. He must obey sight and lose track of unseen operatives; commanding the
 response is not permission to know the player's location through walls.
-
-**Kestrel** should be an active opponent in a readable building. Show her work at
-control stations before a gate or power circuit changes. Separate feeds make
-simultaneous intervention useful, and isolating them should force her to move
-between manual controls. Keep exits recoverable. Avoid a puzzle whose solution
-is waiting through an invisible timer or remembering a line from a cutscene.
 
 **Holt** should have physical protection the player can dismantle. The Bench's
 distributed seals could sustain security privileges while the chairman moves
@@ -109,6 +108,7 @@ Each mission's scene, concise briefing and epilogue live together in
 remain the source of truth for unlocks. `amortization.story.v1` stores only the
 IDs of scenes the player explicitly finished.
 
-None of this changes recorded mission definitions, simulation code, weapon
-balance, or replay fingerprints. Scene art is decorative and captions are
+Story copy itself stays outside replay fingerprints. Continuity adds a new
+mission definition and floor support, while existing human runs remain verification
+fixtures under the current rules. Scene art is decorative and captions are
 accessible text. The first paint uses no image, font download, video, or audio.
