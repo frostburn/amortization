@@ -29,7 +29,7 @@ export const injunction: Mission = {
   relayTime: 4,
   description: 'Serve the mandate. Shut down the collection orders before another safehouse raid.',
   intro:
-    'Mara: all four of you are back. Now we make the mandate binding. Serve it at the registry UPLINK. Ivory inspectors check maintenance identities; break sight before their check completes. RADIO is in the north-east control office, beyond the inner checkpoint. Rook and Sable each brought one flash.',
+    'Quill: all four of you are back. Now we make the mandate binding. Serve it at the registry UPLINK. Ivory inspectors check maintenance identities; break sight before their check completes. RADIO is in the north-east control office, beyond the inner checkpoint. Rook and Sable each brought one flash.',
   briefing: {
     lead: 'An order is only paper until someone has to obey it.',
     body: 'The mandate survived and the crew is together again. Upload it to the enforcement registry for 20 seconds, then extract every survivor at the north-east VAN. A partner holding LOOP masks the terminal trace; otherwise a live RADIO dispatches site guards and incoming teams to UPLINK. Upload progress survives interruptions. The raid log is optional. RADIO is deep inside a secure office: the entrance offers no quick way to stop reinforcements.',

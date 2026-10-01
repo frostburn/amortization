@@ -27,7 +27,7 @@ export function workBroadcast(w: World, a: Operative, id: 'mask' | 'upload') {
     w,
     id === 'mask'
       ? `${a.name} is holding LOOP. Keep them here while another operative works UPLINK. Selection changes preserve the loop.`
-      : `${a.name} is uploading ${w.mission.broadcast?.subject ?? "Mara's audit"}. Move or Hold pauses it; progress is saved. ${b.maskBy ? 'LOOP is masking the signal.' : 'Without LOOP, the signal can be traced.'}`,
+      : `${a.name} is uploading ${w.mission.broadcast?.subject ?? "Quill's audit"}. Move or Hold pauses it; progress is saved. ${b.maskBy ? 'LOOP is masking the signal.' : 'Without LOOP, the signal can be traced.'}`,
   );
 }
 
@@ -89,7 +89,7 @@ export function updateBroadcast(w: World, dt: number) {
       w,
       config.completed
         ? `${config.completed}. LOOP is released; bring every survivor to VAN. LOG is optional.`
-        : "Audit published. Mara's evidence is public. LOOP is released; bring every survivor to VAN. LOG is optional.",
+        : "Audit published. Quill's evidence is public. LOOP is released; bring every survivor to VAN. LOG is optional.",
     );
   }
 }

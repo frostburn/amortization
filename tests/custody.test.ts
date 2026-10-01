@@ -94,7 +94,7 @@ describe('Protective custody', () => {
     expect(w.known).toContain(v.id);
     expect(w.agents.every((a) => !a.exposed)).toBe(true);
     until(w, () => w.status === 'lost');
-    expect(w.message).toContain('Mara was killed');
+    expect(w.message).toContain('Quill was killed');
     const kits = w.agents.map((a) => a.medkit);
     treatEscort(
       w,

@@ -31,7 +31,7 @@ export const countermand: Mission = {
   relayTime: 5,
   description: 'Withdraw the outstanding seizure orders at the company’s dispatch yard.',
   intro:
-    'Mara: the repayments cleared, but the dispatch office still holds seizure orders issued before the injunction. Recover the signed RECALL, file it at FILE, and bring the original home.',
+    'Quill: the repayments cleared, but the dispatch office still holds seizure orders issued before the injunction. Recover the signed RECALL, file it at FILE, and bring the original home.',
   briefing: {
     lead: 'The money is moving. The seizure crews have not been recalled.',
     body: 'Recover the signed RECALL from the north records office. Its carrier must work FILE for nine uninterrupted seconds to cancel outstanding dispatches. Bring the original and every survivor to VAN.',

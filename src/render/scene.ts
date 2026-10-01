@@ -1542,7 +1542,7 @@ export class Scene {
               ? 'kestrel'
               : w.mission.escort?.id === 'voss'
                 ? 'voss'
-                : 'mara';
+                : 'quill';
       const boss = guard?.tactics?.role === 'marshal';
       const v = this.person(p, a ? String(a.index + 1) : boss ? 'DACRE' : '');
       const pos = {

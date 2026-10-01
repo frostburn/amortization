@@ -22,7 +22,7 @@ export const severance: Mission = {
   description: 'Destroy the debt backups. Plant, withdraw, then make it permanent.',
   evidenceName: 'Recovery register',
   intro:
-    'Mara: the audit is public. They can still rebuild every fraudulent account from two backup cores. Plant WEST and EAST, clear the marked blast areas, then use Detonate. VAN unlocks after both cores are destroyed.',
+    'Quill: the audit is public. They can still rebuild every fraudulent account from two backup cores. Plant WEST and EAST, clear the marked blast areas, then use Detonate. VAN unlocks after both cores are destroyed.',
   briefing: {
     lead: 'No copy to fall back on.',
     body: 'Two isolated machines hold the recovery keys for the fraudulent debt book. Plant a charge at WEST and EAST, then destroy them remotely. Each placement takes five seconds with free hands and prevents firing. Completed charges stay armed without a timer. Every survivor must leave both marked blast areas before Detonate becomes available. Extract at the north-east VAN afterwards.',

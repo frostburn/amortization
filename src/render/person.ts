@@ -8,7 +8,7 @@ import { coatRings, shoulderPadTransform } from './clothing';
 import { project } from './isometric';
 import { modelGeometry, ModelMesh, MODEL_VIEW, type ModelFace, type Point3 } from './model-mesh';
 
-export type Appearance = CrewId | 'guard' | 'voss' | 'mara' | 'kestrel' | 'holt';
+export type Appearance = CrewId | 'guard' | 'voss' | 'quill' | 'kestrel' | 'holt';
 export interface Outfit {
   appearance: Appearance;
   uniform?: boolean;
@@ -149,21 +149,41 @@ const PROFILES: Record<Appearance, Profile> = {
     neck: 0.056,
     hairStyle: 'bob',
   },
-  mara: {
-    skin: 0xad7958,
-    hair: 0x45362b,
-    coat: 0x62615a,
+  quill: {
+    skin: 0xb58b69,
+    hair: 0x292923,
+    coat: 0x474843,
     shirt: 0x63968a,
-    shoulders: 0.16,
-    waist: 0.135,
+    shoulders: 0.19,
+    waist: 0.16,
     hips: 0.17,
-    head: [0.11, 0.1, 0.148],
-    jaw: 0.93,
-    neck: 0.06,
-    hairStyle: 'bun',
+    head: [0.107, 0.106, 0.145],
+    jaw: 0.99,
+    neck: 0.064,
+    hairStyle: 'crop',
     glasses: true,
   },
 };
+
+const FEMALE_GUARD: Profile = {
+  ...PROFILES.guard,
+  shoulders: 0.18,
+  waist: 0.145,
+  hips: 0.18,
+  head: [0.104, 0.096, 0.146],
+  jaw: 0.88,
+  neck: 0.057,
+  hairStyle: 'bun',
+};
+
+// Presentation-only identity: no simulation randomness or encounter-order state.
+// A small shared palette preserves pose reuse; patrol reinforcements use it too.
+const GUARD_SKIN = [0xe0b99b, 0xcba17c, 0xb48a66, 0x9c6d4f, 0x80553d, 0x614332];
+function guardSkin(id: string) {
+  let hash = 2166136261;
+  for (let i = 0; i < id.length; i++) hash = Math.imul(hash ^ id.charCodeAt(i), 16777619);
+  return GUARD_SKIN[(hash >>> 0) % GUARD_SKIN.length];
+}
 
 // Read the role from either side of the coat, not just a tiny chest badge.
 const SPECIALISTS: Record<NonNullable<Outfit['specialist']>, Profile> = {
@@ -180,7 +200,7 @@ const SPECIALISTS: Record<NonNullable<Outfit['specialist']>, Profile> = {
     beard: true,
   },
   shield: {
-    ...PROFILES.guard,
+    ...FEMALE_GUARD,
     coat: 0x783b56,
     shirt: 0xcda3b7,
     helmet: 0x68364d,
@@ -216,7 +236,8 @@ const SPECIALISTS: Record<NonNullable<Outfit['specialist']>, Profile> = {
     pads: 0xe3937c,
   },
   marksman: {
-    ...PROFILES.guard,
+    ...FEMALE_GUARD,
+    shoulders: 0.17,
     coat: 0x8059aa,
     shirt: 0xd7b8ef,
     helmet: 0x67448c,
@@ -461,6 +482,15 @@ export class PersonSprite extends ModelMesh {
   pose(p: Person, alpha: number, outfit: Outfit = { appearance: 'morrow' }) {
     const direction = facing(facingAngle(p)),
       alive = living(p);
+    const baseProfile =
+      outfit.appearance === 'guard' && outfit.specialist
+        ? SPECIALISTS[outfit.specialist]
+        : PROFILES[outfit.appearance];
+    // Dacre is a named character with a portrait, not a generic guard variant.
+    const skin =
+      outfit.appearance === 'guard' && outfit.specialist !== 'marshal'
+        ? guardSkin(p.id)
+        : baseProfile.skin;
     const phase = walkPhase(p, alpha);
     const frame = phase === null ? -1 : Math.round((((phase % 1) + 1) % 1) * 24) % 24;
     const aiming =
@@ -479,6 +509,7 @@ export class PersonSprite extends ModelMesh {
       frame,
       aiming,
       outfit.appearance,
+      skin,
       outfit.uniform,
       outfit.cuffed,
       outfit.weapon,
@@ -498,10 +529,7 @@ export class PersonSprite extends ModelMesh {
       return;
     }
     const f = new Figure((direction * Math.PI * 2) / FACING_COUNT);
-    const profile =
-      outfit.appearance === 'guard' && outfit.specialist
-        ? SPECIALISTS[outfit.specialist]
-        : PROFILES[outfit.appearance];
+    const profile = skin === baseProfile.skin ? baseProfile : { ...baseProfile, skin };
     const coat = outfit.uniform ? 0x788574 : profile.coat;
     if (!alive) {
       this.fallen(f, profile, coat, outfit);
@@ -733,7 +761,7 @@ export class PersonSprite extends ModelMesh {
       if (p.glasses) f.block(add(add(c, eye), [0.009, 0, 0.003]), [0.004, 0.048, 0.027], 0x9faca0);
       else f.block(add(add(c, eye), [0, 0, 0.02]), [0.012, 0.033, 0.01], shade(p.hair, 0.6));
     }
-    if (helmet || guard) {
+    if (helmet || (guard && p.helmet !== undefined)) {
       const color = helmet ? 0xcbad68 : p.helmet!;
       f.oval(add(c, [0, 0, 0.145]), 0.145, 0.137, 0.074, color, false);
       f.block(add(c, [0.075, 0, 0.106]), [0.22, 0.27, 0.025], color);

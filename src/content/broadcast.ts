@@ -19,13 +19,13 @@ export const broadcast: Mission = {
   objective: 'broadcast',
   loadout: ['pistol', 'pistol', 'carbine', 'carbine'],
   broadcast: { duration: 24, traceTime: 5 },
-  description: "Publish Mara's audit. Hold the line, then get everyone out.",
+  description: "Publish Quill's audit. Hold the line, then get everyone out.",
   evidenceName: 'Suppression log',
   intro:
-    'Mara: my audit is ready. Keep one operative on the street-side LOOP while another works UPLINK. Without the loop, they trace the signal in five seconds. Publish, then bring everyone to VAN.',
+    'Quill: my audit is ready. Keep one operative on the street-side LOOP while another works UPLINK. Without the loop, they trace the signal in five seconds. Publish, then bring everyone to VAN.',
   briefing: {
     lead: 'An account they cannot quietly close.',
-    body: "Mara's audit connects the ledger to the account keys. Publish it from the municipal exchange before the company buries the evidence. UPLINK needs 24 seconds of work with free hands. Progress survives interruptions and a change of operator. Bring every survivor to VAN once the audit is public.",
+    body: "Quill's audit connects the ledger to the account keys. Publish it from the municipal exchange before the company buries the evidence. UPLINK needs 24 seconds of work with free hands. Progress survives interruptions and a change of operator. Bring every survivor to VAN once the audit is public.",
     routes: [
       {
         title: 'Keep the line quiet',

@@ -328,7 +328,7 @@ export function missionGoals(w: World): Goal[] {
         ? `✓ ${m.broadcast?.completed ?? 'Audit published'}`
         : m.broadcast?.subject
           ? `○ Upload ${m.broadcast.subject}`
-          : '○ Publish Mara’s audit',
+          : '○ Publish Quill’s audit',
       complete: published(w),
       detail: published(w)
         ? `${m.broadcast?.completed ?? 'The audit is public'}. Both workstations are released. Bring everyone to VAN, including the LOOP operator. LOG is optional.`
@@ -430,8 +430,8 @@ export function missionGoals(w: World): Goal[] {
       complete: false,
       detail:
         w.disguiseTaken && !cover
-          ? 'The maintenance identity is lost or exposed. Use CUT at the transport: it takes eight seconds and attracts nearby guards. Collect MARA after preparing the escape.'
-          : `Quiet: ${cover ? `use ${cover.name} with free hands and weapons concealed at WARRANT` : 'take KIT, then use WARRANT with that operative’s weapon concealed'}. Loud: CUT the lock for eight seconds. Unlocking leaves Mara protected until you collect her.`,
+          ? 'The maintenance identity is lost or exposed. Use CUT at the transport: it takes eight seconds and attracts nearby guards. Collect QUILL after preparing the escape.'
+          : `Quiet: ${cover ? `use ${cover.name} with free hands and weapons concealed at WARRANT` : 'take KIT, then use WARRANT with that operative’s weapon concealed'}. Loud: CUT the lock for eight seconds. Unlocking leaves Quill protected until you collect him.`,
       targets: w.disguiseTaken && !cover ? ['breach'] : [...kit, 'release', 'breach'],
     };
   } else {
@@ -443,9 +443,9 @@ export function missionGoals(w: World): Goal[] {
         ? `✓ ${name} ${v.waiting ? 'waiting for escort' : 'following escort'}`
         : `○ Locate ${name}`,
       detail: v?.recruited
-        ? `${name} ${v.waiting ? 'is waiting. Use the Escort controls to resume following' : 'follows the operative who recruited them'}. Interact with their marker to hand off the escort.${m.escort?.vulnerable ? ' Guards recognize Mara; use cover, wait/follow, and nearby first aid.' : ' Bring the whole crew to VAN.'}`
+        ? `${name} ${v.waiting ? 'is waiting. Use the Escort controls to resume following' : 'follows the operative who recruited them'}. Interact with their marker to hand off the escort.${m.escort?.vulnerable ? ' Guards recognize Quill; use cover, wait/follow, and nearby first aid.' : ' Bring the whole crew to VAN.'}`
         : m.escort?.locked
-          ? 'The transport is unlocked. Interact with MARA when the escape route is ready. She moves slowly and guards can shoot her once collected.'
+          ? 'The transport is unlocked. Interact with QUILL when the escape route is ready. He moves slowly and guards can shoot him once collected.'
           : 'Interact with VOSS to recruit her. KIT provides one maintenance disguise; the secure office still attracts suspicion. An armed squad can also reach her.',
       targets: v?.recruited || m.escort?.locked ? ['escort'] : ['escort', ...kit],
     };

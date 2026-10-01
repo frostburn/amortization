@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('releases Mara, preserves her wait order across selection, and resets the escort controls', async ({
+test('releases Quill, preserves his wait order across selection, and resets the escort controls', async ({
   page,
 }) => {
   test.setTimeout(50_000);
@@ -12,7 +12,7 @@ test('releases Mara, preserves her wait order across selection, and resets the e
   await expect(page.getByRole('dialog')).toContainText('Two ways out');
   await page.getByRole('button', { name: 'Begin operation' }).click();
   await expect(page.locator('#objective-primary')).toHaveText('○ Unlock the transport');
-  await expect(page.locator('#objective-extract')).toHaveText('○ Rescue Mara before extraction');
+  await expect(page.locator('#objective-extract')).toHaveText('○ Rescue Quill before extraction');
   await expect(page.locator('#escort-controls')).toBeHidden();
   const map = (await page.locator('canvas').boundingBox())!;
   const scale = Math.min(map.width / (68 * 26 + 80), map.height / (68 * 14 + 110));
@@ -28,16 +28,16 @@ test('releases Mara, preserves her wait order across selection, and resets the e
   await order(5.5, 21);
   await expect(page.locator('#condition-0')).toHaveText('Maintenance', { timeout: 8_000 });
   await order(14.3, 6.2);
-  await expect(page.locator('#objective-primary')).toHaveText('○ Locate Mara', { timeout: 15_000 });
+  await expect(page.locator('#objective-primary')).toHaveText('○ Locate Quill', { timeout: 15_000 });
   await expect(page.locator('#escort-controls')).toBeHidden();
   await order(25, 18.4);
-  await expect(page.locator('#escort-status')).toHaveText('Mara · 75 / 75 health · following', {
+  await expect(page.locator('#escort-status')).toHaveText('Quill · 75 / 75 health · following', {
     timeout: 15_000,
   });
-  await page.getByRole('button', { name: 'Tell Mara to wait', exact: true }).click();
+  await page.getByRole('button', { name: 'Tell Quill to wait', exact: true }).click();
   await page.getByRole('button', { name: 'Select Vale', exact: true }).click();
   await expect(page.locator('#escort-status')).toContainText('waiting');
-  await expect(page.locator('#objective-primary')).toHaveText('✓ Mara waiting for escort');
+  await expect(page.locator('#objective-primary')).toHaveText('✓ Quill waiting for escort');
   const extraction = page.getByRole('region', { name: 'Extraction', exact: true });
   await expect(
     extraction.getByRole('button', { name: 'Rally crew to STREET', exact: true }),
@@ -47,7 +47,7 @@ test('releases Mara, preserves her wait order across selection, and resets the e
   ).toBeVisible();
   await page
     .getByRole('region', { name: 'Witness', exact: true })
-    .getByRole('button', { name: 'Ask Mara to follow', exact: true })
+    .getByRole('button', { name: 'Ask Quill to follow', exact: true })
     .click();
   await expect(page.locator('#escort-status')).toContainText('following');
   await page.getByRole('button', { name: 'Restart', exact: true }).click();

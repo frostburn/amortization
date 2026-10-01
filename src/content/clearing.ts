@@ -27,7 +27,7 @@ export const clearing: Mission = {
   description: 'Seize the settlement keys. Cross the freight yard and bring the crew out.',
   evidenceName: 'Settlement keys',
   intro:
-    'Mara: destroying the backups stopped collection, but the frozen escrow still belongs to them. Bring me the physical KEYS from the north vault. Leave someone on SHUNT, or CUT the shutter. Violet marksmen cover the freight lanes: break their charging line at solid cover.',
+    'Quill: destroying the backups stopped collection, but the frozen escrow still belongs to them. Bring me the physical KEYS from the north vault. Leave someone on SHUNT, or CUT the shutter. Violet marksmen cover the freight lanes: break their charging line at solid cover.',
   briefing: {
     lead: 'The money has to go somewhere.',
     body: 'The clearinghouse holds the settlement keys needed to return the frozen escrow to its owners. Take KEYS from the north vault and bring every survivor to the north-east VAN. The case occupies both hands and exposes even a disguised carrier. This is a larger site: the camera follows your selection at a readable scale. Select an operative’s card or press 1–4 to switch across the map. Fit map gives an overview; Follow / Home returns to the selected crew.',

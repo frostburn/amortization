@@ -4,7 +4,7 @@ import { missions } from '../src/content/missions';
 import { createWorld } from '../src/sim/world';
 import type { Mission } from '../src/sim/types';
 import { earnedMedals, medalsFor } from '../src/ui/medals';
-import { parseReplay, ReplayPlayer } from '../src/replay/core';
+import { fingerprint, parseReplay, ReplayPlayer } from '../src/replay/core';
 
 const win = (id: Mission['id']) => {
   const w = createWorld(missions.find((m) => m.id === id)!);
@@ -84,8 +84,9 @@ it('awards the human quiet Mission 10 completion with its original checkpoints',
   const bundle = parseReplay(
     readFileSync('tests/replays/injunction-quiet-d4da9148.replay.json', 'utf8'),
   );
-  // Deliberately skip the build-label gate; strict playback still compares every
-  // original checkpoint against the current implementation of this night mission.
+  // Skip the build label and Quill's changed mission copy; strict playback still
+  // compares every original checkpoint and the result against current rules.
+  bundle.mission.hash = fingerprint(missions.find((m) => m.id === bundle.mission.id));
   const player = new ReplayPlayer(bundle, bundle.build);
   while (!player.done) player.advance();
   expect(player.error).toBeNull();
@@ -111,8 +112,9 @@ it.each([
       const bundle = parseReplay(
         readFileSync(`tests/replays/${mission}-human-${id}.replay.json`, 'utf8'),
       );
-      // Source maintenance can change the fingerprint without changing these runs.
-      // Keep strict state verification independently of that build label.
+      // Build labels and Quill's presentation copy changed. Keep every original
+      // state checkpoint and result, independently of those metadata gates.
+      bundle.mission.hash = fingerprint(missions.find((m) => m.id === bundle.mission.id));
       const player = new ReplayPlayer(bundle, bundle.build);
       while (!player.done) player.advance();
       expect(player.error, id).toBeNull();

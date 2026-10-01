@@ -71,6 +71,47 @@ describe('directional character animation', () => {
     expect(buffer.destroyed).toBe(true);
     expect(movingBuffer.destroyed).toBe(true);
   });
+  it('keeps varied patrol skin tones stable across shared poses, reinforcements and casualties', () => {
+    const colors = (sprite: PersonSprite) => {
+      const data = sprite.geometry.getBuffer('aColor').data;
+      return new Set(
+        Array.from({ length: data.length / 3 }, (_, i) =>
+          [0, 1, 2].map((j) => Math.round(data[i * 3 + j] * 255)).join(','),
+        ),
+      );
+    };
+    const people = Array.from({ length: 12 }, (_, i) => ({
+      ...walker(),
+      id: i < 6 ? `guard-${i}` : `response-0-${i - 6}`,
+    }));
+    const before = JSON.stringify(people);
+    const sprites = people.map((p) => {
+      const sprite = new PersonSprite();
+      sprite.pose(p, 1, { appearance: 'guard' });
+      return sprite;
+    });
+    const palettes = sprites.map(colors);
+    expect(new Set(sprites.map((s) => s.geometry)).size).toBeGreaterThanOrEqual(4);
+    expect(new Set(sprites.map((s) => s.geometry)).size).toBeLessThan(people.length);
+    for (const sprite of sprites)
+      expect(sprite.geometry.getBuffer('aPosition').data).toEqual(
+        sprites[0].geometry.getBuffer('aPosition').data,
+      );
+    // Find a real skin color difference, then check that same identity after
+    // another person uses the cache, after a fall, and after a mission rebuild.
+    const skin = [...palettes[0]].find((c) => palettes.some((palette) => !palette.has(c)))!;
+    expect(skin).toBeDefined();
+    const rebuilt = new PersonSprite();
+    rebuilt.pose({ ...people[0] }, 1, { appearance: 'guard' });
+    expect(rebuilt.geometry).toBe(sprites[0].geometry);
+    expect(JSON.stringify(people)).toBe(before);
+    for (const specialist of [undefined, 'shield', 'marksman'] as const) {
+      rebuilt.pose({ ...people[0], hp: 0 }, 1, { appearance: 'guard', specialist });
+      expect(colors(rebuilt).has(skin)).toBe(true);
+    }
+    rebuilt.destroy();
+    sprites.forEach((s) => s.destroy());
+  });
   it('keeps the stance foot fixed in world space and lifts only the returning foot', () => {
     for (const phase of [0.05, 0.15, 0.3]) {
       const distance = 0.05;
