@@ -26,6 +26,8 @@ export interface Solid extends Rect {
   height: number;
 }
 export type ObjectKind =
+  | 'seal-west'
+  | 'seal-east'
   | 'key-lift'
   | 'stairs-up'
   | 'stairs-down'
@@ -84,7 +86,7 @@ export interface Armament {
   charging?: { target: string; remaining: number };
 }
 export interface GuardTactic {
-  role: 'sentry' | 'breacher' | 'marksman' | 'inspector' | 'shield' | 'support';
+  role: 'sentry' | 'breacher' | 'marksman' | 'inspector' | 'shield' | 'support' | 'marshal';
   posts: Vec[];
 }
 export interface Mission {
@@ -102,7 +104,8 @@ export interface Mission {
     | 'settlement'
     | 'countermand'
     | 'continuity'
-    | 'threshold';
+    | 'threshold'
+    | 'bench';
   number: string;
   title: string;
   location: string;
@@ -121,6 +124,16 @@ export interface Mission {
   /** Presentation palette; does not extend sight ranges. */
   palette?: 'sunset';
   threshold?: { keyTime: number; arrivalTime: number; reserve: number[]; door: Vec };
+  finale?: {
+    dacre: number;
+    retinue: number[];
+    door: Rect;
+    inside: Vec;
+    chamber: Rect;
+    sealTime: number;
+    helicopter: Vec;
+    boarding: Vec;
+  };
   building?: { footprint: Rect; upper: Rect; stairs: [Vec, Vec] };
   /** Kestrel controls alternating wired circuits until removed. */
   continuity?: { cycle: number };
@@ -212,6 +225,8 @@ export interface Operative extends Person {
   interaction: number;
 }
 export interface Guard extends Person {
+  marshal?: { remaining: number; target: Vec | null; readyAt: number; lastHp: number };
+  commandMove?: { goal: Vec; until: number };
   /** Unseen incoming fire; source is a snapshot, never a live target position. */
   incoming?: { source: Vec; until: number; nextMove: number; goal: Vec | null };
   /** Actual body/shield bearing; angle remains the AI's desired bearing. */
@@ -312,6 +327,14 @@ export interface World {
     clerk: string | null;
   };
   recall?: { filed: boolean };
+  finale?: {
+    open: boolean;
+    progress: number;
+    westBy: string | null;
+    eastBy: string | null;
+    defeated: boolean;
+    interrupted: number;
+  };
   alarm: boolean;
   alarmTime: number;
   waves: number;

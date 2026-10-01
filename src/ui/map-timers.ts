@@ -1,3 +1,5 @@
+import { COMMAND_TIME, dacre } from '../sim/finale';
+import type { GuideTarget } from './objectives';
 import { RESPONSE_TIMES } from '../sim/awareness';
 import { published } from '../sim/broadcast';
 import { FLASH_FLIGHT } from '../sim/flash';
@@ -17,7 +19,7 @@ export interface MapTimerRow {
   paused?: boolean;
 }
 export interface MapTimer {
-  target: ObjectKind;
+  target: GuideTarget;
   tag: string;
   rows: MapTimerRow[];
 }
@@ -56,10 +58,10 @@ const interrupted = (w: World, a: Operative, target: ObjectKind) => {
 /** Read-only presentation of simulation time. No wall-clock animation or guessed travel ETA. */
 export function mapTimers(w: World, floor = 0): MapTimer[] {
   if (w.status !== 'playing') return [];
-  const timers = new Map<ObjectKind, MapTimer>();
-  const add = (target: ObjectKind, row: MapTimerRow) => {
-    if (!w.mission.landmarks.some((o) => o.id === target)) return;
-    const location = landmark(w, target);
+  const timers = new Map<GuideTarget, MapTimer>();
+  const add = (target: ObjectKind | 'dacre', row: MapTimerRow) => {
+    if (target !== 'dacre' && !w.mission.landmarks.some((o) => o.id === target)) return;
+    const location = target === 'dacre' ? { ...dacre(w)!, tag: 'DACRE' } : landmark(w, target);
     if (floorOf(location) !== floor) return;
     let timer = timers.get(target);
     if (!timer) {
@@ -117,6 +119,32 @@ export function mapTimers(w: World, floor = 0): MapTimer[] {
       tone: lift > 0 ? 'wait' : 'work',
     });
 
+  const boss = dacre(w);
+  if (boss?.marshal?.target)
+    add('dacre', {
+      label: 'Crossfire order',
+      fraction: boss.marshal.remaining / COMMAND_TIME,
+      remaining: boss.marshal.remaining,
+      tone: 'danger',
+    });
+  if (w.finale && !w.finale.open) {
+    const f = w.finale,
+      duration = w.mission.finale!.sealTime;
+    for (const [id, holder] of [
+      ['seal-west', f.westBy],
+      ['seal-east', f.eastBy],
+    ] as const)
+      if (holder || f.progress > 0)
+        add(id, {
+          label: holder
+            ? `Held by ${w.agents.find((a) => a.id === holder)!.name}`
+            : 'Seal released',
+          fraction: f.progress / duration,
+          remaining: duration - f.progress,
+          tone: 'work',
+          paused: !f.westBy || !f.eastBy,
+        });
+  }
   const b = w.broadcast;
   if (b && !published(w) && (b.progress > 0 || b.uploadBy)) {
     const config = w.mission.broadcast!;

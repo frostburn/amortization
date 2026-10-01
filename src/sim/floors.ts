@@ -1,3 +1,4 @@
+import { dacreDefeated } from './finale';
 import { floorOf, living, position, sameFloor, distance } from './types';
 import type { ObjectKind, Person, Vec, World } from './types';
 import { findPath } from './navigation';
@@ -29,12 +30,17 @@ export function followStairs(w: World, leader: Vec) {
 }
 export const combatTarget = (w: World, id: string) =>
   w.guards.find((g) => g.id === id && living(g)) ??
-  (w.mission.continuity && w.escort?.id === id && living(w.escort) && !w.escort.recruited
+  ((w.mission.continuity || w.mission.finale) &&
+  w.escort?.id === id &&
+  living(w.escort) &&
+  !w.escort.recruited
     ? w.escort
     : undefined);
 export const captureReady = (w: World) =>
-  !w.mission.continuity ||
-  ['power-west', 'power-east'].every((id) => w.security?.isolated.some((p) => p === id));
+  w.mission.finale
+    ? dacreDefeated(w) && !!w.finale?.open
+    : !w.mission.continuity ||
+      ['power-west', 'power-east'].every((id) => w.security?.isolated.some((p) => p === id));
 export const kestrelRemoved = (w: World) => !!w.escort && (!living(w.escort) || w.escort.recruited);
 export const activeCircuit = (w: World) =>
   Math.floor(w.time / (w.mission.continuity?.cycle ?? 12)) % 2 ? 'power-east' : 'power-west';

@@ -5,37 +5,41 @@ import { findPath, lineClear, passable } from './navigation';
 import { weaponRange } from './weapons';
 
 export const guardRole = (guard: Guard) =>
-  guard.turret
-    ? `${guard.turret.circuit === 'power-west' ? 'Amber' : 'Blue'} wired turret`
-    : guard.tactics?.role === 'shield'
-      ? 'Shield officer'
-      : guard.tactics?.role === 'support'
-        ? 'Support gunner'
-        : guard.tactics?.role === 'marksman'
-          ? 'Security marksman'
-          : guard.tactics?.role === 'sentry'
-            ? 'Carbine sentry'
-            : guard.tactics?.role === 'breacher'
-              ? 'Breach officer'
-              : guard.tactics?.role === 'inspector'
-                ? 'Credential inspector'
-                : 'Site guard';
+  guard.marshal
+    ? 'Lucan Dacre · command marshal'
+    : guard.turret
+      ? `${guard.turret.circuit === 'power-west' ? 'Amber' : 'Blue'} wired turret`
+      : guard.tactics?.role === 'shield'
+        ? 'Shield officer'
+        : guard.tactics?.role === 'support'
+          ? 'Support gunner'
+          : guard.tactics?.role === 'marksman'
+            ? 'Security marksman'
+            : guard.tactics?.role === 'sentry'
+              ? 'Carbine sentry'
+              : guard.tactics?.role === 'breacher'
+                ? 'Breach officer'
+                : guard.tactics?.role === 'inspector'
+                  ? 'Credential inspector'
+                  : 'Site guard';
 export const guardDescription = (guard: Guard) =>
-  guard.turret
-    ? `Stationary carbine mount · 180 armour · 9-unit range. Tracks for 0.8s before firing. Solid cover breaks tracking. Isolate ${guard.turret.circuit === 'power-west' ? 'WEST' : 'EAST'} or authorise INSPECT; RADIO has no effect.`
-    : guard.tactics?.role === 'shield'
-      ? 'Burgundy uniform, pale shield. Blocks 88% of frontal damage but turns slowly. Faces incoming fire while moving to cover. Flank, use two angles, or flash to lower the shield. Ordinary 90-health body.'
-      : guard.tactics?.role === 'support'
-        ? 'Olive uniform, box-fed support gun. Steadies for 0.65s. Fire pressure slows aiming and recovery; movement and reloads stay responsive. Break sight or flank during reloads.'
-        : guard.tactics?.role === 'marksman'
-          ? 'Violet uniform, long coil rifle. Charges a visible firing line for 1.25s. Break sight to cancel it; flank its fixed posts.'
-          : guard.tactics?.role === 'sentry'
-            ? 'Holds a lane. Moves into cover under fire or to reload. Needs a steady firing position.'
-            : guard.tactics?.role === 'breacher'
-              ? 'Closes through screened positions. Dangerous nearby; withdraw during its long firing recovery.'
-              : guard.tactics?.role === 'inspector'
-                ? 'Ivory uniform, orange shoulder caps. Checks maintenance identities within 4 units over 2.5s. Break sight or leave range to cancel the check. Carries a pistol.'
-                : 'Patrols, challenges intruders, and reports contact.';
+  guard.marshal
+    ? 'Charcoal armour, gold shoulders · 160 health · carbine. Patrols with his retinue. A two-second hand signal sends nearby surviving officers to crossfire posts, using his own sight or an officer’s visible report. Hit or flash him to interrupt; he cannot fire while signalling. RADIO does not stop local commands.'
+    : guard.turret
+      ? `Stationary carbine mount · 180 armour · 9-unit range. Tracks for 0.8s before firing. Solid cover breaks tracking. Isolate ${guard.turret.circuit === 'power-west' ? 'WEST' : 'EAST'} or authorise INSPECT; RADIO has no effect.`
+      : guard.tactics?.role === 'shield'
+        ? 'Burgundy uniform, pale shield. Blocks 88% of frontal damage but turns slowly. Faces incoming fire while moving to cover. Flank, use two angles, or flash to lower the shield. Ordinary 90-health body.'
+        : guard.tactics?.role === 'support'
+          ? 'Olive uniform, box-fed support gun. Steadies for 0.65s. Fire pressure slows aiming and recovery; movement and reloads stay responsive. Break sight or flank during reloads.'
+          : guard.tactics?.role === 'marksman'
+            ? 'Violet uniform, long coil rifle. Charges a visible firing line for 1.25s. Break sight to cancel it; flank its fixed posts.'
+            : guard.tactics?.role === 'sentry'
+              ? 'Holds a lane. Moves into cover under fire or to reload. Needs a steady firing position.'
+              : guard.tactics?.role === 'breacher'
+                ? 'Closes through screened positions. Dangerous nearby; withdraw during its long firing recovery.'
+                : guard.tactics?.role === 'inspector'
+                  ? 'Ivory uniform, orange shoulder caps. Checks maintenance identities within 4 units over 2.5s. Break sight or leave range to cancel the check. Carries a pistol.'
+                  : 'Patrols, challenges intruders, and reports contact.';
 
 /** Nearby partners can signal a sighting. This never copies an unseen person's live position. */
 export function shareContact(world: World, guard: Guard, target: Person) {

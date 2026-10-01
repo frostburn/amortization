@@ -295,6 +295,7 @@ export function parseReplay(raw: string): ReplayBundle {
         requireValue(
           typeof c.target === 'string' &&
             ((archived.continuity && c.target === 'kestrel') ||
+              (archived.finale && c.target === 'holt') ||
               /^(guard-\d+|response-\d+-\d+|courier)$/.test(c.target) ||
               (/^turret-(0|[1-9]\d*)$/.test(c.target) &&
                 Array.isArray(archived.security?.turrets) &&

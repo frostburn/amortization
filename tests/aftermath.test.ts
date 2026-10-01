@@ -35,7 +35,11 @@ it.each(exits)(
     for (let i = 0; i < 200; i++) ending.update(0.1);
     expect(ending.phase).toBe('departed');
     expect(ending.resultsReady).toBe(true);
-    if (mission.threshold) {
+    if (mission.finale) {
+      expect(ending.van).toBeUndefined();
+      expect(ending.helicopterFlight).toBe(1);
+      expect(ending.boarded.has('holt')).toBe(true);
+    } else if (mission.threshold) {
       expect(ending.van).toBeUndefined();
       expect(ending.liftClosed).toBe(1);
       expect(ending.offset).toEqual({ x: 0, y: 0 });

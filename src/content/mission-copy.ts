@@ -9,8 +9,62 @@ interface MissionCopy {
 
 // Keep each contract's concise orders and ending together. Presentation copy
 // stays outside recorded mission definitions, so prose edits do not invalidate
-// replays. Endings must hold for any successful route and surviving crew.
+// replays. Scenes use the full story cast, independently of gameplay casualties.
 export const missionCopy: Record<Mission['id'], MissionCopy> = {
+  bench: {
+    briefing: {
+      objective: 'Defeat Dacre. Open the Bench, then cuff or eliminate Severin Holt.',
+      extract: 'Take UP to the rooftop HELI with every survivor, plus Holt if arrested.',
+      rules:
+        'Hold both seals together for four seconds, or force CUT. Dacre’s two-second command can be interrupted by a hit or flash. The helicopter waits.',
+    },
+    epilogue: {
+      lead: 'The helicopter clears the tower.',
+      body: 'Dacre’s command ends on the executive floor. Holt no longer signs for the district. Below, the exchange keeps the repayments moving and the cancelled seizure orders remain cancelled. At the safehouse, Voss has left the door open and set out glasses. For once, the crew is coming home to a celebration.',
+    },
+    scene: {
+      title: 'Off duty',
+      setting: 'safehouse',
+      tone: 'celebration',
+      beats: [
+        {
+          speaker: 'voss',
+          text: 'You’re back. The whole street came out when they heard the helicopter. Come inside—there’s food, and nobody is on a clock tonight.',
+        },
+        { speaker: 'morrow', text: 'Stand down. Weapons safe. We made it home.' },
+        {
+          speaker: 'vale',
+          text: 'I checked the repayments on the way down. They’re still there. And for once, I’m shutting this thing off.',
+        },
+        {
+          speaker: 'rook',
+          text: 'Then give me that bottle. I’ve been carrying enough equipment for one night.',
+        },
+        {
+          speaker: 'sable',
+          text: 'You should see the tower from here. All that height, and it can’t tell a single one of us where to go.',
+        },
+        {
+          speaker: 'mara',
+          text: 'No one upstairs is giving orders anymore. Tomorrow, the hearings begin. Tonight belongs to the people who got us here.',
+        },
+        {
+          speaker: 'voss',
+          text: 'Tomorrow can wait. I saved these glasses for something worth celebrating.',
+        },
+        {
+          speaker: 'morrow',
+          text: 'To the people we brought home. To the ones who opened their doors. And to everyone who gets to keep what we won.',
+        },
+        { speaker: 'mara', text: 'To the district. Paid back. Free to leave. Free to stay.' },
+        {
+          speaker: 'voss',
+          text: 'When I called you, I asked for four people and a van. I didn’t know I was asking for a life. Thank you. All of you.',
+        },
+        { speaker: 'morrow', text: 'Glasses up. We’re home.' },
+      ],
+    },
+  },
   threshold: {
     briefing: {
       objective: 'Recover the tower service KEY, then have its carrier work LINK to call the lift.',

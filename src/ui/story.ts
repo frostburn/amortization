@@ -15,7 +15,8 @@ export interface StoryAudio {
 }
 
 const SEEN_KEY = 'amortization.story.v1';
-const sceneFor = (id: StoryId) => (id === 'opening' ? openingScene : missionCopy[id]?.scene);
+export const sceneFor = (id: StoryId): StoryScene =>
+  id === 'opening' ? openingScene : missionCopy[id]?.scene;
 export const storyUnlocked = (id: StoryId, records: Records) =>
   !!sceneFor(id) && (id === 'opening' || missionRecord(records, id).completions > 0);
 
@@ -139,6 +140,7 @@ export class StoryPlayer {
     if (!storyUnlocked(id, records)) return;
     this.id = id;
     this.scene = sceneFor(id);
+    this.dialog.dataset.tone = this.scene.tone ?? '';
     this.index = 0;
     this.dialog.innerHTML = `<header class="story-header"><div><p class="story-eyebrow">${id === 'opening' ? 'Prologue' : 'After the operation'} · Optional story</p><h2 id="story-title"></h2></div><div class="story-tools"><button data-story-control="sound" data-story-sound aria-pressed="false"></button><button data-story-control="close" aria-label="Close scene">×</button></div></header>
       <div class="story-stage"><div class="story-background" aria-hidden="true"></div><p class="story-setting"></p><div class="story-portrait" aria-hidden="true"></div></div>

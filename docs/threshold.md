@@ -14,6 +14,11 @@ northeast. The northern staff walk is screened; the southern platform has a
 marksman. An inspector patrols the central crossing. A shield officer, support
 gunner and breacher form the local lobby reserve.
 
+The service entrance is a low annex of Crown Tower. Behind it, the full-size
+skyscraper extends beyond the map, sharing the finale's footprint, window rhythm
+and sunset materials. This is render-only scenery; the lift approach, collision
+layout, default camera scale and recorded routes are unchanged.
+
 - **KEY** is the original service module. Its carrier has both hands occupied.
   Hold **SHUNT** with a partner to open dispatch, or force **CUT** for eight seconds.
   CUT works from inside as well. Keep the shunt operator in place until the

@@ -1,3 +1,4 @@
+import { finaleResolved } from '../sim/finale';
 import { liftReady, liftRemaining } from '../sim/threshold';
 import { kestrelRemoved } from '../sim/floors';
 import { published } from '../sim/broadcast';
@@ -14,6 +15,15 @@ export function extractionRequirement(
   world: World,
 ): { label: string; detail: string; goal: 'primary' | 'evidence' } | null {
   if (world.status === 'won') return null;
+  if (world.finale)
+    return finaleResolved(world)
+      ? null
+      : {
+          label: 'Remove Dacre and Holt',
+          detail:
+            'Defeat Dacre, then cuff or eliminate Holt. A cuffed Holt must come up to the rooftop HELI with his escort.',
+          goal: 'primary',
+        };
   if (world.threshold && !liftReady(world))
     return {
       label: world.threshold.calledAt === null ? 'Call LIFT at LINK' : 'Wait for LIFT',

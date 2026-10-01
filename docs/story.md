@@ -7,13 +7,15 @@ the mandate, release payments, and withdraw the seizure orders. Those victories
 stand. The antagonists respond to losses; a later revelation must not quietly
 undo the player's work.
 
-The prologue and all fourteen mission endings now have short, manually advanced
-scenes. They supplement the existing briefing and epilogue. Their tone is
-restrained and serious, with people discussing specific consequences instead of
-trading jokes or explaining controls. Only the opening and the all-survivors
-rescue ending speak through an operative: the other endings remain valid when a
-mission was won with casualties. Voss and Mara provide continuity away from the
-field team.
+The prologue and all fifteen mission endings now have short, manually advanced
+scenes. They supplement the existing briefing and epilogue. Their tone stays
+serious through the campaign, discussing concrete consequences without
+explaining controls; the finale lets the crew relax and celebrate. The opening
+and all-survivors rescue ending speak through an operative.
+The finale is a warmer homecoming: all four operatives join Voss and Mara
+for a celebration. Cutscenes use a fixed story cast, just as each operation starts
+with a full roster. Gameplay casualties do not alter dialogue, and nobody comments
+on the crew’s recovery.
 
 ## Where the player finds them
 
@@ -45,15 +47,15 @@ a reload action. The story's images are loaded on demand and never gate playing
 or reading the dialogue. [Artwork and generation prompts](story-art.md).
 
 Each character keeps one keyboard voice throughout the story, regardless of
-location. Morrow uses muted taps, Voss and Mara use distinct plastic keys, and
-the bosses retain their mechanical typewriter signatures.
+location. The four operatives use individual smartphone taps, Voss and Mara use
+distinct plastic keys, and the bosses retain their mechanical typewriter signatures.
 Individual timbre, cadence and punctuation rests are described in
 [Sound design](audio.md#story-keyboards). These are abstract character voices,
 not a claim that every conversation literally takes place at a keyboard.
 
 ## The opposing cast
 
-| Character                           | Power and manner                                                                                                                                | Foreshadowed encounter                                                                                          |
+| Character                           | Power and manner                                                                                                                                | Campaign encounter                                                                                              |
 | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Severin Holt, chairman              | Signs the exceptions that make exploitation ordinary. Calm, concerned with enforceable authority; he can admit a district is lost.              | The Bench in the skyscraper penthouse: physical protections and Dacre's remaining officers.                     |
 | Ada Kestrel, director of continuity | Owns the infrastructure and understands its limitations. Treats failures as engineering evidence, and eventually stays at the controls herself. | An occupied control room: active rerouting, local power and changing access.                                    |
@@ -78,39 +80,43 @@ not a claim that every conversation literally takes place at a keyboard.
 | 12 · Countermand | Beyond the district      | The seizure crews leave and the money stays returned. The three antagonists take up distinct positions beyond the district.  |
 | 13 · Continuity  | An empty control room    | Kestrel is removed, in custody or dead. Local control is handed over; Dacre gathers the remaining crews at the interchange.  |
 | 14 · Threshold   | Above the last street    | The service lift carries the crew past the executive lockdown. Dacre joins Holt upstairs; earlier victories remain in force. |
+| 15 · The Bench   | Off duty                 | The full crew comes home to a celebration with Voss and Mara. The district is free.          |
 
 Kestrel's encounter is implemented in [Continuity](continuity.md): two storeys,
 alternating local feeds, and a choice of arrest or lethal force. Her removal is
 final in either outcome; she does not reappear as a later boss.
 
-## Future boss design, not implemented here
+## The final encounter
 
-The final operation will confront **Dacre and Holt together in a skyscraper
-penthouse**. Threshold gets the crew into the building and its optional ending
-explains Dacre's withdrawal from the interchange. It does not remove either man.
-The ideas below belong to that shared encounter, not separate future missions.
-Introduce and explain any new mechanics in the mission UI whether or not the
-player has watched a scene.
+[The Bench](bench.md) implements Dacre and Holt together in Crown Tower’s
+penthouse. Dacre is a command marshal who signals visible retinue into crossfire
+positions. His order takes two seconds and can be interrupted with damage or a
+flash. It uses the position seen when the signal began; it cannot track an unseen
+operative or summon replacement officers.
 
-**Dacre** should physically move with a coordinated guard line. Portable command
-positions, shield escorts and support fire can create changing approaches. A
-split team should be able to interrupt coordination while another group reaches
-him. He must obey sight and lose track of unseen operatives; commanding the
-response is not permission to know the player's location through walls.
+Holt has ordinary health. His protection is the sealed chamber and the remaining
+defenders. Two operatives can open its distributed seals together, with a noisy
+CUT fallback for a lone survivor. Once Dacre falls, Holt can be cuffed and escorted
+upstairs, or explicitly killed. Extraction is the helicopter waiting on the roof.
 
-**Holt** should have physical protection the player can dismantle. The penthouse Bench's
-distributed seals could sustain security privileges while the chairman moves
-between protected chambers. Holding more than one station breaks that system
-and exposes a route to him. His importance should come from the site and its
-defenders, not an unexplained health multiplier or a cutscene-only victory.
+The fixed ending includes all four operatives, Voss and Mara. The street turns
+out to welcome the helicopter, there is food and a bottle at the safehouse, and
+the team toasts the people they brought home. Mara’s line works for either Holt
+outcome without specifying custody or death.
+The payments, recall and local control stand. The future hearings remain, but
+the scene ends on a shared victory, not another assignment or secret superior.
+Neither cutscene viewing nor MINUTES is a prerequisite for winning or
+understanding the operation.
 
 ## Implementation boundaries
 
 Each mission's scene, concise briefing and epilogue live together in
 `src/content/mission-copy.ts`. Shared speakers, settings and the opening are in
 `src/content/story.ts`; the dialog is in `src/ui/story.ts`. Completion records
-remain the source of truth for unlocks. `amortization.story.v1` stores only the
-IDs of scenes the player explicitly finished.
+remain the source of truth for unlocks. Scenes do not read or save a winning cast
+or Holt outcome. Obsolete `ending` fields are ignored when reading old records;
+completion counts, times and medals are preserved.
+`amortization.story.v1` stores only the IDs of scenes the player explicitly finished.
 
 Story copy itself stays outside replay fingerprints. New mission definitions and
 mechanics change their relevant fingerprints, while existing human runs remain verification

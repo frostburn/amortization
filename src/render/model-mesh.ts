@@ -1,5 +1,6 @@
 import { Geometry, GlProgram, Mesh, Shader } from 'pixi.js';
 import { project } from './isometric';
+import type { VisualTheme } from './theme';
 
 export type Point3 = [number, number, number];
 export interface ModelFace {
@@ -71,7 +72,7 @@ export class ModelMesh extends Mesh<Geometry, Shader> {
             in vec4 vTint;
             in vec3 vNormal;
             uniform float uSilhouette;
-            uniform float uSunset;
+            uniform float uLightTheme;
             out vec4 finalColor;
             void main() {
               // Interpolation softens rounded parts; duplicated face normals
@@ -83,9 +84,15 @@ export class ModelMesh extends Mesh<Geometry, Shader> {
                 light = 0.72 + max(0.0, dot(normal, vec3(-0.35, -0.45, 0.82))) * 0.48;
               }
               vec3 shade = vec3(light);
-              if (uSunset > 0.5 && lengthSquared > 0.0) {
+              if (uLightTheme == 1.0 && lengthSquared > 0.0) {
                 vec3 normal = vNormal * inversesqrt(lengthSquared);
                 shade = vec3(0.76, 0.62, 0.66) + max(0.0, dot(normal, vec3(-0.68, -0.55, 0.485))) * vec3(0.48, 0.39, 0.20);
+              }
+              if (uLightTheme == 2.0 && lengthSquared > 0.0) {
+                // Broad overhead tubes: neutral skin/uniform colors, cool fill,
+                // and no low, red sunlight on the indoor silhouettes.
+                float overhead = max(0.0, vNormal.z * inversesqrt(lengthSquared));
+                shade = vec3(0.80, 0.85, 0.86) + overhead * vec3(0.31, 0.32, 0.32);
               }
               finalColor = mix(vec4(min(vColor * shade, vec3(1.0)), 1.0) * vTint, vTint, uSilhouette);
             }`,
@@ -94,7 +101,7 @@ export class ModelMesh extends Mesh<Geometry, Shader> {
           depthUniforms: {
             uDepthLayer: { value: new Float32Array([0, 1]), type: 'vec2<f32>' },
             uSilhouette: { value: Number(silhouette), type: 'f32' },
-            uSunset: { value: 0, type: 'f32' },
+            uLightTheme: { value: 0, type: 'f32' },
           },
         },
       }),
@@ -102,9 +109,11 @@ export class ModelMesh extends Mesh<Geometry, Shader> {
     this.state.depthTest = true;
     this.state.depthMask = true;
   }
-  sunset(enabled: boolean) {
-    const u = this.shader!.resources.depthUniforms;
-    u.uniforms.uSunset = Number(enabled);
+  lightTheme(theme: VisualTheme) {
+    const u = this.shader!.resources.depthUniforms,
+      value = theme === 'sunset' ? 1 : theme === 'fluorescent' ? 2 : 0;
+    if (u.uniforms.uLightTheme === value) return;
+    u.uniforms.uLightTheme = value;
     u.update();
   }
   setDepthLayer(index: number, count: number) {

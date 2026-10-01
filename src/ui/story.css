@@ -7,6 +7,18 @@ dialog.story-dialog {
   background: #0d1514;
   border-color: #5b6255;
 }
+/* The finale keeps the familiar safehouse, with the warmth of a welcome home. */
+.story-dialog[data-tone='celebration'] {
+  background: #201b16;
+  border-color: #b69251;
+}
+.story-dialog[data-tone='celebration'] .story-stage::after {
+  background:
+    linear-gradient(0deg, #201b16, transparent 32%), linear-gradient(90deg, #3e281455, #f6c7791c);
+}
+.story-dialog[data-tone='celebration'] .story-speaker {
+  color: #f3ce83;
+}
 .story-dialog[open] {
   display: flex;
   flex-direction: column;
@@ -50,6 +62,7 @@ dialog.story-dialog {
   border-color: transparent;
 }
 .story-stage {
+  -webkit-tap-highlight-color: transparent;
   height: clamp(160px, 37dvh, 340px);
   min-height: 110px;
   flex: 1 1 auto;
@@ -99,6 +112,7 @@ dialog.story-dialog {
   mask-composite: intersect;
 }
 .story-dialogue {
+  -webkit-tap-highlight-color: transparent;
   flex: 0 1 190px;
   min-height: 150px;
   overflow-y: auto;

@@ -1,3 +1,4 @@
+import { MARSHAL_HEALTH } from './finale';
 import { position } from './types';
 import { depot } from '../content/depot';
 import type { Guard, GuardTactic, Mission, Notice, Person, Vec, World, WeaponKind } from './types';
@@ -27,10 +28,22 @@ export function makeGuard(
 ): Guard {
   return {
     // A coordinated opening volley hurts, but leaves time to return fire or retreat.
-    ...body(id, position, 90),
+    ...body(id, position, tactic?.role === 'marshal' ? MARSHAL_HEALTH : 90),
+    ...(tactic?.role === 'marshal'
+      ? { marshal: { remaining: 0, target: null, readyAt: 0, lastHp: MARSHAL_HEALTH } }
+      : {}),
     ...(weapon ? { armament: equip(weapon) } : {}),
     ...(tactic
-      ? { tactics: { ...tactic, lastHp: 90, until: 0, nextMove: 0, cover: false, goal: null } }
+      ? {
+          tactics: {
+            ...tactic,
+            lastHp: tactic.role === 'marshal' ? MARSHAL_HEALTH : 90,
+            until: 0,
+            nextMove: 0,
+            cover: false,
+            goal: null,
+          },
+        }
       : {}),
     ...(tactic?.role === 'shield' ? { shield: { angle } } : {}),
     patrol,
@@ -94,7 +107,7 @@ export function createWorld(mission: Mission = depot): World {
       ? {
           ...body(
             mission.escort!.id,
-            mission.continuity ? position(escortPosition) : escortPosition,
+            mission.continuity || mission.finale ? position(escortPosition) : escortPosition,
             mission.escort!.hp,
           ),
           name: mission.escort!.name,
@@ -134,6 +147,18 @@ export function createWorld(mission: Mission = depot): World {
       ? { settlement: { reconciled: false, progress: 0, signer: null, clerk: null } }
       : {}),
     ...(mission.threshold ? { threshold: { calledAt: null, announced: false } } : {}),
+    ...(mission.finale
+      ? {
+          finale: {
+            open: false,
+            progress: 0,
+            westBy: null,
+            eastBy: null,
+            defeated: false,
+            interrupted: 0,
+          },
+        }
+      : {}),
     ...(mission.recall ? { recall: { filed: false } } : {}),
     alarm: false,
     alarmTime: 0,

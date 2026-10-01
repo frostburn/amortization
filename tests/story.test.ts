@@ -1,10 +1,17 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { createWorld } from '../src/sim/world';
 import { readRecords, recordWin } from '../src/ui/storage';
-import { storyUnlocked } from '../src/ui/story';
+import { sceneFor, storyUnlocked } from '../src/ui/story';
 import { revealSchedule } from '../src/ui/story-reveal';
+import { CREW } from '../src/sim/crew';
 
 afterEach(() => vi.unstubAllGlobals());
+
+it('celebrates with the full crew in the fixed finale', () => {
+  const scene = sceneFor('bench');
+  expect(CREW.every((a) => scene.beats.some((b) => b.speaker === a.id))).toBe(true);
+  expect(scene.beats.at(-1)?.text).toContain('Glasses up.');
+});
 
 it('reveals whole graphemes with silent punctuation and individual reading cadence', () => {
   const text = 'A\u0308 👩‍🔧, wait. Yes!';

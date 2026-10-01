@@ -165,3 +165,28 @@ support gunners use a distinct full uniform palette. Their weapon and Rook’s
 support gun show a wide ammunition box, cooling jacket and folded bipod in every
 pose. These are original procedural meshes using the existing lighting, depth
 and clipped-outline paths.
+
+Operation 15 builds Crown Tower’s cutaway penthouse and roof with the same world
+projection. The interior uses cool fluorescent battens, neutral walls and floors,
+short contact shadows and broad overhead character shading. Fixtures and their
+light wash stay on their owning wall face. The roof retains sunset lighting;
+character shading follows each person's floor, and light pools cannot cross floors.
+Exterior faces keep sunset illumination even while the office is visible. The
+roof's lighting pass is clipped to its silhouette, so selecting a different floor
+does not recolor the facade below it. City sun-facing surfaces use muted red;
+their shaded sides stay cooler.
+A continuous glass facade descends toward hazy city towers at least 38 world
+units below the penthouse. There is no ground plane around the executive deck.
+The city is static procedural geometry built once with the scene.
+Both missions share Crown Tower's facade materials, window bays and storey
+heights. Threshold shows a low service annex at the playable entrance, with the
+full tower extending beyond the north/east map boundary. Its footprint comes
+from the final mission's floor plan, rather than a separate miniature building.
+The off-map mass and annex height are presentation geometry only: the authored
+collision map, lift access and human replay checkpoints remain unchanged.
+A procedural helicopter has a faceted cockpit, cabin door,
+tail boom and fin, skids, and a projected turning main rotor. Boarding follows a
+real side-door point; takeoff translates and lifts the aircraft without scaling
+its proportions. Dacre’s charcoal/gold armour and raised command hand distinguish
+him from ordinary officers. Holt has a grey-haired suit model and uses his existing
+story portrait for custody controls. No new external artwork or dependency is used.

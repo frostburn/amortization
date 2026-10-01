@@ -1,3 +1,4 @@
+import { updateFinale } from './finale';
 import {
   attack,
   dropEvidence,
@@ -68,4 +69,5 @@ export function applyCommand(world: World, command: Command) {
   updateBroadcast(world, 0);
   updateDetention(world);
   updateSettlement(world, 0);
+  updateFinale(world, 0);
 }

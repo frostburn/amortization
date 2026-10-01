@@ -7,8 +7,72 @@ is also verified. Otherwise this checks a route's continued viability, without
 claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All fifty-two retained completions are byte-for-byte copies of submissions
+All fifty-three retained completions are byte-for-byte copies of submissions
 provided in chat, including their `unversioned` / local-changes metadata.
+
+## The Bench: revised patrols and tower lighting
+
+All four follow-up October 1 submissions reproduce their recorded outcomes and
+all **63 original checkpoints** against `3d78143`, simulation fingerprint
+`9e5e319f4f6b83716efd716a14c784fbcc95610b4c7a5568377d1ee9c89bc5e0`.
+The fluorescent penthouse and distant-city changes touch rendering only, so
+those checkpoints still match exactly. All four notes are empty; in chat the
+player found the challenge appropriate and requested these visual corrections.
+
+| Suffix     | Exact outcome                                                                  | Checkpoints |
+| ---------- | ------------------------------------------------------------------------------ | ----------- |
+| `8c23e0ec` | Won, tick 4064 / 135.47s; 4 survivors; 71 shots; no alarm; MINUTES left behind | 29          |
+| `d1daad2b` | Lost, tick 1333 / 44.43s; 94 shots; no alarm                                   | 10          |
+| `5b60d168` | Lost, tick 1704 / 56.80s; 38 shots; no alarm                                   | 13          |
+| `3032234a` | Lost, tick 1430 / 47.67s; 74 shots; alarm                                      | 11          |
+
+The win joins the required corpus as `bench-human-8c23e0ec.replay.json`.
+RADIO goes offline at 15.77s, CUT opens the Bench at 49.57s and Holt is
+eliminated at 53.03s. The team reaches the roof, returns downstairs to defeat
+Dacre at 112.97s, then boards HELI together. The optional MINUTES remain
+available. This verifies a human lethal completion under the revised patrols;
+the command-driven custody route remains covered by the mission tests.
+
+The three losses are preserved as `../fixtures/bench-lost-<suffix>.replay.json`
+for diagnosis, not as requirements to keep losing. Every bundle is an unchanged
+copy of the submission, and no combat, patrol, sight-range or objective rules
+change in this visual follow-up. Shot counts include both sides.
+
+## The Bench: first finale playtest
+
+The three October 1 submissions are retained byte-for-byte in
+`../fixtures/bench-prepatrol-<status>-<suffix>.replay.json`. Their recorded build
+is `unversioned`, simulation fingerprint
+`39144c5f8e6f0bbf361ac027758872faaa1534296f597ec4799ae98e38908751`.
+Before the patrol changes, all three reproduced their recorded outcomes on
+PR #35's initial implementation (`15d51a1`). This was an outcome comparison;
+no claim is made here about original checkpoint compatibility.
+
+| Suffix     | Original outcome                                                               | Under revised patrols                |
+| ---------- | ------------------------------------------------------------------------------ | ------------------------------------ |
+| `7fbc7d08` | Won at tick 3490 / 116.33s, 4 survivors, 69 shots, no alarm, MINUTES extracted | Lost at tick 2535 / 84.5s, 81 shots  |
+| `022e93e8` | Lost at tick 2364 / 78.8s, 52 shots, no alarm                                  | Lost at tick 2239 / 74.63s, 34 shots |
+| `622a99cd` | Lost at tick 520 / 17.33s, 65 shots, alarm                                     | Lost at tick 490 / 16.33s, 26 shots  |
+
+The winning note is “Needs more patrolling. Now the guards just stand there.”
+The other notes are empty. In that win, Morrow disables RADIO before the squad
+advances from the south. One flash, concentrated fire and dressings settle the
+main fight; Dacre signals once, and falls at 37.1s. Four defenders never move at
+all, and the southern rooftop sentry never contests extraction. The team uses
+both seals, cuffs Holt, collects MINUTES and leaves together. The two losses
+show that a direct rush and unsupported solo fighting already carry risk;
+adding health or damage was not the appropriate response.
+
+All nine defenders now patrol, including an inspector circuit past RADIO and
+roof routes across the helipad approach. Dacre can coordinate from a locally
+relayed sighting, and a screen gives his detail additional cover. The unchanged
+winning script no longer completes and is **not** a required completion or a
+human success under the new balance. The two loss timings are diagnostic only,
+not balance requirements. No submitted commands, notes or metadata were edited.
+Guarded synthetic custody and lethal routes were updated to respond to the
+patrols, clear the roof and extract all four plus MINUTES, with exact command and
+checkpoint replay. The fifty-two earlier human completions remain required.
+The follow-up batch above supplies the fresh human completion under these patrols.
 
 ## Threshold: timed work and key recovery
 

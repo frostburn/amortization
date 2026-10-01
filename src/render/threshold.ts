@@ -1,5 +1,5 @@
 import type { Graphics } from 'pixi.js';
-import type { Mission, Solid, Vec } from '../sim/types';
+import type { Mission, Vec } from '../sim/types';
 import { box, panel, plane } from './primitives';
 
 export function drawThresholdGround(g: Graphics, m: Mission) {
@@ -13,32 +13,6 @@ export function drawThresholdGround(g: Graphics, m: Mission) {
   const p = m.threshold!.door;
   plane(g, p.x - 2.2, p.y - 0.2, 4.4, 3.5, 0x9b725f);
   plane(g, p.x - 2.2, p.y + 3.25, 4.4, 0.12, 0xf0ce6c);
-}
-
-/** Repeated glass bays make the tower read as vertical offices above its service lobby. */
-export function drawTowerFacade(g: Graphics, s: Solid) {
-  for (const front of [true, false]) {
-    const length = front ? s.w : s.h;
-    const at = (d: number) => (front ? { x: s.x + d, y: s.y + s.h } : { x: s.x + s.w, y: s.y + d });
-    for (let z = 3.6; z < s.height - 1.4; z += 1.8) {
-      panel(g, at(0.25), at(length - 0.25), z - 0.12, z, front ? 0xe1b96c : 0x9c7869);
-      for (let d = 0.45; d < length - 1.1; d += 1.4) {
-        panel(g, at(d), at(d + 1), z + 0.1, z + 1.3, 0x3f3445);
-        panel(g, at(d + 0.07), at(d + 0.93), z + 0.17, z + 1.24, front ? 0xc48c59 : 0x89676a);
-        panel(g, at(d + 0.07), at(d + 0.93), z + 0.9, z + 1.24, front ? 0xf0c46b : 0xb08a73);
-        panel(g, at(d + 0.48), at(d + 0.53), z + 0.17, z + 1.24, 0x5c4450);
-      }
-    }
-    for (let d = 0.08; d < length; d += 2.8)
-      panel(
-        g,
-        at(d),
-        at(Math.min(length, d + 0.08)),
-        3.3,
-        s.height - 0.3,
-        front ? 0xd9a566 : 0xa17b6d,
-      );
-  }
 }
 
 /** A real boarding destination with two closing leaves; no stretched vehicle proxy. */

@@ -24,6 +24,34 @@ function win(id: Mission['id'], seconds: number, alive = 4) {
   return w;
 }
 
+it('ignores obsolete story outcomes while preserving records and medals', () => {
+  data.set(
+    'amortization.records.v4',
+    JSON.stringify({
+      version: 4,
+      missions: {
+        bench: {
+          best: 100,
+          fullCrewBest: 100,
+          completions: 2,
+          medals: ['complete', 'full-crew'],
+          ending: { survivors: ['vale', 'sable'], holt: 'eliminated' },
+        },
+      },
+    }),
+  );
+  expect(missionRecord(readRecords(), 'bench')).toEqual({
+    best: 100,
+    fullCrewBest: 100,
+    completions: 2,
+    medals: ['complete', 'full-crew'],
+  });
+  recordWin(win('bench', 120, 1));
+  const saved = JSON.parse(data.get('amortization.records.v4')!).missions.bench;
+  expect(saved).toMatchObject({ best: 100, fullCrewBest: 100, completions: 3 });
+  expect(saved).not.toHaveProperty('ending');
+});
+
 it.each(missions)(
   'keeps full-crew records and earned medals across later costly wins for $id',
   ({ id }) => {
@@ -42,7 +70,7 @@ it.each(missions)(
         'complete',
         'full-crew',
         'quiet',
-        'nonlethal',
+        ...(id === 'bench' ? [] : ['nonlethal']),
         'no-kit',
         'live-alarm',
       ]),

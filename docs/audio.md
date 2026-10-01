@@ -148,7 +148,7 @@ non-spatial objective cue; no ambience is added.
 ## Story keyboards
 
 Dialogue uses short original PCM recipes as abstract character voices. Each
-character keeps one voice across all scenes: Morrow uses dry smartphone taps;
+character keeps one voice across all scenes: the operatives use dry smartphone taps;
 Voss and Mara use plastic QWERTY keys; the antagonists have heavier mechanical
 strokes. Location does not change the voice, and scene/beat device overrides
 are unnecessary.
@@ -156,6 +156,9 @@ are unnecessary.
 | Character | Timbre and cadence |
 | --- | --- |
 | Morrow | Lower, muted contact, brief returns, compact bursts with short pauses |
+| Vale | Brighter, quick taps in uneven groups, light haptic body |
+| Rook | Lower and weightier contact, deliberate alternating strokes |
+| Sable | Tight, soft contact with quick groups and longer punctuation rests |
 | Iona Voss | Light, higher keys, quick uneven groups and a hollow plastic body |
 | Mara Quill | Softer, dry keys at an even pace, with more deliberate punctuation |
 | Severin Holt | Low, weighty platen impact and longer return, measured cadence and the longest pauses |
