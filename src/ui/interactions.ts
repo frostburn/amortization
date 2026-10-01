@@ -162,9 +162,9 @@ export function objectRequirement(w: World, id: ObjectKind, selected: string[]):
   if (id === 'disguise' && !agents.some((a) => !longGun(a)))
     return 'Select Morrow or Vale for KIT. Long guns cannot be concealed.';
   if (id === 'release' && !free.some((a) => a.disguised && !a.weapon && !a.exposed))
-    return 'WARRANT needs an unexposed maintenance identity with weapons concealed.';
+    return 'WARRANT needs an unexposed staff identity with weapons concealed.';
   if (id === 'authorise' && !agents.some((a) => canAuthorise(w, a)))
-    return 'INSPECT needs an unexposed maintenance identity, a concealed pistol and free hands.';
+    return 'INSPECT needs an unexposed staff identity, a concealed pistol and free hands.';
   if (id === 'evidence') {
     if (w.evidence === 'courier') {
       const courier = courierGuard(w);
@@ -177,7 +177,7 @@ export function objectRequirement(w: World, id: ObjectKind, selected: string[]):
             a.disguised && !a.weapon && !courier.known.includes(a.id) && !w.known.includes(a.id),
         )
       )
-        return 'The courier needs a maintenance identity with weapons concealed, and must be out of combat. Select an operative they have not recognized.';
+        return 'The courier needs a staff identity with weapons concealed, and must be out of combat. Select an operative they have not recognized.';
     }
     if (
       w.mission.archive &&

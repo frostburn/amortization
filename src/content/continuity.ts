@@ -30,6 +30,7 @@ const upper = (x: number, y: number): Vec => ({ x, y, floor: 1 });
 
 export const continuity: Mission = {
   id: 'continuity',
+  disguise: 'office',
   number: '13',
   title: 'Continuity',
   location: 'Continuity House / executive control · 13:20',
@@ -185,7 +186,7 @@ export const continuity: Mission = {
       tag: 'KIT',
       x: 14,
       y: 28,
-      label: 'Service engineer identity',
+      label: 'Control-office staff identity',
       detail: 'One disguise, for a pistol carrier. Inspector checks still apply upstairs.',
     },
     {
@@ -193,7 +194,7 @@ export const continuity: Mission = {
       tag: 'INSPECT',
       x: 29.5,
       y: 27,
-      label: 'Maintenance inspection',
+      label: 'Staff inspection',
       detail: 'In disguise, suspend the wired defenses for 24 seconds. One use.',
     },
     {

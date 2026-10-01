@@ -18,6 +18,7 @@ const patrol = (points: Vec[], angle: number, tactic?: GuardTactic) => ({
 
 export const settlement: Mission = {
   id: 'settlement',
+  disguise: 'office',
   number: '11',
   title: 'Value date',
   location: 'Mutual Indemnity / settlement court · 09:10',
@@ -38,7 +39,7 @@ export const settlement: Mission = {
     routes: [
       {
         title: 'Prepare the records office',
-        body: 'A partner can hold SHUNT from the north public street to open the records office. Keep them there until the carrier leaves; CUT forces a permanent opening with eight seconds of noisy work. RADIO is inside with REGISTER. The racks screen the terminals from the office patrol. A maintenance identity helps before the register is lifted, but carrying it is conspicuous.',
+        body: 'A partner can hold SHUNT from the north public street to open the records office. Keep them there until the carrier leaves; CUT forces a permanent opening with eight seconds of noisy work. RADIO is inside with REGISTER. The racks screen the terminals from the office patrol. A staff identity helps before the register is lifted, but carrying it is conspicuous.',
       },
       {
         title: 'Work through the court',
@@ -151,11 +152,11 @@ export const settlement: Mission = {
     {
       id: 'disguise',
       tag: 'KIT',
-      label: 'Bank maintenance identity',
+      label: 'Bank staff identity',
       x: 5.5,
       y: 33,
       detail:
-        'One maintenance uniform for a pistol carrier. REGISTER remains conspicuous; inspectors still check credentials at close range.',
+        'One office outfit for a pistol carrier. REGISTER remains conspicuous; inspectors still check credentials at close range.',
     },
     {
       id: 'override',

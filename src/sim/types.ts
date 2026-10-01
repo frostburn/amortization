@@ -120,6 +120,8 @@ export interface Mission {
     | 'recall'
     | 'capture'
     | 'access';
+  /** Local staff clothing; absent means the industrial maintenance cover. */
+  disguise?: 'office';
   daylight?: boolean;
   /** Presentation palette; does not extend sight ranges. */
   palette?: 'sunset';

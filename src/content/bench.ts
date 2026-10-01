@@ -21,6 +21,7 @@ const detail = (role: GuardTactic['role'], patrol: Vec[], posts = patrol) => ({
 
 export const bench: Mission = {
   id: 'bench',
+  disguise: 'office',
   number: '15',
   title: 'The Bench',
   location: 'Crown Tower / executive floors · 19:52',
@@ -151,7 +152,7 @@ export const bench: Mission = {
       tag: 'KIT',
       x: 8,
       y: 25,
-      label: 'Executive maintenance identity',
+      label: 'Executive staff identity',
       detail: 'One concealed-pistol disguise. The boardroom remains a secure area.',
     },
     {

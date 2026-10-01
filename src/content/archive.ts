@@ -13,6 +13,7 @@ const patrol = (points: Vec[], angle = Math.PI) => ({ position: points[0], patro
 
 export const archive: Mission = {
   id: 'archive',
+  disguise: 'office',
   number: '02',
   title: 'Material breach',
   location: 'Records annex 02',
@@ -85,7 +86,7 @@ export const archive: Mission = {
       tag: 'KIT',
       x: 4.5,
       y: 18.5,
-      label: 'Maintenance kit',
+      label: 'Office staff kit',
       detail: 'One staff uniform. No permission to carry the ledger.',
     },
     {

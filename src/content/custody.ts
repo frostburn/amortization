@@ -13,6 +13,7 @@ const patrol = (points: Vec[], angle = Math.PI) => ({ position: points[0], patro
 
 export const custody: Mission = {
   id: 'custody',
+  disguise: 'office',
   number: '04',
   title: 'Protective custody',
   location: 'Remand transfer station 04',
@@ -83,7 +84,7 @@ export const custody: Mission = {
       tag: 'KIT',
       x: 5.5,
       y: 21,
-      label: 'Maintenance kit',
+      label: 'Office staff kit',
       detail: 'One unexposed staff identity can file a release. Quill cannot wear the uniform.',
     },
     {
@@ -92,7 +93,7 @@ export const custody: Mission = {
       x: 14.3,
       y: 6.2,
       label: 'Transfer authorization',
-      detail: 'Three seconds. Requires a concealed weapon and an unexposed maintenance identity.',
+      detail: 'Three seconds. Requires a concealed weapon and an unexposed staff identity.',
     },
     {
       id: 'relay',

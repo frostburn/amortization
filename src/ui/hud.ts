@@ -593,7 +593,9 @@ export class Hud {
           : a.disguised
             ? a.exposed
               ? 'Uniform · identity compromised'
-              : 'Maintenance uniform'
+              : world.mission.disguise === 'office'
+                ? 'Office staff outfit'
+                : 'Maintenance uniform'
             : longGun(a)
               ? 'Long gun visible'
               : 'Civilian cover'
@@ -648,7 +650,7 @@ export class Hud {
                                     : suspicionRate(world, a) > 0
                                       ? 'Restricted area. Stay out of sight.'
                                       : a.disguised
-                                        ? 'Maintenance access. Keep your weapon concealed.'
+                                        ? 'Staff access. Keep your weapon concealed.'
                                         : 'Civilian access. The compound is restricted.',
     );
     const weaponsButton = this.app.querySelector<HTMLButtonElement>('[data-action="weapons"]')!;
@@ -1034,7 +1036,9 @@ export class Hud {
                                         : p.exposed
                                           ? 'Compromised'
                                           : p.disguised
-                                            ? 'Maintenance'
+                                            ? world.mission.disguise === 'office'
+                                              ? 'Office staff'
+                                              : 'Maintenance'
                                             : p.weapon
                                               ? gun
                                                 ? WEAPONS[gun.kind].name

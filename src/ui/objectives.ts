@@ -273,7 +273,7 @@ export function missionGoals(w: World): Goal[] {
       detail:
         remaining.length === 0
           ? 'The turrets cannot restart. Human guards still patrol. Collect MANDATE from the north records room, open GATE from inside, and bring every survivor to VAN.'
-          : `${inspection > 0 ? `Turrets are stopped for ${Math.ceil(inspection)} more seconds. Isolate the remaining feeds now. ` : ''}RADIO stops human reinforcements only. WEST powers the two amber guns; EAST powers the two blue guns. Each feed needs four seconds with free hands, permanently stops its guns, and leaves the worker unable to fire. Reach WEST behind reception and EAST north of the generator hall.${!w.security.inspectionUsed && !identityLost ? ' An unexposed maintenance identity can use INSPECT once for a 22-second shutdown. Stage the crew before authorising it.' : ' You can still isolate feeds from cover or destroy the stationary turrets.'} Cover breaks their tracking; Sable’s coil outranges them. This preparation is optional, but a direct rush meets overlapping fire.`,
+          : `${inspection > 0 ? `Turrets are stopped for ${Math.ceil(inspection)} more seconds. Isolate the remaining feeds now. ` : ''}RADIO stops human reinforcements only. WEST powers the two amber guns; EAST powers the two blue guns. Each feed needs four seconds with free hands, permanently stops its guns, and leaves the worker unable to fire. Reach WEST behind reception and EAST north of the generator hall.${!w.security.inspectionUsed && !identityLost ? ' An unexposed staff identity can use INSPECT once for a 22-second shutdown. Stage the crew before authorising it.' : ' You can still isolate feeds from cover or destroy the stationary turrets.'} Cover breaks their tracking; Sable’s coil outranges them. This preparation is optional, but a direct rush meets overlapping fire.`,
       targets:
         remaining.length === 0
           ? ['evidence', 'gate', 'extract']
@@ -303,7 +303,7 @@ export function missionGoals(w: World): Goal[] {
       detail: done
         ? 'Both backups are gone. Bring every surviving operative to the north-east VAN. The recovery REGISTER is optional.'
         : remaining.length
-          ? 'Plant WEST and EAST: five seconds each with free hands. A planter cannot fire; moving or Hold cancels unfinished placement. Completed charges stay armed without a timer. The maintenance disguise helps you reach the halls, but planting is conspicuous. Watch patrols and hide behind the racks. Then move everyone outside the marked blast circles and use Detonate in the mission panel.'
+          ? 'Plant WEST and EAST: five seconds each with free hands. A planter cannot fire; moving or Hold cancels unfinished placement. Completed charges stay armed without a timer. The staff disguise helps you reach the halls, but planting is conspicuous. Watch patrols and hide behind the racks. Then move everyone outside the marked blast circles and use Detonate in the mission panel.'
           : `${status.reason || 'Everyone is clear. Use Detonate in the mission panel to destroy both cores.'} The control checks every survivor, including unselected operatives. Blast areas ignore walls. RADIO prevents reinforcement calls, but nearby guards hear the explosion.`,
       targets: done
         ? ['extract']
@@ -430,7 +430,7 @@ export function missionGoals(w: World): Goal[] {
       complete: false,
       detail:
         w.disguiseTaken && !cover
-          ? 'The maintenance identity is lost or exposed. Use CUT at the transport: it takes eight seconds and attracts nearby guards. Collect QUILL after preparing the escape.'
+          ? 'The staff identity is lost or exposed. Use CUT at the transport: it takes eight seconds and attracts nearby guards. Collect QUILL after preparing the escape.'
           : `Quiet: ${cover ? `use ${cover.name} with free hands and weapons concealed at WARRANT` : 'take KIT, then use WARRANT with that operative’s weapon concealed'}. Loud: CUT the lock for eight seconds. Unlocking leaves Quill protected until you collect him.`,
       targets: w.disguiseTaken && !cover ? ['breach'] : [...kit, 'release', 'breach'],
     };
@@ -446,7 +446,7 @@ export function missionGoals(w: World): Goal[] {
         ? `${name} ${v.waiting ? 'is waiting. Use the Escort controls to resume following' : 'follows the operative who recruited them'}. Interact with their marker to hand off the escort.${m.escort?.vulnerable ? ' Guards recognize Quill; use cover, wait/follow, and nearby first aid.' : ' Bring the whole crew to VAN.'}`
         : m.escort?.locked
           ? 'The transport is unlocked. Interact with QUILL when the escape route is ready. He moves slowly and guards can shoot him once collected.'
-          : 'Interact with VOSS to recruit her. KIT provides one maintenance disguise; the secure office still attracts suspicion. An armed squad can also reach her.',
+          : 'Interact with VOSS to recruit her. KIT provides one staff disguise; the secure office still attracts suspicion. An armed squad can also reach her.',
       targets: v?.recruited || m.escort?.locked ? ['escort'] : ['escort', ...kit],
     };
   }
