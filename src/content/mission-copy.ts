@@ -1,6 +1,5 @@
 import type { Mission } from '../sim/types';
-import type { FinaleOutcome, StoryScene } from './story';
-import { CREW, type CrewId } from '../sim/crew';
+import type { StoryScene } from './story';
 
 interface MissionCopy {
   briefing: { objective: string; extract: string; rules: string };
@@ -8,76 +7,9 @@ interface MissionCopy {
   scene: StoryScene;
 }
 
-/** A homecoming belongs to the people who made it back. Unknown legacy results
- * keep the welcome and victory, without inventing a cast or Holt's fate. */
-export function benchScene(outcome?: FinaleOutcome): StoryScene {
-  const present = new Set(outcome?.survivors),
-    fallen = outcome ? CREW.filter((a) => !present.has(a.id)).map((a) => a.name) : [],
-    lead = CREW.find((a) => present.has(a.id))?.id;
-  const line = (speaker: CrewId, text: string): StoryScene['beats'] =>
-    present.has(speaker) ? [{ speaker, text }] : [];
-  const names =
-    fallen.length < 2 ? fallen[0] : `${fallen.slice(0, -1).join(', ')} and ${fallen.at(-1)}`;
-  return {
-    title: 'Off duty',
-    setting: 'safehouse',
-    tone: 'celebration',
-    beats: [
-      {
-        speaker: 'voss',
-        text: 'You’re back. The whole street came out when they heard the helicopter. Come inside—there’s food, and nobody is on a clock tonight.',
-      },
-      ...line('morrow', 'Stand down. Weapons safe. We made it home.'),
-      ...line(
-        'vale',
-        'I checked the repayments on the way down. They’re still there. And for once, I’m shutting this thing off.',
-      ),
-      ...line(
-        'rook',
-        'Then give me that bottle. I’ve been carrying enough equipment for one night.',
-      ),
-      ...line(
-        'sable',
-        'You should see the tower from here. All that height, and it can’t tell a single one of us where to go.',
-      ),
-      {
-        speaker: 'mara',
-        text:
-          outcome?.holt === 'custody'
-            ? 'Holt is in custody. Dacre’s chain of command is broken. Tomorrow, Holt answers to the people he kept off that floor.'
-            : outcome?.holt === 'eliminated'
-              ? 'Holt and Dacre are gone. No one upstairs can issue another order. Tomorrow, we start the hearings without them.'
-              : 'No one upstairs is giving orders anymore. Tomorrow, the hearings begin. Tonight belongs to the people who got us here.',
-      },
-      {
-        speaker: 'voss',
-        text: 'Tomorrow can wait. I saved these glasses for something worth celebrating.',
-      },
-      ...(fallen.length
-        ? [
-            {
-              speaker: lead ?? 'voss',
-              text: `Before we drink: to ${names}. ${fallen.length === 1 ? 'There should be another chair here' : 'They should be here'}. We won’t forget.`,
-            } as const,
-          ]
-        : []),
-      {
-        speaker: lead ?? 'voss',
-        text: 'To the people we brought home. To the ones who opened their doors. And to everyone who gets to keep what we won.',
-      },
-      { speaker: 'mara', text: 'To the district. Paid back. Free to leave. Free to stay.' },
-      {
-        speaker: 'voss',
-        text: 'When I called you, I asked for four people and a van. I didn’t know I was asking for a life. Thank you. All of you.',
-      },
-      { speaker: lead ?? 'mara', text: 'Glasses up. We’re home.' },
-    ],
-  };
-}
-
 // Keep each contract's concise orders and ending together. Presentation copy
 // stays outside recorded mission definitions, so prose edits do not invalidate
-// replays. Endings must hold for any successful route and surviving crew.
+// replays. Scenes use the full story cast, independently of gameplay casualties.
 export const missionCopy: Record<Mission['id'], MissionCopy> = {
   bench: {
     briefing: {
@@ -90,7 +22,48 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
       lead: 'The helicopter clears the tower.',
       body: 'Dacre’s command ends on the executive floor. Holt no longer signs for the district. Below, the exchange keeps the repayments moving and the cancelled seizure orders remain cancelled. At the safehouse, Voss has left the door open and set out glasses. For once, the crew is coming home to a celebration.',
     },
-    scene: benchScene(),
+    scene: {
+      title: 'Off duty',
+      setting: 'safehouse',
+      tone: 'celebration',
+      beats: [
+        {
+          speaker: 'voss',
+          text: 'You’re back. The whole street came out when they heard the helicopter. Come inside—there’s food, and nobody is on a clock tonight.',
+        },
+        { speaker: 'morrow', text: 'Stand down. Weapons safe. We made it home.' },
+        {
+          speaker: 'vale',
+          text: 'I checked the repayments on the way down. They’re still there. And for once, I’m shutting this thing off.',
+        },
+        {
+          speaker: 'rook',
+          text: 'Then give me that bottle. I’ve been carrying enough equipment for one night.',
+        },
+        {
+          speaker: 'sable',
+          text: 'You should see the tower from here. All that height, and it can’t tell a single one of us where to go.',
+        },
+        {
+          speaker: 'mara',
+          text: 'No one upstairs is giving orders anymore. Tomorrow, the hearings begin. Tonight belongs to the people who got us here.',
+        },
+        {
+          speaker: 'voss',
+          text: 'Tomorrow can wait. I saved these glasses for something worth celebrating.',
+        },
+        {
+          speaker: 'morrow',
+          text: 'To the people we brought home. To the ones who opened their doors. And to everyone who gets to keep what we won.',
+        },
+        { speaker: 'mara', text: 'To the district. Paid back. Free to leave. Free to stay.' },
+        {
+          speaker: 'voss',
+          text: 'When I called you, I asked for four people and a van. I didn’t know I was asking for a life. Thank you. All of you.',
+        },
+        { speaker: 'morrow', text: 'Glasses up. We’re home.' },
+      ],
+    },
   },
   threshold: {
     briefing: {

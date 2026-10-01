@@ -3,8 +3,6 @@ import type { Mission, World } from '../sim/types';
 import { missions } from '../content/missions';
 import { earnedMedals, medalsFor } from './medals';
 import type { MedalId } from './medals';
-import { CREW } from '../sim/crew';
-import type { FinaleOutcome } from '../content/story';
 
 const KEY = 'amortization.records.v4';
 export interface MissionRecord {
@@ -12,7 +10,6 @@ export interface MissionRecord {
   fullCrewBest: number | null;
   completions: number;
   medals: MedalId[];
-  ending?: FinaleOutcome;
 }
 export interface Records {
   version: 4;
@@ -30,21 +27,6 @@ const valid = (
 };
 export const missionRecord = (records: Records, id: Mission['id']): MissionRecord =>
   records.missions[id] ?? { best: null, fullCrewBest: null, completions: 0, medals: [] };
-
-function readEnding(value: unknown): FinaleOutcome | undefined {
-  if (!value || typeof value !== 'object') return;
-  const { survivors, holt } = value as Record<string, unknown>;
-  if (
-    !Array.isArray(survivors) ||
-    !survivors.length ||
-    survivors.length > CREW.length ||
-    new Set(survivors).size !== survivors.length ||
-    !survivors.every((id) => CREW.some((a) => a.id === id)) ||
-    (holt !== undefined && holt !== 'custody' && holt !== 'eliminated')
-  )
-    return;
-  return { survivors: [...survivors], ...(holt ? { holt } : {}) };
-}
 
 export function readRecords(): Records {
   try {
@@ -68,10 +50,6 @@ export function readRecords(): Records {
         );
         earned.add('complete');
         if (fullCrewBest !== null) earned.add('full-crew');
-        const ending =
-          mission.id === 'bench'
-            ? readEnding((prior as Record<string, unknown>).ending)
-            : undefined;
         records.missions[mission.id] = {
           best: prior.best,
           completions: prior.completions,
@@ -79,7 +57,6 @@ export function readRecords(): Records {
           medals: medalsFor(mission)
             .filter((m) => earned.has(m.id))
             .map((m) => m.id),
-          ...(ending ? { ending } : {}),
         };
       }
     } else if (raw === null) {
@@ -113,15 +90,6 @@ export function recordWin(world: World): Records {
     medals: medalsFor(mission)
       .filter((m) => earned.has(m.id))
       .map((m) => m.id),
-    ...(mission.finale
-      ? {
-          ending: {
-            survivors: world.agents.filter(controllable).map((a) => CREW[a.index].id),
-            holt:
-              world.escort && world.escort.hp > 0 ? ('custody' as const) : ('eliminated' as const),
-          },
-        }
-      : {}),
   };
   try {
     localStorage.setItem(KEY, JSON.stringify(records));

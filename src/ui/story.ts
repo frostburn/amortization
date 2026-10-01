@@ -1,6 +1,5 @@
 import './story.css';
-import { benchScene, missionCopy } from '../content/mission-copy';
-import { CREW } from '../sim/crew';
+import { missionCopy } from '../content/mission-copy';
 import { openingScene, storySettings, storySpeakers } from '../content/story';
 import type { StoryId, StoryScene } from '../content/story';
 import { bindBackdropDismiss } from './dialog';
@@ -16,19 +15,8 @@ export interface StoryAudio {
 }
 
 const SEEN_KEY = 'amortization.story.v1';
-export const sceneFor = (id: StoryId, records?: Records): StoryScene => {
-  if (id === 'opening') return openingScene;
-  if (id === 'bench' && records) {
-    const record = missionRecord(records, id);
-    // Older full-crew records establish a valid four-person ending, but do not
-    // establish Holt's fate. Other old records use the neutral homecoming.
-    return benchScene(
-      record.ending ??
-        (record.fullCrewBest !== null ? { survivors: CREW.map((a) => a.id) } : undefined),
-    );
-  }
-  return missionCopy[id]?.scene;
-};
+export const sceneFor = (id: StoryId): StoryScene =>
+  id === 'opening' ? openingScene : missionCopy[id]?.scene;
 export const storyUnlocked = (id: StoryId, records: Records) =>
   !!sceneFor(id) && (id === 'opening' || missionRecord(records, id).completions > 0);
 
@@ -151,7 +139,7 @@ export class StoryPlayer {
   open(id: StoryId, records: Records) {
     if (!storyUnlocked(id, records)) return;
     this.id = id;
-    this.scene = sceneFor(id, records);
+    this.scene = sceneFor(id);
     this.dialog.dataset.tone = this.scene.tone ?? '';
     this.index = 0;
     this.dialog.innerHTML = `<header class="story-header"><div><p class="story-eyebrow">${id === 'opening' ? 'Prologue' : 'After the operation'} · Optional story</p><h2 id="story-title"></h2></div><div class="story-tools"><button data-story-control="sound" data-story-sound aria-pressed="false"></button><button data-story-control="close" aria-label="Close scene">×</button></div></header>

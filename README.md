@@ -744,9 +744,9 @@ crossfire positions. Hold SEAL A and SEAL B together, or force CUT to reach Holt
 Defeat Dacre, then cuff Holt or eliminate him. Take every survivor—and Holt if
 arrested—UP to the helicopter waiting at HELI. The helicopter boards, rises and
 flies off before the debrief. MINUTES are optional. The replayable ending closes
-the campaign with a homecoming for the surviving crew, individual portraits and voices,
-and a toast to the people the team freed. The latest winning cast and Holt outcome
-are retained for story replay. All defenders now patrol: RADIO controls incoming
+the campaign with a fixed homecoming for all four operatives, individual portraits
+and voices, and a toast to the people the team freed. Gameplay casualties do not
+alter the scene. All defenders now patrol: RADIO controls incoming
 waves, while Dacre can coordinate from his retinue’s visible reports.
 [Rules and verification](docs/bench.md).
 

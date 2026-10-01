@@ -76,14 +76,11 @@ operation. Failure retains the existing moving-world aftermath.
 **Answerable** awards Holt’s live custody. The seven applicable medals bring the
 campaign to 108; Nonlethal is absent here because defeating Dacre is mandatory.
 The optional, replayable **Off duty** scene welcomes the crew back to food,
-raised glasses and a district celebrating its freedom. Every surviving operative
-speaks with their own portrait and keyboard voice; casualties receive a toast
-and do not appear alive. Mara acknowledges custody or elimination. Earlier
-victories stand. The latest successful finale's survivors and Holt outcome are
-saved with completion records, independently of best times and earned medals.
-Legacy full-crew records can establish the cast, but not Holt's fate; other old
-records use a neutral welcome from Voss and Mara. Existing sound and volume
-preferences govern every voice.
+raised glasses and a district celebrating its freedom. All four operatives
+speak with their own portrait and keyboard voice in the same fixed scene after
+every win. Gameplay casualties receive no comment or explanation; Mara’s line
+works for either Holt outcome. No cast or outcome is saved for story replay.
+Existing completion records still unlock it, and sound/volume preferences apply.
 
 ## Verification
 
@@ -107,9 +104,9 @@ interruptions, remembered contact positions, bounded surviving retinue, and
 extraction across floors. A no-input minute checks that every patrol actually
 travels its reachable loop without spontaneous contact. A relayed command test
 checks cover, identification, stun, loss of sight and the fixed contact snapshot.
-Story tests cover all fifteen surviving crew combinations, both Holt outcomes,
-legacy saves and the latest successful result surviving a reload. Existing human bundles remain unchanged and run under
-current rules. Campaign-wide aftermath tests cover helicopter boarding without
+Story checks cover the fixed full cast and replay after reloading records with
+obsolete outcome data; completion counts, times and medals are preserved. Existing
+human bundles remain unchanged and run under current rules. Campaign-wide aftermath tests cover helicopter boarding without
 mutating the scored world.
 
 The extended Playwright journey uses presentation fixtures and real desktop/touch

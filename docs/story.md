@@ -12,10 +12,10 @@ scenes. They supplement the existing briefing and epilogue. Their tone stays
 serious through the campaign, discussing concrete consequences without
 explaining controls; the finale lets the crew relax and celebrate. The opening
 and all-survivors rescue ending speak through an operative.
-The finale is a warmer homecoming: the surviving operatives join Voss and Mara
-for a celebration, with a toast for any casualties. Other endings remain valid
-regardless of which operatives survived. Voss and Mara provide continuity away
-from the field team.
+The finale is a warmer homecoming: all four operatives join Voss and Mara
+for a celebration. Cutscenes use a fixed story cast, just as each operation starts
+with a full roster. Gameplay casualties do not alter dialogue, and nobody comments
+on the crew’s recovery.
 
 ## Where the player finds them
 
@@ -80,7 +80,7 @@ not a claim that every conversation literally takes place at a keyboard.
 | 12 · Countermand | Beyond the district      | The seizure crews leave and the money stays returned. The three antagonists take up distinct positions beyond the district.  |
 | 13 · Continuity  | An empty control room    | Kestrel is removed, in custody or dead. Local control is handed over; Dacre gathers the remaining crews at the interchange.  |
 | 14 · Threshold   | Above the last street    | The service lift carries the crew past the executive lockdown. Dacre joins Holt upstairs; earlier victories remain in force. |
-| 15 · The Bench   | Off duty                 | The surviving crew comes home to a celebration with Voss and Mara. The district is free; casualties are remembered.          |
+| 15 · The Bench   | Off duty                 | The full crew comes home to a celebration with Voss and Mara. The district is free.          |
 
 Kestrel's encounter is implemented in [Continuity](continuity.md): two storeys,
 alternating local feeds, and a choice of arrest or lethal force. Her removal is
@@ -99,10 +99,10 @@ defenders. Two operatives can open its distributed seals together, with a noisy
 CUT fallback for a lone survivor. Once Dacre falls, Holt can be cuffed and escorted
 upstairs, or explicitly killed. Extraction is the helicopter waiting on the roof.
 
-The ending includes every surviving operative, Voss and Mara. The street turns
+The fixed ending includes all four operatives, Voss and Mara. The street turns
 out to welcome the helicopter, there is food and a bottle at the safehouse, and
-the team toasts the people they brought home. A casualty receives a toast rather
-than a speaking appearance. Mara distinguishes Holt's custody from his death.
+the team toasts the people they brought home. Mara’s line works for either Holt
+outcome without specifying custody or death.
 The payments, recall and local control stand. The future hearings remain, but
 the scene ends on a shared victory, not another assignment or secret superior.
 Neither cutscene viewing nor MINUTES is a prerequisite for winning or
@@ -113,11 +113,9 @@ understanding the operation.
 Each mission's scene, concise briefing and epilogue live together in
 `src/content/mission-copy.ts`. Shared speakers, settings and the opening are in
 `src/content/story.ts`; the dialog is in `src/ui/story.ts`. Completion records
-remain the source of truth for unlocks. An optional `ending` on the finale's
-record preserves the **last successful** surviving cast and Holt outcome; a
-later loss cannot overwrite it, and it does not replace best times or medals.
-Legacy full-crew records establish a valid complete cast without assuming Holt's
-fate. Other old records use a neutral Voss/Mara celebration until a new win.
+remain the source of truth for unlocks. Scenes do not read or save a winning cast
+or Holt outcome. Obsolete `ending` fields are ignored when reading old records;
+completion counts, times and medals are preserved.
 `amortization.story.v1` stores only the IDs of scenes the player explicitly finished.
 
 Story copy itself stays outside replay fingerprints. New mission definitions and

@@ -207,7 +207,7 @@ for (const touch of [false, true])
       await press('[data-story-control="next"]');
     }
     expect([...speakers]).toEqual(['Iona Voss', 'Morrow', 'Vale', 'Rook', 'Sable', 'Mara Quill']);
-    expect(lines.join(' ')).toContain('Holt is in custody.');
+    expect(lines.join(' ')).toContain('No one upstairs is giving orders anymore.');
     expect(lines.at(-1)).toContain('Glasses up.');
     await expect(page.locator('[data-story-entry="bench"]')).toContainText('Replay scene');
     if (!touch) {
@@ -256,7 +256,9 @@ for (const touch of [false, true])
         await press('[data-story-control="next"]');
       }
       await expect(scene.locator('.story-speaker')).toHaveText('Mara Quill');
-      await expect(scene.locator('.story-readable')).toContainText('Holt and Dacre are gone.');
+      await expect(scene.locator('.story-readable')).toContainText(
+        'No one upstairs is giving orders anymore.',
+      );
       await press('[data-story-control="close"]');
     }
     await expect(page.locator('vite-error-overlay')).toHaveCount(0);

@@ -24,53 +24,32 @@ function win(id: Mission['id'], seconds: number, alive = 4) {
   return w;
 }
 
-it('keeps the last successful finale cast and Holt outcome across reloads and failed attempts', () => {
-  recordWin(win('bench', 100));
-  const costly = win('bench', 120);
-  costly.agents[0].hp = costly.agents[2].hp = 0;
-  costly.escort!.hp = 0;
-  recordWin(costly);
-  expect(missionRecord(readRecords(), 'bench')).toMatchObject({
-    fullCrewBest: 100,
-    best: 100,
-    completions: 2,
-    ending: { survivors: ['vale', 'sable'], holt: 'eliminated' },
-  });
-  const failed = win('bench', 80);
-  failed.status = 'lost';
-  recordWin(failed);
-  expect(missionRecord(readRecords(), 'bench').ending).toEqual({
-    survivors: ['vale', 'sable'],
-    holt: 'eliminated',
-  });
-  recordWin(win('bench', 150));
-  expect(missionRecord(readRecords(), 'bench').ending).toEqual({
-    survivors: ['morrow', 'vale', 'rook', 'sable'],
-    holt: 'custody',
-  });
-});
-
-it.each([
-  { survivors: [], holt: 'custody' },
-  { survivors: ['vale', 'vale'], holt: 'custody' },
-  { survivors: ['unknown'], holt: 'custody' },
-  { survivors: ['morrow'], holt: 'escaped' },
-])('ignores malformed ending data without losing completion records: %j', (ending) => {
+it('ignores obsolete story outcomes while preserving records and medals', () => {
   data.set(
     'amortization.records.v4',
     JSON.stringify({
       version: 4,
       missions: {
-        bench: { best: 100, completions: 1, fullCrewBest: null, medals: ['complete'], ending },
+        bench: {
+          best: 100,
+          fullCrewBest: 100,
+          completions: 2,
+          medals: ['complete', 'full-crew'],
+          ending: { survivors: ['vale', 'sable'], holt: 'eliminated' },
+        },
       },
     }),
   );
   expect(missionRecord(readRecords(), 'bench')).toEqual({
     best: 100,
-    completions: 1,
-    fullCrewBest: null,
-    medals: ['complete'],
+    fullCrewBest: 100,
+    completions: 2,
+    medals: ['complete', 'full-crew'],
   });
+  recordWin(win('bench', 120, 1));
+  const saved = JSON.parse(data.get('amortization.records.v4')!).missions.bench;
+  expect(saved).toMatchObject({ best: 100, fullCrewBest: 100, completions: 3 });
+  expect(saved).not.toHaveProperty('ending');
 });
 
 it.each(missions)(

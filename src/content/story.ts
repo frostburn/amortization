@@ -1,11 +1,5 @@
 import type { Mission } from '../sim/types';
-import { CREW, type CrewId } from '../sim/crew';
-
-/** Last successful finale, retained so a replayed scene cannot resurrect a casualty. */
-export interface FinaleOutcome {
-  survivors: CrewId[];
-  holt?: 'custody' | 'eliminated';
-}
+import { CREW } from '../sim/crew';
 
 export type StoryId = 'opening' | Mission['id'];
 export type StorySetting = keyof typeof storySettings;
