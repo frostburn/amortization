@@ -193,7 +193,7 @@ for (const touch of [false, true]) {
 test('existing completions unlock all scenes; every portrait and setting loads', async ({
   page,
 }, testInfo) => {
-  test.setTimeout(90_000); // Full catalogue sweep; only the short desktop flow is in smoke CI.
+  test.setTimeout(120_000); // Full fifteen-operation catalogue; outside routine smoke CI.
   // The catalogue sweep also exercises the instant, accessible reading mode.
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const errors: string[] = [];
@@ -213,7 +213,7 @@ test('existing completions unlock all scenes; every portrait and setting loads',
   const mission = page.locator('#mission-dialog'),
     scene = page.locator('#story-dialog');
   await mission.getByRole('button', { name: 'Choose operation' }).click();
-  await expect(mission.locator('[data-story-entry]')).toHaveCount(13);
+  await expect(mission.locator('[data-story-entry]')).toHaveCount(missions.length + 1);
   const decoded = new Set<string>();
   for (const m of missions) {
     await mission.locator(`[data-story-entry="${m.id}"]`).click();
