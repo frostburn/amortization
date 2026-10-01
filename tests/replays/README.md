@@ -7,8 +7,44 @@ is also verified. Otherwise this checks a route's continued viability, without
 claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All sixty-six retained completions are byte-for-byte copies of submissions
+All seventy-three retained completions are byte-for-byte copies of submissions
 provided in chat, including their `unversioned` / local-changes metadata.
+
+## Missions 12–13: human 100% coverage and completed custody
+
+All 18 submissions reproduce **351 original checkpoints** and their final results
+on the current rules. The seven wins below cover all **six Countermand medals**
+and all **nine Continuity medals** in `medals.test.ts`, with strict checkpoint
+and final-outcome assertions. Every new win extracts all four operatives.
+All recordings remain byte-for-byte copies of the submissions.
+
+| Mission / run | Outcome | Challenge medals |
+| --- | --- | --- |
+| `continuity-human-30a528bf` | 95.07s; 40 shots | Answerable, No disguise, Open channel, Power down |
+| `continuity-human-443f5e47` | 112.63s; 8 shots | Answerable, Low profile, Power down |
+| `continuity-human-70e25678` | 149.37s; 1 shots | Answerable, Nonlethal, Open channel, Power down |
+| `continuity-human-e56ce23c` | 149.73s; 73 shots | Low profile, Due diligence, Power down |
+| `continuity-human-f18b7b1c` | 143.03s; 15 shots | Answerable, Open channel, Power down |
+| `countermand-human-21a73f58` | 123.13s; 3 shots | Nonlethal, Open channel |
+| `countermand-human-3eefe304` | 129.23s; 9 shots | Low profile, No disguise |
+
+Countermand `21a73f58` says “Felt a little cheesy.” It files RECALL at tick 2278,
+raises the alarm at tick 3689, and extracts at tick 3694: only five ticks (0.17s)
+of active alarm before leaving. This satisfies the existing Open channel rule.
+The crew kills nobody and takes only 20 damage on Rook. That route is documented
+without changing encounter balance or medal rules.
+
+Continuity `70e25678` reports that CUFF should stop being offered after success.
+The completed action was already an escort hand-off, but its marker still read
+CUFF. It now becomes ESCORT, with matching hover/locator text; the arrest button
+is disabled after custody. The same change covers Holt. Hand-offs and wait/follow
+remain available. Desktop/touch browser regressions exercise custody and hand-off.
+The remaining note is “Butter fingers...” on unfinished attempt `8b565ed3`.
+
+The two losses and nine unfinished attempts are preserved as diagnostic files in
+`../fixtures/{countermand,continuity}-medals-{lost,playing}-<id>.replay.json`.
+Their failures are not requirements for future versions. No gameplay rules or
+simulation state were changed by the custody presentation fix.
 
 ## Missions 10–11: human 100% coverage
 

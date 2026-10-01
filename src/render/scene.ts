@@ -43,7 +43,7 @@ import { courierGuard } from '../sim/courier';
 import { guideLocation } from '../ui/objectives';
 import type { GuideTarget } from '../ui/objectives';
 import { extractionRequirement } from '../ui/extraction';
-import { objectRequirement } from '../ui/interactions';
+import { objectPresentation, objectRequirement } from '../ui/interactions';
 import { demolished } from '../sim/demolition';
 import { turretPowered, TURRET_ARC } from '../sim/security';
 import { circuitColor, drawTurret } from './turret';
@@ -1819,7 +1819,7 @@ export class Scene {
       }
       const label = icon.children[1] as Text;
       const armed = isCharge(id) && w.demolition?.armed.includes(id);
-      label.text = `${landmark(w, id).tag}${armed ? (demolished(w) ? ' · DESTROYED' : ' · ARMED') : locked ? ' · LOCKED' : ''}`;
+      label.text = `${objectPresentation(w, id).tag}${armed ? (demolished(w) ? ' · DESTROYED' : ' · ARMED') : locked ? ' · LOCKED' : ''}`;
       label.style.fill = locked ? 0xa5aba8 : markerColor(id);
       if (armed) icon.alpha = demolished(w) ? 0.55 : 1;
       icon.children[1].visible = !this.guideMarkers.has(id) && !this.timers.has(id);

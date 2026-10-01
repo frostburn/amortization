@@ -108,6 +108,8 @@ it.each([
   ['personnel', ['9892e832', 'b8923bce', '6bf37c05']],
   ['injunction', ['65373176', '8221848e', '8b999c06']],
   ['settlement', ['48b1146d', '760f7e98', '771db55d', 'ce258794']],
+  ['countermand', ['21a73f58', '3eefe304']],
+  ['continuity', ['30a528bf', '443f5e47', '70e25678', 'e56ce23c', 'f18b7b1c']],
 ] as const)('the human %s runs collectively earn every medal', (mission, ids) => {
   const collected = new Set<string>();
   for (const id of ids) {

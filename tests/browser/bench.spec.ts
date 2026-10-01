@@ -103,6 +103,10 @@ for (const touch of [false, true])
     await press('#arrest-principal');
     await advance(360);
     await expect(page.locator('#principal-status')).toContainText('Holt in custody');
+    await expect(page.locator('#arrest-principal')).toBeDisabled();
+    await press('#objective-primary');
+    await expect(page.locator('[data-locate-target="escort"]')).toHaveText('ESCORT ↗');
+    await press('[data-dismiss-guide]');
     await expect(page.locator('#escort-wait-label')).toContainText('Severin Holt');
     await press('[data-action="follow"]');
     await capture('holt-cuffed');
