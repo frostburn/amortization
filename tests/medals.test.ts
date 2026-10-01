@@ -104,6 +104,7 @@ it.each([
   ['broadcast', ['42048895', '740307a2', 'ec959f54', 'f8b2c49a']],
   ['severance', ['2f9a7242', '37611591', 'bdbb0b9a', 'e366104a', 'e3aa7439', 'e73b41fe']],
   ['clearing', ['985e3e2b', 'ddbce34b']],
+  ['mandate', ['e345eb76', 'd1724911', '39124e87']],
 ] as const)(
   'the human %s runs collectively earn every medal with exact checkpoints',
   (mission, ids) => {
@@ -133,3 +134,39 @@ it.each([
     );
   },
 );
+
+it('covers every Personnel medal with the human escape and two explicitly authored routes', () => {
+  const mission = missions.find((m) => m.id === 'personnel')!;
+  const collected = new Set<string>();
+  const routes = [
+    {
+      file: 'replays/personnel-human-9892e832.replay.json',
+      medals: ['complete', 'full-crew', 'quiet', 'nonlethal', 'travel-light'],
+    },
+    {
+      file: 'fixtures/personnel-authored-open-channel.replay.json',
+      medals: ['complete', 'full-crew', 'nonlethal', 'live-alarm', 'travel-light'],
+    },
+    {
+      file: 'fixtures/personnel-authored-no-disguise.replay.json',
+      medals: ['complete', 'full-crew', 'quiet', 'no-kit', 'intel', 'travel-light'],
+    },
+  ];
+  for (const { file, medals } of routes) {
+    const bundle = parseReplay(readFileSync(`tests/${file}`, 'utf8'));
+    // Only briefing advice changed. Keep all original checkpoint/result checks,
+    // bypassing presentation metadata and the source-build label in memory.
+    bundle.mission.hash = fingerprint(mission);
+    const player = new ReplayPlayer(bundle, bundle.build);
+    while (!player.done) player.advance();
+    expect(player.error, file).toBeNull();
+    const earned = earnedMedals(player.world);
+    expect(earned, file).toEqual(medals);
+    earned.forEach((medal) => collected.add(medal));
+  }
+  expect([...collected].sort()).toEqual(
+    medalsFor(mission)
+      .map((m) => m.id)
+      .sort(),
+  );
+});

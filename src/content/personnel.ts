@@ -39,6 +39,10 @@ export const personnel: Mission = {
         title: 'Free them, then release the route',
         body: 'Keep a partner holding CELLS while another works the local VALE and ROOK locks for two continuously powered seconds each. A power interruption restarts the release. Door safety cannot replace remote power. A guard patrols between the cells: keep freed teammates inside until they can slip out behind him. Each can recover their own weapon and dressing at GEAR, or leave unarmed. Once both are free, use EXIT to latch both gates open and bring the console operator. The register is optional. Blown cover still permits a coordinated armed rescue.',
       },
+      {
+        title: 'Medal attempts',
+        body: 'For No disguise, swap the opening roles: Morrow holds the console; Sable uses the coil rifle to clear intake from range. RADIO can still be disabled for this medal. Let each charge finish and use her dressing between fights. Keep the prisoners in their cells until the corridor is clear. Use EXIT to bring the other rescuer before fighting over GEAR. Collect REGISTER after securing a route out; its carrier cannot shoot. Pursue Open channel separately: a disguise is allowed, but the alarm must sound before extraction and RADIO must stay live.',
+      },
     ],
   },
   width: 48,

@@ -7,8 +7,67 @@ is also verified. Otherwise this checks a route's continued viability, without
 claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All fifty-three retained completions are byte-for-byte copies of submissions
+All fifty-seven retained completions are byte-for-byte copies of submissions
 provided in chat, including their `unversioned` / local-changes metadata.
+
+## October 1: Key personnel medal attempts
+
+All 17 new submissions reproduce their outcomes and **266 original checkpoints**
+on `bcb5b04`: simulation `92c679dfef39ac891e67136c39ae1fddb1ce6c44dcaf69ae600792f8d8c5a3b8`,
+Personnel mission `7ae460bd`, Mandate mission `d27e1b97`. Their notes are empty;
+the chat feedback was that Key personnel's 100% completion seemed out of reach.
+
+The four wins join the required human completion corpus unchanged:
+
+| File                                   | Outcome                                    | Challenge medals                      |
+| -------------------------------------- | ------------------------------------------ | ------------------------------------- |
+| `personnel-human-9892e832.replay.json` | 2690 ticks / 89.67s; four alive; two shots | Low profile, Nonlethal, Travel light  |
+| `mandate-human-e345eb76.replay.json`   | 3660 ticks / 122s; four alive; zero shots  | Low profile, Nonlethal, Power down    |
+| `mandate-human-39124e87.replay.json`   | 2120 ticks / 70.67s; four alive; 31 shots  | No disguise, Open channel, Power down |
+| `mandate-human-d1724911.replay.json`   | 2362 ticks / 78.73s; three alive; 52 shots | Settled only; Vale was lost           |
+
+All four earn Settled; the full-crew wins also earn Full crew. Together the Mandate
+runs earn all seven medals. Personnel is missing No disguise, Open channel and
+Due diligence. Shot counts include both sides.
+
+The thirteen losses are unchanged diagnostic files at
+`../fixtures/personnel-medals-lost-<suffix>.replay.json`: `1bf80584`, `ac4669f1`,
+`5456ed81`, `315398c7`, `91874b79`, `50285420`, `e5c6f0b2`, `716d09a4`, `04aaf638`,
+`761dc962`, `d1f34a2e`, `87e1d24c`, `5d967622`. Each ends when one operative dies,
+as this rescue requires all four. Several assaults expose a lone rescuer or an
+unarmed prisoner near GEAR; other withdrawals meet the northern intake patrol.
+The register remains available in every submission. These losses are evidence
+for diagnosis, not requirements that future versions must keep losing.
+
+### Authored medal verification (optional route spoilers)
+
+Two separately labelled, command-only recordings cover the missing challenges.
+They are **authored verification routes, not human completions**. Neither edits
+world state or the player's source recording. They can be imported in dev
+playtesting to watch the routes, and `medals.test.ts` verifies their checkpoints,
+results and earned medals alongside the original human escape.
+
+- [`personnel-authored-open-channel.replay.json`](../fixtures/personnel-authored-open-channel.replay.json)
+  changes only the human escape's RADIO interaction at tick 400 into a move to
+  `(19, 26)`. Every other command and tick is identical. Vale still takes the same
+  two hits and everyone extracts at tick 2690; the late contact now raises the
+  live alarm. This earns Open channel while retaining Nonlethal and Travel light.
+- [`personnel-authored-no-disguise.replay.json`](../fixtures/personnel-authored-no-disguise.replay.json)
+  puts Morrow on the console and sends Sable in with her coil rifle. She clears
+  intake, disables RADIO, uses her dressing, then clears the cell corridor before
+  freeing both prisoners and using EXIT. The crew leaves GEAR alone and takes
+  REGISTER along the cleared route. At tick 2841 / 94.7s all four extract, Sable
+  with 32 HP and the others undamaged: No disguise and Due diligence, plus Low
+  profile and Travel light. This proves attainability, not a forgiving or
+  human-validated assault route.
+
+Those two routes and the human win collectively earn all eight Personnel medals.
+Combat, gates, patrols, equipment and medal conditions are unchanged. Only the
+collapsed Tactical advice gains medal-specific guidance. Its copy change alters
+the mission fingerprint; strict medal tests skip that metadata gate in memory
+while still checking every original state checkpoint and result. Archived human
+files stay byte-for-byte intact; use **Try current rules** when importing the
+older Personnel bundles after the briefing change.
 
 ## Character refresh: Ren Quill and guard diversity
 
