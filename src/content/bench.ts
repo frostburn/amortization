@@ -10,22 +10,14 @@ const wall = (
   floor = 0,
   height = 1.65,
 ): Solid => ({ id, x, y, w, h, floor, height, kind: 'wall' });
-const post = (
-  x: number,
-  y: number,
-  angle: number,
-  role?: GuardTactic['role'],
-  posts?: Vec[],
-  floor = 0,
-) => {
-  const position = { x, y, ...(floor ? { floor } : {}) };
-  return {
-    position,
-    patrol: [position],
-    angle,
-    ...(role ? { tactic: { role, posts: posts ?? [position] } } : {}),
-  };
-};
+// Walking routes and combat posts are separate: every defender has a beat to
+// patrol, while Dacre can redirect his detail to nearby authored fighting positions.
+const detail = (role: GuardTactic['role'], patrol: Vec[], posts = patrol) => ({
+  position: patrol[0],
+  patrol,
+  angle: Math.PI,
+  tactic: { role, posts },
+});
 
 export const bench: Mission = {
   id: 'bench',
@@ -71,7 +63,7 @@ export const bench: Mission = {
     routes: [
       {
         title: 'The command marshal',
-        body: 'Dacre wears charcoal armour with gold shoulders and carries a carbine. His 160-health armour is visible on his bar. His two-second hand signal orders surviving nearby defenders to crossfire posts. A hit or flash interrupts it; he cannot shoot while signalling. He uses actual sight and remembered positions, not knowledge through walls. RADIO stops arriving patrols, not his local commands.',
+        body: 'Dacre wears charcoal armour with gold shoulders and carries a carbine. His 160-health armour is visible on his bar. His two-second hand signal orders surviving nearby defenders to crossfire posts. A hit or flash interrupts it; he cannot shoot while signalling. His retinue can relay a sighting while in view of him. These are observed positions, never knowledge through walls. The detail patrols both approaches and takes cover under fire. RADIO stops arriving patrols, not his local commands.',
       },
       {
         title: 'Open the Bench',
@@ -83,7 +75,7 @@ export const bench: Mission = {
       },
       {
         title: 'Above the city',
-        body: 'UP connects the penthouse to the roof; DOWN returns. The active operative determines which level is visible. Bring a cuffed Holt’s escort upstairs and he follows through the stairs. A waiting prisoner stays behind until asked to follow. HELI waits indefinitely, but two rooftop guards protect the approach. No bullets, vision or flashes pass between levels.',
+        body: 'UP connects the penthouse to the roof; DOWN returns. The active operative determines which level is visible. Bring a cuffed Holt’s escort upstairs and he follows through the stairs. A waiting prisoner stays behind until asked to follow. HELI waits indefinitely, but two rooftop guards patrol across the approach and helipad. No bullets, vision or flashes pass between levels.',
       },
     ],
   },
@@ -136,6 +128,7 @@ export const bench: Mission = {
     { id: 'board-table', x: 28, y: 21, w: 6, h: 1.4, height: 1.05, kind: 'shelves' },
     { id: 'north-planter', x: 25, y: 13, w: 2.5, h: 1, height: 1.25, kind: 'crate' },
     { id: 'south-planter', x: 24, y: 27, w: 3, h: 1, height: 1.25, kind: 'crate' },
+    wall('marshal-screen', 33, 28, 0.5, 3),
     { id: 'retinue-cover', x: 37, y: 26, w: 4, h: 0.8, height: 1.3, kind: 'shelves' },
     { id: 'radio-cabinet', x: 17, y: 5.5, w: 2, h: 0.8, height: 1.4, kind: 'server' },
     { id: 'seal-a-cabinet', x: 29, y: 5.5, w: 1.2, h: 1, height: 1.3, kind: 'server' },
@@ -245,40 +238,122 @@ export const bench: Mission = {
     { x: 8, y: 31 },
   ],
   guards: [
-    post(18, 18, Math.PI / 2, 'inspector', [
-      { x: 18, y: 18 },
-      { x: 18, y: 10 },
-    ]),
-    post(19, 28, Math.PI / 2, 'sentry', [
-      { x: 19, y: 28 },
-      { x: 23, y: 25 },
-    ]),
-    post(24, 8, Math.PI, 'sentry', [
-      { x: 24, y: 8 },
-      { x: 28, y: 11 },
-    ]),
-    post(31, 25, Math.PI, 'marshal', [
-      { x: 31, y: 25 },
-      { x: 30, y: 19 },
-      { x: 36, y: 20 },
-      { x: 28, y: 29 },
-    ]),
-    post(27.5, 23.5, Math.PI, 'shield', [
-      { x: 27.5, y: 23.5 },
-      { x: 23.5, y: 24 },
-      { x: 27, y: 18 },
-    ]),
-    post(36, 29, Math.PI, 'support', [
-      { x: 36, y: 29 },
-      { x: 32, y: 30.5 },
-      { x: 29, y: 26 },
-    ]),
-    post(39, 23.5, Math.PI, 'breacher', [
-      { x: 39, y: 23.5 },
-      { x: 29, y: 29 },
-      { x: 25, y: 20 },
-    ]),
-    post(26, 10, Math.PI, 'marksman', [roof(26, 10), roof(30, 8)], 1),
-    post(32, 29, Math.PI, 'sentry', [roof(32, 29), roof(33, 23)], 1),
+    detail(
+      'inspector',
+      [
+        { x: 18, y: 18 },
+        { x: 18, y: 9 },
+        { x: 23, y: 9 },
+        { x: 23, y: 25 },
+        { x: 18, y: 25 },
+      ],
+      [
+        { x: 18, y: 18 },
+        { x: 18, y: 10 },
+        { x: 23, y: 25 },
+      ],
+    ),
+    detail(
+      'sentry',
+      [
+        { x: 19, y: 28 },
+        { x: 23, y: 31 },
+        { x: 29, y: 30 },
+        { x: 23, y: 25 },
+        { x: 18, y: 25 },
+      ],
+      [
+        { x: 19, y: 28 },
+        { x: 23, y: 25 },
+        { x: 28, y: 29 },
+      ],
+    ),
+    detail(
+      'sentry',
+      [
+        { x: 24, y: 8 },
+        { x: 29, y: 8 },
+        { x: 29, y: 16 },
+        { x: 23, y: 16 },
+        { x: 23, y: 10 },
+      ],
+      [
+        { x: 24, y: 8 },
+        { x: 28, y: 11 },
+        { x: 29, y: 16 },
+      ],
+    ),
+    detail(
+      'marshal',
+      [
+        { x: 31, y: 25 },
+        { x: 34.5, y: 25 },
+        { x: 34.5, y: 31.5 },
+        { x: 29, y: 30.5 },
+      ],
+      [
+        { x: 31, y: 25 },
+        { x: 34.5, y: 29 },
+        { x: 32, y: 31.5 },
+        { x: 35, y: 20 },
+        { x: 30, y: 19 },
+      ],
+    ),
+    detail(
+      'shield',
+      [
+        { x: 27.5, y: 23.5 },
+        { x: 23.5, y: 24 },
+        { x: 23, y: 18 },
+        { x: 28, y: 18 },
+      ],
+      [
+        { x: 27.5, y: 23.5 },
+        { x: 23.5, y: 24 },
+        { x: 27, y: 18 },
+      ],
+    ),
+    detail(
+      'support',
+      [
+        { x: 36, y: 29 },
+        { x: 42, y: 29 },
+        { x: 42, y: 23.5 },
+        { x: 38.5, y: 20 },
+        { x: 35, y: 24.5 },
+      ],
+      [
+        { x: 36, y: 29 },
+        { x: 35, y: 25 },
+        { x: 29, y: 26 },
+        { x: 42, y: 24 },
+      ],
+    ),
+    detail(
+      'breacher',
+      [
+        { x: 39, y: 23.5 },
+        { x: 44, y: 20 },
+        { x: 44, y: 31 },
+        { x: 30, y: 32 },
+        { x: 30, y: 26 },
+      ],
+      [
+        { x: 39, y: 23.5 },
+        { x: 29, y: 29 },
+        { x: 25, y: 20 },
+        { x: 35, y: 31.5 },
+      ],
+    ),
+    detail(
+      'marksman',
+      [roof(26, 10), roof(30, 8), roof(32, 18), roof(24, 18), roof(24, 10)],
+      [roof(26, 10), roof(30, 8), roof(31, 18), roof(24, 18)],
+    ),
+    detail(
+      'sentry',
+      [roof(32, 29), roof(40, 27), roof(40, 18), roof(30, 17), roof(30, 23)],
+      [roof(32, 29), roof(33, 23), roof(40, 18), roof(30, 17)],
+    ),
   ],
 };

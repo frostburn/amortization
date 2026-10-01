@@ -23,6 +23,7 @@ import { nextMission } from '../src/content/missions';
 import { Recorder, parseReplay, verifyReplay } from '../src/replay/core';
 import { buildInfo } from '../scripts/build-info';
 import { earnedMedals } from '../src/ui/medals';
+import { sees } from '../src/sim/vision';
 
 const advance = (w: World, seconds: number) => {
   for (let i = 0; i < seconds / STEP; i++) step(w);
@@ -33,6 +34,62 @@ const calm = () => {
   w.relayOff = true;
   return w;
 };
+
+it('patrols every defender across both floors without an alarm or player contact', () => {
+  const w = createWorld(bench),
+    travelled = w.guards.map(() => 0),
+    waypoints = w.guards.map(() => new Set<number>());
+  for (const g of w.guards) {
+    for (const [i, p] of g.patrol.entries()) {
+      const next = g.patrol[(i + 1) % g.patrol.length];
+      expect(findPath(w, p, next).at(-1)).toEqual(next);
+    }
+  }
+  for (let tick = 0; tick < 60 / STEP; tick++) {
+    const before = w.guards.map(position);
+    step(w);
+    w.guards.forEach((g, i) => {
+      travelled[i] += distance(g, before[i]);
+      waypoints[i].add(g.waypoint);
+      expect(g.mode).toBe('patrol');
+    });
+  }
+  expect(w.alarm).toBe(false);
+  expect(w.shots).toBe(0);
+  expect(travelled.every((d) => d > 50)).toBe(true);
+  expect(waypoints.every((visited) => visited.size >= 3)).toBe(true);
+  expect(w.guards.slice(7).every((g) => g.floor === 1)).toBe(true);
+});
+
+it('lets Dacre coordinate from a retinue sighting, but not through walls, stun or unrecognised contacts', () => {
+  const w = createWorld(bench),
+    boss = dacre(w)!,
+    scout = w.guards[6],
+    a = w.agents[0];
+  for (const g of w.guards) if (g !== boss && g !== scout) g.hp = 0;
+  w.relayOff = true;
+  Object.assign(boss, { x: 34.5, y: 29 });
+  Object.assign(scout, { x: 31, y: 24.5, angle: Math.atan2(4.5, -2), known: [a.id] });
+  Object.assign(a, { x: 29, y: 29 });
+  expect(lineClear(w, boss, a)).toBe(false);
+  expect(lineClear(w, boss, scout)).toBe(true);
+  expect(sees(w, scout, a)).toBe(true);
+  scout.disoriented = 1;
+  expect(commandMarshal(w, boss, undefined, 0.1)).toBe(false);
+  scout.disoriented = 0;
+  scout.known = [];
+  expect(commandMarshal(w, boss, undefined, 0.1)).toBe(false);
+  scout.known = [a.id];
+  scout.y = 29; // The command screen now blocks officer-to-marshal sight.
+  expect(commandMarshal(w, boss, undefined, 0.1)).toBe(false);
+  scout.y = 24.5;
+  expect(commandMarshal(w, boss, undefined, 0.1)).toBe(true);
+  expect(boss.marshal!.target).toEqual(position(a));
+  Object.assign(a, { x: 7, y: 30 });
+  commandMarshal(w, boss, undefined, COMMAND_TIME);
+  expect(scout.commandMove).toBeDefined();
+  expect(scout.lastSeen).toEqual({ x: 29, y: 29 });
+});
 
 it('ends the campaign at the rooftop exit, without phantom ground gates', () => {
   expect(nextMission('threshold')).toBe(bench);
@@ -261,6 +318,7 @@ for (const custody of [true, false])
     move(ids, 17, 6);
     fight('guard-2');
     fight('guard-0');
+    fight('guard-1');
     move(ids, 18, 8);
     move(ids, 28, 9);
     move(ids, 26, 18);
@@ -291,6 +349,7 @@ for (const custody of [true, false])
     move(ids, 8, 18, 1);
     move([ids[0], ids[2], ids[3]], 22.5, 18, 1);
     fight('guard-7', [ids[0], ids[2], ids[3]]);
+    fight('guard-8', [ids[0], ids[2], ids[3]]);
     move(ids, 25, 7, 1);
     move(ids, 40, 8, 1);
     move(ids, 40, 18, 1);

@@ -24,7 +24,7 @@ export const guardRole = (guard: Guard) =>
                   : 'Site guard';
 export const guardDescription = (guard: Guard) =>
   guard.marshal
-    ? 'Charcoal armour, gold shoulders · 160 health · carbine. A two-second hand signal sends nearby surviving retinue to crossfire posts. Hit or flash him to interrupt; he cannot fire while signalling. RADIO does not stop local commands.'
+    ? 'Charcoal armour, gold shoulders · 160 health · carbine. Patrols with his retinue. A two-second hand signal sends nearby surviving officers to crossfire posts, using his own sight or an officer’s visible report. Hit or flash him to interrupt; he cannot fire while signalling. RADIO does not stop local commands.'
     : guard.turret
       ? `Stationary carbine mount · 180 armour · 9-unit range. Tracks for 0.8s before firing. Solid cover breaks tracking. Isolate ${guard.turret.circuit === 'power-west' ? 'WEST' : 'EAST'} or authorise INSPECT; RADIO has no effect.`
       : guard.tactics?.role === 'shield'

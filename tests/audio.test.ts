@@ -35,7 +35,7 @@ describe('sound palette and placement', () => {
         confirmation,
       );
     }
-    expect(prints.size).toBe(6);
+    expect(prints.size).toBe(Object.keys(typingVoices).length);
     expect(SOUND_IDS.filter((id) => id.startsWith('key-')).sort()).toEqual(
       (Object.keys(typingVoices) as TypingSpeaker[]).map(typingSound).sort(),
     );

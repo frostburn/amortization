@@ -124,7 +124,7 @@ distinct routes. Retained human completions cover all fourteen operations, inclu
 replacement weapon-era runs for 05–06, the full-crew Countermand completion, and
 both Kestrel outcomes in Continuity and Threshold's three-survivor key recovery. The first twelve also have synthetic quiet
 and armed completion tests; Operation 13 has guarded arrest and lethal runs, and Operation 14 has quiet and armed
-full-crew runs with replay verification. Operation 15 has full-crew guarded custody and lethal routes with exact replay verification; its first human run is still pending. See
+full-crew runs with replay verification. Operation 15 has full-crew guarded custody and lethal routes with exact replay verification. Its first human batch led to mobile patrols and locally relayed boss commands; the original runs remain as diagnostics. See
 `tests/replays/README.md` for provenance, current outcomes, and retired routes.
 
 ## Controls
@@ -739,7 +739,10 @@ crossfire positions. Hold SEAL A and SEAL B together, or force CUT to reach Holt
 Defeat Dacre, then cuff Holt or eliminate him. Take every survivor—and Holt if
 arrested—UP to the helicopter waiting at HELI. The helicopter boards, rises and
 flies off before the debrief. MINUTES are optional. The replayable ending closes
-the campaign while preserving its earlier victories.
+the campaign with a homecoming for the surviving crew, individual portraits and voices,
+and a toast to the people the team freed. The latest winning cast and Holt outcome
+are retained for story replay. All defenders now patrol: RADIO controls incoming
+waves, while Dacre can coordinate from his retinue’s visible reports.
 [Rules and verification](docs/bench.md).
 
 ## Operation medals

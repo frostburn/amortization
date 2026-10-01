@@ -4,6 +4,7 @@ import { findPath, lineClear } from './navigation';
 import { notify } from './world';
 import { cancelCharge, weaponRange } from './weapons';
 import { FLASH_FLIGHT } from './flash';
+import { sees } from './vision';
 
 export const MARSHAL_HEALTH = 160;
 export const COMMAND_TIME = 2;
@@ -85,22 +86,31 @@ export function followMarshalOrder(w: World, g: Guard) {
 export function commandMarshal(w: World, g: Guard, visible: Person | undefined, dt: number) {
   const m = g.marshal;
   if (!m) return false;
-  if (
-    !m.target &&
-    visible &&
-    w.time >= m.readyAt &&
-    w.mission.finale?.retinue.some((i) => {
-      const p = w.guards.find((p) => p.id === `guard-${i}`);
-      return p && living(p) && !disoriented(p) && distance(g, p) <= 14 && lineClear(w, g, p);
-    })
-  ) {
-    m.target = position(visible);
-    m.remaining = COMMAND_TIME;
-    notify(
-      w,
-      'Dacre is signalling a crossfire. Hit or flash him to break the two-second order.',
-      'warning',
+  if (!m.target && w.time >= m.readyAt) {
+    const partners = w.guards.filter(
+      (p) =>
+        w.mission.finale?.retinue.some((i) => p.id === `guard-${i}`) &&
+        living(p) &&
+        !disoriented(p) &&
+        distance(g, p) <= 14 &&
+        lineClear(w, g, p),
     );
+    // A visible officer can relay a current, identified sighting. RADIO does
+    // not silence local signals, but walls, stun and loss of sight do.
+    const contact =
+      visible ??
+      w.agents.find(
+        (a) => controllable(a) && partners.some((p) => p.known.includes(a.id) && sees(w, p, a)),
+      );
+    if (contact && partners.length) {
+      m.target = position(contact);
+      m.remaining = COMMAND_TIME;
+      notify(
+        w,
+        'Dacre is signalling a crossfire. Hit or flash him to break the two-second order.',
+        'warning',
+      );
+    }
   }
   if (!m.target) return false;
   g.path = [];
@@ -157,7 +167,7 @@ export function updateFinale(w: World, dt: number) {
     }
     notify(
       w,
-      'Dacre is down. Holt will surrender at CUFF once you reach him. Surviving guards still hold their posts.',
+      'Dacre is down. Holt will surrender at CUFF once you reach him. Surviving guards are still active.',
     );
   }
   if (f.open) return;

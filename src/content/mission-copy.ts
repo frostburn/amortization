@@ -1,10 +1,78 @@
 import type { Mission } from '../sim/types';
-import type { StoryScene } from './story';
+import type { FinaleOutcome, StoryScene } from './story';
+import { CREW, type CrewId } from '../sim/crew';
 
 interface MissionCopy {
   briefing: { objective: string; extract: string; rules: string };
   epilogue: { lead: string; body: string };
   scene: StoryScene;
+}
+
+/** A homecoming belongs to the people who made it back. Unknown legacy results
+ * keep the welcome and victory, without inventing a cast or Holt's fate. */
+export function benchScene(outcome?: FinaleOutcome): StoryScene {
+  const present = new Set(outcome?.survivors),
+    fallen = outcome ? CREW.filter((a) => !present.has(a.id)).map((a) => a.name) : [],
+    lead = CREW.find((a) => present.has(a.id))?.id;
+  const line = (speaker: CrewId, text: string): StoryScene['beats'] =>
+    present.has(speaker) ? [{ speaker, text }] : [];
+  const names =
+    fallen.length < 2 ? fallen[0] : `${fallen.slice(0, -1).join(', ')} and ${fallen.at(-1)}`;
+  return {
+    title: 'Off duty',
+    setting: 'safehouse',
+    tone: 'celebration',
+    beats: [
+      {
+        speaker: 'voss',
+        text: 'You’re back. The whole street came out when they heard the helicopter. Come inside—there’s food, and nobody is on a clock tonight.',
+      },
+      ...line('morrow', 'Stand down. Weapons safe. We made it home.'),
+      ...line(
+        'vale',
+        'I checked the repayments on the way down. They’re still there. And for once, I’m shutting this thing off.',
+      ),
+      ...line(
+        'rook',
+        'Then give me that bottle. I’ve been carrying enough equipment for one night.',
+      ),
+      ...line(
+        'sable',
+        'You should see the tower from here. All that height, and it can’t tell a single one of us where to go.',
+      ),
+      {
+        speaker: 'mara',
+        text:
+          outcome?.holt === 'custody'
+            ? 'Holt is in custody. Dacre’s chain of command is broken. Tomorrow, Holt answers to the people he kept off that floor.'
+            : outcome?.holt === 'eliminated'
+              ? 'Holt and Dacre are gone. No one upstairs can issue another order. Tomorrow, we start the hearings without them.'
+              : 'No one upstairs is giving orders anymore. Tomorrow, the hearings begin. Tonight belongs to the people who got us here.',
+      },
+      {
+        speaker: 'voss',
+        text: 'Tomorrow can wait. I saved these glasses for something worth celebrating.',
+      },
+      ...(fallen.length
+        ? [
+            {
+              speaker: lead ?? 'voss',
+              text: `Before we drink: to ${names}. ${fallen.length === 1 ? 'There should be another chair here' : 'They should be here'}. We won’t forget.`,
+            } as const,
+          ]
+        : []),
+      {
+        speaker: lead ?? 'voss',
+        text: 'To the people we brought home. To the ones who opened their doors. And to everyone who gets to keep what we won.',
+      },
+      { speaker: 'mara', text: 'To the district. Paid back. Free to leave. Free to stay.' },
+      {
+        speaker: 'voss',
+        text: 'When I called you, I asked for four people and a van. I didn’t know I was asking for a life. Thank you. All of you.',
+      },
+      { speaker: lead ?? 'mara', text: 'Glasses up. We’re home.' },
+    ],
+  };
 }
 
 // Keep each contract's concise orders and ending together. Presentation copy
@@ -20,29 +88,9 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     },
     epilogue: {
       lead: 'The helicopter clears the tower.',
-      body: 'Dacre’s command ends on the executive floor. Holt no longer signs for the district. Below, the exchange keeps the repayments moving and the cancelled seizure orders remain cancelled. The hearing will establish who else helped make those debts. Tonight, no one is being sent back to collect them.',
+      body: 'Dacre’s command ends on the executive floor. Holt no longer signs for the district. Below, the exchange keeps the repayments moving and the cancelled seizure orders remain cancelled. At the safehouse, Voss has left the door open and set out glasses. For once, the crew is coming home to a celebration.',
     },
-    scene: {
-      title: 'The remaining work',
-      setting: 'safehouse',
-      beats: [
-        { speaker: 'voss', text: 'The helicopter is clear. The tower has stopped issuing orders.' },
-        {
-          speaker: 'mara',
-          text: 'The exchange has the accounts. Every repayment is still there. The first witnesses are due at nine.',
-        },
-        { speaker: 'voss', text: 'Will they have to prove it all again?' },
-        {
-          speaker: 'mara',
-          text: 'What was taken is already established. Now we find everyone who signed, and everyone who was made to pay.',
-        },
-        {
-          speaker: 'voss',
-          text: 'Put my name first. This time I want to be there when it is read.',
-        },
-        { speaker: 'mara', text: 'I will.' },
-      ],
-    },
+    scene: benchScene(),
   },
   threshold: {
     briefing: {

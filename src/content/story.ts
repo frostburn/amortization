@@ -1,4 +1,11 @@
 import type { Mission } from '../sim/types';
+import { CREW, type CrewId } from '../sim/crew';
+
+/** Last successful finale, retained so a replayed scene cannot resurrect a casualty. */
+export interface FinaleOutcome {
+  survivors: CrewId[];
+  holt?: 'custody' | 'eliminated';
+}
 
 export type StoryId = 'opening' | Mission['id'];
 export type StorySetting = keyof typeof storySettings;
@@ -6,6 +13,7 @@ export type StorySpeaker = keyof typeof storySpeakers;
 export interface StoryScene {
   title: string;
   setting: StorySetting;
+  tone?: 'celebration';
   beats: { speaker: StorySpeaker; text: string; setting?: StorySetting }[];
 }
 
@@ -15,14 +23,18 @@ export const storySettings = {
   safehouse: { name: 'Off the company network', image: 'assets/story/safehouse.webp' },
   boardroom: { name: 'The executive floor', image: 'assets/story/boardroom.webp' },
 };
+const operative = (index: number, position: string) => ({
+  name: CREW[index].name,
+  role: CREW[index].role,
+  image: 'assets/portraits.webp',
+  size: '200% 200%',
+  position,
+});
 export const storySpeakers = {
-  morrow: {
-    name: 'Morrow',
-    role: 'Field lead',
-    image: 'assets/portraits.webp',
-    size: '200% 200%',
-    position: 'left top',
-  },
+  morrow: operative(0, 'left top'),
+  vale: operative(1, 'right top'),
+  rook: operative(2, 'left bottom'),
+  sable: operative(3, 'right bottom'),
   voss: {
     name: 'Iona Voss',
     role: 'Engineer',

@@ -184,10 +184,28 @@ for (const touch of [false, true])
     await capture('departed');
     await press('#outcome-results');
     await press('[data-action="story:bench"]');
-    await expect(page.locator('#story-dialog')).toContainText('The remaining work');
+    await expect(page.locator('#story-dialog')).toContainText('Off duty');
     await expect(page.locator('[data-story-sound]')).toHaveText('Sound off');
+    const speakers = new Set<string>(),
+      lines: string[] = [];
+    const scene = page.locator('#story-dialog');
+    while (await scene.isVisible()) {
+      speakers.add((await scene.locator('.story-speaker').textContent())!);
+      lines.push((await scene.locator('.story-readable').textContent())!);
+      await press('#story-dialog .story-stage');
+      if ((await scene.locator('.story-speaker').textContent()) === 'Rook') {
+        await expect(scene.locator('.story-portrait')).toHaveCSS('background-position', '0% 100%');
+        await page.screenshot({ path: testInfo.outputPath('homecoming-rook.png') });
+      }
+      await expect(scene.locator('[data-story-control="next"]')).toBeInViewport({ ratio: 1 });
+      expect(await scene.evaluate((e) => e.scrollWidth <= e.clientWidth)).toBe(true);
+      await press('[data-story-control="next"]');
+    }
+    expect([...speakers]).toEqual(['Iona Voss', 'Morrow', 'Vale', 'Rook', 'Sable', 'Mara Quill']);
+    expect(lines.join(' ')).toContain('Holt is in custody.');
+    expect(lines.at(-1)).toContain('Glasses up.');
+    await expect(page.locator('[data-story-entry="bench"]')).toContainText('Replay scene');
     if (!touch) {
-      await press('[data-story-control="close"]');
       await press('dialog [data-action="restart"]');
       await press('[data-action="pause"]');
       await page.evaluate(() => {
@@ -227,6 +245,14 @@ for (const touch of [false, true])
       await press('#outcome-results');
       await expect(page.locator('#mission-dialog .results')).toContainText('Eliminated');
       await expect(page.locator('#mission-dialog .results')).toContainText('4 / 4');
+      await press('[data-story-entry="bench"]');
+      for (let i = 0; i < 5; i++) {
+        await press('#story-dialog .story-stage');
+        await press('[data-story-control="next"]');
+      }
+      await expect(scene.locator('.story-speaker')).toHaveText('Mara Quill');
+      await expect(scene.locator('.story-readable')).toContainText('Holt and Dacre are gone.');
+      await press('[data-story-control="close"]');
     }
     await expect(page.locator('vite-error-overlay')).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(

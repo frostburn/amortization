@@ -29,12 +29,20 @@ operative. It uses Threshold’s sunset palette and night sight distances.
 
 RADIO is in the north gallery, away from arrival. Its five-second shutdown stops
 the two standard reinforcement waves. It does not disable Dacre’s local command.
+All nine defenders walk authored circuits. The inspector sweeps between RADIO
+and the central gallery; the north and south sentries can encounter a returning
+or split crew. Dacre and his detail circulate around the board table and command
+screen. On the roof, the marksman changes firing lanes while the carbine patrol
+crosses the helipad approach. There are no additional guards or health/damage
+increases. Timing, cover, separation and local sightings change the engagement.
+
 On-map bars show dispatch deadlines, work on RADIO/CUT/CUFF, shared seal progress
 and Dacre’s signal. Goal locators track Dacre’s actual position.
 
 ## Command marshal
 
-Dacre signals for two seconds after seeing an identified intruder. He raises a
+Dacre signals for two seconds after seeing an identified intruder, or receiving
+a current sighting from a surviving retinue officer who can see him. He raises a
 hand and stops moving and shooting. Any hit or flash cancels the signal, with an
 eight-second recovery before another attempt. Death clears the signal and bar.
 
@@ -42,7 +50,8 @@ A completed order moves only his surviving, nearby shield officer, support gunne
 and breacher. Each needs clear sight of Dacre. Destinations come from each
 officer’s authored posts; a command tries at most two paths per officer, rejecting
 routes longer than sixteen units. Partners remember the contact position seen
-when the signal began, never a later unseen position. Dead officers stay dead and
+when the signal began, never a later unseen position. An officer cannot relay
+through a wall, while stunned, or without identifying and seeing the intruder. Dead officers stay dead and
 do not regain health. Disabling RADIO has no effect on these hand signals.
 
 The chamber and board table create different approaches around the retinue. A
@@ -61,9 +70,15 @@ operation. Failure retains the existing moving-world aftermath.
 
 **Answerable** awards Holt’s live custody. The seven applicable medals bring the
 campaign to 108; Nonlethal is absent here because defeating Dacre is mandatory.
-The optional, replayable **The remaining work** scene uses Voss and Mara so it
-holds for any surviving crew and both Holt outcomes. Earlier victories stand.
-Existing sound and volume preferences also govern that scene.
+The optional, replayable **Off duty** scene welcomes the crew back to food,
+raised glasses and a district celebrating its freedom. Every surviving operative
+speaks with their own portrait and keyboard voice; casualties receive a toast
+and do not appear alive. Mara acknowledges custody or elimination. Earlier
+victories stand. The latest successful finale's survivors and Holt outcome are
+saved with completion records, independently of best times and earned medals.
+Legacy full-crew records can establish the cast, but not Holt's fate; other old
+records use a neutral welcome from Voss and Mara. Existing sound and volume
+preferences govern every voice.
 
 ## Verification
 
@@ -71,14 +86,20 @@ Existing sound and volume preferences also govern that scene.
 paired seals with Holt in custody, and CUT with Holt eliminated. Both extract all
 four operatives and MINUTES, then replay their recorded commands and checkpoints
 exactly. The routes use infiltration to RADIO, cover, two flashes, split fire and
-a separate rooftop advance while protecting the evidence carrier. The southern
-roof sentry remains alive. These prove completion, not typical-player difficulty;
-the first human run of this mission is pending.
+a separate rooftop advance while protecting the evidence carrier. The routes now address the returning south patrol and both rooftop defenders.
+These prove completion, not typical-player difficulty. The first human batch
+exposed the static defense; its unmodified winning script loses under the new
+patrols. All three originals and the analysis are retained as diagnostics in
+[the replay notes](../tests/replays/README.md#the-bench-first-finale-playtest).
 
 Focused checks cover door collision and cache invalidation, saved/interrupted
 seal work, a lone-survivor inside CUT, capture prerequisites, command timing and
 interruptions, remembered contact positions, bounded surviving retinue, and
-extraction across floors. Existing human bundles remain unchanged and run under
+extraction across floors. A no-input minute checks that every patrol actually
+travels its reachable loop without spontaneous contact. A relayed command test
+checks cover, identification, stun, loss of sight and the fixed contact snapshot.
+Story tests cover all fifteen surviving crew combinations, both Holt outcomes,
+legacy saves and the latest successful result surviving a reload. Existing human bundles remain unchanged and run under
 current rules. Campaign-wide aftermath tests cover helicopter boarding without
 mutating the scored world.
 
