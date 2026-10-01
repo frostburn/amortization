@@ -7,8 +7,27 @@ is also verified. Otherwise this checks a route's continued viability, without
 claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All fifty-seven retained completions are byte-for-byte copies of submissions
+All fifty-nine retained completions are byte-for-byte copies of submissions
 provided in chat, including their `unversioned` / local-changes metadata.
+
+## Key personnel: human 100% follow-up
+
+The two follow-up wins reproduce all **62 original checkpoints** and their final
+results exactly, including the current mission fingerprint `8692f946`. Both
+notes are empty; chat feedback was “OK. Got it.” They are preserved byte-for-byte
+as required human completions:
+
+| File | Outcome | Challenge medals |
+| --- | --- | --- |
+| `personnel-human-b8923bce.replay.json` | Tick 3767 / 125.57s; all four undamaged; one shot | Nonlethal, Open channel, Travel light |
+| `personnel-human-6bf37c05.replay.json` | Tick 5002 / 166.73s; four alive; 28 shots; REGISTER extracted | Low profile, No disguise, Due diligence |
+
+Both also earn Settled and Full crew. The armed run recovers both prisoners'
+equipment and finishes with Morrow at 83 HP, Sable at 19 HP, Vale and Rook at
+100 HP. Together with `personnel-human-9892e832.replay.json`, these **human runs
+now cover all eight medals** in `medals.test.ts`. The separate authored routes
+remain supplementary examples; human evidence now verifies the complete set.
+No game rules or briefing text change in this follow-up.
 
 ## October 1: Key personnel medal attempts
 

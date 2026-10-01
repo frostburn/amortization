@@ -105,6 +105,7 @@ it.each([
   ['severance', ['2f9a7242', '37611591', 'bdbb0b9a', 'e366104a', 'e3aa7439', 'e73b41fe']],
   ['clearing', ['985e3e2b', 'ddbce34b']],
   ['mandate', ['e345eb76', 'd1724911', '39124e87']],
+  ['personnel', ['9892e832', 'b8923bce', '6bf37c05']],
 ] as const)(
   'the human %s runs collectively earn every medal with exact checkpoints',
   (mission, ids) => {
