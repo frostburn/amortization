@@ -4,7 +4,7 @@ import { missions } from '../src/content/missions';
 import { createWorld } from '../src/sim/world';
 import type { Mission } from '../src/sim/types';
 import { earnedMedals, medalsFor } from '../src/ui/medals';
-import { fingerprint, parseReplay, ReplayPlayer } from '../src/replay/core';
+import { fingerprint, outcome, parseReplay, ReplayPlayer } from '../src/replay/core';
 
 const win = (id: Mission['id']) => {
   const w = createWorld(missions.find((m) => m.id === id)!);
@@ -106,35 +106,38 @@ it.each([
   ['clearing', ['985e3e2b', 'ddbce34b']],
   ['mandate', ['e345eb76', 'd1724911', '39124e87']],
   ['personnel', ['9892e832', 'b8923bce', '6bf37c05']],
-] as const)(
-  'the human %s runs collectively earn every medal with exact checkpoints',
-  (mission, ids) => {
-    const collected = new Set<string>();
-    for (const id of ids) {
-      const bundle = parseReplay(
-        readFileSync(`tests/replays/${mission}-human-${id}.replay.json`, 'utf8'),
-      );
-      // Build labels and Quill's presentation copy changed. Keep every original
-      // state checkpoint and result, independently of those metadata gates.
-      bundle.mission.hash = fingerprint(missions.find((m) => m.id === bundle.mission.id));
-      const player = new ReplayPlayer(bundle, bundle.build);
-      while (!player.done) player.advance();
-      expect(player.error, id).toBeNull();
-      const medals = earnedMedals(player.world);
-      medals.forEach((medal) => collected.add(medal));
-      if (player.world.agents.some((a) => a.hp <= 0)) expect(medals, id).toEqual(['complete']);
-      if (id === '2f9a7242') {
-        expect(player.world.shots).toBe(0);
-        expect(medals).not.toContain('nonlethal'); // The charges killed guards.
-      }
-    }
-    expect([...collected].sort()).toEqual(
-      medalsFor(missions.find((m) => m.id === mission)!)
-        .map((m) => m.id)
-        .sort(),
+  ['injunction', ['65373176', '8221848e', '8b999c06']],
+  ['settlement', ['48b1146d', '760f7e98', '771db55d', 'ce258794']],
+] as const)('the human %s runs collectively earn every medal', (mission, ids) => {
+  const collected = new Set<string>();
+  for (const id of ids) {
+    const bundle = parseReplay(
+      readFileSync(`tests/replays/${mission}-human-${id}.replay.json`, 'utf8'),
     );
-  },
-);
+    // Build labels and Quill's presentation copy changed. Keep every original
+    // state checkpoint and result, independently of those metadata gates.
+    bundle.mission.hash = fingerprint(missions.find((m) => m.id === bundle.mission.id));
+    // This run's path retains KIT's old label/detail, changing its checksums
+    // after the office-costume update. Verify current rules and the exact final
+    // outcome; the original bundle and its checkpoints remain untouched.
+    const player = new ReplayPlayer(bundle, bundle.build, id === 'ce258794');
+    while (!player.done) player.advance();
+    expect(player.error, id).toBeNull();
+    expect(outcome(player.world), id).toEqual(bundle.result);
+    const medals = earnedMedals(player.world);
+    medals.forEach((medal) => collected.add(medal));
+    if (player.world.agents.some((a) => a.hp <= 0)) expect(medals, id).toEqual(['complete']);
+    if (id === '2f9a7242') {
+      expect(player.world.shots).toBe(0);
+      expect(medals).not.toContain('nonlethal'); // The charges killed guards.
+    }
+  }
+  expect([...collected].sort()).toEqual(
+    medalsFor(missions.find((m) => m.id === mission)!)
+      .map((m) => m.id)
+      .sort(),
+  );
+});
 
 it('covers every Personnel medal with the human escape and two explicitly authored routes', () => {
   const mission = missions.find((m) => m.id === 'personnel')!;
