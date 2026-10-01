@@ -7,8 +7,43 @@ is also verified. Otherwise this checks a route's continued viability, without
 claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All fifty-nine retained completions are byte-for-byte copies of submissions
+All sixty-six retained completions are byte-for-byte copies of submissions
 provided in chat, including their `unversioned` / local-changes metadata.
+
+## Missions 10–11: human 100% coverage
+
+All 16 submissions reproduce their **514 original checkpoints** and final results
+with their recorded mission definitions. The seven wins are preserved byte-for-byte
+in this directory and now cover all **eight Injunction medals** and all **six
+Settlement medals** in `medals.test.ts`. Difficulty is unchanged.
+
+| Mission / run | Outcome | Challenge medals |
+| --- | --- | --- |
+| `injunction-human-65373176` | 154.43s; 4 alive; 0 shots | Low profile, Nonlethal, No disguise, Off the record |
+| `injunction-human-8221848e` | 89.77s; 4 alive; 0 shots | Low profile, Nonlethal, Off the record |
+| `injunction-human-8b999c06` | 178.07s; 4 alive; 35 shots | Open channel, Due diligence, Off the record |
+| `settlement-human-48b1146d` | 271.87s; 4 alive; 32 shots | Low profile, No disguise |
+| `settlement-human-760f7e98` | 226.60s; 4 alive; 54 shots | Low profile |
+| `settlement-human-771db55d` | 217.00s; 1 alive; 32 shots | Settled only |
+| `settlement-human-ce258794` | 259.00s; 4 alive; 0 shots | Nonlethal, Open channel |
+
+Every four-survivor win also earns Settled and Full crew. Settlement's `771db55d`
+extracts Vale alone and earns Settled only. The zero-shot `ce258794` completion
+keeps all four at 100 HP and earns Nonlethal and Open channel; its note is
+“Finally cracked the stealth puzzle!” Earlier notes mention rushing and the
+challenge of escaping SIGN. Chat feedback confirms sufficient challenge.
+
+The three losses and six unfinished attempts are unchanged diagnostic files in
+`../fixtures/{injunction,settlement}-medals-{lost,playing}-<id>.replay.json`.
+They are not requirements that future versions must keep losing.
+
+Thirteen runs also reproduce their original checkpoints on the current mission
+definitions. Settlement `ce258794`, `72c838be` and `e604a5c8` retain KIT's old
+label/detail in a walking path, so the office-outfit wording changes those state
+checksums. Their outcomes still reproduce under current rules. The medal test
+checks `ce258794` under current rules with its exact final outcome; the other six
+wins retain strict original-checkpoint verification. No replay data or checkpoints
+were rewritten to accommodate the presentation change.
 
 ## Character effects and local staff cover
 
