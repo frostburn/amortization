@@ -120,11 +120,14 @@ npm run replay:verify -- --current --expect-win attempt.replay.json
 The first command verifies compatible code and every state checkpoint. The second
 tests completion under current rules. Both exit nonzero on failure. Selected player
 victories can be placed in `tests/replays/` to join `npm test`; keep a small set of
-distinct routes. Retained human completions cover all fourteen operations, including
+distinct routes. Retained human completions cover all fifteen operations, including
 replacement weapon-era runs for 05–06, the full-crew Countermand completion, and
 both Kestrel outcomes in Continuity and Threshold's three-survivor key recovery. The first twelve also have synthetic quiet
 and armed completion tests; Operation 13 has guarded arrest and lethal runs, and Operation 14 has quiet and armed
-full-crew runs with replay verification. Operation 15 has full-crew guarded custody and lethal routes with exact replay verification. Its first human batch led to mobile patrols and locally relayed boss commands; the original runs remain as diagnostics. See
+full-crew runs with replay verification. Operation 15 has full-crew guarded custody
+and lethal routes with exact replay verification, plus a human CUT/lethal
+completion under its revised patrols. Its first human batch led to mobile patrols
+and locally relayed boss commands; the original runs remain as diagnostics. See
 `tests/replays/README.md` for provenance, current outcomes, and retired routes.
 
 ## Controls
@@ -734,7 +737,9 @@ size when zooming and let map clicks/taps pass through.
 ## The Bench · Operation 15
 
 The campaign finale takes place on Crown Tower’s penthouse and roof. Dacre is a
-command marshal: interrupt his two-second signal before his retinue takes
+command marshal in a cool, fluorescent interior; the roof keeps its sunset light.
+A glass facade drops toward the distant city below the tower. Interrupt Dacre's
+two-second signal before his retinue takes
 crossfire positions. Hold SEAL A and SEAL B together, or force CUT to reach Holt.
 Defeat Dacre, then cuff Holt or eliminate him. Take every survivor—and Holt if
 arrested—UP to the helicopter waiting at HELI. The helicopter boards, rises and

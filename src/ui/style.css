@@ -295,6 +295,16 @@ canvas[data-cursor='box'] {
 .stage[data-theme='sunset'] .map-caption:not(.inspecting) small {
   color: #d5b6a7;
 }
+.stage[data-theme='fluorescent'] .map-caption:not(.inspecting) {
+  background: #203239ed;
+  border-left-color: #d3eae5;
+}
+.stage[data-theme='fluorescent'] .map-caption:not(.inspecting) span {
+  color: #e1f0eb;
+}
+.stage[data-theme='fluorescent'] .map-caption:not(.inspecting) small {
+  color: #b5c9c7;
+}
 .map-caption.inspecting {
   bottom: 55px;
   max-width: min(280px, calc(100% - 44px));

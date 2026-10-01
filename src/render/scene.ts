@@ -1,5 +1,5 @@
 import { Helicopter } from './helicopter';
-import { drawBenchFloors } from './bench';
+import { drawBenchFloors, drawPenthouseLights } from './bench';
 import { visualTheme, skyColor } from './theme';
 import { liftReady } from '../sim/threshold';
 import { drawLiftPortal, drawThresholdGround, drawTowerFacade } from './threshold';
@@ -325,15 +325,18 @@ export class Scene {
     const theme = visualTheme(mission);
     this.host.dataset.theme = theme;
     this.app.renderer.background.color = skyColor[theme];
-    plane(g, 0, 0, mission.width, mission.height, COLORS.ground);
-    for (let x = 0; x < mission.width; x++)
-      for (let y = 0; y < mission.height; y++) {
-        const depot = inside({ x, y }, mission.restricted);
-        const street =
-          x < mission.restricted.x - 1 || y > mission.restricted.y + mission.restricted.h;
-        plane(g, x, y, 1, 1, groundColor(x, y, depot, street, theme));
-        if (depot && (x * 17 + y * 23) % 47 === 0) drawYardDetail(g, x, y);
-      }
+    // The finale has a city far below its own floor art, not a ground-level yard.
+    if (!mission.finale) {
+      plane(g, 0, 0, mission.width, mission.height, COLORS.ground);
+      for (let x = 0; x < mission.width; x++)
+        for (let y = 0; y < mission.height; y++) {
+          const depot = inside({ x, y }, mission.restricted);
+          const street =
+            x < mission.restricted.x - 1 || y > mission.restricted.y + mission.restricted.h;
+          plane(g, x, y, 1, 1, groundColor(x, y, depot, street, theme));
+          if (depot && (x * 17 + y * 23) % 47 === 0) drawYardDetail(g, x, y);
+        }
+    }
     if (mission.threshold) drawThresholdGround(g, mission);
     // Each site's ground markings use the same coordinates as its collision map.
     if (mission.id === 'depot') {
@@ -570,9 +573,9 @@ export class Scene {
             2.4,
             0.33,
             0.08 + i * 0.065,
-            0xd3c597,
-            0x8f866d,
-            0x696858,
+            mission.finale ? 0xbacacb : 0xd3c597,
+            mission.finale ? 0x899a9f : 0x8f866d,
+            mission.finale ? 0x657c85 : 0x696858,
           );
           plane(
             t,
@@ -600,7 +603,7 @@ export class Scene {
     if (mission.finale) {
       this.benchDoor = new Graphics();
       const d = mission.finale.door;
-      box(this.benchDoor, d.x, d.y, d.w, d.h, 1.65, 0xd0ae72, 0x76614b, 0x665241);
+      box(this.benchDoor, d.x, d.y, d.w, d.h, 1.65, 0xc6d8d5, 0x728e92, 0x59747f);
       this.addScenery(this.benchDoor, d, 1.65);
     }
     this.gate = new Graphics();
@@ -743,11 +746,11 @@ export class Scene {
       this.addScenery(this.helicopter, s, s.height);
       return;
     }
-    const root = new Container(),
+    const theme = visualTheme(this.world.mission, floorOf(s)),
+      root = new Container(),
       g = new Graphics();
     root.addChild(g);
-    if (this.world.mission.palette === 'sunset' && !['wall', 'building'].includes(s.kind))
-      g.tint = 0xffd5b8;
+    if (theme === 'sunset' && !['wall', 'building'].includes(s.kind)) g.tint = 0xffd5b8;
     root.y = -floorOf(s) * FLOOR_HEIGHT * HEIGHT;
     if (s.kind === 'van' || s.kind === 'transport') {
       drawVan(g, s, s.kind === 'van' ? vanDeparture(s, this.world.mission).direction : 1);
@@ -895,10 +898,11 @@ export class Scene {
         0x46505a,
       );
     } else if (s.kind === 'building') {
-      drawBuilding(g, s, visualTheme(this.world.mission));
+      drawBuilding(g, s, theme);
       if (s.id === 'crown-tower') drawTowerFacade(g, s);
     } else {
-      drawWall(g, s, visualTheme(this.world.mission));
+      drawWall(g, s, theme);
+      if (theme === 'fluorescent') drawPenthouseLights(g, s);
     }
     // Wall-mounted details must inherit their wall's occlusion, too.
     if (s.id === 'north' && !this.world.mission.daylight) {
@@ -1325,7 +1329,6 @@ export class Scene {
       const root = new Container(),
         ink = new Graphics(),
         sprite = new PersonSprite();
-      sprite.sunset(this.world.mission.palette === 'sunset');
       const name = this.label(label, 11);
       name.anchor.set(0.5, 1);
       name.y = -40;
@@ -1334,6 +1337,7 @@ export class Scene {
       v = { root, ink, sprite, label: name };
       this.views.set(p.id, v);
     }
+    v.sprite.lightTheme(visualTheme(this.world.mission, floorOf(p)));
     return v;
   }
   render(
@@ -1399,6 +1403,7 @@ export class Scene {
     const nextFloor = active ? floorOf(active) : this.activeFloor;
     if (nextFloor !== this.activeFloor) {
       this.activeFloor = nextFloor;
+      this.host.dataset.theme = visualTheme(w.mission, nextFloor);
       this.coneTime = -1;
       if (this.following) this.trackSelection(selected, alpha, true, seconds);
     }
@@ -1442,7 +1447,7 @@ export class Scene {
             : 1;
       }
     }
-    this.lighting.refresh(w, alpha, this.camera, this.app.screen, this.aftermath);
+    this.lighting.refresh(w, alpha, this.camera, this.app.screen, this.aftermath, this.activeFloor);
     this.timers.draw(
       mapTimers(w, this.activeFloor),
       (id) => this.markerScreen(id),

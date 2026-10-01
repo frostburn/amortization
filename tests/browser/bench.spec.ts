@@ -61,10 +61,12 @@ for (const touch of [false, true])
     await expect(page.locator('dialog [data-action="begin"]')).toBeInViewport({ ratio: 1 });
     await press('[data-action="begin"]');
     await press('[data-action="pause"]');
-    await expect(page.locator('#stage')).toHaveAttribute('data-theme', 'sunset');
+    await expect(page.locator('#stage')).toHaveAttribute('data-theme', 'fluorescent');
     expect(await page.evaluate(() => window.benchScene.camera.scale.x)).toBeGreaterThan(0.75);
     await expect(page.locator('#arrest-principal')).toBeDisabled();
     await capture('arrival');
+    await press('[data-action="home"]');
+    await capture('tower-overview');
     await press('#objective-primary');
     await press('[data-locate-target="dacre"]');
     await press('[data-dismiss-guide]');
@@ -115,10 +117,13 @@ for (const touch of [false, true])
     await press('#stairs-up-button');
     await advance(30);
     await expect(page.locator('#stage')).toHaveAttribute('data-floor', '1');
+    await expect(page.locator('#stage')).toHaveAttribute('data-theme', 'sunset');
     await press('[data-agent="0"]');
     await expect(page.locator('#stage')).toHaveAttribute('data-floor', '0');
+    await expect(page.locator('#stage')).toHaveAttribute('data-theme', 'fluorescent');
     await press('[data-agent="2"]');
     await expect(page.locator('#stage')).toHaveAttribute('data-floor', '1');
+    await expect(page.locator('#stage')).toHaveAttribute('data-theme', 'sunset');
     // Stage the already-tested walk to the helipad for close visual inspection.
     await page.evaluate(() => {
       const w = window.benchWorld;

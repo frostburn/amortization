@@ -39,7 +39,7 @@ export function drawContactShadow(
   site?: Pick<Mission, 'width' | 'height'>,
 ) {
   if (s.kind === 'van' || s.kind === 'transport') return; // Vehicle art owns its moving shadow.
-  if (theme !== 'night') {
+  if (theme === 'day' || theme === 'sunset') {
     const dx = s.height * (theme === 'sunset' ? 2.2 : 0.7),
       dy = s.height * (theme === 'sunset' ? 1.1 : 0.45);
     let outline: Vec[] = [
@@ -95,7 +95,8 @@ export function drawContactShadow(
 
 /** Concrete seams and a pale coping keep wall tops legible in the ambient dark. */
 export function drawWall(g: Graphics, s: Solid, theme: VisualTheme = 'night') {
-  const sunset = theme === 'sunset';
+  const sunset = theme === 'sunset',
+    fluorescent = theme === 'fluorescent';
   box(
     g,
     s.x,
@@ -103,9 +104,9 @@ export function drawWall(g: Graphics, s: Solid, theme: VisualTheme = 'night') {
     s.w,
     s.h,
     s.height,
-    sunset ? 0xe5bc70 : 0xb2ac9e,
-    sunset ? 0xa56e5c : 0x8a8b83,
-    sunset ? 0x765260 : 0x707b7e,
+    sunset ? 0xe5bc70 : fluorescent ? 0xdce6e4 : 0xb2ac9e,
+    sunset ? 0xa56e5c : fluorescent ? 0x9caeb0 : 0x8a8b83,
+    sunset ? 0x765260 : fluorescent ? 0x83999e : 0x707b7e,
   );
   const wide = s.w > s.h;
   for (let d = 1.6; d < (wide ? s.w : s.h) - 0.2; d += 2) {
@@ -122,7 +123,7 @@ export function drawWall(g: Graphics, s: Solid, theme: VisualTheme = 'night') {
     { x: s.x + s.w, y: s.y + s.h },
     s.height - 0.1,
     s.height,
-    0x9f9e93,
+    fluorescent ? 0xc5d4d3 : 0x9f9e93,
   );
 }
 

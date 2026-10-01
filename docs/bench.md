@@ -4,7 +4,9 @@ The campaign ends on Crown Tower’s two executive levels: a penthouse and an op
 roof. The crew arrives from Threshold’s service lift. Dacre and Holt are both
 present; the helicopter is already waiting above them. The 50 × 38 site keeps a
 comfortable follow-camera scale, selecting the visible floor from the active
-operative. It uses Threshold’s sunset palette and night sight distances.
+operative. The penthouse has cool fluorescent lighting; the roof keeps Threshold’s
+sunset palette. Both retain night sight distances. A continuous glass facade drops
+toward the distant city, with no street or paving beside the executive floor.
 
 ## Objectives and choices
 
@@ -91,6 +93,10 @@ These prove completion, not typical-player difficulty. The first human batch
 exposed the static defense; its unmodified winning script loses under the new
 patrols. All three originals and the analysis are retained as diagnostics in
 [the replay notes](../tests/replays/README.md#the-bench-first-finale-playtest).
+The follow-up human batch confirms a full-crew lethal completion with CUT and
+MINUTES left behind. All four submissions reproduce all 63 original checkpoints;
+the lighting/exterior follow-up preserves the simulation and mission definitions.
+The win joins the required human corpus and the three losses remain diagnostic.
 
 Focused checks cover door collision and cache invalidation, saved/interrupted
 seal work, a lone-survivor inside CUT, capture prerequisites, command timing and
@@ -107,3 +113,6 @@ The extended Playwright journey uses presentation fixtures and real desktop/touc
 controls for concise briefing, command/seal bars, cuffing, split-floor selection,
 roof extraction, immediate results, delayed departure and optional ending. It is
 outside the routine smoke tag; the standard CI browser load is unchanged.
+Desktop/touch screenshots cover the fluorescent interior, tower overview and
+sunset roof. GPU pixel checks verify even indoor illumination, light pools at
+roof height and no light leaking from operatives on the other floor.

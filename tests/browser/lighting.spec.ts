@@ -11,6 +11,7 @@ test('light pools preserve distant visibility, split crew, interpolation and cam
     viewport: { width: 1000, height: 700 },
     deviceScaleFactor: 2,
   });
+  await context.grantPermissions(['local-network-access'], { origin: 'http://127.0.0.1:4173' });
   const page = await context.newPage(),
     errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -31,10 +32,10 @@ test('light pools preserve distant visibility, split crew, interpolation and cam
       '/src/render/lighting.ts',
       '/src/sim/world.ts',
       '/src/render/isometric.ts',
+      '/src/content/bench.ts',
     ];
-    const [{ Scene }, { OperativeLighting }, { createWorld }, { project }] = await Promise.all(
-      paths.map((p) => import(p)),
-    );
+    const [{ Scene }, { OperativeLighting }, { createWorld }, { project }, { bench }] =
+      await Promise.all(paths.map((p) => import(p)));
     const world = createWorld() as World,
       scene = new Scene(document.querySelector('#stage')!, world) as Scene;
     await scene.init();
@@ -78,12 +79,12 @@ test('light pools preserve distant visibility, split crew, interpolation and cam
       );
       return pixel[0];
     };
-    const frame = (alpha = 1) => {
-      lighting.refresh(world, alpha, scene.camera, scene.app.screen, null);
+    const frame = (alpha = 1, w = world, activeFloor = 0) => {
+      lighting.refresh(w, alpha, scene.camera, scene.app.screen, null, activeFloor);
       scene.app.render();
     };
-    const at = (x: number, y: number, dy = 0) => {
-      const p = project({ x, y }, 0.55),
+    const at = (x: number, y: number, dy = 0, floor = 0) => {
+      const p = project({ x, y, floor }, 0.55),
         scale = scene.camera.scale.x;
       return read(scene.camera.x + p.x * scale, scene.camera.y + (p.y + dy) * scale);
     };
@@ -129,6 +130,24 @@ test('light pools preserve distant visibility, split crew, interpolation and cam
     world.agents[0].hp = 0;
     frame();
     const empty = at(0, 0);
+    // A split crew must light the elevated roof at the correct screen position,
+    // never project a downstairs pool through it. Indoors stays evenly lit on
+    // both visits, independent of camera/selection or the outdoor sunset.
+    const tower = createWorld(bench) as World;
+    scene.camera.position.set(250, 350);
+    scene.camera.scale.set(1);
+    tower.agents.forEach((a, i) => {
+      place(a, i ? 9 : 0, i ? -9 : 0);
+      a.hp = i < 2 ? 100 : 0;
+      a.floor = i ? 0 : 1;
+    });
+    const towerSnapshot = JSON.stringify(tower);
+    frame(1, tower, 0);
+    const indoor = at(9, -9);
+    frame(1, tower, 1);
+    const rooftop = { crew: at(0, 0, 0, 1), downstairs: at(9, -9, 0, 1) };
+    frame(1, tower, 0);
+    const returned = at(9, -9);
     return {
       solo,
       grouped,
@@ -140,6 +159,10 @@ test('light pools preserve distant visibility, split crew, interpolation and cam
       transforms,
       unchanged,
       empty,
+      indoor,
+      rooftop,
+      returned,
+      towerUnchanged: JSON.stringify(tower) === towerSnapshot,
     };
   });
   expect(result.solo.core).toBeGreaterThan(250);
@@ -157,6 +180,12 @@ test('light pools preserve distant visibility, split crew, interpolation and cam
     expect(Math.abs(state.fringe - result.solo.fringe)).toBeLessThanOrEqual(2);
   }
   expect(result.unchanged).toBe(true);
+  expect(result.indoor).toBeGreaterThan(250);
+  expect(result.returned).toBe(result.indoor);
+  expect(result.rooftop.crew).toBeGreaterThan(250);
+  expect(result.rooftop.downstairs).toBeGreaterThan(180);
+  expect(result.rooftop.downstairs).toBeLessThan(210);
+  expect(result.towerUnchanged).toBe(true);
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);
   expect(errors).toEqual([]);
   await context.close();

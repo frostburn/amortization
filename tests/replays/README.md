@@ -7,8 +7,36 @@ is also verified. Otherwise this checks a route's continued viability, without
 claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All fifty-two retained completions are byte-for-byte copies of submissions
+All fifty-three retained completions are byte-for-byte copies of submissions
 provided in chat, including their `unversioned` / local-changes metadata.
+
+## The Bench: revised patrols and tower lighting
+
+All four follow-up October 1 submissions reproduce their recorded outcomes and
+all **63 original checkpoints** against `3d78143`, simulation fingerprint
+`9e5e319f4f6b83716efd716a14c784fbcc95610b4c7a5568377d1ee9c89bc5e0`.
+The fluorescent penthouse and distant-city changes touch rendering only, so
+those checkpoints still match exactly. All four notes are empty; in chat the
+player found the challenge appropriate and requested these visual corrections.
+
+| Suffix     | Exact outcome                                                                  | Checkpoints |
+| ---------- | ------------------------------------------------------------------------------ | ----------- |
+| `8c23e0ec` | Won, tick 4064 / 135.47s; 4 survivors; 71 shots; no alarm; MINUTES left behind | 29          |
+| `d1daad2b` | Lost, tick 1333 / 44.43s; 94 shots; no alarm                                   | 10          |
+| `5b60d168` | Lost, tick 1704 / 56.80s; 38 shots; no alarm                                   | 13          |
+| `3032234a` | Lost, tick 1430 / 47.67s; 74 shots; alarm                                      | 11          |
+
+The win joins the required corpus as `bench-human-8c23e0ec.replay.json`.
+RADIO goes offline at 15.77s, CUT opens the Bench at 49.57s and Holt is
+eliminated at 53.03s. The team reaches the roof, returns downstairs to defeat
+Dacre at 112.97s, then boards HELI together. The optional MINUTES remain
+available. This verifies a human lethal completion under the revised patrols;
+the command-driven custody route remains covered by the mission tests.
+
+The three losses are preserved as `../fixtures/bench-lost-<suffix>.replay.json`
+for diagnosis, not as requirements to keep losing. Every bundle is an unchanged
+copy of the submission, and no combat, patrol, sight-range or objective rules
+change in this visual follow-up. Shot counts include both sides.
 
 ## The Bench: first finale playtest
 
@@ -44,7 +72,7 @@ not balance requirements. No submitted commands, notes or metadata were edited.
 Guarded synthetic custody and lethal routes were updated to respond to the
 patrols, clear the roof and extract all four plus MINUTES, with exact command and
 checkpoint replay. The fifty-two earlier human completions remain required.
-A fresh human finale run is still needed to judge the new pacing.
+The follow-up batch above supplies the fresh human completion under these patrols.
 
 ## Threshold: timed work and key recovery
 

@@ -167,8 +167,14 @@ pose. These are original procedural meshes using the existing lighting, depth
 and clipped-outline paths.
 
 Operation 15 builds Crown Tower’s cutaway penthouse and roof with the same world
-projection and sunset palette. Distant blocks and window bands below the deck
-establish its height. A procedural helicopter has a faceted cockpit, cabin door,
+projection. The interior uses cool fluorescent battens, neutral walls and floors,
+short contact shadows and broad overhead character shading. Fixtures and their
+light wash stay on their owning wall face. The roof retains sunset lighting;
+character shading follows each person's floor, and light pools cannot cross floors.
+A continuous glass facade descends toward hazy city towers at least 38 world
+units below the penthouse. There is no ground plane around the executive deck.
+The city is static procedural geometry built once with the scene.
+A procedural helicopter has a faceted cockpit, cabin door,
 tail boom and fin, skids, and a projected turning main rotor. Boarding follows a
 real side-door point; takeoff translates and lifts the aircraft without scaling
 its proportions. Dacre’s charcoal/gold armour and raised command hand distinguish

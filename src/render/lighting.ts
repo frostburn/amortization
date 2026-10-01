@@ -1,9 +1,10 @@
 import { GlProgram, Mesh, MeshGeometry, Shader } from 'pixi.js';
 import type { Container } from 'pixi.js';
-import { controllable, living } from '../sim/types';
+import { controllable, floorOf, living } from '../sim/types';
 import type { World } from '../sim/types';
 import type { Aftermath } from './aftermath';
 import { project, TILE_X, TILE_Y } from './isometric';
+import { visualTheme } from './theme';
 
 const RADIUS = 7;
 const MAX_LIGHTS = 5; // Four operatives and their recruited witness.
@@ -76,8 +77,10 @@ export class OperativeLighting extends Mesh<MeshGeometry, Shader> {
     camera: Container,
     viewport: { width: number; height: number },
     ending: Aftermath | null,
+    activeFloor = 0,
   ) {
-    this.visible = !world.mission.daylight;
+    const theme = visualTheme(world.mission, activeFloor);
+    this.visible = theme === 'night' || theme === 'sunset';
     if (!this.visible) return;
     const scale = camera.scale.x,
       group = this.shader!.resources.lightUniforms,
@@ -88,12 +91,12 @@ export class OperativeLighting extends Mesh<MeshGeometry, Shader> {
     this.scale.set(viewport.width / scale, viewport.height / scale);
     group.uniforms.uViewport.set([viewport.width, viewport.height]);
     group.uniforms.uShade.set(
-      world.mission.palette === 'sunset' ? [0.14, 0.035, 0.06, 0.28] : [0.025, 0.038, 0.06, 0.4],
+      theme === 'sunset' ? [0.14, 0.035, 0.06, 0.28] : [0.025, 0.038, 0.06, 0.4],
     );
     for (let i = 0; i < MAX_LIGHTS; i++) lights.set([-100000, -100000, 1, 1], i * 4);
     let count = 0;
     const pool = (x: number, y: number) => {
-      const p = project({ x, y }, 0.55);
+      const p = project({ x, y, floor: activeFloor }, 0.55);
       lights.set(
         [
           camera.x + p.x * scale,
@@ -105,14 +108,19 @@ export class OperativeLighting extends Mesh<MeshGeometry, Shader> {
       );
     };
     for (const p of world.agents) {
-      if (!controllable(p) || ending?.boarded.has(p.id)) continue;
+      if (!controllable(p) || floorOf(p) !== activeFloor || ending?.boarded.has(p.id)) continue;
       pool(
         p.previous.x + (p.x - p.previous.x) * alpha,
         p.previous.y + (p.y - p.previous.y) * alpha,
       );
     }
     const witness = world.escort;
-    if (witness?.recruited && living(witness) && !ending?.boarded.has(witness.id))
+    if (
+      witness?.recruited &&
+      living(witness) &&
+      floorOf(witness) === activeFloor &&
+      !ending?.boarded.has(witness.id)
+    )
       pool(
         witness.previous.x + (witness.x - witness.previous.x) * alpha,
         witness.previous.y + (witness.y - witness.previous.y) * alpha,
