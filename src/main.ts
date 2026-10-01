@@ -184,6 +184,11 @@ export async function boot() {
       return;
     }
     if (type === 'stairs:up' || type === 'stairs:down' || type === 'arrest-principal') {
+      if (
+        type === 'arrest-principal' &&
+        (!world.escort || !living(world.escort) || world.escort.recruited)
+      )
+        return;
       issue({
         kind: 'interact',
         agents: selected,

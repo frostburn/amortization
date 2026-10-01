@@ -21,6 +21,19 @@ import { shieldFaces } from '../sim/shield';
 import { lineClear } from '../sim/navigation';
 import { extractionRequirement } from './extraction';
 
+/** Keep completed arrests distinct from the ongoing escort hand-off action. */
+export function objectPresentation(w: World, id: ObjectKind) {
+  const source = landmark(w, id);
+  return id === 'escort' && (w.mission.continuity || w.mission.finale) && w.escort?.recruited
+    ? {
+        ...source,
+        tag: 'ESCORT',
+        label: `Escort ${w.escort.name}`,
+        detail: `${w.escort.name} is already in custody. Interact to have a selected operative take over the escort. Use the escort controls to wait or follow.`,
+      }
+    : source;
+}
+
 export const armedSelection = (w: World, selected: string[]) =>
   w.agents.filter(
     (a) =>

@@ -79,7 +79,7 @@ for (const touch of [false, true])
     await capture('ground');
     // Click the projected stair marker, exactly as a player would.
     await page.locator('#stage').scrollIntoViewIfNeeded();
-    const clickMarker = async (id: 'stairs-up' | 'stairs-down') => {
+    const clickMarker = async (id: 'stairs-up' | 'stairs-down' | 'escort') => {
       const p = await page.evaluate((id) => window.continuityScene.markerScreen(id)!, id);
       const bounds = (await page.locator('canvas').boundingBox())!;
       if (touch) await page.touchscreen.tap(bounds.x + p.x, bounds.y + p.y);
@@ -126,7 +126,32 @@ for (const touch of [false, true])
     await press('#arrest-principal');
     await advance(140);
     await expect(page.locator('#objective-primary')).toHaveText('✓ Kestrel in handcuffs');
+    await expect(page.locator('#arrest-principal')).toBeDisabled();
+    await press('#objective-primary');
+    await expect(page.locator('[data-locate-target="escort"]')).toHaveText('ESCORT ↗');
+    await press('[data-dismiss-guide]');
     await capture('custody');
+    // The completed CUFF becomes an escort hand-off, including the touch marker.
+    await page.evaluate(() => {
+      const w = window.continuityWorld,
+        k = w.escort!;
+      Object.assign(w.agents[2], {
+        x: k.x - 0.5,
+        y: k.y,
+        floor: k.floor,
+        previous: { x: k.x - 0.5, y: k.y, floor: k.floor },
+      });
+    });
+    await press('[data-agent="2"]');
+    await page.locator('#stage').scrollIntoViewIfNeeded();
+    await clickMarker('escort');
+    await advance(30);
+    expect(await page.evaluate(() => window.continuityWorld.escort!.leader)).toBe('agent-2');
+    await press('[data-agent="0"]');
+    await page.locator('#stage').scrollIntoViewIfNeeded();
+    await clickMarker('escort');
+    await advance(30);
+    expect(await page.evaluate(() => window.continuityWorld.escort!.leader)).toBe('agent-0');
     await press('#stairs-down-button');
     await advance(420);
     await expect(page.locator('#stage')).toHaveAttribute('data-floor', '0');

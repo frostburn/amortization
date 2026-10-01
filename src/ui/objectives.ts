@@ -18,6 +18,7 @@ import { settled, settlementStatus } from '../sim/settlement';
 import { extractionRequirement } from './extraction';
 import { demolished, detonationStatus } from '../sim/demolition';
 import { activeTurrets, inspectionRemaining } from '../sim/security';
+import { objectPresentation } from './interactions';
 
 export type GoalId = 'primary' | 'evidence' | 'extract';
 export type GuideTarget = ObjectKind | 'inspection' | 'dacre';
@@ -80,7 +81,7 @@ export function guideLocation(
       ? { ...world.mission.transfer.inspection, tag: 'INSPECTION', z: 0 }
       : null;
   if (!world.mission.landmarks.some((o) => o.id === id)) return null;
-  const location = landmark(world, id);
+  const location = objectPresentation(world, id);
   const carrier =
     id === 'evidence' && world.evidence === 'carried'
       ? world.agents.find((a) => living(a) && a.carrying)
@@ -173,7 +174,7 @@ export function missionGoals(w: World): Goal[] {
         : '○ Remove Kestrel · upper floor',
       detail: removed
         ? cuffed
-          ? 'Escort Kestrel down the stairs and to VAN. She follows the operative who cuffed her; use wait/follow or interact with CUFF to hand her to a partner.'
+          ? 'Escort Kestrel down the stairs and to VAN. She follows the operative who cuffed her; use wait/follow or interact with ESCORT to hand her to a partner.'
           : 'Kestrel’s controller is stopped. Use DOWN and bring every survivor to VAN.'
         : 'Reach the upper floor via UP. For an arrest, isolate WEST and EAST downstairs, then interact with CUFF for three seconds with free hands. To kill her, attack her body. Either outcome ends her command. RADIO does not stop the wired defenses.',
       targets: removed

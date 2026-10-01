@@ -45,7 +45,7 @@ import type { Records, MissionRecord } from './storage';
 import { missionGoals, transferFeedback } from './objectives';
 import type { Goal, GoalId, GuideTarget } from './objectives';
 import { extractionRequirement } from './extraction';
-import { attackPreview, movementHint, objectRequirement } from './interactions';
+import { attackPreview, movementHint, objectPresentation, objectRequirement } from './interactions';
 import { demolished, detonationStatus } from '../sim/demolition';
 import { activeTurrets, canAuthorise, inspectionRemaining, turretPowered } from '../sim/security';
 import { flashReady } from '../sim/flash';
@@ -91,6 +91,7 @@ export class Hud {
   private endShown = false;
   private closeMedalTip: () => void;
   private mission: Mission = missions[0];
+  private world?: World;
   private fields = new Map<string, HTMLElement>();
   private goals: Goal[] = [];
   private hoveredGoal: GoalId | null = null;
@@ -252,7 +253,7 @@ export class Hud {
       this.guideKey = '';
       return;
     }
-    const key = `${goal.id}:${goal.targets.join(',')}`;
+    const key = `${goal.id}:${goal.targets.join(',')}:${!!this.world?.escort?.recruited}`;
     if (!goal.targets.includes(this.guideTarget!)) this.guideTarget = null;
     this.set('guide-title', goal.label.replace(/^[○✓◇] /, ''));
     this.set('guide-detail', goal.detail);
@@ -265,7 +266,9 @@ export class Hud {
               ? 'DACRE'
               : id === 'inspection'
                 ? 'INSPECTION'
-                : this.mission.landmarks.find((o) => o.id === id)!.tag;
+                : this.world
+                  ? objectPresentation(this.world, id).tag
+                  : this.mission.landmarks.find((o) => o.id === id)!.tag;
           return `<button data-locate-target="${id}" aria-label="Locate ${tag}">${tag}<span aria-hidden="true"> ↗</span></button>`;
         })
         .join('');
@@ -324,6 +327,7 @@ export class Hud {
     this.modal.close();
   }
   reset(mission: Mission = this.mission) {
+    this.world = undefined;
     this.app.classList.remove('mission-ended');
     this.closeMedalTip();
     this.modal.classList.remove('operations-dialog');
@@ -371,6 +375,7 @@ export class Hud {
     if (!this.modal.open) this.modal.showModal();
   }
   update(world: World, state: HudState) {
+    this.world = world;
     const ended = world.status !== 'playing';
     this.app.classList.toggle('mission-ended', ended);
     this.field('mission-outcome').hidden = !ended;
@@ -392,14 +397,15 @@ export class Hud {
     const targetPrincipal =
       !!(world.mission.continuity || world.mission.finale) &&
       this.inspectedGuard === world.escort?.id;
-    const object = world.mission.landmarks.find(
+    const objectId = world.mission.landmarks.find(
       (o) =>
         o.id === this.inspectedObject &&
         (available(world, o.id) ||
           isCharge(o.id) ||
           (o.id === 'escort' && world.escortLocked) ||
           (o.id === 'evidence' && world.evidence === 'courier')),
-    );
+    )?.id;
+    const object = objectId ? objectPresentation(world, objectId) : undefined;
     const objectBlock = object ? objectRequirement(world, object.id, state.selected) : null;
     const routeHint = movementHint(world, state.selected);
     const chargeStatus =
@@ -700,7 +706,7 @@ export class Hud {
               ? `${worker.name}: holding LOOP · S releases`
               : world.overrideBy === worker.id
                 ? `${worker.name}: holding SHUNT · S releases`
-                : `${worker.name}: ${landmark(world, work).tag} · ${Math.min(progress, duration).toFixed(1)} / ${duration}s`,
+                : `${worker.name}: ${objectPresentation(world, work).tag} · ${Math.min(progress, duration).toFixed(1)} / ${duration}s`,
       );
       (this.field('work-progress') as HTMLProgressElement).value = Math.min(1, progress / duration);
     }
@@ -1071,6 +1077,7 @@ export class Hud {
       this.set('attack-principal', `Attack ${world.mission.finale ? 'Holt' : 'Kestrel'}`);
       this.field('principal-actions').hidden = kestrelRemoved(world);
       (this.field('arrest-principal') as HTMLButtonElement).disabled =
+        kestrelRemoved(world) ||
         !captureReady(world) ||
         !selected.some((p) => world.escort && sameFloor(p, world.escort) && !p.carrying);
       (this.field('attack-principal') as HTMLButtonElement).disabled =
