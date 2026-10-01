@@ -97,27 +97,26 @@ async function mountFeedback(page: Page) {
 async function aidFlow(page: Page, touch = false) {
   await expect(page.locator('#escort-controls')).toHaveAttribute('data-witness', 'quill');
   await expect(page.locator('.witness-portrait')).toBeVisible();
-  expect(
-    await page
-      .locator('.witness-portrait')
-      .evaluate((el) => getComputedStyle(el).backgroundPositionX),
-  ).toBe('100%');
+  await expect(page.locator('.witness-portrait')).toHaveCSS(
+    'background-image',
+    /assets\/story\/quill\.webp/,
+  );
   const use = async (selector: string) => {
     const button = page.locator(selector);
     if (touch) await button.tap();
     else await button.click();
   };
-  await expect(page.locator('#escort-alert')).toHaveText('Mara under fire');
+  await expect(page.locator('#escort-alert')).toHaveText('Quill under fire');
   await expect(page.locator('#message')).toHaveText('Morrow opened the delivery gate.');
   await expect(page.locator('#escort-controls')).toHaveClass(/under-fire/);
-  await expect(page.locator('#escort-aid-button')).toHaveText("Treat Mara · Vale's dressing");
+  await expect(page.locator('#escort-aid-button')).toHaveText("Treat Quill · Vale's dressing");
   await expect(page.locator('[data-agent="1"]')).toHaveClass(/wounded/);
   await expect(page.locator('#health-label-1')).toHaveText('20 / 100 HP');
   await expect(page.locator('#best')).toHaveText('Full crew: 00:40 · Any crew: 00:22');
   const orders = await page.evaluate(() => window.feedback.world.agents.map((a) => a.order));
   await use('#escort-focus');
   await expect(page.locator('[data-target="escort"] .locator-ring')).toBeVisible();
-  await expect(page.locator('#guide-title')).toContainText('Mara');
+  await expect(page.locator('#guide-title')).toContainText('Quill');
   await page.evaluate(() => window.feedback.hud.clearGuide());
   await use('#escort-aid-button');
   await expect(page.locator('#escort-status')).toContainText('75 / 75');
@@ -236,20 +235,20 @@ test('keeps witness danger visible and supports aid, locate and keyboard wait wi
     window.feedback.world.time += 4;
     window.feedback.update();
   });
-  await expect(page.locator('#escort-alert')).toHaveText('Locate Mara');
+  await expect(page.locator('#escort-alert')).toHaveText('Locate Quill');
   // Direct targeting warns even before a fresh hit; cover suppresses stale targets.
   await page.evaluate(() => {
     const { world, update } = window.feedback;
     Object.assign(world.guards[0], { x: 24.5, y: 15, mode: 'combat', target: world.escort!.id });
     update();
   });
-  await expect(page.locator('#escort-alert')).toHaveText('Mara under fire');
+  await expect(page.locator('#escort-alert')).toHaveText('Quill under fire');
   await page.evaluate(() => {
     const { world, update } = window.feedback;
     Object.assign(world.guards[0], { x: 25, y: 12.7 });
     update();
   });
-  await expect(page.locator('#escort-alert')).toHaveText('Locate Mara');
+  await expect(page.locator('#escort-alert')).toHaveText('Locate Quill');
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);
   expect(errors).toEqual([]);
 });

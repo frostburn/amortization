@@ -10,6 +10,19 @@ checkpoints, note, or build metadata to make a recording pass.
 All fifty-three retained completions are byte-for-byte copies of submissions
 provided in chat, including their `unversioned` / local-changes metadata.
 
+## Character refresh: Ren Quill and guard diversity
+
+Quill's name, pronouns and mission text changed on October 1; guard skin tones
+and female specialist profiles are rendering-only. All 53 retained completions
+still succeed under current rules. The recordings remain untouched, so their
+original comments and archived mission definitions still use Mara.
+
+The strict medal and settlement regressions bypass the renamed mission-copy
+metadata in memory, as they already bypass the source-build label, while
+continuing to compare every original checkpoint and final result. Custody's
+escort display name is part of its state checksum; its older recordings use
+**Try current rules** and continue to verify their rescue routes.
+
 ## The Bench: revised patrols and tower lighting
 
 All four follow-up October 1 submissions reproduce their recorded outcomes and

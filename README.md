@@ -303,17 +303,17 @@ operative to the dispatch post. A site alarm does not cancel the chosen route.
 
 ## Protective custody · Operation 04
 
-The access keys lead to auditor **Mara Quill**, held in a security transport at a remand station. Free her and bring every survivor to either extraction van. Once collected, Mara is vulnerable to guard fire and moves more slowly than the operatives. Her death fails the contract.
+The access keys lead to auditor **Ren Quill**, held in a security transport at a remand station. Free him and bring every survivor to either extraction van. Once collected, Quill is vulnerable to guard fire and moves more slowly than the operatives. His death fails the contract.
 
-- **KIT** provides the identity needed for **WARRANT**, a three-second forged release in the records office. Conceal the weapon and keep that operative unexposed. Unlocking the transport does not start the escape: right-click **MARA** when the route is ready.
-- **CUT** at the transport is the armed alternative. It takes eight seconds and attracts nearby guards, even after **RADIO** is disabled. Mara stays protected inside until collected.
-- **STREET**, beyond the east **GATE**, offers a short but exposed exit. **SERVICE** on the west street is farther away; the walled service corridor provides cover. Order the selected crew to either van or its marker. Extraction waits for Mara and every survivor in the **same** ring. If Mara was told to wait, ask her to follow before leaving.
-- The **Witness** controls beside the rescue objective let Mara wait in place or resume following. Right-click her marker to transfer her escort; a surviving operative takes over if her leader falls. She has no disguise, so the runner's uniform does not protect her.
-- **Treat Mara** names the nearest eligible operative and spends their field dressing to restore up to 55 health, without changing selection. They need free hands and must stand within two metres with clear sight. The same dressing can otherwise be used for their own wounds.
-- A red **Mara under fire** warning appears while a guard can shoot her and for three simulation seconds after a hit, independently of COMMS. Click or tap it to locate her without issuing an order. Low health stays red after contact breaks.
+- **KIT** provides the identity needed for **WARRANT**, a three-second forged release in the records office. Conceal the weapon and keep that operative unexposed. Unlocking the transport does not start the escape: right-click **QUILL** when the route is ready.
+- **CUT** at the transport is the armed alternative. It takes eight seconds and attracts nearby guards, even after **RADIO** is disabled. Quill stays protected inside until collected.
+- **STREET**, beyond the east **GATE**, offers a short but exposed exit. **SERVICE** on the west street is farther away; the walled service corridor provides cover. Order the selected crew to either van or its marker. Extraction waits for Quill and every survivor in the **same** ring. If Quill was told to wait, ask him to follow before leaving.
+- The **Witness** controls beside the rescue objective let Quill wait in place or resume following. Right-click his marker to transfer his escort; a surviving operative takes over if his leader falls. He has no disguise, so the runner's uniform does not protect him.
+- **Treat Quill** names the nearest eligible operative and spends their field dressing to restore up to 55 health, without changing selection. They need free hands and must stand within two metres with clear sight. The same dressing can otherwise be used for their own wounds.
+- A red **Quill under fire** warning appears while a guard can shoot him and for three simulation seconds after a hit, independently of COMMS. Click or tap it to locate him without issuing an order. Low health stays red after contact breaks.
 - The **REGISTER** is optional evidence. Carrying it occupies both hands and slows the operative.
 
-For a quiet escape, take KIT, disable RADIO, file WARRANT, and collect Mara. Lead her north of the lower cargo containers, west through the service corridor, and out the west entrance to SERVICE. Send the rest of the crew up the public street. For an armed extraction, clear the transport bay before cutting the lock, leave Mara waiting behind cover while the crew secures the gate, then bring her to STREET.
+For a quiet escape, take KIT, disable RADIO, file WARRANT, and collect Quill. Lead him north of the lower cargo containers, west through the service corridor, and out the west entrance to SERVICE. Send the rest of the crew up the public street. For an armed extraction, clear the transport bay before cutting the lock, leave Quill waiting behind cover while the crew secures the gate, then bring him to STREET.
 
 ## Equipment in operations 05–15
 
@@ -368,7 +368,7 @@ remain in [the future design notes](docs/combat-expansion.md).
 
 ## Public offering · Operation 05
 
-Mara's audit connects the recovered ledger and account keys. Publish it from the
+Quill's audit connects the recovered ledger and account keys. Publish it from the
 **Municipal exchange**, then extract every survivor at the east-street **VAN**.
 
 - **UPLINK** takes 24 seconds with free hands. Its operator cannot fire while
@@ -502,7 +502,7 @@ available counterplay feel right.
 
 ## Key personnel · Operation 09
 
-The mandate is safe with Mara. A subsequent safehouse raid took Vale and Rook;
+The mandate is safe with Quill. A subsequent safehouse raid took Vale and Rook;
 Morrow and Sable must recover them from personnel retention. This rescue requires
 **all four operatives alive**. The 48 × 36 site starts at the same comfortable
 follow scale as operations 07–08.
@@ -538,7 +538,7 @@ armed withdrawal with recovered equipment, each recorded and replayed exactly.
 
 ## Stay of execution · Operation 10
 
-With the crew reunited, serve Mara's restitution mandate at the enforcement
+With the crew reunited, serve Quill's restitution mandate at the enforcement
 registry to halt collection orders. The 56 × 42 site keeps the readable follow
 zoom. Upload for **20 seconds at UPLINK**, then bring every survivor to **VAN**.
 A partner holding **LOOP** masks the five-second terminal trace. With RADIO live,
@@ -627,7 +627,7 @@ human replays are needed to judge clarity and difficulty.
 
 ## Countermand · Operation 12
 
-Mara’s repayments have cleared, but previously issued seizure orders remain at
+Quill’s repayments have cleared, but previously issued seizure orders remain at
 the dispatch yard. The **64 × 46 daytime site** has a broad loading apron, a north
 staff approach and freight stacks that break long sight lines. Follow mode keeps
 the established play scale and snaps to the active operative when the crew splits.
@@ -860,6 +860,6 @@ rendering are uncapped. Local and CI browser tests use the same SwiftShader back
 
 ## Current scope
 
-Fifteen missions with fixed camera orientation; Operation 13 introduces two floors. Campaign economy, vehicle driving, multiplayer, and mid-mission saves remain future work. Each operative has a distinct on-map model with 32 facings, a distance-driven walk, an armed stance, and a grounded fallen pose. Hair, skin, clothing, and build correspond to their portraits; disguises preserve their identity. Voss, Mara, Kestrel and Holt have their own models and portraits beside the wait/follow control.
+Fifteen missions with fixed camera orientation; Operation 13 introduces two floors. Campaign economy, vehicle driving, multiplayer, and mid-mission saves remain future work. Each operative has a distinct on-map model with 32 facings, a distance-driven walk, an armed stance, and a grounded fallen pose. Hair, skin, clothing, and build correspond to their portraits; disguises preserve their identity. Voss, Quill, Kestrel and Holt have their own models and portraits beside the wait/follow control.
 
 See [design notes](docs/design.md) and [art provenance](docs/art.md). Distributed under the repository's [MIT license](LICENSE).

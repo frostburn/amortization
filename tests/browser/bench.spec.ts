@@ -206,7 +206,7 @@ for (const touch of [false, true])
       expect(await scene.evaluate((e) => e.scrollWidth <= e.clientWidth)).toBe(true);
       await press('[data-story-control="next"]');
     }
-    expect([...speakers]).toEqual(['Iona Voss', 'Morrow', 'Vale', 'Rook', 'Sable', 'Mara Quill']);
+    expect([...speakers]).toEqual(['Iona Voss', 'Morrow', 'Vale', 'Rook', 'Sable', 'Ren Quill']);
     expect(lines.join(' ')).toContain('No one upstairs is giving orders anymore.');
     expect(lines.at(-1)).toContain('Glasses up.');
     await expect(page.locator('[data-story-entry="bench"]')).toContainText('Replay scene');
@@ -255,7 +255,7 @@ for (const touch of [false, true])
         await press('#story-dialog .story-stage');
         await press('[data-story-control="next"]');
       }
-      await expect(scene.locator('.story-speaker')).toHaveText('Mara Quill');
+      await expect(scene.locator('.story-speaker')).toHaveText('Ren Quill');
       await expect(scene.locator('.story-readable')).toContainText(
         'No one upstairs is giving orders anymore.',
       );

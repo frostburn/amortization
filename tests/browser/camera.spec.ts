@@ -91,7 +91,7 @@ test('keeps the map usable through objective controls, injuries, COMMS, and view
     await settle();
     const injured = snapshot();
     world.message =
-      'Selected crew heading to STREET. Bring Mara and every surviving operative into the extraction ring before boarding. '.repeat(
+      'Selected crew heading to STREET. Bring Quill and every surviving operative into the extraction ring before boarding. '.repeat(
         4,
       );
     update();
@@ -150,7 +150,7 @@ test('keeps the map usable through objective controls, injuries, COMMS, and view
   expect(result.restarted.height).toBe(result.fitted.height);
 });
 
-test('shows Mara after either transport unlock, before she is recruited', async ({ page }) => {
+test('shows Quill after either transport unlock, before he is recruited', async ({ page }) => {
   await mountScene(page);
   const result = await page.evaluate(async () => {
     const modules = [

@@ -460,7 +460,7 @@ export function extractionStatus(world: World, id: 'extract' | 'alternate') {
                     : world.mission.broadcast && !published(world)
                       ? world.mission.broadcast.subject
                         ? `Finish uploading ${world.mission.broadcast.subject} at UPLINK before requesting extraction.`
-                        : "Publish Mara's audit at UPLINK before requesting extraction."
+                        : "Publish Quill's audit at UPLINK before requesting extraction."
                       : requiresCargo(world.mission) &&
                           (!carrier || distance(carrier, van) > EXTRACTION_RADIUS)
                         ? `Bring the ${world.mission.evidenceName.toLowerCase()} to ${van.tag}. It is required for this contract.`
@@ -637,7 +637,7 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
       world.escortLocked = false;
       notify(
         world,
-        'Release filed. The transport is unlocked. Collect MARA when the escape route is ready; the forged paperwork will not fool a guard who sees her.',
+        'Release filed. The transport is unlocked. Collect QUILL when the escape route is ready; the forged paperwork will not fool a guard who sees him.',
       );
       break;
     case 'evidence':
@@ -694,7 +694,7 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
         raiseAlarm(world);
         notify(
           world,
-          'Transport lock cut. Collect MARA; nearby guards heard the breach.',
+          'Transport lock cut. Collect QUILL; nearby guards heard the breach.',
           'warning',
         );
         break;
@@ -727,11 +727,11 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
             : world.mission.objective === 'capture'
               ? `Contract fulfilled. Kestrel is ${living(world.escort!) ? 'in custody' : 'eliminated'}. REGISTER ${world.evidence === 'extracted' ? 'secured' : 'left behind'}. The crew is clear.`
               : world.detention
-                ? 'Vale and Rook recovered. All four are clear; the mandate stays with Mara.'
+                ? 'Vale and Rook recovered. All four are clear; the mandate stays with Quill.'
                 : world.mission.objective === 'demolition'
                   ? 'Contract fulfilled. The debt backups are destroyed. The crew is clear.'
                   : world.mission.objective === 'broadcast'
-                    ? `Contract fulfilled. ${world.mission.broadcast?.completed ?? "Mara's audit is public"}. The crew is clear.`
+                    ? `Contract fulfilled. ${world.mission.broadcast?.completed ?? "Quill's audit is public"}. The crew is clear.`
                     : world.mission.objective === 'escort'
                       ? `Contract fulfilled. ${world.escort!.name} is out. The crew is clear.`
                       : `Contract fulfilled. The ${world.mission.evidenceName.toLowerCase()} is secured. The crew is clear.`,

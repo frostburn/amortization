@@ -50,7 +50,7 @@ for (const mobile of [false, true]) {
     await expect(page).toHaveTitle('Amortization');
     await press('dialog [data-action="operations"]');
     await press('[data-action="mission:personnel"]');
-    await expect(page.locator('#mission-dialog')).toContainText('The mandate stays with Mara');
+    await expect(page.locator('#mission-dialog')).toContainText('The mandate stays with Quill');
     await press('[data-action="begin"]');
     await press('[data-action="pause"]');
     await expect(page.locator('#mission-title')).toHaveText('Key personnel');

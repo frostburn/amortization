@@ -149,7 +149,7 @@ non-spatial objective cue; no ambience is added.
 
 Dialogue uses short original PCM recipes as abstract character voices. Each
 character keeps one voice across all scenes: the operatives use dry smartphone taps;
-Voss and Mara use plastic QWERTY keys; the antagonists have heavier mechanical
+Voss and Quill use plastic QWERTY keys; the antagonists have heavier mechanical
 strokes. Location does not change the voice, and scene/beat device overrides
 are unnecessary.
 
@@ -160,7 +160,7 @@ are unnecessary.
 | Rook | Lower and weightier contact, deliberate alternating strokes |
 | Sable | Tight, soft contact with quick groups and longer punctuation rests |
 | Iona Voss | Light, higher keys, quick uneven groups and a hollow plastic body |
-| Mara Quill | Softer, dry keys at an even pace, with more deliberate punctuation |
+| Ren Quill | Softer, dry keys at an even pace, with more deliberate punctuation |
 | Severin Holt | Low, weighty platen impact and longer return, measured cadence and the longest pauses |
 | Ada Kestrel | Tighter, higher metal linkage, quick precise groups and a short return |
 | Lucan Dacre | Low mechanical body, firmer snap and paired rhythmic accents |

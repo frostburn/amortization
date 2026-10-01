@@ -55,7 +55,7 @@ test('finale story keeps the full cast despite old outcome data and reloads', as
     await expect(scene.locator('[data-story-control="next"]')).toBeInViewport({ ratio: 1 });
     await scene.locator('[data-story-control="next"]').tap();
   }
-  expect([...speakers]).toEqual(['Iona Voss', 'Morrow', 'Vale', 'Rook', 'Sable', 'Mara Quill']);
+  expect([...speakers]).toEqual(['Iona Voss', 'Morrow', 'Vale', 'Rook', 'Sable', 'Ren Quill']);
   expect(lines.join(' ')).not.toMatch(/They should be here|We won’t forget|another chair/);
   expect(lines.join(' ')).toContain('No one upstairs is giving orders anymore.');
   await expect(page.locator('[data-story-entry="bench"]')).toContainText('Replay scene');

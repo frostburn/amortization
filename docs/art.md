@@ -55,18 +55,30 @@ van stays parked.
 
 The production portrait atlases were generated for Amortization using OpenAI's built-in image-generation tool: the squad on 2026-09-25, and witnesses on 2026-09-27. Both depict original fictional characters. PNG outputs were converted to WebP. CSS background positions select the appropriate portrait. The witness atlas is 768×384 pixels and 44 KB.
 
-| Asset                          | Layout                         | Usage                        |
-| ------------------------------ | ------------------------------ | ---------------------------- |
-| `public/assets/portraits.webp` | 2×2: Morrow, Vale, Rook, Sable | Squad and selected operative |
-| `public/assets/witnesses.webp` | 2×1: Iona Voss, Mara Quill     | Witness wait/follow controls |
+| Asset                            | Layout                                 | Usage                              |
+| -------------------------------- | -------------------------------------- | ---------------------------------- |
+| `public/assets/portraits.webp`   | 2×2: Morrow, Vale, Rook, Sable         | Squad and selected operative       |
+| `public/assets/witnesses.webp`   | 2×1: Iona Voss, retired Quill portrait | Voss's witness controls and story  |
+| `public/assets/story/quill.webp` | Single square: Ren Quill               | Quill's witness controls and story |
+
+Ren Quill's replacement portrait was generated with the same tool on 2026-10-01,
+using the witness atlas as a style reference. The 1254×1254 PNG was resized to
+512×512 and encoded as WebP (quality 88, 37 KB). Quill is an East Asian man in his
+early forties; his glasses, teal shirt and charcoal cardigan retain the auditor's
+established visual identity. The unused right half of the original atlas is
+historical artwork, not selected by either UI.
 
 ## Portrait prompt
 
 Production game asset sheet for AMORTIZATION, dark corporate espionage tactical game. Exact regular 2 by 2 grid filling a square image, four square head-and-shoulders portraits, no gutters, each centered. Top-left Morrow: stern young adult woman, dark short hair, charcoal high collar tactical coat. Top-right Vale: middle-aged man, dark hair and beard, clear glasses, black utility jacket. Bottom-left Rook: muscular black man, shaved head, charcoal coat. Bottom-right Sable: adult woman with silver short hair, dark tactical coat. Original characters, realistic hand-painted videogame portrait artwork, subtle painterly strokes, muted greys and slate greens, warm reflected light, sharp eyes, dark charcoal backgrounds, uniform scale, distinct faces. No weapons, text, logo, or frames. Faces within the central 70% of each quadrant. Shoulder bust portraits facing slightly camera right. Finished production art, serious economical mood.
 
-## Witness portrait prompt
+## Original witness portrait prompt
 
 Use case: stylized-concept. Asset type: two NPC portraits in a single production game UI atlas for AMORTIZATION, a dark corporate espionage tactical game. Exact 2-column by 1-row grid, total image aspect 2:1. Each half is one square portrait, no gutters, border, separator, words or logo. Left square: Iona Voss, a middle-aged female engineer, practical silver-grey chin-length bob with a side part, intelligent tired eyes, a beige laboratory coat over a dark grey high-collar work shirt, subtle industrial workwear details. Right square: Mara Quill, an adult female auditor in her forties, warm medium-brown skin, dark brown hair tucked in a neat low bun, thin bronze rectangular glasses, muted teal blouse and charcoal cardigan. Both are original fictional characters. Head-and-shoulders busts, facing slightly camera right, same face scale, eyes within central seventy percent, generous headroom so hair is not cropped. Realistic hand-painted videogame portraits with defined brushwork, quiet serious expressions, economical restrained noir mood, sharp eyes, muted greys and slate greens, warm reflected side light from upper left, dark charcoal backgrounds. Not glamour, no weapons, no futuristic headgear, no text. Finished production artwork legible at 44px thumbnail size.
+
+## Ren Quill portrait prompt
+
+Create one square production portrait for AMORTIZATION, a serious grounded corporate espionage tactical game. The attached atlas is STYLE REFERENCE ONLY: match its realistic hand-painted rendering, subdued charcoal background, warm reflected light from upper left, face scale and shoulder crop; do not reproduce either woman or make an atlas. Subject: Ren Quill, an original fictional East Asian man in his early forties, a meticulous civilian auditor. Short straight dark brown-black hair, neatly side-parted with a small natural forelock; warm light-medium skin, a slightly broad face and natural understated masculine features, clean-shaven, thin bronze rectangular glasses, intelligent tired eyes, quiet determined expression. Charcoal cardigan over a muted teal collared shirt. Head and shoulders, angled slightly toward camera right, generous headroom and centered face, readable at 28px and 44px thumbnails as well as a cutscene portrait. His character is calm, careful and principled. Restrained brushwork, sharp eyes, worn ordinary clothing, economical noir mood consistent with reference. Opaque background. No words, logos, borders, weapons, headgear or caricature. One portrait, one man.
 
 ## Retired sprite atlas
 
@@ -80,8 +92,18 @@ Production sprite atlas for an isometric tactical videogame, transparent backgro
 `src/render/person.ts` draws small low-poly models in the same projection as the
 architecture. Each of the four operatives has its own proportions, skin, clothing,
 hair, and facial details, including Vale's glasses and beard, Rook's shaved head,
-Morrow's dark swept hair, and Sable's silver bob. Voss and Mara match their witness
+Morrow's dark swept hair, and Sable's silver bob. Voss and Quill match their witness
 portraits. The maintenance outfit preserves the person beneath the uniform.
+
+Guards, couriers and response patrols use six natural skin tones, selected from
+their stable person ID without consuming simulation randomness. Faces, ears,
+necks and hands keep the same tone through walking, combat and fallen poses.
+The pose cache includes the tone, but still shares geometry between matching
+identities. Dacre retains his authored appearance to match his portrait.
+Shield officers and security marksmen use female profiles, with tied-back hair
+below their helmets and individual body and face proportions. Their burgundy
+and violet uniforms, armor, shields and weapon silhouettes retain the established
+role cues; appearance changes do not affect combat or collision.
 
 Heads have separate chin, jaw, cheek, temple and crown sections, with individual
 proportions and visible ears. Rook has a shorter, broader skull and a stronger

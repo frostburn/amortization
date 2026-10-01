@@ -26,10 +26,10 @@ export const personnel: Mission = {
   loadout: ['pistol', 'pistol', 'automatic', 'coil'],
   trackingCamera: true,
   intro:
-    'Voss: the mandate is safe with Mara. They raided the safehouse while Morrow and Sable were scouting the handover. Now they want the mandate for Vale and Rook. We are collecting our people instead. I traced a remote gate console on the west service street.',
+    'Voss: the mandate is safe with Quill. They raided the safehouse while Morrow and Sable were scouting the handover. Now they want the mandate for Vale and Rook. We are collecting our people instead. I traced a remote gate console on the west service street.',
   briefing: {
     lead: 'They have mistaken our people for negotiable assets.',
-    body: 'The extraction from the authorisation works succeeded. Hours later, a safehouse raid took Vale and Rook alive. Morrow and Sable must free them from separate cells and extract all four at VAN. Losing any operative fails this rescue. The mandate stays with Mara.',
+    body: 'The extraction from the authorisation works succeeded. Hours later, a safehouse raid took Vale and Rook alive. Morrow and Sable must free them from separate cells and extract all four at VAN. Losing any operative fails this rescue. The mandate stays with Quill.',
     routes: [
       {
         title: 'One console, two partners',

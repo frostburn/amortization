@@ -65,7 +65,7 @@ export const typingVoices = {
     rhythm: [0.75, 0.85, 1.3, 0.8, 1.3],
     keyGap: 54,
   },
-  mara: {
+  quill: {
     device: 'keyboard',
     seed: 42,
     pitch: 0.95,

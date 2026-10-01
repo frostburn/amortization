@@ -420,7 +420,7 @@ canvas[data-cursor='box'] {
   border: 1px solid #637969;
 }
 [data-witness='quill'] .witness-portrait {
-  background-position: right center;
+  background: url('/assets/story/quill.webp') center / cover;
 }
 #escort-aid-hint {
   margin: 0;

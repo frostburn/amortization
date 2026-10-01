@@ -36,12 +36,12 @@ export const storySpeakers = {
     size: '200% 100%',
     position: 'left center',
   },
-  mara: {
-    name: 'Mara Quill',
+  quill: {
+    name: 'Ren Quill',
     role: 'Auditor',
-    image: 'assets/witnesses.webp',
-    size: '200% 100%',
-    position: 'right center',
+    image: 'assets/story/quill.webp',
+    size: 'cover',
+    position: 'center',
   },
   holt: {
     name: 'Severin Holt',

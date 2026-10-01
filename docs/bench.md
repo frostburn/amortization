@@ -78,7 +78,7 @@ campaign to 108; Nonlethal is absent here because defeating Dacre is mandatory.
 The optional, replayable **Off duty** scene welcomes the crew back to food,
 raised glasses and a district celebrating its freedom. All four operatives
 speak with their own portrait and keyboard voice in the same fixed scene after
-every win. Gameplay casualties receive no comment or explanation; Mara’s line
+every win. Gameplay casualties receive no comment or explanation; Quill’s line
 works for either Holt outcome. No cast or outcome is saved for story replay.
 Existing completion records still unlock it, and sound/volume preferences apply.
 

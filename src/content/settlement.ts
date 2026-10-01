@@ -31,7 +31,7 @@ export const settlement: Mission = {
   settlement: { reconcileTime: 6, duration: 12 },
   description: 'Reconcile the register. Countersign the repayments. Bring the receipt home.',
   intro:
-    'Mara: the mandate is binding. Now we need the original beneficiary register reconciled at CHECK. Its carrier must work CLEAR while a different operative holds SIGN. The bank is open; the guards can see much farther in daylight.',
+    'Quill: the mandate is binding. Now we need the original beneficiary register reconciled at CHECK. Its carrier must work CLEAR while a different operative holds SIGN. The bank is open; the guards can see much farther in daylight.',
   briefing: {
     lead: 'The first payments are due this morning.',
     body: 'Recover REGISTER from the north records office, take its carrier to CHECK, then operate SIGN and CLEAR together to release the repayments. Extract the register and every survivor. Two operatives must survive until the payments clear.',

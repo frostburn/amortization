@@ -56,7 +56,7 @@ export const continuity: Mission = {
   },
   description: 'Remove Ada Kestrel from the company’s chain of command.',
   intro:
-    'Mara: Kestrel is upstairs at Continuity House. Bring her out in handcuffs, or end her command there. Either way, bring the crew home. Use UP and DOWN to change floors.',
+    'Quill: Kestrel is upstairs at Continuity House. Bring her out in handcuffs, or end her command there. Either way, bring the crew home. Use UP and DOWN to change floors.',
   briefing: {
     lead: 'Kestrel has stopped delegating.',
     body: 'Reach the upper control room. To arrest Kestrel, isolate both ground-floor feeds and apply handcuffs at CUFF. Otherwise attack her directly. Bring every survivor—and Kestrel if arrested—to VAN.',

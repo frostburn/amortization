@@ -45,7 +45,7 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
           text: 'You should see the tower from here. All that height, and it can’t tell a single one of us where to go.',
         },
         {
-          speaker: 'mara',
+          speaker: 'quill',
           text: 'No one upstairs is giving orders anymore. Tomorrow, the hearings begin. Tonight belongs to the people who got us here.',
         },
         {
@@ -56,7 +56,7 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
           speaker: 'morrow',
           text: 'To the people we brought home. To the ones who opened their doors. And to everyone who gets to keep what we won.',
         },
-        { speaker: 'mara', text: 'To the district. Paid back. Free to leave. Free to stay.' },
+        { speaker: 'quill', text: 'To the district. Paid back. Free to leave. Free to stay.' },
         {
           speaker: 'voss',
           text: 'When I called you, I asked for four people and a van. I didn’t know I was asking for a life. Thank you. All of you.',
@@ -85,7 +85,7 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
           text: 'The lift answered. I can see the car moving above the public floors. They cannot recall it from the chairman’s desk.',
         },
         {
-          speaker: 'mara',
+          speaker: 'quill',
           text: 'The repayments stand. The seizure crews have no orders left to enforce. Whatever happens upstairs, those people keep what was returned.',
         },
         {
@@ -120,7 +120,7 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
           text: 'The local switches answer again. Every district can disconnect itself. Kestrel cannot close those circuits from her desk anymore.',
         },
         {
-          speaker: 'mara',
+          speaker: 'quill',
           text: 'Put the handover on the public record. The people who received their money need to know it stays theirs.',
         },
         {
@@ -220,16 +220,16 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
         },
         {
           speaker: 'voss',
-          text: 'Mara Quill. The same name on every rejected audit. The last entry gives a remand station, not an office.',
+          text: 'Ren Quill. The same name on every rejected audit. The last entry gives a remand station, not an office.',
         },
         {
           speaker: 'dacre',
           setting: 'boardroom',
           text: 'The courier case is gone. Quill is the next person they will look for.',
         },
-        { speaker: 'holt', text: 'She was supposed to agree to a corrected statement.' },
-        { speaker: 'dacre', text: 'She has not. I have moved her into transport custody.' },
-        { speaker: 'holt', text: 'Keep the statement with her. I still need her signature.' },
+        { speaker: 'holt', text: 'He was supposed to agree to a corrected statement.' },
+        { speaker: 'dacre', text: 'He has not. I have moved him into transport custody.' },
+        { speaker: 'holt', text: 'Keep the statement with him. I still need his signature.' },
       ],
     },
     briefing: {
@@ -239,7 +239,7 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     },
     epilogue: {
       lead: 'The access keys are secured.',
-      body: 'Voss uses the keys to open the escrow records. The objections all bear the same auditor’s name: Mara Quill, now held at the remand station.',
+      body: 'Voss uses the keys to open the escrow records. The objections all bear the same auditor’s name: Ren Quill, now held at the remand station.',
     },
   },
   custody: {
@@ -248,13 +248,13 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
       setting: 'safehouse',
       beats: [
         {
-          speaker: 'mara',
+          speaker: 'quill',
           text: 'They brought me a clean statement every morning. No missing payments. No unlawful charges. A space for my signature.',
         },
         { speaker: 'voss', text: 'You did not sign.' },
-        { speaker: 'mara', text: 'I nearly did. Show me what you found.' },
+        { speaker: 'quill', text: 'I nearly did. Show me what you found.' },
         {
-          speaker: 'mara',
+          speaker: 'quill',
           text: 'These entries are enough. They cannot correct every copy if enough people have one.',
         },
         {
@@ -269,13 +269,13 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
       ],
     },
     briefing: {
-      objective: 'Free auditor Mara Quill from the locked security transport.',
-      extract: 'Bring Mara and every survivor to STREET or SERVICE.',
-      rules: 'Mara is unarmed, slow and vulnerable once she leaves the transport.',
+      objective: 'Free auditor Ren Quill from the locked security transport.',
+      extract: 'Bring Quill and every survivor to STREET or SERVICE.',
+      rules: 'Quill is unarmed, slow and vulnerable once he leaves the transport.',
     },
     epilogue: {
-      lead: 'Mara Quill is free.',
-      body: 'Mara asks for the ledger before she asks where you are taking her. By morning, she has matched its entries to the escrow transfers and begun writing her audit.',
+      lead: 'Ren Quill is free.',
+      body: 'Quill asks for the ledger before he asks where you are taking him. By morning, he has matched its entries to the escrow transfers and begun writing his audit.',
     },
   },
   broadcast: {
@@ -284,7 +284,7 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
       setting: 'safehouse',
       beats: [
         {
-          speaker: 'mara',
+          speaker: 'quill',
           text: 'A clinic has acknowledged the audit. So has a tram drivers’ association. I have never spoken to either of them.',
         },
         { speaker: 'voss', text: 'They recognise the amounts.' },
@@ -302,14 +302,14 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
       ],
     },
     briefing: {
-      objective: 'Publish Mara’s audit at UPLINK.',
+      objective: 'Publish Quill’s audit at UPLINK.',
       extract: 'Once the audit is public, bring every survivor to VAN.',
       rules:
         'The operator needs free hands and cannot fire while working. Upload progress survives interruptions.',
     },
     epilogue: {
-      lead: 'Mara’s audit is public.',
-      body: 'Acknowledgements of Mara’s audit begin arriving from addresses she does not recognise. She saves each one, then opens the inventory of the company’s debt-recovery machines.',
+      lead: 'Quill’s audit is public.',
+      body: 'Acknowledgements of Quill’s audit begin arriving from addresses he does not recognise. He saves each one, then opens the inventory of the company’s debt-recovery machines.',
     },
   },
   severance: {
@@ -331,7 +331,7 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
           text: 'Give me the plans before you alter the doors. My people have to get out of those rooms too.',
         },
         {
-          speaker: 'mara',
+          speaker: 'quill',
           setting: 'safehouse',
           text: 'The debts on those machines are gone. Now we have to return the money they already took.',
         },
@@ -349,7 +349,7 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     },
     epilogue: {
       lead: 'Both backups are destroyed.',
-      body: 'Neither recovery core answers Voss’s checks. Mara turns to the frozen escrow: the debts cannot be rebuilt from those machines, but the money still has to reach its owners.',
+      body: 'Neither recovery core answers Voss’s checks. Quill turns to the frozen escrow: the debts cannot be rebuilt from those machines, but the money still has to reach its owners.',
     },
   },
   clearing: {
@@ -358,11 +358,11 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
       setting: 'safehouse',
       beats: [
         {
-          speaker: 'mara',
+          speaker: 'quill',
           text: 'The bank accepts the keys. It wants the original restitution mandate before it will release anything.',
         },
         { speaker: 'voss', text: 'So the money is there.' },
-        { speaker: 'mara', text: 'Yes. For once, that is not the part they are lying about.' },
+        { speaker: 'quill', text: 'Yes. For once, that is not the part they are lying about.' },
         {
           speaker: 'kestrel',
           setting: 'boardroom',
@@ -382,7 +382,7 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     },
     epilogue: {
       lead: 'The settlement keys are secured.',
-      body: 'Mara tests the settlement keys against the frozen account. The bank accepts them, then asks for the original restitution mandate before it will release a payment.',
+      body: 'Quill tests the settlement keys against the frozen account. The bank accepts them, then asks for the original restitution mandate before it will release a payment.',
     },
   },
   mandate: {
@@ -391,11 +391,11 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
       setting: 'safehouse',
       beats: [
         {
-          speaker: 'mara',
+          speaker: 'quill',
           text: 'The seals agree. We can finally put names beside the repayments.',
         },
         { speaker: 'voss', text: 'How many?' },
-        { speaker: 'mara', text: 'Enough that I have to turn the page.' },
+        { speaker: 'quill', text: 'Enough that I have to turn the page.' },
         {
           speaker: 'dacre',
           setting: 'boardroom',
@@ -413,7 +413,7 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     },
     epilogue: {
       lead: 'The mandate is secured.',
-      body: 'Mara lays the mandate beside the settlement keys and checks every seal. For the first time, she can put names and amounts on the proposed repayments.',
+      body: 'Quill lays the mandate beside the settlement keys and checks every seal. For the first time, he can put names and amounts on the proposed repayments.',
     },
   },
   personnel: {
@@ -425,7 +425,7 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
           speaker: 'morrow',
           text: 'Vale and Rook are asleep. Nobody uses the old safehouse again.',
         },
-        { speaker: 'mara', text: 'The mandate stayed with me. It is still valid.' },
+        { speaker: 'quill', text: 'The mandate stayed with me. It is still valid.' },
         {
           speaker: 'morrow',
           text: 'Put it on the table. When they wake up, we decide the next move together.',
@@ -443,14 +443,14 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
       ],
     },
     briefing: {
-      objective: 'Morrow and Sable must free Vale and Rook. The mandate stays with Mara.',
+      objective: 'Morrow and Sable must free Vale and Rook. The mandate stays with Quill.',
       extract: 'Free both prisoners, release EXIT, then bring all four to VAN.',
       rules:
         'Any operative’s death fails the rescue. Cell releases require a separate operative maintaining remote power.',
     },
     epilogue: {
       lead: 'All four are home.',
-      body: 'At the new safehouse, Mara puts the mandate on the table. Vale and Rook sit down beside Morrow and Sable to hear what still has to be done.',
+      body: 'At the new safehouse, Quill puts the mandate on the table. Vale and Rook sit down beside Morrow and Sable to hear what still has to be done.',
     },
   },
   injunction: {
@@ -473,7 +473,7 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
           text: 'At the Bench. With the original seals present and the chamber secured.',
         },
         {
-          speaker: 'mara',
+          speaker: 'quill',
           setting: 'safehouse',
           text: 'Service is acknowledged. Start with the oldest account. That person has waited long enough.',
         },
@@ -487,7 +487,7 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     },
     epilogue: {
       lead: 'Mandate served.',
-      body: 'Mara watches the registry acknowledge service. The collection orders are suspended; she opens the list of people still waiting for their money and starts with the first name.',
+      body: 'Quill watches the registry acknowledge service. The collection orders are suspended; he opens the list of people still waiting for their money and starts with the first name.',
     },
   },
   settlement: {
@@ -496,12 +496,12 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
       setting: 'safehouse',
       beats: [
         {
-          speaker: 'mara',
+          speaker: 'quill',
           text: 'She asked me to read the receipt twice. She thought the incoming payment was another charge.',
         },
         { speaker: 'voss', text: 'Did she believe you?' },
         {
-          speaker: 'mara',
+          speaker: 'quill',
           text: 'Eventually. Then she asked whether the men outside would leave.',
         },
         {
@@ -525,7 +525,7 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     },
     epilogue: {
       lead: 'The first repayments have cleared.',
-      body: 'Mara checks the first receipt against the register. An account that has carried charges for years now shows money coming in. She calls its owner.',
+      body: 'Quill checks the first receipt against the register. An account that has carried charges for years now shows money coming in. He calls its owner.',
     },
   },
   countermand: {
@@ -534,11 +534,11 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
       setting: 'safehouse',
       beats: [
         {
-          speaker: 'mara',
+          speaker: 'quill',
           text: 'They have left her doorway. I stayed on the call until she watched the last vehicle turn the corner.',
         },
         { speaker: 'voss', text: 'This district keeps its money.' },
-        { speaker: 'mara', text: 'Yes. Whatever comes next, that happened.' },
+        { speaker: 'quill', text: 'Yes. Whatever comes next, that happened.' },
         {
           speaker: 'holt',
           setting: 'boardroom',
@@ -567,7 +567,7 @@ export const missionCopy: Record<Mission['id'], MissionCopy> = {
     },
     epilogue: {
       lead: 'The seizure crews have been recalled.',
-      body: 'Voss checks each withdrawn dispatch against the original. Mara calls the woman whose repayment arrived that morning. This time, she can tell her that the men at the door have been ordered to leave.',
+      body: 'Voss checks each withdrawn dispatch against the original. Quill calls the woman whose repayment arrived that morning. This time, he can tell her that the men at the door have been ordered to leave.',
     },
   },
 };

@@ -17,22 +17,22 @@ export const custody: Mission = {
   title: 'Protective custody',
   location: 'Remand transfer station 04',
   objective: 'escort',
-  escort: { id: 'quill', name: 'Mara', hp: 75, speed: 2.15, locked: true, vulnerable: true },
-  description: 'Free auditor Mara Quill. Bring her out alive.',
+  escort: { id: 'quill', name: 'Quill', hp: 75, speed: 2.15, locked: true, vulnerable: true },
+  description: 'Free auditor Ren Quill. Bring him out alive.',
   evidenceName: 'Detention register',
   intro:
-    'Voss: the account keys led to Mara Quill. She is held in a remand transport. Forge a release at WARRANT, or CUT its lock. Choose STREET for speed or SERVICE for cover.',
+    'Voss: the account keys led to Ren Quill. He is held in a remand transport. Forge a release at WARRANT, or CUT its lock. Choose STREET for speed or SERVICE for cover.',
   briefing: {
     lead: 'Their protection has a lock on the outside.',
-    body: 'Mara Quill audited the escrow account. Now she is waiting for transfer in a locked security van. Free her and bring every survivor to either extraction van. Mara is unarmed, moves slowly, and can be killed once she leaves the transport.',
+    body: 'Ren Quill audited the escrow account. Now he is waiting for transfer in a locked security van. Free him and bring every survivor to either extraction van. Quill is unarmed, moves slowly, and can be killed once he leaves the transport.',
     routes: [
       {
         title: 'Release on borrowed authority',
-        body: 'Take KIT and file a forged release at WARRANT with a concealed weapon and an unexposed identity. The transport unlocks; right-click MARA when you are ready to escort her. CUT takes eight seconds and draws guards, even with RADIO disabled.',
+        body: 'Take KIT and file a forged release at WARRANT with a concealed weapon and an unexposed identity. The transport unlocks; right-click QUILL when you are ready to escort him. CUT takes eight seconds and draws guards, even with RADIO disabled.',
       },
       {
         title: 'Two ways out',
-        body: 'STREET is close, beyond the east GATE and road patrol. SERVICE is farther away on the west street; the walled service corridor screens the escape. Mara has no disguise. Tell her to wait in cover while the crew clears a route; a nearby operative can spend their field dressing to treat her. Right-click MARA to transfer her escort.',
+        body: 'STREET is close, beyond the east GATE and road patrol. SERVICE is farther away on the west street; the walled service corridor screens the escape. Quill has no disguise. Tell him to wait in cover while the crew clears a route; a nearby operative can spend their field dressing to treat him. Right-click QUILL to transfer his escort.',
       },
     ],
   },
@@ -84,7 +84,7 @@ export const custody: Mission = {
       x: 5.5,
       y: 21,
       label: 'Maintenance kit',
-      detail: 'One unexposed staff identity can file a release. Mara cannot wear the uniform.',
+      detail: 'One unexposed staff identity can file a release. Quill cannot wear the uniform.',
     },
     {
       id: 'release',
@@ -100,7 +100,7 @@ export const custody: Mission = {
       x: 10.5,
       y: 11.4,
       label: 'Station radio relay',
-      detail: 'Disable further calls and reinforcements. Guards still recognize Mara.',
+      detail: 'Disable further calls and reinforcements. Guards still recognize Quill.',
     },
     {
       id: 'gate',
@@ -120,11 +120,11 @@ export const custody: Mission = {
     },
     {
       id: 'escort',
-      tag: 'MARA',
+      tag: 'QUILL',
       x: 25,
       y: 18.4,
-      label: 'Mara Quill',
-      detail: 'Unlock the transport, then collect Mara. Right-click again to transfer her escort.',
+      label: 'Ren Quill',
+      detail: 'Unlock the transport, then collect Quill. Right-click again to transfer his escort.',
     },
     {
       id: 'evidence',
@@ -140,7 +140,7 @@ export const custody: Mission = {
       x: 35,
       y: 25.3,
       label: 'East street extraction',
-      detail: 'Short but exposed. Bring Mara and every survivor to this ring.',
+      detail: 'Short but exposed. Bring Quill and every survivor to this ring.',
     },
     {
       id: 'alternate',
@@ -148,7 +148,7 @@ export const custody: Mission = {
       x: 4.8,
       y: 6.3,
       label: 'West service extraction',
-      detail: 'Longer escape through the screened corridor. Bring Mara and every survivor here.',
+      detail: 'Longer escape through the screened corridor. Bring Quill and every survivor here.',
     },
   ],
   spawns: [

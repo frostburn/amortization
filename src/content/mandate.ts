@@ -21,7 +21,7 @@ export const mandate: Mission = {
   trackingCamera: true,
   description: 'Take the restitution mandate from a site whose guns do not need a radio.',
   intro:
-    'Mara: the keys unlock the escrow. The MANDATE makes the bank release it. Those amber and blue sentries are wired to separate feeds. RADIO will not stop them. Borrow a maintenance identity at KIT and use INSPECT to buy a shutdown window, or isolate the feeds from cover.',
+    'Quill: the keys unlock the escrow. The MANDATE makes the bank release it. Those amber and blue sentries are wired to separate feeds. RADIO will not stop them. Borrow a maintenance identity at KIT and use INSPECT to buy a shutdown window, or isolate the feeds from cover.',
   briefing: {
     lead: 'Security has stopped outsourcing its judgement.',
     body: 'Recover the MANDATE from the north records room and extract every survivor at the north-east VAN. Four armoured sentry turrets watch the cross-court and records approach. They scan, show a tracking line, then fire after 0.8 seconds of continuous sight. Solid cover breaks tracking. RADIO only stops human reinforcement calls. Follow the amber and blue cables to WEST and EAST: each feed powers two guns.',

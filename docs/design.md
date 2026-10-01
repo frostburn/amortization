@@ -140,7 +140,7 @@ view at the same breakpoint.
 
 Generated atlases supply the crew and witness portraits. Faceted character models, architecture, sight cones, bullets, and markers are drawn in code from game state. Artwork never defines collisions.
 
-Morrow, Vale, Rook, Sable, guards, Voss, and Mara have distinct models. Each turns through 32 world-space facings, including its face, hair, coat, and weapon. The disguise changes clothing and adds a hardhat while preserving the operative's face and build. Gait phase advances once per 1.1 world units of interpolated walking distance; the stance foot moves backward at the body's ground speed while the other swings forward. Thigh and shin lengths stay fixed as the knee bends forward, with visible kneecaps. Raised hips and low foot clearance keep the walk upright and limit coat stretch; the supporting knee bends less than 35 degrees and the swinging knee less than 55 degrees. Contact shadows stay on the ground beneath each boot. Paused simulation freezes the pose.
+Morrow, Vale, Rook, Sable, guards, Voss, and Quill have distinct models. Each turns through 32 world-space facings, including its face, hair, coat, and weapon. The disguise changes clothing and adds a hardhat while preserving the operative's face and build. Gait phase advances once per 1.1 world units of interpolated walking distance; the stance foot moves backward at the body's ground speed while the other swings forward. Thigh and shin lengths stay fixed as the knee bends forward, with visible kneecaps. Raised hips and low foot clearance keep the walk upright and limit coat stretch; the supporting knee bends less than 35 degrees and the swinging knee less than 55 degrees. Contact shadows stay on the ground beneath each boot. Paused simulation freezes the pose.
 
 Character triangles use GPU depth testing so intersecting sleeves, shoulders, hair, and equipment resolve per pixel. Each character gets a separate depth interval following the existing scenery painter order; internal body depth never pulls a background character in front of a foreground person or wall. The bounded pose cache shares vertex buffers and releases them on mission reset.
 
@@ -162,7 +162,7 @@ when stowed or carrying cargo. The lowered pistol follows the hand through the
 walk cycle; a concealed pistol stays hidden. Attachments use the same depth-tested
 character geometry as sleeves and shoulder pads.
 
-Map text is rasterized for the current camera scale and display pixel density. Character objective markers and guide rings share a screen-space anchor above the head, leaving at least 32 pixels for the ring and leader line; their hit targets use that same anchor. Voss and Mara's wait/follow controls include their own portrait without growing the compact action row. Vehicle details and wall-lamp spill use their actual world planes, including the vertical wall face beneath each lamp.
+Map text is rasterized for the current camera scale and display pixel density. Character objective markers and guide rings share a screen-space anchor above the head, leaving at least 32 pixels for the ring and leader line; their hit targets use that same anchor. Voss and Quill's wait/follow controls include their own portrait without growing the compact action row. Vehicle details and wall-lamp spill use their actual world planes, including the vertical wall face beneath each lamp.
 
 The extraction van uses a shaped cab and cargo body with a sloped windscreen, short bonnet, door seams and handles. Tyres touch the road and show through wheel openings in the side panel. Its visual height matches a standing person; its navigation footprint and extraction radius are unchanged.
 
@@ -191,11 +191,11 @@ a diversion or dispatch. The checkpoint countdown remains visible. CASE interact
 
 ## Protective custody
 
-The fourth contract separates unlocking a captive's transport from starting the escort. Forged release papers require an unexposed maintenance identity and a concealed weapon; cutting the lock takes time and causes local noise. Mara remains protected until collected, so the player can finish preparations without a failure timer.
+The fourth contract separates unlocking a captive's transport from starting the escort. Forged release papers require an unexposed maintenance identity and a concealed weapon; cutting the lock takes time and causes local noise. Quill remains protected until collected, so the player can finish preparations without a failure timer.
 
-The new escort metadata replaces Voss-specific simulation fields. Voss keeps her existing health, movement speed, and non-targetable behavior. Mara is slower and is recognized by guards after a short visual identification, independently of the operative escort's disguise. Local recognition and the delayed radio report follow the same rules as operative identification. Losing Mara ends the mission, while losing her assigned operative transfers leadership to a survivor.
+The new escort metadata replaces Voss-specific simulation fields. Voss keeps her existing health, movement speed, and non-targetable behavior. Quill is slower and is recognized by guards after a short visual identification, independently of the operative escort's disguise. Local recognition and the delayed radio report follow the same rules as operative identification. Losing Quill ends the mission, while losing his assigned operative transfers leadership to a survivor.
 
-Wait/follow orders make it possible to clear a route without pulling the witness into the fight. A nearby operative with free hands can spend their one field dressing on Mara instead of themselves. The short east extraction crosses a patrolled road; the longer west route uses physical screen walls and the service entrance. Both exit locations are visible throughout; boarding controls unlock after recruitment, and all survivors and Mara must gather at the same one. The result shows which exit was used.
+Wait/follow orders make it possible to clear a route without pulling the witness into the fight. A nearby operative with free hands can spend their one field dressing on Quill instead of themselves. The short east extraction crosses a patrolled road; the longer west route uses physical screen walls and the service entrance. Both exit locations are visible throughout; boarding controls unlock after recruitment, and all survivors and Quill must gather at the same one. The result shows which exit was used.
 
 The transport reuses the van geometry with a grey body, security stripe, and barred side window. Its collision footprint remains explicit mission content. The HUD exposes escort health and orders only after recruitment; both extraction rings and the service corridor are visible on the map.
 
@@ -420,7 +420,7 @@ all PRs; no CI workers, retries, or matrix entries were added.
 
 Operation 09 follows the successful mandate extraction. During later handover
 preparations, a safehouse raid captures Vale and Rook. Voss supplies the detention
-layout; Mara retains the mandate. Morrow and Sable start outside. Captivity is a
+layout; Quill retains the mandate. Morrow and Sable start outside. Captivity is a
 mission state, not a retroactive penalty for the player's operation-08 result.
 
 A single remote console supplies either INTAKE (amber) or CELLS (blue). A living,
@@ -483,7 +483,7 @@ stepped fixture. Those browser checks remain outside the routine smoke suite.
 
 ## Stay of execution: inspectors and flash grenades
 
-Operation 10 follows the detention rescue: all four are together, and Mara's
+Operation 10 follows the detention rescue: all four are together, and Quill's
 restitution mandate needs to become a binding order in Mutual Indemnity's
 enforcement registry. The 56 × 42 map keeps the existing readable follow scale.
 A 20-second UPLINK upload and survivor extraction are mandatory; the physical
@@ -621,7 +621,7 @@ mission, and extraction requires the register plus every survivor afterward.
 The panel shows the current stage, eligible actions, operator names and saved
 progress. Existing hover/tap objective guides locate the next relevant items.
 Briefings remain compact with route advice closed by default. The epilogue stays
-with Mara and the first beneficiary's receipt. Six existing medals apply.
+with Quill and the first beneficiary's receipt. Six existing medals apply.
 
 `Mission.daylight` controls the daytime renderer and multiplies human guard
 vision by 1.5. It changes neither firing range nor the short credential-check
@@ -683,7 +683,7 @@ movement, Hold, a drop or a flash discards unfinished work. Death drops the
 original. Completed filing is mission state and persists across handoffs or a
 carrier’s death, but cargo and every surviving operative must still reach VAN.
 The FILE action filters to the selected carrier; the map, goals, progress bar and
-extraction controls share the same prerequisites. The epilogue follows Mara’s
+extraction controls share the same prerequisites. The epilogue follows Quill’s
 call to a beneficiary whose seizure crew has now been recalled.
 
 ### Support fire
