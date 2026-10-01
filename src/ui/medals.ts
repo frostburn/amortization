@@ -72,7 +72,7 @@ const medals: Medal[] = [
   {
     id: 'no-kit',
     name: 'No disguise',
-    rule: 'Extract all four without taking the maintenance disguise from KIT.',
+    rule: 'Extract all four without taking the staff disguise from KIT.',
     symbol: '<path d="m6 5 6 3 6-3v7c0 4-6 7-6 7s-6-3-6-7V5Zm2 7h2m4 0h2M4 3l16 18"/>',
     qualifies: (w) => !w.disguiseTaken,
   },

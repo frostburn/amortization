@@ -35,6 +35,8 @@ import { findPath, lineClear } from '../sim/navigation';
 import { depthOrder } from './depth';
 import { PersonSprite } from './person';
 import type { Appearance } from './person';
+import { Falls } from './fall';
+import { cuttingSite, CuttingEffects } from './cutting';
 import { project, TILE_X, TILE_Y, HEIGHT, FLOOR_HEIGHT } from './isometric';
 import { drawVan, vanDeparture } from './van';
 import { courierGuard } from '../sim/courier';
@@ -147,6 +149,7 @@ interface PersonView {
   sprite: PersonSprite;
   ink: Graphics;
   label: Text;
+  weaponDrawn?: boolean;
 }
 export type Hit =
   | { kind: 'agent'; id: string }
@@ -188,6 +191,8 @@ export class Scene {
   private marks = new Container();
   private effects = new Graphics();
   private views = new Map<string, PersonView>();
+  private falls = new Falls();
+  private cutting = new CuttingEffects();
   private scenery: {
     root: Container;
     footprint: Rect;
@@ -301,6 +306,8 @@ export class Scene {
     this.grenades.clear();
     this.world = world;
     this.showGuidance([], { x: 0, y: 0, w: 0, h: 0 });
+    this.falls.clear();
+    this.cutting.clear();
     this.views.clear();
     this.outlines.reset();
     this.labels.clear();
@@ -1527,6 +1534,25 @@ export class Scene {
       }
       return item.root.visible ? [item] : [];
     });
+    const cuts = w.agents.flatMap((a) => {
+      const site = cuttingSite(w, a);
+      return site ? [site] : [];
+    });
+    this.falls.update(
+      people(w),
+      alpha,
+      w.time,
+      (p) => cuts.find((c) => c.worker.id === p.id)?.angle ?? facingAngle(p),
+    );
+    for (const effect of this.cutting.update(cuts, w.time)) {
+      if (!effect.root.parent) this.objects.addChild(effect.root);
+      effect.root.alpha =
+        b && !effect.footprint.floor && inside(effect.footprint, b.footprint)
+          ? 1 - this.roofAlpha
+          : 1;
+      effect.root.visible = this.isVisibleFloor(effect.footprint) && effect.root.alpha > 0.01;
+      if (effect.root.visible) depthItems.push(effect);
+    }
     for (const view of this.views.values()) view.root.visible = false;
     for (const p of people(w)) {
       if (p === w.escort && w.escortLocked && !w.escort.recruited) continue;
@@ -1545,6 +1571,8 @@ export class Scene {
                 : 'quill';
       const boss = guard?.tactics?.role === 'marshal';
       const v = this.person(p, a ? String(a.index + 1) : boss ? 'DACRE' : '');
+      const drawn = !!a && (living(p) ? a.weapon : (v.weaponDrawn ?? a.weapon));
+      if (a && living(p)) v.weaponDrawn = a.weapon;
       const pos = {
         ...(p.floor ? { floor: p.floor } : {}),
         x: p.previous.x + (p.x - p.previous.x) * alpha,
@@ -1573,35 +1601,46 @@ export class Scene {
         screen.y <= this.app.screen.height + padding;
       if (!v.root.visible) continue;
       depthItems.push({ root: v.root, footprint: { ...pos, w: 0, h: 0 } });
+      const fall = this.falls.pose(p.id);
+      const cut = cuts.find((c) => c.worker.id === p.id);
       const cargo = !!a?.carrying || (p.id === w.courier?.guardId && w.evidence === 'courier');
       v.sprite.visible = !guard?.turret;
       const throwing =
         living(p) && !!w.flashGrenades?.some((g) => g.thrower === p.id && g.age < FLASH_FLIGHT);
       if (!guard?.turret)
-        v.sprite.pose(p, alpha, {
-          appearance,
-          cuffed:
-            p === w.escort && !!(w.mission.continuity || w.mission.finale) && !!w.escort?.recruited,
-          uniform: a?.disguised,
-          weapon: a?.disarmed
-            ? undefined
-            : longGun(p)
-              ? p.armament!.kind
-              : cargo
-                ? undefined
-                : guard
-                  ? p.armament?.kind || 'pistol'
-                  : a?.weapon
-                    ? 'pistol'
-                    : undefined,
-          stowed: (!!a && !a.weapon) || disoriented(p) || throwing,
-          shielding: living(p) && disoriented(p),
-          throwing,
-          commanding: !!guard?.marshal?.target,
-          specialist: guard?.tactics?.role,
-          carrying: cargo,
-          flash: living(p) && w.traces.some((t) => distance(t.from, p) < 0.2),
-        });
+        v.sprite.pose(
+          p,
+          alpha,
+          {
+            appearance,
+            cuffed:
+              p === w.escort &&
+              !!(w.mission.continuity || w.mission.finale) &&
+              !!w.escort?.recruited,
+            uniform: a?.disguised ? (w.mission.disguise ?? 'maintenance') : undefined,
+            cutting: !!cut,
+            angle: cut?.angle,
+            weapon: a?.disarmed
+              ? undefined
+              : longGun(p)
+                ? p.armament!.kind
+                : cargo
+                  ? undefined
+                  : guard
+                    ? p.armament?.kind || 'pistol'
+                    : drawn
+                      ? 'pistol'
+                      : undefined,
+            stowed: (!!a && !drawn) || (living(p) && disoriented(p)) || throwing,
+            shielding: living(p) && disoriented(p),
+            throwing,
+            commanding: !!guard?.marshal?.target,
+            specialist: guard?.tactics?.role,
+            carrying: cargo,
+            flash: living(p) && w.traces.some((t) => distance(t.from, p) < 0.2),
+          },
+          fall,
+        );
       const color = a
         ? a.exposed
           ? COLORS.red
@@ -1611,7 +1650,19 @@ export class Scene {
             ? COLORS.red
             : COLORS.amber
           : COLORS.amber;
-      v.ink.clear().ellipse(0, 0, 8, 3.5).fill({ color: 0x0d1915, alpha: 0.25 });
+      v.ink.clear();
+      if (fall) {
+        const shadow = Array.from({ length: 16 }, (_, i) => {
+          const theta = (i * Math.PI) / 8;
+          const x = Math.cos(theta) * (0.22 + fall.progress * 0.55),
+            y = Math.sin(theta) * 0.24;
+          return project({
+            x: x * Math.cos(fall.angle) - y * Math.sin(fall.angle),
+            y: x * Math.sin(fall.angle) + y * Math.cos(fall.angle),
+          });
+        });
+        v.ink.poly(shadow).fill({ color: 0x0d1915, alpha: 0.3 });
+      } else v.ink.ellipse(0, 0, 8, 3.5).fill({ color: 0x0d1915, alpha: 0.25 });
       if (guard?.turret) drawTurret(v.ink, guard, w);
       if (living(p) && !guard?.turret) {
         const feet = v.sprite.contacts;

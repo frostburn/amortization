@@ -6,12 +6,16 @@ import { living } from '../sim/types';
 import { footfall, hipHeight, kneePosition, walkPhase } from './gait';
 import { coatRings, shoulderPadTransform } from './clothing';
 import { project } from './isometric';
+import { fallBlend, fallTransform } from './fall';
+import type { FallPose } from './fall';
 import { modelGeometry, ModelMesh, MODEL_VIEW, type ModelFace, type Point3 } from './model-mesh';
 
 export type Appearance = CrewId | 'guard' | 'voss' | 'quill' | 'kestrel' | 'holt';
 export interface Outfit {
   appearance: Appearance;
-  uniform?: boolean;
+  uniform?: 'maintenance' | 'office';
+  cutting?: boolean;
+  angle?: number;
   cuffed?: boolean;
   weapon?: WeaponKind;
   stowed?: boolean;
@@ -309,8 +313,10 @@ function weaponMount(
 class Figure {
   faces: ModelFace[] = [];
   transform: ((p: Point) => Point) | null = null;
+  body: Mount | null = null;
   constructor(private angle: number) {}
   world(p: Point): Point {
+    if (this.body) p = this.body(p);
     const c = Math.cos(this.angle),
       s = Math.sin(this.angle);
     return [p[0] * c - p[1] * s, p[0] * s + p[1] * c, p[2]];
@@ -479,9 +485,11 @@ export class PersonSprite extends ModelMesh {
     frames.set(key, frame);
     trimFrames();
   }
-  pose(p: Person, alpha: number, outfit: Outfit = { appearance: 'morrow' }) {
-    const direction = facing(facingAngle(p)),
-      alive = living(p);
+  pose(p: Person, alpha: number, outfit: Outfit = { appearance: 'morrow' }, fall?: FallPose) {
+    const alive = living(p);
+    const collapse = alive ? 0 : Math.round((fall?.progress ?? 1) * 24) / 24;
+    const blend = fallBlend(collapse);
+    const direction = facing(fall?.angle ?? outfit.angle ?? facingAngle(p));
     const baseProfile =
       outfit.appearance === 'guard' && outfit.specialist
         ? SPECIALISTS[outfit.specialist]
@@ -491,13 +499,14 @@ export class PersonSprite extends ModelMesh {
       outfit.appearance === 'guard' && outfit.specialist !== 'marshal'
         ? guardSkin(p.id)
         : baseProfile.skin;
-    const phase = walkPhase(p, alpha);
+    const phase = alive ? walkPhase(p, alpha) : (fall?.stride ?? null);
     const frame = phase === null ? -1 : Math.round((((phase % 1) + 1) % 1) * 24) % 24;
     const aiming =
       alive &&
       !outfit.shielding &&
       !outfit.throwing &&
       !outfit.commanding &&
+      !outfit.cutting &&
       !!outfit.weapon &&
       !outfit.stowed &&
       (!!outfit.flash ||
@@ -506,6 +515,7 @@ export class PersonSprite extends ModelMesh {
     const key = [
       direction,
       alive,
+      collapse,
       frame,
       aiming,
       outfit.appearance,
@@ -520,6 +530,7 @@ export class PersonSprite extends ModelMesh {
       outfit.shielding,
       outfit.throwing,
       outfit.commanding,
+      outfit.cutting,
     ].join(':');
     if (key === this.lastPose) return;
     this.lastPose = key;
@@ -530,48 +541,64 @@ export class PersonSprite extends ModelMesh {
     }
     const f = new Figure((direction * Math.PI * 2) / FACING_COUNT);
     const profile = skin === baseProfile.skin ? baseProfile : { ...baseProfile, skin };
-    const coat = outfit.uniform ? 0x788574 : profile.coat;
-    if (!alive) {
-      this.fallen(f, profile, coat, outfit);
-      this.contacts.fill(0);
-    } else {
+    const office = outfit.uniform === 'office';
+    const coat = office ? 0x465467 : outfit.uniform ? 0x788574 : profile.coat;
+    const trousers = office ? 0x343b4b : 0x35413e;
+    {
       const stride = frame < 0 ? null : frame / 24;
       const feet = [-1, 1].map((side, i): Point => {
         const step = stride === null ? { forward: 0, lift: 0 } : footfall(stride + i / 2);
-        const foot: Point = [step.forward, side * 0.115, step.lift];
+        const foot: Point = [
+          step.forward * (1 - blend) + 0.06 * blend,
+          side * (0.115 + blend * (i ? 0.08 : 0.015)),
+          step.lift * (1 - blend),
+        ];
         const ground = f.screen([foot[0], foot[1], 0]);
         this.contacts.set([ground.x, ground.y], i * 2);
         return foot;
       });
-      const hip = hipHeight(stride),
+      const hip = hipHeight(stride) - Math.sin(collapse * Math.PI) * 0.12,
         bob = hip - 0.66;
+      if (!alive) f.body = fallTransform(collapse, hip);
       const knees: Point[] = [];
       for (let i = 0; i < 2; i++) {
         const foot = feet[i],
           side = i ? 1 : -1;
         const ankle = add(foot, [0, 0, 0.09]);
         const bend = kneePosition(hip, ankle[0], ankle[2]);
-        const knee: Point = [bend.forward, foot[1], bend.height];
+        const knee: Point = [bend.forward * (1 - blend) + 0.09 * blend, foot[1], bend.height];
         knees.push(knee);
-        f.tube([0, side * 0.115, hip], knee, 0.068, 0x35413e, 0.058);
-        f.tube(knee, ankle, 0.054, 0x303a38, 0.046);
-        f.oval(knee, 0.067, 0.06, 0.06, 0x43534b);
-        f.oval(add(knee, [0.038, 0, 0]), 0.038, 0.055, 0.051, 0x506057, false);
+        f.tube([0, side * 0.115, hip], knee, 0.068, trousers, 0.058);
+        f.tube(knee, ankle, 0.054, shade(trousers, 0.9), 0.046);
+        f.oval(knee, 0.067, 0.06, 0.06, office ? trousers : 0x43534b);
+        if (!office) f.oval(add(knee, [0.038, 0, 0]), 0.038, 0.055, 0.051, 0x506057, false);
         f.block(add(foot, [0.025, 0, 0.047]), [0.22, 0.115, 0.094], 0x242d2b);
       }
-      this.torso(f, profile, coat, bob, knees);
+      this.torso(f, office ? { ...profile, shirt: 0xe1ddce } : profile, coat, bob, knees, office);
       if (outfit.specialist === 'breacher') {
         f.block([0.135, 0, 0.97 + bob], [0.05, 0.27, 0.2], 0x333e3c);
         f.block([0.125, 0, 1.36 + bob], [0.04, 0.21, 0.065], 0x333e3c);
       }
-      this.head(f, profile, [0, 0, 1.31 + bob], !!outfit.uniform, outfit.appearance === 'guard');
+      this.head(
+        f,
+        profile,
+        [0, 0, 1.31 + bob],
+        outfit.uniform === 'maintenance',
+        outfit.appearance === 'guard',
+      );
       if (outfit.specialist === 'marksman') {
         // A single bright optical lens reinforces the coat palette at close zoom.
         f.block([0.132, 0.05, 1.345 + bob], [0.065, 0.08, 0.07], 0x293c43);
         f.block([0.168, 0.05, 1.345 + bob], [0.01, 0.056, 0.048], 0xa8e5ed);
       }
-      const gun = weaponMount(outfit, aiming, bob, profile.shoulders, -feet[1][0] * 0.45);
-      const drawn = gun && !outfit.stowed && !outfit.carrying;
+      const gun = weaponMount(
+        outfit.cutting ? { ...outfit, stowed: true } : outfit,
+        aiming,
+        bob,
+        profile.shoulders,
+        -feet[1][0] * 0.45,
+      );
+      const drawn = gun && !outfit.stowed && !outfit.carrying && !outfit.cutting;
       const long = outfit.weapon !== 'pistol';
       for (let i = 0; i < 2; i++) {
         const side = i ? 1 : -1;
@@ -597,6 +624,9 @@ export class PersonSprite extends ModelMesh {
         } else if (outfit.throwing && i === 1) {
           elbow = [0.14, 0.23, 1.32 + bob];
           hand = [0.38, 0.12, 1.46 + bob];
+        } else if (outfit.cutting) {
+          elbow = [0.12, side * 0.2, 0.88 + bob];
+          hand = [i ? 0.36 : 0.48, side * 0.055, 0.97 + bob];
         } else if (drawn && aiming) {
           elbow = [0.19, side * 0.18, 0.91 + bob];
           hand = gun(i ? [0, 0, 0] : long ? [0.26, 0, -0.025] : [-0.005, -0.045, 0]);
@@ -611,6 +641,12 @@ export class PersonSprite extends ModelMesh {
           elbow = [swing - 0.015, side * (profile.shoulders + 0.015), 0.85 + bob];
           hand = [swing + 0.055, side * (profile.shoulders + 0.01), 0.67 + bob];
         }
+        if (!alive && !outfit.cuffed) {
+          const restingElbow: Point = [0.09, side * (profile.shoulders + 0.13), 0.85 + bob];
+          const restingHand: Point = [0.16, side * (i ? 0.34 : 0.21), (i ? 0.64 : 1.01) + bob];
+          elbow = add(mul(elbow, 1 - blend), mul(restingElbow, blend));
+          hand = add(mul(hand, 1 - blend), mul(restingHand, blend));
+        }
         f.tube(shoulder, elbow, 0.055, coat, 0.05);
         f.tube(elbow, hand, 0.047, coat, 0.038);
         f.oval(shoulder, 0.061, 0.062, 0.06, coat);
@@ -622,10 +658,20 @@ export class PersonSprite extends ModelMesh {
           f.transform = null;
         }
       }
-      if (outfit.specialist === 'shield') this.shield(f, !!outfit.shielding, bob);
+      if (outfit.specialist === 'shield') this.shield(f, !!outfit.shielding, bob, collapse);
       if (outfit.carrying) f.block([0.26, 0, 0.79 + bob], [0.17, 0.37, 0.23], 0xbfa476);
+      if (outfit.cutting && alive) {
+        f.block([0.36, 0, 0.98 + bob], [0.19, 0.115, 0.1], 0x525e61);
+        f.block([0.32, 0.035, 0.92 + bob], [0.055, 0.065, 0.11], 0x303d41);
+        f.tube([0.43, 0, 1 + bob], [0.59, 0, 1 + bob], 0.033, 0xc5a569);
+        f.oval([0.59, 0, 1 + bob], 0.026, 0.022, 0.022, 0xc9eff4);
+      }
       if (gun && outfit.weapon) {
-        f.transform = gun;
+        // Land on the weapon's side: tall magazines must not sink into the floor.
+        const dropped = mount([0.16, 0.46, 0.83 + bob], [0, 0, 1], [1, 0, 0]);
+        f.transform = !alive
+          ? (point) => add(mul(gun(point), 1 - blend), mul(dropped(point), blend))
+          : gun;
         this.gun(f, outfit.weapon, !!drawn && aiming && !!outfit.flash);
         f.transform = null;
       }
@@ -651,8 +697,11 @@ export class PersonSprite extends ModelMesh {
       frames.clear();
     }
   }
-  private torso(f: Figure, p: Profile, coat: number, bob: number, knees: Point[]) {
+  private torso(f: Figure, p: Profile, coat: number, bob: number, knees: Point[], office = false) {
     const rings = coatRings(0.66 + bob, knees, p);
+    if (office)
+      for (const ring of rings.slice(0, 2))
+        for (const point of ring) point[2] = Math.max(point[2], 0.56 + bob);
     // Shoulder slopes lead into the collar instead of ending in a flat shelf.
     rings.push(
       rings.at(-1)!.map((_, i, ring): Point => {
@@ -680,6 +729,21 @@ export class PersonSprite extends ModelMesh {
     }
     f.block([0, 0, 0.72 + bob], [0.245, p.waist * 1.9, 0.045], 0x2a3330);
     f.block([0.135, 0, 0.72 + bob], [0.02, 0.065, 0.043], 0x96a095);
+    if (office) {
+      // A narrow tie and a staff pass replace safety equipment in administrative sites.
+      f.face(
+        [
+          [0.135, 0, 0.83 + bob],
+          [0.135, 0.024, 0.87 + bob],
+          [0.135, 0.014, 1.085 + bob],
+          [0.135, -0.014, 1.085 + bob],
+          [0.135, -0.024, 0.87 + bob],
+        ],
+        0x824b50,
+      );
+      f.block([0.132, -0.104, 0.97 + bob], [0.019, 0.065, 0.083], 0xd2d8cc);
+      f.block([0.145, -0.104, 0.995 + bob], [0.01, 0.058, 0.018], 0x7eb2b3);
+    }
     // The neck ends inside the skull so its top cap cannot show across the nape.
     f.tube([-0.015, 0, 1.08 + bob], [-0.015, 0, 1.27 + bob], p.neck, p.skin, p.neck * 0.9);
   }
@@ -767,10 +831,20 @@ export class PersonSprite extends ModelMesh {
       f.block(add(c, [0.075, 0, 0.106]), [0.22, 0.27, 0.025], color);
     }
   }
-  private shield(f: Figure, lowered: boolean, bob = 0) {
+  private shield(f: Figure, lowered: boolean, bob = 0, collapse = 0) {
+    const body = f.body;
     if (lowered)
       f.transform = mount([0.03, -0.36, 0.55 + bob], [0.4, 0, -Math.sqrt(0.84)], [0, 1, 0]);
     else f.transform = mount([0.29, -0.08, 0.75 + bob], [1, 0, 0], [0, 1, 0]);
+    if (collapse > 0 && body) {
+      const blend = fallBlend(collapse),
+        tilt = (blend * Math.PI) / 2;
+      const origin = body(f.transform!([0, 0, 0]));
+      const center = add(mul(origin, 1 - blend), mul([0.12, -0.58, 0.09], blend));
+      center[2] = Math.max(center[2], 0.54 * Math.cos(tilt) + 0.09 * Math.sin(tilt));
+      f.body = null;
+      f.transform = mount(center, [Math.cos(tilt), 0, Math.sin(tilt)], [0, 1, 0]);
+    }
     // Bevelled full-height plate, dark viewport and burgundy unit stripe.
     f.block([0, 0, 0], [0.085, 0.62, 0.91], 0xd0cfb7);
     f.block([0, 0, 0.47], [0.085, 0.5, 0.08], 0xd0cfb7);
@@ -780,6 +854,7 @@ export class PersonSprite extends ModelMesh {
     f.block([0.048, 0, -0.12], [0.012, 0.57, 0.1], 0x783b56);
     f.block([-0.065, 0, 0.1], [0.05, 0.22, 0.04], 0x313f3b);
     f.transform = null;
+    f.body = body;
   }
   private gun(f: Figure, kind: NonNullable<Outfit['weapon']>, flash = false) {
     // Local origin is the firing hand, so the receiver, stock, magazine and barrel
@@ -861,44 +936,5 @@ export class PersonSprite extends ModelMesh {
       muzzle = 0.55;
     }
     if (flash) f.oval([muzzle + 0.055, 0, 0.08], 0.09, 0.043, 0.045, 0xffd796);
-  }
-  private fallen(f: Figure, p: Profile, coat: number, outfit: Outfit) {
-    // A ground-level body with its own bent limbs, never a rotated standing sprite.
-    for (const side of [-1, 1]) {
-      const hip: Point = [-0.08, side * 0.1, 0.15];
-      const knee: Point = [-0.43, side * 0.19, 0.095];
-      const foot: Point = [-0.77, side === 1 ? 0.24 : -0.035, 0.06];
-      f.tube(hip, knee, 0.07, 0x35413e, 0.055);
-      f.tube(knee, foot, 0.052, 0x303a38, 0.043);
-      f.oval(knee, 0.067, 0.06, 0.055, 0x35413e);
-      f.block(add(foot, [-0.035, 0.03, -0.01]), [0.13, 0.18, 0.09], 0x242d2b);
-    }
-    f.oval([0.17, 0, 0.16], 0.34, p.shoulders, 0.12, coat);
-    for (const side of [-1, 1]) {
-      const shoulder: Point = [0.4, side * p.shoulders, 0.15];
-      const elbow: Point = [side < 0 ? 0.18 : 0.6, side * 0.29, 0.08];
-      const hand: Point = [side < 0 ? 0.0 : 0.78, side * 0.13, 0.07];
-      f.tube(shoulder, elbow, 0.055, coat, 0.047);
-      f.tube(elbow, hand, 0.047, coat, 0.033);
-      f.oval(hand, 0.048, 0.038, 0.038, p.skin);
-    }
-    if (outfit.specialist === 'shield') {
-      // Separate fallen shield, lying beside the body rather than still upright.
-      f.block([0.15, -0.55, 0.07], [0.9, 0.6, 0.1], 0xd0cfb7);
-      f.block([0.15, -0.55, 0.125], [0.12, 0.55, 0.01], 0x783b56);
-      f.block([0.45, -0.55, 0.125], [0.08, 0.34, 0.01], 0x283d42);
-    }
-    const center: Point = [0.62, 0, 0.14];
-    f.transform = (point) => {
-      const q = sub(point, center);
-      return add(center, [q[2], q[1], -q[0]]);
-    };
-    this.head(f, p, center, !!outfit.uniform, outfit.appearance === 'guard');
-    f.transform = null;
-    if (outfit.weapon) {
-      f.transform = mount([0.27, 0.4, 0.06], [1, 0, 0], [0, 0, -1]);
-      this.gun(f, outfit.weapon);
-      f.transform = null;
-    }
   }
 }

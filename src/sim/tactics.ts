@@ -38,7 +38,7 @@ export const guardDescription = (guard: Guard) =>
               : guard.tactics?.role === 'breacher'
                 ? 'Closes through screened positions. Dangerous nearby; withdraw during its long firing recovery.'
                 : guard.tactics?.role === 'inspector'
-                  ? 'Ivory uniform, orange shoulder caps. Checks maintenance identities within 4 units over 2.5s. Break sight or leave range to cancel the check. Carries a pistol.'
+                  ? 'Ivory uniform, orange shoulder caps. Checks staff credentials within 4 units over 2.5s. Break sight or leave range to cancel the check. Carries a pistol.'
                   : 'Patrols, challenges intruders, and reports contact.';
 
 /** Nearby partners can signal a sighting. This never copies an unseen person's live position. */

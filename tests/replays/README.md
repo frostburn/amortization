@@ -10,6 +10,16 @@ checkpoints, note, or build metadata to make a recording pass.
 All fifty-nine retained completions are byte-for-byte copies of submissions
 provided in chat, including their `unversioned` / local-changes metadata.
 
+## Character effects and local staff cover
+
+CUT sparks and falling bodies keep their animation state in the renderer. Office
+outfits replace maintenance clothing at administrative sites; disguise permissions,
+interaction times and combat rules are unchanged. All 59 human completions still
+finish under current rules, and the medal fixtures retain their original state
+checkpoint assertions. Mission appearance metadata and staff wording change the
+build/mission fingerprints, so older bundles may need **Try current rules** in the
+dev viewer. No recordings were edited or removed.
+
 ## Key personnel: human 100% follow-up
 
 The two follow-up wins reproduce all **62 original checkpoints** and their final

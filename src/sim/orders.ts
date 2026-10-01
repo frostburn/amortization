@@ -184,9 +184,9 @@ function interactionRefusal(world: World, a: Operative, id: ObjectKind): string 
   )
     return 'Set the cargo down before working these controls.';
   if (id === 'release' && (!a.disguised || a.weapon || a.exposed))
-    return 'Release refused. WARRANT requires a maintenance identity that has not been exposed, with weapons concealed.';
+    return 'Release refused. WARRANT requires a staff identity that has not been exposed, with weapons concealed.';
   if (id === 'authorise' && !canAuthorise(world, a))
-    return 'INSPECT requires an unexposed maintenance identity with a concealed pistol and free hands. Use KIT with Morrow or Vale, or isolate the feeds from cover.';
+    return 'INSPECT requires an unexposed staff identity with a concealed pistol and free hands. Use KIT with Morrow or Vale, or isolate the feeds from cover.';
   if (id === 'evidence' && world.evidence === 'courier') {
     const courier = courierGuard(world);
     if (
@@ -198,7 +198,7 @@ function interactionRefusal(world: World, a: Operative, id: ObjectKind): string 
       courier.known.includes(a.id) ||
       world.known.includes(a.id)
     )
-      return 'Handover refused. Use the maintenance disguise with weapons concealed and an unrecognized identity.';
+      return 'Handover refused. Use the staff disguise with weapons concealed and an unrecognized identity.';
   }
   return null;
 }
@@ -589,10 +589,7 @@ export function completeInteraction(world: World, a: Operative, id: ObjectKind) 
       world.disguiseTaken = true;
       a.disguised = true;
       a.weapon = false;
-      notify(
-        world,
-        `${a.name}: maintenance cover acquired. The marked secure area is still restricted.`,
-      );
+      notify(world, `${a.name}: staff cover acquired. The marked secure area is still restricted.`);
       break;
     case 'gate':
       world.gateOpen = true;
