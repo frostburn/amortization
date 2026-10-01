@@ -5,8 +5,11 @@ roof. The crew arrives from Threshold’s service lift. Dacre and Holt are both
 present; the helicopter is already waiting above them. The 50 × 38 site keeps a
 comfortable follow-camera scale, selecting the visible floor from the active
 operative. The penthouse has cool fluorescent lighting; the roof keeps Threshold’s
-sunset palette. Both retain night sight distances. A continuous glass facade drops
-toward the distant city, with no street or paving beside the executive floor.
+sunset palette. Both retain night sight distances. Exterior faces remain sunset-lit
+alongside the fluorescent interior, using Threshold's shared facade design.
+The facade drops toward a muted city with reddish sun-facing surfaces, with no
+street or paving beside the executive floor. Roof light pools are clipped so
+changing floor cannot recolor the building's exterior.
 
 ## Objectives and choices
 

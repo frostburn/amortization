@@ -2,6 +2,7 @@ import type { Graphics } from 'pixi.js';
 import type { Mission, Solid } from '../sim/types';
 import { FLOOR_HEIGHT, project } from './isometric';
 import { panel, plane, polygon } from './primitives';
+import { CROWN_PENTHOUSE_HEIGHT, drawCrownFacade } from './crown-tower';
 
 /** A distant city, not playable paving around the executive floor. All of it
  * sits at least 38 world units below the penthouse and is drawn only at build. */
@@ -19,12 +20,12 @@ function drawCityBelow(g: Graphics) {
     }
   blocks.sort((a, b) => a.x + a.y - b.x - b.y);
   for (const { x, y, w, h, z, n } of blocks) {
-    panel(g, { x, y: y + h }, { x: x + w, y: y + h }, -68, z, 0x384555);
-    panel(g, { x: x + w, y }, { x: x + w, y: y + h }, -68, z, 0x34404e);
-    plane(g, x, y, w, h, n % 3 ? 0x465465 : 0x4c5867, z);
-    plane(g, x + 0.6, y + 0.7, w - 1.2, h - 1.4, 0x3e4b5b, z + 0.02);
+    panel(g, { x, y: y + h }, { x: x + w, y: y + h }, -68, z, 0x62505a);
+    panel(g, { x: x + w, y }, { x: x + w, y: y + h }, -68, z, 0x443e4c);
+    plane(g, x, y, w, h, n % 3 ? 0x6b5660 : 0x705b62, z);
+    plane(g, x + 0.6, y + 0.7, w - 1.2, h - 1.4, 0x594951, z + 0.02);
     // Sparse, low-contrast windows establish scale without competing with
-    // objective markers. The lower floors disappear into the blue haze.
+    // objective markers. The lower floors disappear into the evening haze.
     for (let level = 0; level < 4; level++) {
       const bottom = z - 2.5 - level * 3;
       if ((n + level) % 3 === 0) continue;
@@ -34,7 +35,7 @@ function drawCityBelow(g: Graphics) {
         { x: x + w - 0.8, y: y + h + 0.01 },
         bottom,
         bottom + 0.2,
-        level < 2 ? 0x65707a : 0x465464,
+        level < 2 ? 0x89716d : 0x66515a,
       );
     }
   }
@@ -77,33 +78,9 @@ export function drawPenthouseLights(g: Graphics, s: Solid) {
 export function drawBenchFloors(ground: Graphics, roof: Graphics, mission: Mission) {
   const b = mission.building!.footprint;
   drawCityBelow(ground);
-  // A continuous curtain wall drops out of view. Floor spacing matches the
-  // playable storeys; there is no ledge or street at the bottom of the drawing.
-  for (const front of [true, false]) {
-    const length = front ? b.w : b.h,
-      at = (d: number) => (front ? { x: b.x + d, y: b.y + b.h } : { x: b.x + b.w, y: b.y + d });
-    panel(ground, at(0), at(length), -68, 0, front ? 0x354956 : 0x2e3e4c);
-    for (let storey = 0; storey < 20; storey++) {
-      const z = -storey * FLOOR_HEIGHT,
-        faded = storey > 5,
-        panes = Math.floor(length / 1.9),
-        bay = length / panes;
-      panel(ground, at(0), at(length), z - 0.22, z, faded ? 0x354553 : 0x566d78);
-      for (let i = 0; i < panes; i++) {
-        const lit = (i * 7 + storey * 13) % 11 < 2;
-        panel(
-          ground,
-          at(i * bay + 0.12),
-          at((i + 1) * bay - 0.12),
-          z - FLOOR_HEIGHT + 0.22,
-          z - 0.38,
-          faded ? 0x3a4b5a : lit ? (front ? 0x789295 : 0x647d84) : front ? 0x45616f : 0x3a505f,
-        );
-        if (!faded)
-          panel(ground, at(i * bay + 0.12), at((i + 1) * bay - 0.12), z - 1.3, z - 1.24, 0x56717d);
-      }
-    }
-  }
+  drawCrownFacade(ground, b, -CROWN_PENTHOUSE_HEIGHT, 0, true);
+  // When the roof is visible, its penthouse storey continues the same facade.
+  drawCrownFacade(roof, b, 0, FLOOR_HEIGHT);
   plane(ground, b.x, b.y, b.w, b.h, 0x859396);
   for (let x = b.x; x < b.x + b.w; x += 2) plane(ground, x, b.y, 0.025, b.h, 0x728287);
   for (let y = b.y; y < b.y + b.h; y += 2) plane(ground, b.x, y, b.w, 0.025, 0x728287);

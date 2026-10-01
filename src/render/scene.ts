@@ -1,8 +1,14 @@
 import { Helicopter } from './helicopter';
 import { drawBenchFloors, drawPenthouseLights } from './bench';
+import {
+  CROWN_SUNSET,
+  crownTowerApproach,
+  drawCrownFacade,
+  drawPenthouseExterior,
+} from './crown-tower';
 import { visualTheme, skyColor } from './theme';
 import { liftReady } from '../sim/threshold';
-import { drawLiftPortal, drawThresholdGround, drawTowerFacade } from './threshold';
+import { drawLiftPortal, drawThresholdGround } from './threshold';
 import { CREW } from '../sim/crew';
 import { Application, Container, Graphics, Polygon, Text } from 'pixi.js';
 import type { Bounds } from 'pixi.js';
@@ -177,6 +183,7 @@ export class Scene {
   private upperFlash = new Graphics();
   private objects = new Container();
   private lighting = new OperativeLighting();
+  private rooftopLightingMask = new Graphics();
   private outlines = new CharacterOutlines();
   private marks = new Container();
   private effects = new Graphics();
@@ -260,6 +267,7 @@ export class Scene {
       this.flashGround,
       this.objects,
       this.roof,
+      this.rooftopLightingMask,
       this.lighting,
       this.outlines,
       this.marks,
@@ -324,7 +332,18 @@ export class Scene {
     const mission = world.mission;
     const theme = visualTheme(mission);
     this.host.dataset.theme = theme;
-    this.app.renderer.background.color = skyColor[theme];
+    this.app.renderer.background.color = mission.finale ? CROWN_SUNSET.haze : skyColor[theme];
+    // Roof light pools belong to the playable roof, not to the facade or city
+    // below it. Exterior sunset materials remain identical when changing floor.
+    this.lighting.mask = null;
+    this.rooftopLightingMask.clear();
+    this.rooftopLightingMask.visible = !!mission.finale;
+    if (mission.finale) {
+      this.rooftopLightingMask
+        .poly(boxSilhouette({ ...mission.building!.footprint, floor: 1 }, 1.7).polygon.points)
+        .fill(0xffffff);
+      this.lighting.mask = this.rooftopLightingMask;
+    }
     // The finale has a city far below its own floor art, not a ground-level yard.
     if (!mission.finale) {
       plane(g, 0, 0, mission.width, mission.height, COLORS.ground);
@@ -592,8 +611,20 @@ export class Scene {
       }
     }
     for (const solid of world.mission.solids) {
-      if (!solid.floor) drawContactShadow(g, solid, theme, mission);
-      this.addSolid(solid);
+      if (solid.id === 'crown-tower') {
+        const tower = crownTowerApproach(solid),
+          exterior = new Graphics(),
+          annex = { ...solid, height: FLOOR_HEIGHT };
+        drawCrownFacade(exterior, tower, 0, tower.height);
+        plane(exterior, tower.x, tower.y, tower.w, tower.h, CROWN_SUNSET.frameFront, tower.height);
+        this.addScenery(exterior, tower, tower.height);
+        drawContactShadow(g, tower, theme, mission);
+        drawContactShadow(g, annex, theme, mission);
+        this.addSolid(annex);
+      } else {
+        if (!solid.floor) drawContactShadow(g, solid, theme, mission);
+        this.addSolid(solid);
+      }
     }
     if (mission.threshold) {
       this.liftPortal = new Graphics();
@@ -899,10 +930,12 @@ export class Scene {
       );
     } else if (s.kind === 'building') {
       drawBuilding(g, s, theme);
-      if (s.id === 'crown-tower') drawTowerFacade(g, s);
     } else {
       drawWall(g, s, theme);
-      if (theme === 'fluorescent') drawPenthouseLights(g, s);
+      if (theme === 'fluorescent') {
+        drawPenthouseLights(g, s);
+        drawPenthouseExterior(g, s);
+      }
     }
     // Wall-mounted details must inherit their wall's occlusion, too.
     if (s.id === 'north' && !this.world.mission.daylight) {

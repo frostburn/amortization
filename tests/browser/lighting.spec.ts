@@ -65,7 +65,7 @@ test('light pools preserve distant visibility, split crew, interpolation and cam
       a.hp = i ? 0 : 100;
     });
     const gl = (scene.app.renderer as WebGLRenderer).gl;
-    const read = (x: number, y: number) => {
+    const rgb = (x: number, y: number) => {
       const pixel = new Uint8Array(4),
         resolution = scene.app.renderer.resolution;
       gl.readPixels(
@@ -77,8 +77,9 @@ test('light pools preserve distant visibility, split crew, interpolation and cam
         gl.UNSIGNED_BYTE,
         pixel,
       );
-      return pixel[0];
+      return Array.from(pixel.slice(0, 3));
     };
+    const read = (x: number, y: number) => rgb(x, y)[0];
     const frame = (alpha = 1, w = world, activeFloor = 0) => {
       lighting.refresh(w, alpha, scene.camera, scene.app.screen, null, activeFloor);
       scene.app.render();
@@ -148,6 +149,33 @@ test('light pools preserve distant visibility, split crew, interpolation and cam
     const rooftop = { crew: at(0, 0, 0, 1), downstairs: at(9, -9, 0, 1) };
     frame(1, tower, 0);
     const returned = at(9, -9);
+    const towerUnchanged = JSON.stringify(tower) === towerSnapshot;
+    // Render the real mixed-light scene as well as the calibration surface.
+    // The same exterior window must stay warm when selecting either floor;
+    // the visible office floor must remain cool alongside it.
+    scene.camera.children.forEach((c) => {
+      c.visible = true;
+    });
+    scene.reset(tower);
+    tower.agents.slice(0, 2).forEach((a, i) => {
+      place(a, 8, 10);
+      a.floor = i;
+    });
+    const sampleTower = (floor: number) => {
+      scene.render([tower.agents[floor].id], 1, 1);
+      scene.camera.scale.set(0.4);
+      scene.camera.position.set(500, 100);
+      scene.app.render();
+      const sample = (x: number, y: number, z: number) => {
+        const p = project({ x, y }, z);
+        return rgb(500 + p.x * 0.4, 100 + p.y * 0.4);
+      };
+      return {
+        facade: sample(25, 34.4, -1.8),
+        office: sample(20, 28, 0),
+      };
+    };
+    const mixed = { inside: sampleTower(0), roof: sampleTower(1), back: sampleTower(0) };
     return {
       solo,
       grouped,
@@ -162,7 +190,8 @@ test('light pools preserve distant visibility, split crew, interpolation and cam
       indoor,
       rooftop,
       returned,
-      towerUnchanged: JSON.stringify(tower) === towerSnapshot,
+      towerUnchanged,
+      mixed,
     };
   });
   expect(result.solo.core).toBeGreaterThan(250);
@@ -186,6 +215,10 @@ test('light pools preserve distant visibility, split crew, interpolation and cam
   expect(result.rooftop.downstairs).toBeGreaterThan(180);
   expect(result.rooftop.downstairs).toBeLessThan(210);
   expect(result.towerUnchanged).toBe(true);
+  expect(result.mixed.inside.facade[0]).toBeGreaterThan(result.mixed.inside.facade[2] + 25);
+  expect(result.mixed.inside.office[2]).toBeGreaterThan(result.mixed.inside.office[0] + 10);
+  expect(result.mixed.roof.facade).toEqual(result.mixed.inside.facade);
+  expect(result.mixed.back).toEqual(result.mixed.inside);
   await expect(page.locator('vite-error-overlay')).toHaveCount(0);
   expect(errors).toEqual([]);
   await context.close();
