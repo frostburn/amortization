@@ -12,7 +12,7 @@ provided in chat, including their `unversioned` / local-changes metadata.
 
 ## Missions 14–15: the end of the human 100% run
 
-All 18 new submissions reproduce **276 original checkpoints** and their exact
+All 18 new submissions reproduced **276 original checkpoints** and their exact
 results on `d880553`, before the Threshold adjustment below. The four wins are:
 
 | Mission / run | Original outcome | Challenge medals |
@@ -45,9 +45,8 @@ weapons, night sight distances and medal conditions are unchanged. The briefing
 states the continuing watch, with tactical suggestions kept opt-in.
 
 The two new Threshold wins and prior key-recovery win `db4918dd` no longer
-complete with their original commands. They remain byte-for-byte historical
-fixtures at `../fixtures/threshold-prewatch-won-<id>.replay.json`, outside the
-required current-completion corpus. They are not asserted to keep failing.
+complete with their original commands and have been removed from the repository.
+Invalidated wins are not kept as historical fixtures or asserted to keep failing.
 The new Threshold defeat and unfinished run are also `threshold-prewatch-*`
 fixtures. Three command-only guarded routes now verify quiet/nonlethal SHUNT
 access and armed CUT access with RADIO on or off, collectively earning every
@@ -314,10 +313,9 @@ All five September 30 submissions verify their 98 original checkpoints and final
 outcomes against PR #34's `646fdee` and the unchanged simulation fingerprint
 `25559847972c9b43914b2b1a243e9f903bb6329ddc566e39a871e3e0edb36630`.
 The timer-bar follow-up changes presentation only; no commands, checksums, notes
-or build metadata are rewritten. The successful bundle joins the corpus as
-`threshold-key-recovery-db4918dd.replay.json` (since moved to
-`../fixtures/threshold-prewatch-won-db4918dd.replay.json` by the lobby-watch
-adjustment above). The other four are retained in
+or build metadata were rewritten. The successful bundle originally joined the
+completion corpus; it has since been removed because the lobby-watch adjustment
+above invalidates its route. The other four are retained in
 `../fixtures/threshold-<status>-<suffix>.replay.json`; preserving their losses is
 not a future balance requirement.
 

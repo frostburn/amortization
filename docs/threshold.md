@@ -90,7 +90,8 @@ the sound preference, and remains replayable from Operations.
   three survivors at 140.73s. The winner cuts dispatch, disables RADIO after one
   patrol, calls the lift and retrieves KEY after Rook falls; the completed call
   survives the handover. This establishes a human recovery route, not a full-crew
-  or silent human completion. The unchanged win joins the completion corpus;
+  or silent human completion. The unchanged win originally joined the completion
+  corpus (since removed after the lobby-watch adjustment below);
   the other four remain diagnostic fixtures.
 - The unfinished run's note reports a soft lock: Morrow is alone inside dispatch
   after Vale leaves SHUNT and falls. Continuing that exact world with the
@@ -108,9 +109,8 @@ The final 100% batch exposed a different issue: dropping KEY at LINK, withdrawin
 and returning after the investigation left the lift unattended. Two human wins
 covered all seven medals with zero and three shots respectively. This prompted
 the continuing lobby watch described above. Those original wins and the earlier
-key-recovery win are retained unchanged as historical `threshold-prewatch-won-*`
-fixtures; their old commands no longer complete and are not current completion
-requirements. A new human playtest is still needed for this adjustment. Damage,
+key-recovery win have been removed from the repository because their old commands
+no longer complete. Invalidated wins are not retained as historical fixtures. A new human playtest is still needed for this adjustment. Damage,
 health, sight ranges, the eighteen-second arrival and permanent key recovery
 remain unchanged.
 
