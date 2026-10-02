@@ -7,8 +7,69 @@ is also verified. Otherwise this checks a route's continued viability, without
 claiming that an older simulation's state checksums still match. Never rewrite a player's commands,
 checkpoints, note, or build metadata to make a recording pass.
 
-All seventy-three retained completions are byte-for-byte copies of submissions
+All seventy-four required completions are byte-for-byte copies of submissions
 provided in chat, including their `unversioned` / local-changes metadata.
+
+## Missions 14–15: the end of the human 100% run
+
+All 18 new submissions reproduced **276 original checkpoints** and their exact
+results on `d880553`, before the Threshold adjustment below. The four wins are:
+
+| Mission / run | Original outcome | Challenge medals |
+| --- | --- | --- |
+| Threshold `1f9592b5` | 116.47s; four at full health; zero shots | Low profile, Nonlethal, Light touch |
+| Threshold `e9ffc41d` | 127.83s; four alive; three shots | Nonlethal, No disguise, Open channel, Light touch |
+| Bench `7539f7f8` | 96.47s; four alive; 69 shots | No disguise, Open channel |
+| Bench `8eb0401f` | 185.73s; three alive; 114 shots | Settled only |
+
+Every four-survivor win also earns Settled and Full crew. Shot totals count both
+sides. Threshold's pair covers all seven medals under the submitted rules.
+The two Bench wins join the required corpus with strict checkpoint, exact result
+and medal checks. These submissions do not include a Bench custody/MINUTES win;
+those medals remain covered by the explicitly authored guarded route in
+`bench.test.ts`, rather than being claimed as new human replay evidence.
+
+### Threshold pressure
+
+Both Threshold wins call the lift, leave KEY at LINK, withdraw along the screened
+north walk, then return after the reserve's thirty-second investigation ends.
+All three officers return to distant concourse posts, leaving the open lift
+unguarded. `e9ffc41d` provokes the alarm only 47 ticks (1.57s) before extraction.
+This explains the easy late-mission route without suggesting higher enemy damage.
+
+The bell now gives the same three surviving officers a continuing lobby patrol.
+They investigate the fixed LINK location, retain any direct contact, and then
+watch the lift approaches. Waiting alone no longer clears the encounter.
+There are no extra guards, automatic identifications or departure deadlines;
+weapons, night sight distances and medal conditions are unchanged. The briefing
+states the continuing watch, with tactical suggestions kept opt-in.
+
+The two new Threshold wins and prior key-recovery win `db4918dd` no longer
+complete with their original commands and have been removed from the repository.
+Invalidated wins are not kept as historical fixtures or asserted to keep failing.
+The new Threshold defeat and unfinished run are also `threshold-prewatch-*`
+fixtures. Three command-only guarded routes now verify quiet/nonlethal SHUNT
+access and armed CUT access with RADIO on or off, collectively earning every
+Threshold medal and replaying their own checkpoints. These are authored tests;
+the revised balance still needs a fresh human run.
+
+### Feedback from the unfinished attempts
+
+- Bench `734f9f2f`: CUT emits sparks, but the opaque door hides them on its far
+  side. Only the worked surface now fades during rear-side cutting; particles
+  retain normal depth against other walls. Sight cones now turn red when a guard
+  recognises someone in the current selection, including prior radio reports.
+  A noise investigation alone stays amber, and switching portraits updates the
+  cones even while paused. Hover text names the recognised operatives. Wired
+  turrets use their own local recognition; flashed guards have no active cone.
+- Threshold `7f911d8d`: after collecting KEY, only Morrow and Vale receive the
+  final movement/boarding orders. Rook (carrying KEY) and Sable hold outside the
+  lift until attacked; the key drops when Rook falls. The recorded paths complete
+  normally. This is a split-selection recovery failure, not a pathfinding stall.
+
+The other twelve new Bench attempts remain diagnostic fixtures at
+`../fixtures/bench-medals-{lost,playing}-<id>.replay.json`. No submitted commands,
+notes, checkpoints or metadata have been rewritten.
 
 ## Missions 12–13: human 100% coverage and completed custody
 
@@ -252,8 +313,9 @@ All five September 30 submissions verify their 98 original checkpoints and final
 outcomes against PR #34's `646fdee` and the unchanged simulation fingerprint
 `25559847972c9b43914b2b1a243e9f903bb6329ddc566e39a871e3e0edb36630`.
 The timer-bar follow-up changes presentation only; no commands, checksums, notes
-or build metadata are rewritten. The successful bundle joins the corpus as
-`threshold-key-recovery-db4918dd.replay.json`. The other four are retained in
+or build metadata were rewritten. The successful bundle originally joined the
+completion corpus; it has since been removed because the lobby-watch adjustment
+above invalidates its route. The other four are retained in
 `../fixtures/threshold-<status>-<suffix>.replay.json`; preserving their losses is
 not a future balance requirement.
 

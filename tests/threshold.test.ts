@@ -20,6 +20,7 @@ import {
 } from '../src/replay/core';
 import { buildInfo } from '../scripts/build-info';
 import { mapTimers } from '../src/ui/map-timers';
+import { earnedMedals } from '../src/ui/medals';
 
 function advance(w: World, seconds: number) {
   for (let i = 0; i < Math.ceil(seconds / STEP); i++) step(w);
@@ -115,6 +116,28 @@ describe('Threshold: a physical key and an independent lift bell', () => {
     }
     expect(w.known).toEqual([]);
     expect(w.alarm).toBe(false);
+  });
+
+  it('keeps the reserve patrolling the lobby after an unanswered bell without knowing hidden operatives', () => {
+    const w = createWorld(threshold),
+      original = structuredClone(threshold);
+    w.relayOff = true;
+    callLift(w);
+    advance(w, 75);
+    const reserve = w.guards.slice(5);
+    for (const g of reserve) {
+      expect(g.mode).toBe('patrol');
+      expect(g.x).toBeGreaterThanOrEqual(43);
+      expect(g.y).toBeLessThanOrEqual(12.5);
+      expect(g.known).toEqual([]);
+      expect(g.target).toBeNull();
+    }
+    const before = reserve.map(position);
+    advance(w, 3);
+    expect(reserve.every((g, i) => distance(g, before[i]) > 0.5)).toBe(true);
+    expect(w.alarm).toBe(false);
+    expect(w.known).toEqual([]);
+    expect(threshold).toEqual(original); // A restart retains the original deployment.
   });
 
   it('resets unfinished LINK work when its carrier is caught in a flash', () => {
@@ -240,39 +263,48 @@ it('uses a partner at SHUNT, carries KEY along the staff walk and boards without
   expect(w.alarm).toBe(false);
   expect(w.shots).toBe(0);
   expect(w.evidence).toBe('extracted');
+  expect(earnedMedals(w)).toEqual(['complete', 'full-crew', 'quiet', 'nonlethal', 'light-touch']);
   verify();
 });
 
-it('forces dispatch, fights through live opposition and takes the keyed lift with all four alive', () => {
-  const { w, ids, send, move, act, wait, verify } = run();
-  const fight = (id: string) => {
-    const target = w.guards.find((g) => g.id === id)!;
-    if (!living(target)) return;
-    send({ kind: 'attack', agents: ids, target: id });
-    wait(() => !living(target));
-    send({ kind: 'hold', agents: ids });
-  };
-  move(ids, 12, 27);
-  fight('guard-1');
-  move(ids, 21.5, 20);
-  act([ids[0]], 'breach', () => w.shutterBreached);
-  fight('guard-0');
-  fight('guard-2');
-  act([ids[1]], 'relay', () => w.relayOff);
-  act([ids[0]], 'evidence', () => w.agents[0].carrying);
-  move(ids, 21.5, 19.5);
-  move(ids, 28, 20);
-  fight('guard-4');
-  move(ids, 35, 7);
-  move(ids, 42, 9);
-  act([ids[0]], 'key-lift', () => w.threshold!.calledAt !== null);
-  move(ids, 48, 8.5);
-  wait(() => liftReady(w));
-  act(ids, 'extract', () => w.status === 'won');
-  expect(w.alarm).toBe(true);
-  expect(w.shutterBreached).toBe(true);
-  expect(w.shots).toBeGreaterThan(0);
-  expect(w.guards.filter((g) => !living(g)).length).toBeGreaterThan(2);
-  expect(w.evidence).toBe('extracted');
-  verify();
-});
+it.each([false, true])(
+  'forces dispatch and extracts all four with RADIO disabled=%s',
+  (disableRadio) => {
+    const { w, ids, send, move, act, wait, verify } = run();
+    const fight = (id: string) => {
+      const target = w.guards.find((g) => g.id === id)!;
+      if (!living(target)) return;
+      send({ kind: 'attack', agents: ids, target: id });
+      wait(() => !living(target));
+      send({ kind: 'hold', agents: ids });
+    };
+    move(ids, 12, 27);
+    fight('guard-1');
+    move(ids, 21.5, 20);
+    act([ids[0]], 'breach', () => w.shutterBreached);
+    fight('guard-0');
+    fight('guard-2');
+    if (disableRadio) act([ids[1]], 'relay', () => w.relayOff);
+    act([ids[0]], 'evidence', () => w.agents[0].carrying);
+    move(ids, 21.5, 19.5);
+    move(ids, 28, 20);
+    fight('guard-4');
+    move(ids, 35, 7);
+    move(ids, 42, 9);
+    act([ids[0]], 'key-lift', () => w.threshold!.calledAt !== null);
+    move(ids, 48, 8.5);
+    wait(() => liftReady(w));
+    act(ids, 'extract', () => w.status === 'won');
+    expect(w.alarm).toBe(true);
+    expect(w.shutterBreached).toBe(true);
+    expect(w.shots).toBeGreaterThan(0);
+    expect(w.guards.filter((g) => !living(g)).length).toBeGreaterThan(2);
+    expect(w.evidence).toBe('extracted');
+    expect(earnedMedals(w)).toEqual(
+      disableRadio
+        ? ['complete', 'full-crew', 'no-kit']
+        : ['complete', 'full-crew', 'no-kit', 'live-alarm'],
+    );
+    verify();
+  },
+);

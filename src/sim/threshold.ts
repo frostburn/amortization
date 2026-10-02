@@ -1,5 +1,6 @@
 import { dispatchInvestigation } from './awareness';
 import { notify } from './world';
+import { living } from './types';
 import type { World } from './types';
 
 export const liftRemaining = (w: World) =>
@@ -12,15 +13,19 @@ export function callLift(w: World) {
   if (!w.threshold || w.threshold.calledAt !== null) return;
   w.threshold.calledAt = w.time;
   const link = w.mission.landmarks.find((o) => o.id === 'key-lift')!;
-  const reserve = w.mission.threshold!.reserve.map((i) => `guard-${i}`);
-  dispatchInvestigation(
-    w,
-    link,
-    w.guards.filter((g) => reserve.includes(g.id)),
-  );
+  const reserve = w.mission.threshold!.reserve.flatMap(({ guard, patrol }) => {
+    const g = w.guards.find((g) => g.id === `guard-${guard}`);
+    if (!g || !living(g)) return [];
+    // Change their subsequent patrol, not their current sighting. The existing
+    // investigation still respects direct contact and searches a fixed location.
+    g.patrol = patrol.map((p) => ({ ...p }));
+    g.waypoint = 0;
+    return [g];
+  });
+  dispatchInvestigation(w, link, reserve);
   notify(
     w,
-    `Lift called. ${w.mission.threshold!.arrivalTime}s to arrival. The wired bell has called the lobby reserve to LINK. Bring KEY and every survivor to LIFT.`,
+    `Lift called. ${w.mission.threshold!.arrivalTime}s to arrival. The reserve will investigate LINK and keep patrolling the lobby. Bring KEY and every survivor to LIFT.`,
     'warning',
   );
 }

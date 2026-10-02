@@ -356,6 +356,11 @@ for (const custody of [true, false])
     act(ids, 'extract', () => w.status === 'won');
     expect(w.evidence).toBe('extracted');
     expect(earnedMedals(w).includes('custody')).toBe(custody);
+    expect(earnedMedals(w)).toEqual(
+      custody
+        ? ['custody', 'complete', 'full-crew', 'quiet', 'intel']
+        : ['complete', 'full-crew', 'quiet', 'intel'],
+    );
     expect(earnedMedals(w)).not.toContain('nonlethal');
     expect(w.shots).toBeGreaterThan(0);
     verify();

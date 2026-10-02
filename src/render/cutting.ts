@@ -2,11 +2,12 @@ import { Graphics } from 'pixi.js';
 import { interactionPoint } from '../sim/orders';
 import { FLASH_FLIGHT } from '../sim/flash';
 import { disoriented, distance, living } from '../sim/types';
-import type { Operative, Vec, World } from '../sim/types';
+import type { Operative, Rect, Vec, World } from '../sim/types';
 import { project } from './isometric';
 
 export interface CuttingSite {
   worker: Operative;
+  surface: Rect;
   point: Vec;
   angle: number;
 }
@@ -40,7 +41,7 @@ export function cuttingSite(w: World, a: Operative): CuttingSite | null {
   // Keep the arc on the visible face, rather than buried inside the shutter.
   point.x -= Math.cos(angle) * 0.035;
   point.y -= Math.sin(angle) * 0.035;
-  return { worker: a, point, angle };
+  return { worker: a, surface, point, angle };
 }
 
 interface Emitter {

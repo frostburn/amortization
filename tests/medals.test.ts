@@ -100,6 +100,7 @@ it('awards the human quiet Mission 10 completion with its original checkpoints',
   expect(player.world.agents.every((a) => a.hp === 100)).toBe(true);
 });
 
+// Each case replays several complete missions; allow slower CI workers enough time.
 it.each([
   ['broadcast', ['42048895', '740307a2', 'ec959f54', 'f8b2c49a']],
   ['severance', ['2f9a7242', '37611591', 'bdbb0b9a', 'e366104a', 'e3aa7439', 'e73b41fe']],
@@ -110,36 +111,40 @@ it.each([
   ['settlement', ['48b1146d', '760f7e98', '771db55d', 'ce258794']],
   ['countermand', ['21a73f58', '3eefe304']],
   ['continuity', ['30a528bf', '443f5e47', '70e25678', 'e56ce23c', 'f18b7b1c']],
-] as const)('the human %s runs collectively earn every medal', (mission, ids) => {
-  const collected = new Set<string>();
-  for (const id of ids) {
-    const bundle = parseReplay(
-      readFileSync(`tests/replays/${mission}-human-${id}.replay.json`, 'utf8'),
-    );
-    // Build labels and Quill's presentation copy changed. Keep every original
-    // state checkpoint and result, independently of those metadata gates.
-    bundle.mission.hash = fingerprint(missions.find((m) => m.id === bundle.mission.id));
-    // This run's path retains KIT's old label/detail, changing its checksums
-    // after the office-costume update. Verify current rules and the exact final
-    // outcome; the original bundle and its checkpoints remain untouched.
-    const player = new ReplayPlayer(bundle, bundle.build, id === 'ce258794');
-    while (!player.done) player.advance();
-    expect(player.error, id).toBeNull();
-    expect(outcome(player.world), id).toEqual(bundle.result);
-    const medals = earnedMedals(player.world);
-    medals.forEach((medal) => collected.add(medal));
-    if (player.world.agents.some((a) => a.hp <= 0)) expect(medals, id).toEqual(['complete']);
-    if (id === '2f9a7242') {
-      expect(player.world.shots).toBe(0);
-      expect(medals).not.toContain('nonlethal'); // The charges killed guards.
+] as const)(
+  'the human %s runs collectively earn every medal',
+  (mission, ids) => {
+    const collected = new Set<string>();
+    for (const id of ids) {
+      const bundle = parseReplay(
+        readFileSync(`tests/replays/${mission}-human-${id}.replay.json`, 'utf8'),
+      );
+      // Build labels and Quill's presentation copy changed. Keep every original
+      // state checkpoint and result, independently of those metadata gates.
+      bundle.mission.hash = fingerprint(missions.find((m) => m.id === bundle.mission.id));
+      // This run's path retains KIT's old label/detail, changing its checksums
+      // after the office-costume update. Verify current rules and the exact final
+      // outcome; the original bundle and its checkpoints remain untouched.
+      const player = new ReplayPlayer(bundle, bundle.build, id === 'ce258794');
+      while (!player.done) player.advance();
+      expect(player.error, id).toBeNull();
+      expect(outcome(player.world), id).toEqual(bundle.result);
+      const medals = earnedMedals(player.world);
+      medals.forEach((medal) => collected.add(medal));
+      if (player.world.agents.some((a) => a.hp <= 0)) expect(medals, id).toEqual(['complete']);
+      if (id === '2f9a7242') {
+        expect(player.world.shots).toBe(0);
+        expect(medals).not.toContain('nonlethal'); // The charges killed guards.
+      }
     }
-  }
-  expect([...collected].sort()).toEqual(
-    medalsFor(missions.find((m) => m.id === mission)!)
-      .map((m) => m.id)
-      .sort(),
-  );
-});
+    expect([...collected].sort()).toEqual(
+      medalsFor(missions.find((m) => m.id === mission)!)
+        .map((m) => m.id)
+        .sort(),
+    );
+  },
+  15_000,
+);
 
 it('covers every Personnel medal with the human escape and two explicitly authored routes', () => {
   const mission = missions.find((m) => m.id === 'personnel')!;
@@ -175,4 +180,17 @@ it('covers every Personnel medal with the human escape and two explicitly author
       .map((m) => m.id)
       .sort(),
   );
+});
+
+it.each([
+  ['7539f7f8', ['complete', 'full-crew', 'no-kit', 'live-alarm']],
+  ['8eb0401f', ['complete']],
+] as const)('verifies the final human Bench completion %s and its earned medals', (id, medals) => {
+  const bundle = parseReplay(readFileSync(`tests/replays/bench-human-${id}.replay.json`, 'utf8'));
+  bundle.mission.hash = fingerprint(missions.find((m) => m.id === 'bench'));
+  const player = new ReplayPlayer(bundle, bundle.build);
+  while (!player.done) player.advance();
+  expect(player.error).toBeNull();
+  expect(outcome(player.world)).toEqual(bundle.result);
+  expect(earnedMedals(player.world)).toEqual(medals);
 });

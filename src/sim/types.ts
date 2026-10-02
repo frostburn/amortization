@@ -125,7 +125,12 @@ export interface Mission {
   daylight?: boolean;
   /** Presentation palette; does not extend sight ranges. */
   palette?: 'sunset';
-  threshold?: { keyTime: number; arrivalTime: number; reserve: number[]; door: Vec };
+  threshold?: {
+    keyTime: number;
+    arrivalTime: number;
+    reserve: { guard: number; patrol: Vec[] }[];
+    door: Vec;
+  };
   finale?: {
     dacre: number;
     retinue: number[];
