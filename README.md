@@ -1,5 +1,9 @@
 # Amortization
 
+**Play (coming soon):** [amortization.lumipakkanen.com](https://amortization.lumipakkanen.com/)
+
+**Bug reports & feature requests:** [GitHub issues](https://github.com/frostburn/amortization/issues) — also linked from the in-game Operations desk.
+
 A real-time squad tactics game for the browser. Control four operatives together or individually. One maintenance disguise admits a single person; the rest of the crew can prepare access or provide armed backup.
 
 **Fifteen operations** are playable from briefing through extraction or defeat. Use **Operations** to launch any contract, or **Next operation** after completing any of the first fourteen. Restart and Shift+R restart the selected mission, including unfinished attempts. Briefings and results also offer **Restart mission**.
@@ -37,9 +41,33 @@ npm run test:e2e       # full Chromium regressions
 npm run preview    # serve the production build
 ```
 
+To play from another device on your local network, use `npm run dev -- --host 0.0.0.0`.
+
+## Hosting
+
+The planned public home is **https://amortization.lumipakkanen.com/**. No server-side application is needed:
+
+```sh
+npm ci
+npm run build
+npm run preview    # inspect dist locally before publishing
+```
+
 `npm run build` writes `dist/`. Serve the whole directory over HTTP, including `assets/`. The default relative asset base supports hosting under `/amortization/` or another subdirectory. For an explicit base, use `BASE_PATH=/amortization/ npm run build`. Opening `index.html` directly with `file://` is not supported.
 
-To play from another device on your local network, use `npm run dev -- --host 0.0.0.0`.
+Deploy the complete build together, not just `index.html`. Revalidate HTML on each
+visit; fingerprinted files under `assets/` can use long-lived immutable caching.
+Keep the previous build's assets available during a deployment so open sessions
+can still fetch deferred modules and story artwork. Enable gzip or Brotli on the
+host. Saves, medals and sound settings stay in the player's browser and are scoped
+to the site's origin; localhost progress will not automatically move to this domain.
+
+The small bootstrap displays the loading screen before importing the game.
+Production builds separate game code from Pixi and its dependencies so library
+chunks can be cached across game updates. Vendor splitting preserves separate
+lazy entries for renderer backends and browser support; story artwork remains
+on demand. This splits download/cache units rather than promising a smaller
+first visit. The standard chunk-size warning remains enabled.
 
 ## Sound
 
