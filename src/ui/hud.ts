@@ -1,4 +1,5 @@
 import { ORDER_BUTTONS } from '../input/actions';
+import { bugs } from '../../package.json';
 import type { Action } from '../input/actions';
 import { CREW } from '../sim/crew';
 import {
@@ -312,7 +313,7 @@ export class Hud {
     this.modal.classList.add('operations-dialog');
     const total = missions.reduce((sum, m) => sum + medalsFor(m).length, 0),
       earned = missions.reduce((sum, m) => sum + missionRecord(records, m.id).medals.length, 0);
-    this.modal.innerHTML = `<div class="dialog-number">CONTRACT DESK</div><div class="operations-heading"><h2 id="dialog-title">Operations</h2><span class="medal-total">${earned} / ${total} medals</span></div><p class="dialog-body">Choose a contract. Starting an operation resets the current attempt. Earn medals across separate runs; hover, focus or tap one for its conditions.</p>${storyButton('opening')}<div class="operation-list">${missions
+    this.modal.innerHTML = `<div class="dialog-number">CONTRACT DESK</div><div class="operations-heading"><h2 id="dialog-title">Operations</h2><span class="medal-total">${earned} / ${total} medals</span></div><p class="dialog-body">Choose a contract. Starting an operation resets the current attempt. Earn medals across separate runs; hover, focus or tap one for its conditions.</p><p class="project-feedback"><a href="${bugs.url}" target="_blank" rel="noopener noreferrer" title="Open GitHub issues in a new tab">Bug reports &amp; feature requests ↗</a></p>${storyButton('opening')}<div class="operation-list">${missions
       .map((m) => {
         const record = missionRecord(records, m.id);
         return `<article class="operation-card" data-operation="${m.id}"><button data-action="mission:${m.id}" class="operation-launch"><span class="section-label">${m.number} / ${m.location}</span><strong>${m.title}</strong><span>${m.description}</span><small>${record.best === null ? 'No completed extraction' : `${recordTimes(record.best, record.fullCrewBest)} · ${record.completions} completed`}</small></button><div class="operation-medals"><p class="medal-summary">Medals <span>${record.medals.length} / ${medalsFor(m).length}</span></p>${medalList(m, record.medals)}</div>${record.completions > 0 ? storyButton(m.id) : '<p class="story-locked">Story scene unlocks on completion</p>'}</article>`;

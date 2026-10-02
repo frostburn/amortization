@@ -999,6 +999,18 @@ dialog::backdrop {
   letter-spacing: 2px;
   margin-bottom: 16px;
 }
+.project-feedback {
+  margin: 12px 0 18px;
+  font-size: 12px;
+}
+.project-feedback a {
+  color: var(--mint);
+  text-underline-offset: 3px;
+}
+.project-feedback a:hover,
+.project-feedback a:focus-visible {
+  color: #dce3dc;
+}
 .dialog-actions {
   display: flex;
   justify-content: center;

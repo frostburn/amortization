@@ -3,6 +3,19 @@ import { buildInfo } from './scripts/build-info.ts';
 
 export default defineConfig({
   base: process.env.BASE_PATH || './',
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            // Cache Pixi independently of the game, preserving its lazy renderer
+            // and environment imports instead of eagerly loading every backend.
+            { name: 'vendor', test: /[\\/]node_modules[\\/]/, entriesAware: true },
+          ],
+        },
+      },
+    },
+  },
   plugins: [
     {
       name: 'playtest-build-identity',

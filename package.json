@@ -2,6 +2,14 @@
   "name": "amortization",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://amortization.lumipakkanen.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/frostburn/amortization.git"
+  },
+  "bugs": {
+    "url": "https://github.com/frostburn/amortization/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=24 <25"
