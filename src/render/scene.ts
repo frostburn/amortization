@@ -44,6 +44,7 @@ import { guideLocation } from '../ui/objectives';
 import type { GuideTarget } from '../ui/objectives';
 import { extractionRequirement } from '../ui/extraction';
 import { objectPresentation, objectRequirement } from '../ui/interactions';
+import { recognisedOperatives } from '../ui/recognition';
 import { demolished } from '../sim/demolition';
 import { turretPowered, TURRET_ARC } from '../sim/security';
 import { circuitColor, drawTurret } from './turret';
@@ -196,6 +197,7 @@ export class Scene {
   private scenery: {
     root: Container;
     footprint: Rect;
+    workAlpha?: number;
     vehicle?: string;
     occluder?: ReturnType<typeof boxSilhouette>;
     wreckOccluder?: ReturnType<typeof boxSilhouette>;
@@ -216,6 +218,7 @@ export class Scene {
   private offset = { x: 0, y: 0 };
   private pan = { x: 0, y: 0 };
   private coneTime = -1;
+  private coneSelection = '';
   private resizeObserver: ResizeObserver;
   private resizePending = true;
   private homePending = true;
@@ -316,6 +319,7 @@ export class Scene {
     this.shutter = null;
     this.detentionGates = [];
     this.coneTime = -1;
+    this.coneSelection = '';
     this.icons.clear();
     this.markerLocks.clear();
     this.transferRoutes = [];
@@ -1447,6 +1451,10 @@ export class Scene {
       this.coneTime = -1;
       if (this.following) this.trackSelection(selected, alpha, true, seconds);
     }
+    const cuts = w.agents.flatMap((a) => {
+      const site = cuttingSite(w, a);
+      return site ? [site] : [];
+    });
     const b = w.mission.building;
     this.floorBadge.hidden = !b;
     if (b) {
@@ -1479,13 +1487,24 @@ export class Scene {
       this.upperDeck.zIndex = 90000;
       this.roof.alpha = this.roofAlpha;
       this.roof.visible = this.roofAlpha > 0.01;
-      for (const item of this.scenery) {
-        item.root.alpha = floorOf(item.footprint)
-          ? this.upperAlpha
-          : inside(item.footprint, b.footprint)
-            ? (1 - this.upperAlpha) * (1 - this.roofAlpha)
-            : 1;
-      }
+    }
+    for (const item of this.scenery) {
+      // The far side of a lock can completely hide its cutting arc. Fade only
+      // that worked surface; particles keep their real depth behind other walls.
+      const behindLock = cuts.some(
+        (c) => c.surface === item.footprint && (c.point.x < c.surface.x || c.point.y < c.surface.y),
+      );
+      const opacity = item.workAlpha ?? 1;
+      item.workAlpha = opacity + ((behindLock ? 0.3 : 1) - opacity) * Math.min(1, seconds * 12);
+      item.root.alpha =
+        item.workAlpha *
+        (b
+          ? floorOf(item.footprint)
+            ? this.upperAlpha
+            : inside(item.footprint, b.footprint)
+              ? (1 - this.upperAlpha) * (1 - this.roofAlpha)
+              : 1
+          : 1);
     }
     this.lighting.refresh(w, alpha, this.camera, this.app.screen, this.aftermath, this.activeFloor);
     this.timers.draw(
@@ -1507,9 +1526,14 @@ export class Scene {
         gate.id === 'access-intake' || gate.id === 'access-cells'
           ? !w.detention!.open.includes(gate.id)
           : !!w.agents[w.mission.detention!.cells.find((c) => c.id === gate.id)!.agent].captive;
-    if (w.time - this.coneTime > 0.12 || w.time < this.coneTime) {
-      this.drawVision();
+    if (
+      w.time - this.coneTime > 0.12 ||
+      w.time < this.coneTime ||
+      selectionKey !== this.coneSelection
+    ) {
+      this.drawVision(selected);
       this.coneTime = w.time;
+      this.coneSelection = selectionKey;
     }
     this.cones.visible = this.showVision && !this.aftermath && !this.activeFloor;
     this.upperCones.visible = this.showVision && !this.aftermath && !!this.activeFloor;
@@ -1533,10 +1557,6 @@ export class Scene {
           : [];
       }
       return item.root.visible ? [item] : [];
-    });
-    const cuts = w.agents.flatMap((a) => {
-      const site = cuttingSite(w, a);
-      return site ? [site] : [];
     });
     this.falls.update(
       people(w),
@@ -1971,12 +1991,14 @@ export class Scene {
         });
     }
   }
-  private drawVision() {
+  private drawVision(selected: string[]) {
     this.cones.clear();
     this.upperCones.clear();
     const g = this.activeFloor ? this.upperCones : this.cones;
     for (const guard of this.world.guards.filter((p) => living(p) && this.isVisibleFloor(p))) {
+      if (disoriented(guard)) continue;
       if (guard.turret && !turretPowered(this.world, guard)) continue;
+      const recognised = recognisedOperatives(this.world, guard, selected).length > 0;
       const points = [project(guard)];
       const arc = guard.turret ? TURRET_ARC : Math.PI * 0.36;
       for (let i = 0; i <= 22; i++) {
@@ -2004,7 +2026,7 @@ export class Scene {
       polygon(
         g,
         points,
-        guard.mode === 'combat'
+        recognised
           ? this.world.mission.daylight
             ? 0xbd4939
             : COLORS.red
@@ -2013,7 +2035,7 @@ export class Scene {
             : this.world.mission.daylight
               ? 0x9b711f
               : COLORS.amber,
-        this.world.mission.daylight ? 0.22 : guard.mode === 'combat' ? 0.13 : 0.09,
+        this.world.mission.daylight ? 0.22 : recognised ? 0.13 : 0.09,
       );
     }
   }

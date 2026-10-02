@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 import { archive } from '../src/content/archive';
 import { custody } from '../src/content/custody';
+import { bench } from '../src/content/bench';
 import { createWorld } from '../src/sim/world';
 import { applyCommand } from '../src/sim/commands';
 import { interactionPoint, landmark } from '../src/sim/orders';
@@ -61,7 +62,7 @@ it('falls in the rendered work direction instead of snapping back to the approac
   expect(falls.pose(a.id)?.angle).toBe(Math.PI / 2);
 });
 
-it.each([archive, custody])(
+it.each([archive, custody, bench])(
   'shows CUT work only at a reached lock in $title, stopping on interruptions',
   (mission) => {
     const w = createWorld(mission),
@@ -77,6 +78,11 @@ it.each([archive, custody])(
     const hash = stateHash(w);
     const site = cuttingSite(w, a)!;
     expect(site).not.toBeNull();
+    expect(site.surface).toBe(
+      mission.finale?.door ??
+        mission.archive?.door ??
+        mission.solids.find((s) => s.kind === 'transport'),
+    );
     expect(site.point).not.toEqual(position(a)); // Sparks originate on the actual door/transport.
     expect(stateHash(w)).toBe(hash);
     a.disoriented = 1;
@@ -100,4 +106,19 @@ it('puts sparks on the opposite shutter face when CUT is worked from inside', ()
   const site = cuttingSite(w, a)!;
   expect(site).not.toBeNull();
   expect(site.point.y).toBeLessThan(w.mission.archive!.door.y);
+});
+
+it('keeps the reported Bench CUT attached to the far side of the actual door', () => {
+  const w = createWorld(bench),
+    a = w.agents[0];
+  w.guards = [];
+  // The human approach stops within interaction range, west of the shutter.
+  Object.assign(a, { x: 29.90627649183188, y: 14.337502108033188 });
+  applyCommand(w, { kind: 'interact', agents: [a.id], target: 'breach' });
+  step(w);
+  const site = cuttingSite(w, a)!;
+  expect(site.surface).toBe(bench.finale!.door);
+  expect(site.point.x).toBeLessThan(site.surface.x);
+  expect(site.point.y).toBeGreaterThan(site.surface.y);
+  expect(site.point.y).toBeLessThan(site.surface.y + site.surface.h);
 });

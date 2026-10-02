@@ -29,8 +29,9 @@ layout, default camera scale and recorded routes are unchanged.
 - The wired bell dispatches the **three existing reserve guards** to LINK even
   when RADIO is off. It supplies a fixed incident location, not an unseen
   operative's position, and does not itself identify anyone or raise the radio
-  alarm. Guards with direct contact retain it. RADIO still prevents outside
-  reinforcements.
+  alarm. Guards with direct contact retain it. After searching, the surviving
+  reserve patrols the lift approaches instead of returning to the distant
+  concourse. RADIO still prevents outside reinforcements.
 - **LIFT** stays available once it arrives. Order boarding with the original
   key and every survivor in its ring. A fallen carrier drops a recoverable key;
   recovering it never requires repeating the call. There is no departure deadline
@@ -72,9 +73,11 @@ the sound preference, and remains replayable from Operations.
 
 ## Verification
 
-- Two command-only runs on the untouched guarded mission complete with all four
-  alive: nonlethal SHUNT access without an alarm, and an armed CUT route. Both
-  serialize and verify replay checkpoints.
+- Three command-only runs on the guarded mission complete with all four alive:
+  nonlethal SHUNT access without an alarm, and armed CUT routes with RADIO on or
+  off. Together they verify all seven medals and their own replay checkpoints.
+  A separate check runs the unanswered bell for 75 seconds: the reserve is still
+  patrolling the lobby without discovering the hidden crew or raising an alarm.
 - Focused tests cover night sight distances, carrier-only work, interrupted work,
   independent reserve dispatch, arrival without automatic boarding, key recovery,
   survivor requirements and lift aftermath without changing the scored result.
@@ -100,6 +103,16 @@ the sound preference, and remains replayable from Operations.
   arrival, open-lift status and cleanup on completion. Unit checks also cover
   the second patrol interval, saved upload/trace and transfer progress, temporary
   turret shutdown, inactive floors, cancelled work and defeat.
+
+The final 100% batch exposed a different issue: dropping KEY at LINK, withdrawing,
+and returning after the investigation left the lift unattended. Two human wins
+covered all seven medals with zero and three shots respectively. This prompted
+the continuing lobby watch described above. Those original wins and the earlier
+key-recovery win are retained unchanged as historical `threshold-prewatch-won-*`
+fixtures; their old commands no longer complete and are not current completion
+requirements. A new human playtest is still needed for this adjustment. Damage,
+health, sight ranges, the eighteen-second arrival and permanent key recovery
+remain unchanged.
 
 The locked dispatch room also exposed repeated failed path searches when an
 operative was ordered to attack its inaccessible guard. Navigation now retains

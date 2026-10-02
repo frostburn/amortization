@@ -176,3 +176,16 @@ it('covers every Personnel medal with the human escape and two explicitly author
       .sort(),
   );
 });
+
+it.each([
+  ['7539f7f8', ['complete', 'full-crew', 'no-kit', 'live-alarm']],
+  ['8eb0401f', ['complete']],
+] as const)('verifies the final human Bench completion %s and its earned medals', (id, medals) => {
+  const bundle = parseReplay(readFileSync(`tests/replays/bench-human-${id}.replay.json`, 'utf8'));
+  bundle.mission.hash = fingerprint(missions.find((m) => m.id === 'bench'));
+  const player = new ReplayPlayer(bundle, bundle.build);
+  while (!player.done) player.advance();
+  expect(player.error).toBeNull();
+  expect(outcome(player.world)).toEqual(bundle.result);
+  expect(earnedMedals(player.world)).toEqual(medals);
+});

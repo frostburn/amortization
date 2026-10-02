@@ -25,7 +25,41 @@ export const threshold: Mission = {
   trackingCamera: true,
   flashGrenades: true,
   loadout: ['pistol', 'pistol', 'automatic', 'coil'],
-  threshold: { keyTime: 5, arrivalTime: 18, reserve: [5, 6, 7], door: { x: 48, y: 6.3 } },
+  threshold: {
+    keyTime: 5,
+    arrivalTime: 18,
+    door: { x: 48, y: 6.3 },
+    // After investigating the bell, these officers keep watch over the lobby.
+    // Waiting out the incident must not send all three back to the far concourse.
+    reserve: [
+      {
+        guard: 5,
+        patrol: [
+          { x: 44, y: 8.5 },
+          { x: 51.5, y: 8.5 },
+          { x: 51.5, y: 12 },
+          { x: 44.5, y: 12 },
+        ],
+      },
+      {
+        guard: 6,
+        patrol: [
+          { x: 44, y: 7 },
+          { x: 43.5, y: 10.5 },
+          { x: 44.5, y: 12 },
+        ],
+      },
+      {
+        guard: 7,
+        patrol: [
+          { x: 52.8, y: 9 },
+          { x: 48.5, y: 7 },
+          { x: 45, y: 8.5 },
+          { x: 51.5, y: 12 },
+        ],
+      },
+    ],
+  },
   evidenceName: 'Tower service key',
   relayTime: 5,
   description: 'Secure a way into the tower before Dacre closes the executive floors.',
@@ -33,7 +67,7 @@ export const threshold: Mission = {
     'Voss: the service lift has an independent key. Recover it, work LINK, then bring the crew to LIFT. Calling the car rings the lobby bell; RADIO cannot silence that.',
   briefing: {
     lead: 'The last street before the tower.',
-    body: 'Recover KEY from dispatch, use its carrier at LINK for five seconds, then board LIFT with the key and every survivor. The car takes eighteen seconds to arrive. The lobby reserve investigates its wired bell even with RADIO disabled.',
+    body: 'Recover KEY from dispatch, use its carrier at LINK for five seconds, then board LIFT with the key and every survivor. The car takes eighteen seconds to arrive. The wired bell calls the reserve, who then keep patrolling the lobby even with RADIO disabled.',
     routes: [
       {
         title: 'Dispatch access',
@@ -45,7 +79,7 @@ export const threshold: Mission = {
       },
       {
         title: 'The lift bell',
-        body: 'LINK requires the physical KEY carrier and five uninterrupted seconds. Progress resets if the carrier moves away, but a completed call is permanent. The three reserve guards already on the east concourse investigate LINK, not your unseen position. The lobby screen breaks sight; prepare the crew before calling, or clear a route with force. RADIO only prevents outside reinforcements.',
+        body: 'LINK requires the physical KEY carrier and five uninterrupted seconds. Progress resets if the carrier moves away, but a completed call is permanent. The three reserve guards on the east concourse investigate LINK, then patrol the lift approaches instead of returning to their old posts. They do not know your unseen position. Prepare the crew before calling, time the patrol gaps or use a flash to cross; force can clear the route. RADIO only prevents outside reinforcements.',
       },
       {
         title: 'Keep the original',
@@ -172,7 +206,7 @@ export const threshold: Mission = {
       y: 12,
       label: 'Key the service lift',
       detail:
-        'KEY carrier only, five seconds. Calls the lift and draws the three lobby reserve guards here. The car arrives after eighteen seconds and stays available.',
+        'KEY carrier only, five seconds. Calls the lift and draws three reserve guards here; they keep patrolling the lobby afterwards. The car arrives after eighteen seconds and stays available.',
     },
     {
       id: 'gate',
