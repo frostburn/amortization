@@ -84,8 +84,9 @@ when shots are fired or an enemy pursues the crew; it settles back after the
 fight. Transitions enter the same musical section on a bar boundary. Music
 shares Sound on/off and master volume, pauses with planning/dialogs, and resumes
 at its previous position. Daytime and sunset missions remain without music.
-Recordings download only when sound is enabled during a running night mission.
-See [music sources and rendering](music/README.md) for the Xenpaper projects.
+The score is synthesized live with native Web Audio nodes; no recordings are downloaded.
+Its compact score/player module loads only during audible night play.
+See [music sources and compilation](music/README.md) for the Xenpaper projects.
 
 Planning pauses sustained sound. Normal-speed replays include audio; accelerated
 playback stays quiet. See [sound design](docs/audio.md) for the palette and checks.

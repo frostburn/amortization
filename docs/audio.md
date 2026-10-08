@@ -105,8 +105,9 @@ on the combat bus. Its small local pulse has no full-screen or ringing effect.
 
 PCM is synthesized in code and cached in the browser. Initial preparation is
 spread across event-loop turns; a first-use cache miss can still create its clip
-on demand. Effects need no downloads or external sample services. The separate
-night-music recordings are served with the game and decoded once on first use.
+on demand. Effects need no downloads or external sample services. Night music
+uses native oscillator/filter/envelope graphs and a compact compiled score, with
+no audio-file downloads or decoding.
 
 ## Replays and checks
 
@@ -200,46 +201,39 @@ changed by these presentation sounds.
 
 ## Night music
 
-**Negative Carry** (180 BPM) and the supplied **Negative Carry (combat variation)**
-(200 BPM), by Lumi Pakkanen, are rendered through Xenpaper's actual playback engine.
-The CPS tuning, Golden Bell, FM triangle bass, drum patch, glide automation and
-ping-pong bus are preserved. The source projects and reproducible render procedure
-are in [`music/`](../music/README.md). The game's production bundle contains only
-the small player, not Xenpaper's compiler, synthesizer or Vue application.
+**Negative Carry** (180 BPM) and its supplied **combat variation** (200 BPM), by
+Lumi Pakkanen, are synthesized live on the existing AudioContext. Xenpaper's own
+score parser, SW Patch interpreter and timbre generator run only in the authoring
+step. They generate note data and native Web Audio recipes. The browser ships no
+recordings, parser, patch interpreter, Vue application or additional dependency.
+See [sources and compilation](../music/README.md) for provenance and reproduction.
 
-Music follows the visual night theme (operations 01–10). It does not also play
-in sunset missions just because those missions have night-length sight ranges.
-Actual shots or living enemies pursuing a living friendly select combat; an
-alarm flag or an investigation without a target does not. Ten simulation seconds
-without that pressure returns to calm, so short gaps between shots do not keep
-switching the arrangement. This director observes state without changing the
-simulation, replay hashes or gameplay clocks.
+Music follows the visual night theme (operations 01–10). Actual shots or living
+enemies pursuing a living friendly select combat; an alarm flag or targetless
+investigation does not. Ten simulation seconds without that pressure returns to
+calm. This director observes state without changing simulation or replay hashes.
 
-Both recordings cover the same 224-beat form. The player transitions at the next
-bar into the same beat of the other recording, crossfading for 350 ms. Each plays
-at its original BPM and pitch. The last 16 beats in each source project preview
-the opening again; they are not an extra verse. Rendering two cycles and taking
-the second carries the delay tail across the loop. Each encoded file includes
-100 ms of wrapped audio before and after the playable form, keeping MP3 edge
-transients outside the explicit loop points. Native decoding handles encoder
-delay/padding; the player skips the authored guard regions.
+The 224-beat form runs on one audio-time clock. A change commits at the next bar
+beyond the 180 ms scheduling window. Common notes keep their oscillators; their
+remaining glissandi and release beats follow the new tempo. Variation-specific
+parts enter or release at that boundary. The same ping-pong delay persists across
+changes and loop boundaries, so its tails continue naturally. Pause retains the
+beat; resume re-enters sustained melody notes without replaying missed percussion.
+A delayed scheduler skips stale events instead of producing a burst of old notes.
 
-Downloads begin only during an audible running night mission. Each arrangement
-is fetched/decoded once, outside the initial loading gate. A failed download
-leaves effects usable and is retried on sound enable or a new attempt, not each
-frame. A download finishing after pause, mute or a mission change cannot start
-an old track. Files use Vite's fingerprinted asset URLs and relative base support.
+The score/player module loads only for audible night play. A failed import leaves
+effects usable and retries on sound enable or a new attempt. An import finishing
+after mute, pause or mission replacement cannot start stale music.
 
-Music has a quiet, centred bus feeding the existing master volume and output
-ceiling. Recruitment and outcome cues briefly duck it along with combat effects.
-The saved Sound preference and volume govern both music and effects. Pausing,
-briefings, optional scenes, hidden tabs, focus loss, zero volume and accelerated
-replays stop music sources and retain musical position. Resuming uses that
-position; restart/mission replacement begins a fresh score. Success and failure
-end the mission score so their existing cues and aftermath have room.
+Music feeds a quiet, centred bus through existing master volume and output limiting.
+Recruitment and outcome cues briefly duck it along with combat effects. Sound
+preferences govern both music and effects. Planning, dialogs, optional scenes,
+hidden tabs, focus loss, zero volume and accelerated replays pause the score.
+Restart begins a new score. Success and failure end it. Pauses release sources
+and disconnect feedback loops, with a short fade to avoid clicks.
 
-Unit tests cover pressure/release, unchanged replay state, lazy loading,
-late-download cancellation, native-tempo bar transitions, interrupted crossfades,
-pause/resume and retry limits. On-demand browser checks use actual decoded music
-and native audio nodes for loop length, signal/headroom, lifecycle and mix balance.
-These checks do not add another routine CI browser journey or render music in CI.
+Unit tests cover director state, replay independence, lazy loading, retry limits,
+late-import races, shared-note transitions, tempo-aware release, resume, loops,
+stall recovery and source hashes. Optional native browser checks cover synthesis,
+signal/headroom, uninterrupted transitions/loops, lifecycle and mix balance. They
+add no routine CI browser journey or authoring compilation to CI.

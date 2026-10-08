@@ -244,6 +244,7 @@ export class Mixer {
   dispose() {
     this.silence();
     this.master.disconnect();
+    this.music.disconnect();
     this.feedback.disconnect();
     this.combat.disconnect();
     this.combatGain.disconnect();
