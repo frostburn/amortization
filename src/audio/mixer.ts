@@ -32,8 +32,9 @@ export function placement(point: Vec, view: ListeningView): Placement {
 }
 
 const COMBAT_LEVEL = 0.66;
+const MUSIC_LEVEL = 0.3;
 
-function hold(param: AudioParam, when: number) {
+export function hold(param: AudioParam, when: number) {
   if (typeof param.cancelAndHoldAtTime === 'function') param.cancelAndHoldAtTime(when);
   else {
     const value = param.value;
@@ -63,6 +64,7 @@ export class Mixer {
   private combatGain: GainNode;
   private limiter: WaveShaperNode;
   private serial = 0;
+  readonly music: GainNode;
   readonly maxVoices = 24;
   constructor(
     readonly context: BaseAudioContext,
@@ -70,6 +72,9 @@ export class Mixer {
   ) {
     this.master = context.createGain();
     this.master.gain.value = 0;
+    this.music = context.createGain();
+    this.music.gain.value = MUSIC_LEVEL;
+    this.music.connect(this.master);
     this.feedback = context.createDynamicsCompressor();
     this.feedback.threshold.value = -16;
     this.feedback.knee.value = 10;
@@ -194,6 +199,11 @@ export class Mixer {
     gain.setTargetAtTime(COMBAT_LEVEL * 0.35, when, 0.005);
     gain.setValueAtTime(COMBAT_LEVEL * 0.35, when + 0.35);
     gain.setTargetAtTime(COMBAT_LEVEL, when + 0.35, 0.12);
+    const music = this.music.gain;
+    hold(music, when);
+    music.setTargetAtTime(MUSIC_LEVEL * 0.35, when, 0.005);
+    music.setValueAtTime(MUSIC_LEVEL * 0.35, when + 0.35);
+    music.setTargetAtTime(MUSIC_LEVEL, when + 0.35, 0.2);
   }
   position(voice: Voice, where: Placement, level = 1, rate = 1) {
     if (voice.stopped) return;
