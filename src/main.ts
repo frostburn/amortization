@@ -2,10 +2,10 @@ import { dacre } from './sim/finale';
 import './ui/style.css';
 import { createWorld, notify } from './sim/world';
 import { step, STEP } from './sim/step';
-import { available, extractionRallyBlocker, landmark } from './sim/orders';
+import { extractionRallyBlocker } from './sim/orders';
 import { applyCommand } from './sim/commands';
 import type { Command } from './sim/commands';
-import { controllable, distance, isAccess, isExtraction, living, position } from './sim/types';
+import { controllable, isAccess, isExtraction, living, position } from './sim/types';
 import type { Mission, ObjectKind, World } from './sim/types';
 import { Scene } from './render/scene';
 import type { Hit } from './render/scene';
@@ -18,6 +18,7 @@ import { missionRecord, readRecords, recordWin } from './ui/storage';
 import type { MedalId } from './ui/medals';
 import { missions, nextMission } from './content/missions';
 import { extractionRequirement } from './ui/extraction';
+import { nearbyInteraction } from './ui/interactions';
 import { FlashAim } from './ui/flash-aim';
 
 export async function boot() {
@@ -126,6 +127,7 @@ export async function boot() {
     }
     playtest?.command(command);
     applyCommand(world, command);
+    if (paused) scene.invalidateSight();
   }
   function order(hit: Hit) {
     if (world.status !== 'playing') return;
@@ -352,16 +354,8 @@ export async function boot() {
         issue({ kind: 'detonate' });
         break;
       case 'interact': {
-        const agents = world.agents.filter((a) => selected.includes(a.id) && controllable(a));
-        const objects = world.mission.landmarks
-          .filter((o) => available(world, o.id))
-          .map((o) => ({
-            o,
-            d: Math.min(...agents.map((a) => distance(a, landmark(world, o.id)))),
-          }))
-          .sort((a, b) => a.d - b.d);
-        if (objects[0]?.d < 3)
-          issue({ kind: 'interact', agents: selected, target: objects[0].o.id });
+        const nearby = nearbyInteraction(world, selected, scene.activeFloor);
+        if (nearby) issue({ kind: 'interact', agents: selected, target: nearby });
         else
           notify(
             world,

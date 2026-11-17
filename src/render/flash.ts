@@ -1,54 +1,40 @@
 import type { Graphics } from 'pixi.js';
 import { floorOf } from '../sim/types';
-import type { Vec, World } from '../sim/types';
+import type { Rect, Vec, World } from '../sim/types';
 import { FLASH_FLIGHT, FLASH_FUSE, FLASH_PULSE, FLASH_RADIUS } from '../sim/flash';
 import { project, TILE_X, TILE_Y } from './isometric';
-import { lineClear } from '../sim/navigation';
+import { obstacles } from '../sim/navigation';
+import { visibleRim } from './visibility';
 
-const footprints = new WeakMap<
-  World,
-  { mission: World['mission']; points: Map<string, number[]> }
->();
-function footprint(w: World, point: Vec) {
-  let cache = footprints.get(w);
-  if (!cache || cache.mission !== w.mission) {
-    cache = { mission: w.mission, points: new Map() };
-    footprints.set(w, cache);
-  }
-  // Reuse short visibility rays until the landing point or collision state changes.
-  const key = [
-    point.x,
-    point.y,
-    point.floor,
-    w.gateOpen,
-    w.shutterOpen,
-    w.detention?.open.join(','),
-    ...w.agents.map((a) => a.captive),
-  ].join(':');
-  let points = cache.points.get(key);
-  if (!points) {
-    points = Array.from({ length: 48 }, (_, i) => {
-      const angle = (i * Math.PI) / 24;
-      const end = (r: number) => ({
-        ...(point.floor ? { floor: point.floor } : {}),
-        x: point.x + Math.cos(angle) * r,
-        y: point.y + Math.sin(angle) * r,
-      });
-      let near = 0,
-        far = FLASH_RADIUS;
-      if (lineClear(w, point, end(far))) near = far;
-      else
-        for (let n = 0; n < 7; n++) {
-          const middle = (near + far) / 2;
-          if (lineClear(w, point, end(middle))) near = middle;
-          else far = middle;
-        }
-      const p = project(end(near));
-      return [p.x, p.y];
-    }).flat();
-    if (cache.points.size >= 4) cache.points.clear();
-    cache.points.set(key, points);
-  }
+interface Footprint {
+  x: number;
+  y: number;
+  floor: number;
+  solids: Rect[];
+  points: number[];
+}
+const footprints = new WeakMap<World, Footprint[]>();
+export function flashFootprint(w: World, point: Vec) {
+  const floor = floorOf(point),
+    solids = obstacles(w, floor);
+  const cache = footprints.get(w) ?? [];
+  // Compare the actual live blockers, including the Bench door and held detention gates.
+  const hit = cache.find(
+    (f) =>
+      f.x === point.x &&
+      f.y === point.y &&
+      f.floor === floor &&
+      f.solids.length === solids.length &&
+      f.solids.every((r, i) => r === solids[i]),
+  );
+  if (hit) return hit.points;
+  const points = visibleRim(point, solids, FLASH_RADIUS).flatMap((p) => {
+    const xy = project(p);
+    return [xy.x, xy.y];
+  });
+  if (cache.length === 4) cache.shift();
+  cache.push({ x: point.x, y: point.y, floor, solids, points });
+  footprints.set(w, cache);
   return points;
 }
 
@@ -65,7 +51,7 @@ export function drawFlashes(g: Graphics, w: World, aim: FlashAimView | null, flo
   };
   if (aim) {
     const color = aim.valid ? 0x9de8d4 : 0xefbd73;
-    g.poly(footprint(w, aim.point))
+    g.poly(flashFootprint(w, aim.point))
       .fill({ color, alpha: 0.055 })
       .stroke({ color, width: 1.8, alpha: 0.8 });
     ring(aim.point, 0.16).fill(color);
@@ -82,11 +68,11 @@ export function drawFlashes(g: Graphics, w: World, aim: FlashAimView | null, flo
     const burst = grenade.age - FLASH_FLIGHT - FLASH_FUSE;
     if (burst < 0) {
       if (flight === 1) {
-        g.poly(footprint(w, grenade.to)).stroke({ color: 0xefbd73, width: 1, alpha: 0.45 });
+        g.poly(flashFootprint(w, grenade.to)).stroke({ color: 0xefbd73, width: 1, alpha: 0.45 });
       }
     } else {
       const fade = Math.max(0, 1 - burst / FLASH_PULSE);
-      g.poly(footprint(w, grenade.to))
+      g.poly(flashFootprint(w, grenade.to))
         .fill({ color: 0xe2edce, alpha: 0.11 * fade })
         .stroke({ color: 0xe2edce, width: 3, alpha: 0.6 * fade });
     }

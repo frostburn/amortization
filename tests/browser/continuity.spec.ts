@@ -112,6 +112,23 @@ for (const touch of [false, true])
     expect(visible.floor).toBe(1);
     expect(visible.x).toBeCloseTo(visible.agentX);
     expect(visible.visible).toBe(true);
+    // Morrow is upstairs. A squadmate on the identical lower landing must not steal E.
+    await page.evaluate(() => {
+      const w = window.continuityWorld,
+        stairs = w.mission.building!.stairs[0];
+      Object.assign(w.agents[1], stairs, { previous: { ...stairs } });
+    });
+    await press('[data-action="all"]');
+    if (touch) await press('[data-action="interact"]');
+    else await page.keyboard.press('e');
+    expect(await page.evaluate(() => window.continuityWorld.agents[0].order)).toEqual({
+      kind: 'interact',
+      target: 'stairs-down',
+    });
+    expect(await page.evaluate(() => window.continuityWorld.agents[1].order.kind)).not.toBe(
+      'interact',
+    );
+    await press('[data-action="hold"]');
     await press('[data-agent="1"]');
     await expect(page.locator('#stage')).toHaveAttribute('data-floor', '0');
     await press('[data-agent="0"]');
