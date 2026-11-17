@@ -4,6 +4,7 @@ import type { Hit } from '../render/scene';
 import { combatTarget } from '../sim/floors';
 import type { Rect, Vec, World } from '../sim/types';
 import type { Hud } from '../ui/hud';
+import { bindTouchCamera } from './touch-camera';
 import { ORDER_BUTTONS } from './actions';
 import type { Action } from './actions';
 import { armedSelection, attackPreview, objectRequirement } from '../ui/interactions';
@@ -44,7 +45,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
   marker.hidden = true;
   marker.setAttribute('aria-hidden', 'true');
   stage.appendChild(marker);
-  const position = (e: PointerEvent) => {
+  const position = (e: MouseEvent) => {
     const r = canvas.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   };
@@ -52,16 +53,31 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     hud.inspectGuard(hit?.kind === 'guard' ? hit.id : null);
     hud.inspectObject(hit?.kind === 'object' ? hit.id : null);
   };
+  const clearPress = () => {
+    scene.setPointerActive(false);
+    start = null;
+    last = null;
+    pressed = null;
+    aimingPress = false;
+    pointer = null;
+    drag = false;
+    hud.selectionBox(null);
+  };
+  const syncSurface = () => {
+    const w = target.world();
+    if (w === pointerWorld && scene.activeFloor === pointerFloor) return;
+    pointerWorld = w;
+    pointerFloor = scene.activeFloor;
+    resetTouches();
+    clearPress();
+    flash = null;
+    inspect(null);
+    target.aim?.cancel();
+  };
   const updatePointer = () => {
+    syncSurface();
     const w = target.world(),
       selected = target.selection();
-    if (w !== pointerWorld || scene.activeFloor !== pointerFloor) {
-      pointerWorld = w;
-      pointerFloor = scene.activeFloor;
-      flash = null;
-      inspect(null);
-      target.aim?.cancel();
-    }
     const overMap = mouse && document.elementFromPoint(mouse.x, mouse.y) === canvas;
     const bounds = canvas.getBoundingClientRect();
     if (!start)
@@ -113,6 +129,20 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
       marker.style.height = `${box.h + 8}px`;
     }
   };
+  const cancel = () => {
+    clearPress();
+    updatePointer();
+  };
+  // Clear gestures begun on another floor or mission before accepting a new contact.
+  canvas.addEventListener('pointerdown', syncSurface, true);
+  canvas.addEventListener('pointerup', syncSurface, true);
+  const resetTouches = bindTouchCamera(canvas, scene, position, () => {
+    target.aim?.cancel();
+    flash = null;
+    mouse = null;
+    inspect(null);
+    cancel();
+  });
   // Follow the current rendered camera, not its position before the gameplay tick.
   scene.app.ticker.add(updatePointer, undefined, UPDATE_PRIORITY.LOW);
   canvas.addEventListener('pointerenter', (e) => {
@@ -171,17 +201,6 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
       updatePointer();
     }
   });
-  const cancel = () => {
-    scene.setPointerActive(false);
-    start = null;
-    last = null;
-    pressed = null;
-    aimingPress = false;
-    pointer = null;
-    drag = false;
-    hud.selectionBox(null);
-    updatePointer();
-  };
   for (const event of ['pointercancel', 'lostpointercapture'] as const)
     canvas.addEventListener(event, (e) => {
       if (e.pointerId === pointer) {
@@ -243,7 +262,11 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     (e) => {
       if ((e.target as HTMLElement).closest('.objective-guide')) return;
       e.preventDefault();
-      scene.zoomBy(e.deltaY < 0 ? 1.12 : 1 / 1.12);
+      if (e.deltaY !== 0)
+        scene.zoomBy(
+          e.deltaY < 0 ? 1.12 : 1 / 1.12,
+          !scene.following && e.target === canvas ? position(e) : undefined,
+        );
     },
     { passive: false },
   );
@@ -325,6 +348,7 @@ export function bindControls(scene: Scene, hud: Hud, target: ControlsTarget) {
     }
   });
   window.addEventListener('blur', () => {
+    resetTouches();
     target.slow(false);
     mouse = null;
     flash = null;

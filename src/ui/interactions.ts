@@ -1,5 +1,5 @@
 import { captureReady } from '../sim/floors';
-import { available, landmark } from '../sim/orders';
+import { available, interactionPoint, landmark } from '../sim/orders';
 import { courierGuard } from '../sim/courier';
 import { canAuthorise } from '../sim/security';
 import { settlementRefusal } from '../sim/settlement';
@@ -7,6 +7,7 @@ import {
   controllable,
   disoriented,
   distance,
+  floorOf,
   inside,
   isAccess,
   isCharge,
@@ -20,6 +21,26 @@ import { longGun, weaponRange } from '../sim/weapons';
 import { shieldFaces } from '../sim/shield';
 import { lineClear } from '../sim/navigation';
 import { extractionRequirement } from './extraction';
+
+/** E acts on the floor the player is looking at, even when a squad spans both floors. */
+export function nearbyInteraction(w: World, selected: string[], floor: number): ObjectKind | null {
+  const crew = w.agents.filter(
+    (a) => selected.includes(a.id) && controllable(a) && floorOf(a) === floor,
+  );
+  let nearest: ObjectKind | null = null;
+  let best = 3;
+  for (const { id } of w.mission.landmarks) {
+    if (!available(w, id)) continue;
+    for (const a of crew) {
+      const d = distance(a, interactionPoint(w, a, id));
+      if (d < best) {
+        best = d;
+        nearest = id;
+      }
+    }
+  }
+  return nearest;
+}
 
 /** Keep completed arrests distinct from the ongoing escort hand-off action. */
 export function objectPresentation(w: World, id: ObjectKind) {

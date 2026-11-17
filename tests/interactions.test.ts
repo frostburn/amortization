@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { continuity } from '../src/content/continuity';
 import { archive } from '../src/content/archive';
 import { custody } from '../src/content/custody';
 import { mandate } from '../src/content/mandate';
@@ -7,7 +8,7 @@ import { createWorld } from '../src/sim/world';
 import { applyCommand } from '../src/sim/commands';
 import { step } from '../src/sim/step';
 import { completeInteraction, landmark } from '../src/sim/orders';
-import { attackPreview, objectRequirement } from '../src/ui/interactions';
+import { attackPreview, nearbyInteraction, objectRequirement } from '../src/ui/interactions';
 import type { ObjectKind, Operative, World } from '../src/sim/types';
 
 const place = (w: World, a: Operative, id: ObjectKind) => {
@@ -15,6 +16,27 @@ const place = (w: World, a: Operative, id: ObjectKind) => {
   a.x = p.x;
   a.y = p.y;
 };
+
+it('uses the visible landing when selected operatives straddle the same stairs', () => {
+  const w = createWorld(continuity);
+  const [lower, upper] = w.agents;
+  const both = [lower.id, upper.id];
+  Object.assign(lower, w.mission.building!.stairs[0]);
+  Object.assign(upper, w.mission.building!.stairs[1]);
+  expect(nearbyInteraction(w, both, 1)).toBe('stairs-down');
+  expect(nearbyInteraction(w, both, 0)).toBe('stairs-up');
+  upper.x += 4;
+  expect(nearbyInteraction(w, both, 1)).toBeNull();
+});
+
+it('finds the outside gate control by its working position rather than its indoor label', () => {
+  const w = createWorld(),
+    a = w.agents[0];
+  Object.assign(a, w.mission.gateOutside, { y: w.mission.gateOutside.y + 1 });
+  expect(nearbyInteraction(w, [a.id], 0)).toBe('gate');
+  w.gateOpen = true;
+  expect(nearbyInteraction(w, [a.id], 0)).toBeNull();
+});
 
 describe('mission marker prerequisites', () => {
   it('previews attack geometry for the eligible selection without changing weapons or orders', () => {

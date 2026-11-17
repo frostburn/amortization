@@ -183,7 +183,7 @@ and locally relayed boss commands; the original runs remain as diagnostics. See
 | G                              | Regroup everyone at the lead selected operative                     |
 | S                              | Hold position / release the archive shunt                           |
 | F                              | Draw / stow selected weapons                                        |
-| E                              | Interact with a nearby landmark                                     |
+| E                              | Interact with a nearby landmark on the visible floor                |
 | H                              | Use a field dressing: one per operative, up to 55 health            |
 | B                              | Aim a flash in operations 10–15; hover/click or touch drag/release  |
 | X                              | Put down carried evidence                                           |
@@ -195,7 +195,7 @@ and locally relayed boss commands; the original runs remain as diagnostics. See
 | Shift+R / Restart              | Restart operation                                                   |
 | V                              | Toggle guard sight cones                                            |
 
-On touch screens, tap portraits to select, tap ground or a landmark to order, and drag to pan. The Orders panel provides the main actions. Desktop mouse and keyboard offer the most precise control. Losing tab focus pauses play.
+On touch screens, tap portraits to select, tap ground or a landmark to order, and drag to pan. Spread two fingers to zoom in or pinch to zoom out. Adding a second finger cancels a pending order or flash; lifting your fingers after navigating issues no order. The Orders panel provides the main actions. Desktop mouse and keyboard offer the most precise control. Losing tab focus pauses play.
 
 Drawn weapons give the map a crosshair cursor. Hovering an enemy brackets the
 target: red means at least one selected operative is in range with clear sight;
@@ -210,7 +210,7 @@ On desktop, crew portraits and orders occupy the left panel; mission goals,
 witness/extraction actions and status occupy the right. Orders stay in fixed
 positions, including the disabled cargo-drop action when nobody is carrying.
 **Field notes & records** opens secondary information without moving the map or
-orders. Sight cones can be toggled beside **Fit map**. On narrow screens, orders
+orders. Toggle sight cones beside **Fit map**. The small area behind each guard shows where they can notice someone at close range. Turrets only watch their forward arc. Both sight and flash previews stop at solid cover. On narrow screens, orders
 appear directly below the map, followed by the crew and mission details.
 
 Recruitment, extraction readiness, injuries and messages never shrink the map.
@@ -244,7 +244,7 @@ split team. A map selection snaps after the pointer is released, keeping its
 pressed target stable. Selection and movement never change zoom. A widely split group
 selection follows its largest nearby group (ties prefer the first selected
 operative). Manual panning and objective location focus pause following; selecting
-an operative resumes it. Wheel zoom is anchored at the centre of the view.
+an operative resumes it. The wheel zooms around the centre while following, and around the pointer when exploring the map. The −/+ buttons always zoom around the centre.
 
 Map clicks on an already selected operative keep the group selected. Use a portrait or number key to isolate someone deliberately. If the last selected operative falls, selection transfers to the survivors without changing their orders.
 

@@ -18,11 +18,13 @@ for (const mobile of [false, true]) {
   test(`Stay of execution: ${mobile ? 'touch' : 'desktop'} objectives, one-throw targeting and recovery`, async ({
     browser,
   }) => {
+    test.setTimeout(90000); // Two full map mounts and actual input on the software renderer.
     const context = await browser.newContext({
       viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 960 },
       hasTouch: mobile,
       isMobile: mobile,
     });
+    await context.grantPermissions(['local-network-access'], { origin: 'http://127.0.0.1:4173' });
     const page = await context.newPage(),
       errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
@@ -270,6 +272,50 @@ for (const mobile of [false, true]) {
       touching = false;
     } else await page.keyboard.press('Escape');
     await expect(page.locator('.flash-aim')).toBeHidden();
+    expect(await page.evaluate(() => window.injunctionTest.commands)).toEqual([]);
+
+    // Navigating the map must not consume a ready grenade or order the crew.
+    const beforeScale = await page.evaluate(() => window.injunctionTest.scene.camera.scale.x);
+    if (touchSession) {
+      await press('#flash-button');
+      await previewAt(valid);
+      await expect(page.locator('.flash-hint')).toContainText('Exposed crew');
+      const p = await clientPoint(valid);
+      const first = { ...p, id: 1 },
+        second = { x: p.x - 48, y: p.y, id: 2 };
+      await touchSession.send('Input.dispatchTouchEvent', {
+        type: 'touchStart',
+        touchPoints: [first, second],
+      });
+      await expect(page.locator('.flash-aim')).toBeHidden();
+      await touchSession.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [
+          { ...first, x: first.x + 8, y: first.y + 6 },
+          { ...second, x: second.x - 16, y: second.y + 6 },
+        ],
+      });
+      const after = await clientPoint(valid);
+      expect(Math.abs(after.x - p.x - 8)).toBeLessThan(1);
+      expect(Math.abs(after.y - p.y - 6)).toBeLessThan(1);
+      expect(await page.evaluate(() => window.injunctionTest.scene.camera.scale.x)).toBeCloseTo(
+        beforeScale * 1.5,
+        2,
+      );
+      await touchSession.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      touching = false;
+      await expect(page.locator('#flash-button')).toHaveText('Flash · 2 left · B');
+    } else {
+      const before = await clientPoint(valid);
+      await page.mouse.move(before.x, before.y);
+      await page.mouse.wheel(0, -100);
+      await expect
+        .poll(() => page.evaluate(() => window.injunctionTest.scene.camera.scale.x))
+        .toBeCloseTo(beforeScale * 1.12);
+      const after = await clientPoint(valid);
+      expect(Math.abs(after.x - before.x)).toBeLessThan(1);
+      expect(Math.abs(after.y - before.y)).toBeLessThan(1);
+    }
     expect(await page.evaluate(() => window.injunctionTest.commands)).toEqual([]);
 
     if (mobile) await press('#flash-button');

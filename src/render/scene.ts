@@ -30,8 +30,8 @@ import { available, landmark } from '../sim/orders';
 import { COIL_CHARGE, longGun, WEAPONS } from '../sim/weapons';
 import { followOffset, selectionFocus } from './camera';
 import { facingAngle } from '../sim/shield';
-import { sightRange } from '../sim/awareness';
-import { findPath, lineClear } from '../sim/navigation';
+import { guardFootprint } from './visibility';
+import { findPath, lineClear, obstacles } from '../sim/navigation';
 import { depthOrder } from './depth';
 import { PersonSprite } from './person';
 import type { Appearance } from './person';
@@ -46,7 +46,7 @@ import { extractionRequirement } from '../ui/extraction';
 import { objectPresentation, objectRequirement } from '../ui/interactions';
 import { recognisedOperatives } from '../ui/recognition';
 import { demolished } from '../sim/demolition';
-import { turretPowered, TURRET_ARC } from '../sim/security';
+import { turretPowered } from '../sim/security';
 import { circuitColor, drawTurret } from './turret';
 import { drawFlashes } from './flash';
 import type { FlashAimView } from './flash';
@@ -218,6 +218,7 @@ export class Scene {
   private offset = { x: 0, y: 0 };
   private pan = { x: 0, y: 0 };
   private coneTime = -1;
+  private coneRosterSize = -1;
   private coneSelection = '';
   private resizeObserver: ResizeObserver;
   private resizePending = true;
@@ -1047,14 +1048,15 @@ export class Scene {
     this.pan = { x: 0, y: 0 };
     this.updateCamera();
   }
-  zoomBy(delta: number) {
-    const center = { x: this.app.screen.width / 2, y: this.app.screen.height / 2 };
-    const anchor = this.toWorld(center.x, center.y);
-    this.zoom = Math.max(0.4, Math.min(3 / this.fit, this.zoom * delta));
-    this.updateCamera();
-    const after = this.screen(anchor);
-    this.pan.x += center.x - after.x;
-    this.pan.y += center.y - after.y;
+  zoomBy(delta: number, anchor = { x: this.app.screen.width / 2, y: this.app.screen.height / 2 }) {
+    const zoom = Math.max(0.4, Math.min(3 / this.fit, this.zoom * delta));
+    if (zoom === this.zoom) return;
+    // Pan is relative to the viewport centre. Scale around the chosen screen point
+    // so the same part of the map stays under a cursor or between two fingers.
+    const ratio = zoom / this.zoom;
+    this.pan.x = this.pan.x * ratio + (anchor.x - this.app.screen.width / 2) * (1 - ratio);
+    this.pan.y = this.pan.y * ratio + (anchor.y - this.app.screen.height / 2) * (1 - ratio);
+    this.zoom = zoom;
     this.updateCamera();
     this.followScale = this.camera.scale.x;
   }
@@ -1526,17 +1528,23 @@ export class Scene {
         gate.id === 'access-intake' || gate.id === 'access-cells'
           ? !w.detention!.open.includes(gate.id)
           : !!w.agents[w.mission.detention!.cells.find((c) => c.id === gate.id)!.agent].captive;
-    if (
+    const showCones = this.showVision && !this.aftermath;
+    if (!showCones) this.coneTime = -1;
+    else if (
       w.time - this.coneTime > 0.12 ||
       w.time < this.coneTime ||
+      // Planning renders the exact tick; finish the last partial sight update when time stops.
+      (alpha === 1 && w.time !== this.coneTime) ||
+      w.guards.length !== this.coneRosterSize ||
       selectionKey !== this.coneSelection
     ) {
       this.drawVision(selected);
       this.coneTime = w.time;
+      this.coneRosterSize = w.guards.length;
       this.coneSelection = selectionKey;
     }
-    this.cones.visible = this.showVision && !this.aftermath && !this.activeFloor;
-    this.upperCones.visible = this.showVision && !this.aftermath && !!this.activeFloor;
+    this.cones.visible = showCones && !this.activeFloor;
+    this.upperCones.visible = showCones && !!this.activeFloor;
     this.marks.visible = !this.aftermath;
     const depthItems = this.scenery.flatMap((item) => {
       const ending = this.aftermath;
@@ -1991,41 +1999,22 @@ export class Scene {
         });
     }
   }
+  /** Orders can change recognition, casualties and held doors without advancing the clock. */
+  invalidateSight() {
+    this.coneTime = -1;
+  }
   private drawVision(selected: string[]) {
     this.cones.clear();
     this.upperCones.clear();
     const g = this.activeFloor ? this.upperCones : this.cones;
+    const solids = obstacles(this.world, this.activeFloor);
     for (const guard of this.world.guards.filter((p) => living(p) && this.isVisibleFloor(p))) {
       if (disoriented(guard)) continue;
       if (guard.turret && !turretPowered(this.world, guard)) continue;
       const recognised = recognisedOperatives(this.world, guard, selected).length > 0;
-      const points = [project(guard)];
-      const arc = guard.turret ? TURRET_ARC : Math.PI * 0.36;
-      for (let i = 0; i <= 22; i++) {
-        const angle = facingAngle(guard) - arc + (i / 22) * arc * 2;
-        let low = 0,
-          high = sightRange(guard, this.world);
-        for (let j = 0; j < 7; j++) {
-          const mid = (low + high) / 2;
-          const p = {
-            ...position(guard),
-            x: guard.x + Math.cos(angle) * mid,
-            y: guard.y + Math.sin(angle) * mid,
-          };
-          if (lineClear(this.world, guard, p)) low = mid;
-          else high = mid;
-        }
-        points.push(
-          project({
-            ...position(guard),
-            x: guard.x + Math.cos(angle) * low,
-            y: guard.y + Math.sin(angle) * low,
-          }),
-        );
-      }
       polygon(
         g,
-        points,
+        guardFootprint(this.world, guard, solids).map((p) => project(p)),
         recognised
           ? this.world.mission.daylight
             ? 0xbd4939
