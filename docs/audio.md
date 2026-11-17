@@ -32,7 +32,8 @@ omitted. Their cue gain is one fifth of the first pass, with a softer source and
 an additional two-pole 850 Hz low-pass baked into the whole clip. A moving squad
 should leave room for threats and equipment sounds.
 
-Site ambience is deferred. Idle sites have no continuous background sound.
+Site ambience is deferred. Night missions now have the music described below;
+daytime and sunset missions have no continuous background sound.
 Charges and sentry acquisition stop on pause, cancellation, mute, loss of focus and world
 replacement; resuming follows their current simulation progress. Short effect
 tails can finish after pausing, and orders issued while paused still give feedback.
@@ -104,8 +105,9 @@ on the combat bus. Its small local pulse has no full-screen or ringing effect.
 
 PCM is synthesized in code and cached in the browser. Initial preparation is
 spread across event-loop turns; a first-use cache miss can still create its clip
-on demand. No audio
-downloads, sample licences, extra dependencies or music-stream requests are needed.
+on demand. Effects need no downloads or external sample services. Night music
+uses native oscillator/filter/envelope graphs and a compact compiled score, with
+no audio-file downloads or decoding.
 
 ## Replays and checks
 
@@ -196,3 +198,42 @@ energy. Desktop/touch browser checks exercise the real audio context and sources
 instant reveal without page advance, mute, restart, focus interruption, keyboard
 navigation, close and reduced motion. No simulation state or replay identity is
 changed by these presentation sounds.
+
+## Night music
+
+**Negative Carry** (180 BPM) and its supplied **combat variation** (200 BPM), by
+Lumi Pakkanen, are synthesized live on the existing AudioContext. Xenpaper's own
+score parser, SW Patch interpreter and timbre generator run only in the authoring
+step. They generate note data and native Web Audio recipes. The browser ships no
+recordings, parser, patch interpreter, Vue application or additional dependency.
+See [sources and compilation](../music/README.md) for provenance and reproduction.
+
+Music follows the visual night theme (operations 01–10). Actual shots or living
+enemies pursuing a living friendly select combat; an alarm flag or targetless
+investigation does not. Ten simulation seconds without that pressure returns to
+calm. This director observes state without changing simulation or replay hashes.
+
+The 224-beat form runs on one audio-time clock. A change commits at the next bar
+beyond the 180 ms scheduling window. Common notes keep their oscillators; their
+remaining glissandi and release beats follow the new tempo. Variation-specific
+parts enter or release at that boundary. The same ping-pong delay persists across
+changes and loop boundaries, so its tails continue naturally. Pause retains the
+beat; resume re-enters sustained melody notes without replaying missed percussion.
+A delayed scheduler skips stale events instead of producing a burst of old notes.
+
+The score/player module loads only for audible night play. A failed import leaves
+effects usable and retries on sound enable or a new attempt. An import finishing
+after mute, pause or mission replacement cannot start stale music.
+
+Music feeds a quiet, centred bus through existing master volume and output limiting.
+Recruitment and outcome cues briefly duck it along with combat effects. Sound
+preferences govern both music and effects. Planning, dialogs, optional scenes,
+hidden tabs, focus loss, zero volume and accelerated replays pause the score.
+Restart begins a new score. Success and failure end it. Pauses release sources
+and disconnect feedback loops, with a short fade to avoid clicks.
+
+Unit tests cover director state, replay independence, lazy loading, retry limits,
+late-import races, shared-note transitions, tempo-aware release, resume, loops,
+stall recovery and source hashes. Optional native browser checks cover synthesis,
+signal/headroom, uninterrupted transitions/loops, lifecycle and mix balance. They
+add no routine CI browser journey or authoring compilation to CI.

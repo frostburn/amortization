@@ -5,12 +5,14 @@ import { centred, Mixer, placement } from './mixer';
 import type { ListeningView, Voice } from './mixer';
 import { loopSound, SOUND_IDS } from './palette';
 import type { TypingSound } from './typing';
+import { Music } from './music';
 
 const VOLUME_KEY = 'amortization.volume.v1';
 const ENABLED_KEY = 'amortization.sound.v1';
 export class Sound {
   private context: AudioContext | null = null;
   private mixer: Mixer | null = null;
+  private music: Music | null = null;
   private director = new Director();
   private loops = new Map<string, Voice>();
   private typing = new Set<Voice>();
@@ -76,9 +78,11 @@ export class Sound {
     try {
       this.context ??= new AudioContext();
       this.mixer ??= new Mixer(this.context);
+      this.music ??= new Music(this.context, this.mixer.music);
       await this.context.resume();
       if (revision !== this.revision || !this.enabled) return;
       this.mixer.volume(this.loudness);
+      this.music.retry();
       if (confirm) this.mixer.play('confirm');
       void this.warm(revision).catch(() => {
         /* Preparation is optional; keep the live mixer usable. */
@@ -106,6 +110,7 @@ export class Sound {
       }
   }
   silence() {
+    this.music?.pause();
     this.mixer?.silence();
     this.loops.clear();
     this.typing.clear();
@@ -124,6 +129,7 @@ export class Sound {
   }
   reset(world: World) {
     this.silence();
+    this.music?.reset();
     this.world = world;
     this.director.reset(world);
     world.sounds.length = 0;
@@ -132,6 +138,10 @@ export class Sound {
     if (this.world !== world) this.reset(world);
     const observed = this.director.update(world, running && audible);
     const events = world.sounds.splice(0);
+    this.music?.update(
+      world,
+      running && audible && this.enabled && this.loudness > 0 && this.context?.state === 'running',
+    );
     if (!this.enabled || !audible || !this.mixer || this.context?.state !== 'running') {
       this.silence();
       return;

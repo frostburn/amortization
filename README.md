@@ -78,6 +78,16 @@ own report, coil charges and turret tracking give audible warnings, and movement
 reloads, impacts and mission equipment have distinct cues. Footsteps are quiet
 and muffled; there is no site ambience yet. Stereo follows the camera's isometric view.
 
+Night operations use **Negative Carry** by Lumi Pakkanen as background music.
+The original 180 BPM arrangement gives way to the 200 BPM combat variation
+when shots are fired or an enemy pursues the crew; it settles back after the
+fight. Transitions enter the same musical section on a bar boundary. Music
+shares Sound on/off and master volume, pauses with planning/dialogs, and resumes
+at its previous position. Daytime and sunset missions remain without music.
+The score is synthesized live with native Web Audio nodes; no recordings are downloaded.
+Its compact score/player module loads only during audible night play.
+See [music sources and compilation](music/README.md) for the Xenpaper projects.
+
 Planning pauses sustained sound. Normal-speed replays include audio; accelerated
 playback stays quiet. See [sound design](docs/audio.md) for the palette and checks.
 
